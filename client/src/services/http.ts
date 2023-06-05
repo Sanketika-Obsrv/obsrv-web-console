@@ -28,7 +28,7 @@ const errorInterceptor = (config: any) => {
     return (error: any) => {
         const { status } = error?.response;
         checkForSessionExpiry({ navigate, status, dispatch });
-        Promise.reject(error)
+        return Promise.reject(error);
     }
 }
 
