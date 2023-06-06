@@ -76,9 +76,9 @@ jobs:
         run: |
           cd deploy/terraform/aws
           terragrunt init
-          terragrunt apply  --target=module.web_console \
+          terragrunt apply --target=module.web_console \
           -var web_console_image_repository=${{ vars.DOCKERHUB_USERNAME }} \
-          -var dataset_api_image_tag=${{ github.ref_name }}
+          -var web_console_image_tag=${{ github.ref_name }}
 
   # azure-deploy:
   #   needs: [check-tag, docker-build]
