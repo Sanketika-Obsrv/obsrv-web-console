@@ -1,6 +1,8 @@
 # Stage 1 - Build the React client
 FROM --platform=linux/amd64 node:18-alpine AS client-build
 WORKDIR /opt/app/client
+RUN export REACT_APP_SUPERSET_URL=http://localhost:8081
+RUN export REACT_APP_GRAFANA_URL=http://localhost:80
 COPY ./client/package.json .
 RUN yarn install
 COPY ./client/ .
