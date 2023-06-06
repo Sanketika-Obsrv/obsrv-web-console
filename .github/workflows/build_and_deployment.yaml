@@ -3,7 +3,7 @@ run-name: Workflow run for ${{ github.ref }}
 on:
   push:
     tags:
-     - '*'
+      - '*'
 
 jobs:
   check-tag:
