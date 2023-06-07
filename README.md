@@ -4,24 +4,24 @@
 ## What is the Sunbird Obsrv web-console?
 The Sunbird Obsrv web-console is the browser-based interface for monitoring infrastructure.
 
+Sunbird Obsrv web-console has 2 parts   
+	1. React client  
+	2. Node server
+
 ### Local Installation
 You can also install the Sunbird portal locally on your laptop, please follow the instructions below:
-Have node version 16 or greater and follow the next steps
 
 ## Pre Installation Steps
 
 Prerequisities
 
-	1. Node > 16x
-	2. React 18x
+	1. Node > 16.x
+	2. React 18.x
 	3. Yarn
-
-Sunbird Obsrv web-console has 2 parts 
-		1. React client
-		2. Node server
+    4. Prometheus
     
-   ```Go to root folder copy .env.sample as .env```
-   ```Replace the respective values for the services in the .env file```
+   ```Please refer .env.sample in both root folder and client folder```  
+   ```Please set all the environment variables as per the .env.sample file  before starting the app```
     
 ### Installing and running React client
 
@@ -29,7 +29,6 @@ Sunbird Obsrv web-console has 2 parts
 
     yarn install
     yarn start
-    # For Developer's local build Run below command
     yarn build
     
 ### Installing and running Node server
