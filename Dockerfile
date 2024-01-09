@@ -1,5 +1,5 @@
 # Stage 1 - Build the React client
-FROM --platform=linux/amd64 node:18-alpine AS client-build
+FROM --platform=linux/amd64 node:20.10-alpine AS client-build
 ARG GRAFANA_URL="http://localhost"
 ARG SUPERSET_URL="http://localhost"
 WORKDIR /opt/app/client
@@ -11,7 +11,7 @@ COPY ./client/ .
 RUN yarn run build
 
 # Stage 2 - Run the Node.js server
-FROM --platform=linux/amd64 node:18-alpine AS server-build
+FROM --platform=linux/amd64 node:20.10-alpine AS server-build
 WORKDIR /opt/app/server
 COPY  ./package.json .
 RUN yarn install
