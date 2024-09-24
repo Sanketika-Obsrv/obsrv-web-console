@@ -16,7 +16,7 @@ export default {
             const transformations_config = _.get(dataset, "transformations_config", [])
             const flattenedSchemaFields = flattenSchema(data_schema);
             const derivedFields = formatNewFields(transformations_config, null)
-            const denorm_fields = await formatDenormFields(_.get(denorm_config, "denorm_fields"), transformations_config);
+            const denorm_fields = await formatDenormFields(_.get(denorm_config, "denorm_fields"), []);
             let pageData = _.map(flattenedSchemaFields, (item) => {
                 const transformedData = _.find(transformations_config, { field_key: item.column });
                 if (transformedData) {

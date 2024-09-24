@@ -140,13 +140,13 @@ export const validateFormValues = async (form: React.MutableRefObject<any>, valu
 }
 
 const getTransformationType = (value: Record<string, any>) => {
-    const { metadata } = value || {};
+    const { transformation_function } = value || {};
     const transformationType = {
         pii: "PII",
-        transformation: "Transformations",
-        additionalFields: "Derived"
+        transform: "Transformations",
+        derived: "Derived"
     }
-    return _.get(transformationType, _.get(metadata, "section")) || ""
+    return _.get(transformationType, _.get(transformation_function, "category")) || ""
 }
 
 export const getSectionDetails = (row: Record<string, any>) => {

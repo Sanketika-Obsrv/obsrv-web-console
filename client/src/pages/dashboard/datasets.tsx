@@ -15,8 +15,6 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import ReadyToPublishDatasetsList from './ReadyToPublishDatasets';
 import { FormattedMessage } from 'react-intl';
 import { useSearchParams } from 'react-router-dom';
-import { fetchDraftSourceConfig, fetchLiveSourceConfig } from 'services/dataset';
-
 
 export const getLiveSourceConfig: any = (liveDataset: any, liveSourceConfigs: any) => {
     const condition = (config: any) => {
@@ -55,45 +53,28 @@ const ClusterHealth = () => {
     const navigate = useNavigate();
     useImpression({ type: "list", pageid: _.get(pageIds, 'dataset.list') });
     const [datasetType, setDatasetType] = useState(datasetStatus);
-    const [liveSourceConfigs, setLiveSourceConfigs] = useState([])
-    const [draftSourceConfigs, setDraftSourceConfigs] = useState([])
 
     const handleTabChange = (event: any, newValue: any) => {
         setDatasetType(newValue);
         navigate(`?status=${newValue}`)
     }
 
-    const getSourceConfigs = async () => {
-        try {
-            const liveConfigs: any = await fetchLiveSourceConfig();
-            const draftConfigs: any = await fetchDraftSourceConfig();
-            setDraftSourceConfigs(draftConfigs)
-            setLiveSourceConfigs(liveConfigs)
-        } catch (err: any) {
-            console.log(err);
-        }
-    }
-
-    useEffect(() => {
-        getSourceConfigs();
-    }, [])
-
     const renderDatasets = (status: string) => {
         switch (status) {
             case DatasetStatus.Live: return <Grid item xs={12}>
-                <DatasetsList sourceConfigs={liveSourceConfigs} setDatasetType={setDatasetType} />
+                <DatasetsList setDatasetType={setDatasetType} />
             </Grid>
 
             case DatasetStatus.ReadyToPublish: return <Grid item xs={12}>
-                <ReadyToPublishDatasetsList sourceConfigs={draftSourceConfigs} setDatasetType={setDatasetType} />
+                <ReadyToPublishDatasetsList setDatasetType={setDatasetType} />
             </Grid>
 
             case DatasetStatus.Draft: return <Grid item xs={12}>
-                <DraftDatasetsList sourceConfigs={draftSourceConfigs} />
+                <DraftDatasetsList />
             </Grid>
 
             case DatasetStatus.Retired: return <Grid item xs={12}>
-                <RetiredDatasets sourceConfigs={draftSourceConfigs}/>
+                <RetiredDatasets />
             </Grid>
 
             default: return renderNoDatasetsMessage("No Datasets");

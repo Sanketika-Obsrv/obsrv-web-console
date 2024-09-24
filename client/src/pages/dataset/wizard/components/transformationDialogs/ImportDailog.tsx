@@ -7,9 +7,13 @@ import { useEffect, useState } from "react";
 const onSubmission = (value: any) => { };
 
 const ImportDailog = (props: any) => {
-    const { setFiles, setOpenDailog, setCheckValidation, form, handleNameChange, onSubmit } = props
+    const { setFiles, setOpenDailog, setCheckValidation, form, handleNameChange, onSubmit, isLiveExists } = props
     const [value, subscribe] = useState<any>({})
-    const options = [{ label: 'Import as new dataset', component: '', value: 'new' }, { label: 'Overwrite the Dataset', component: '', value: 'overwrite' }];
+    const options = [
+        { label: 'Import as new dataset', component: '', value: 'new' },
+        ...(!isLiveExists ? [{ label: 'Overwrite the Dataset', component: '', value: 'overwrite' }] : [])
+    ];
+
 
     const fields = [
         {

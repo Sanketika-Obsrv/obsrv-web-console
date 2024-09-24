@@ -12,7 +12,7 @@ import { error, success } from 'services/toaster';
 import { useFormik } from 'formik';
 import { generateSlug } from 'utils/stringUtils';
 import HtmlTooltip from 'components/HtmlTooltip';
-import { importDataset, searchDatasets } from 'services/dataset';
+import { datasetRead, importDataset, searchDatasets } from 'services/dataset';
 import FilesPreview from 'components/third-party/dropzone/FilesPreview';
 import { CardTitle, GenericCard } from 'components/styled/Cards';
 import interactIds from 'data/telemetry/interact.json';
@@ -47,6 +47,7 @@ const ImportDataset = ({ setShowWizard, datasetType, generateInteractTelemetry }
     const [value, subscribe] = useState({});
     const [formError, setFormError] = useState<boolean>(true);
     const [datasetIds, setDatasetIds] = useState<any>([])
+    const [isLiveExists, setIsLiveExists] = useState<boolean>(false);
     const validationLimitConfig = useSelector((state: any) => state?.config?.validationLimit || {});
     const formikRef = useRef<any>();
     const navigate = useNavigate();
@@ -98,12 +99,25 @@ const ImportDataset = ({ setShowWizard, datasetType, generateInteractTelemetry }
         }
     }, [checkvalidation])
 
+    const fetchDataset = async () => {
+        return datasetRead({ datasetId: `${datasetId}?status=${DatasetStatus.Live}` }).then((response: any) => {
+            return response?.data?.result
+        }).catch((err: any) => { console.log(err) })
+    }
+
     const onSubmit = async (config: any) => {
         setLoading(true);
         if ((data || files) && config) {
             setLoading(true)
             try {
                 const overwrite = _.get(config, "importType") === "overwrite" ? true : false
+                const liveDatasetExists = await fetchDataset();
+                if (liveDatasetExists && !isLiveExists) {
+                    setOpenDailog(true)
+                    setCheckValidation(true)
+                    setIsLiveExists(true)
+                    return
+                }
                 await importDataset(data[0], config, overwrite);
                 navigate(`/datasets?status=${DatasetStatus.Draft}`);
                 dispatch(success({ message: `Dataset imported successfully` }));
@@ -189,7 +203,7 @@ const ImportDataset = ({ setShowWizard, datasetType, generateInteractTelemetry }
     }, [value, data]);
 
     const importDialog = () => {
-        return React.cloneElement(<ImportDailog />, { setFiles,setOpenDailog, setCheckValidation, form, handleNameChange, onSubmit, subscribeToFormChanges });
+        return React.cloneElement(<ImportDailog />, { setFiles, setOpenDailog, setCheckValidation, form, handleNameChange, onSubmit, subscribeToFormChanges, isLiveExists });
     }
 
     return (

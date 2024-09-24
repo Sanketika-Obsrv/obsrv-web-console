@@ -25,20 +25,20 @@ export const generateRequestBody = (configs: Record<string, any>) => {
     }
 }
 
-const getDedupeState = (dataset: Record<string, any>) => {
+const getDedupeState = (dataset: Record<string, any>, createAction?: boolean) => {
     const dedupeConfig = _.get(dataset, 'dedup_config') || {};
     const { drop_duplicates = false, dedup_key } = dedupeConfig;
     return {
         "error": false,
         "questionSelection": {
-            ...(drop_duplicates && {
+            ...(drop_duplicates && !createAction && {
                 "dedupe": [
                     "yes"
                 ]
             })
         },
         "optionSelection": {
-            ...(drop_duplicates && {
+            ...(drop_duplicates && !createAction && {
                 "dedupeKey": dedup_key
             })
         },
@@ -207,14 +207,14 @@ const getSampleData = (dataset: Record<string, any>) => {
     return sample_data
 }
 
-export const generateDatasetState = async (state: Record<string, any>) => {
+export const generateDatasetState = async (state: Record<string, any>, createAction?: boolean) => {
     const dataset = state;
     const { type } = dataset;
     const jsonSchema = await getJsonSchemaState(dataset);
     const datasetConfiguration = getDatasetConfiguration(dataset);
     const transformationsState = getTransformationState(dataset);
     const timestamp = getTimestampState(dataset);
-    const dedupe = getDedupeState(dataset);
+    const dedupe = getDedupeState(dataset, createAction);
     const dataSource = getDatasetConnectorsConfig(dataset?.connectors_config);
     const dataFormat = getDataFormatState(dataset);
     const dataValidation = getDataValidationState(dataset);

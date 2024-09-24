@@ -25,6 +25,10 @@ const Datasource = (props: any) => {
 
         return <>
             {_.map(dataSourceConfig.formFieldSelection, (field: any) => {
+                if (field !== "kafka" && field !== "api") {
+                    // Skip rendering for other fields
+                    return null;
+                }
                 const connectorConfigs = _.get(dataSourceConfig, ["value", field]) || {};
                 const filteredConfigs = _.omit(connectorConfigs, ["connector_type", "authenticationMechanism", "id", "prefix", "fileFormat.compressed"])
                 const values = flattenObject(filteredConfigs) || [];

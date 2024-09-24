@@ -336,7 +336,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                 Cell: ({ value, cell }: any) => {
                     const row = cell?.row?.original || {};
                     const isMasterDataset = _.get(row, 'type') === DatasetType.MasterDataset;
-                    const datasetId = row?.id;
+                    const datasetId = row?.dataset_id;
                     const startDate = dayjs().format(dateFormat);
                     const endDate = dayjs().add(1, 'day').format(dateFormat);
                     const body = druidQueries.druid_avg_processing_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
@@ -351,7 +351,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                 Cell: ({ value, cell }: any) => {
                     const row = cell?.row?.original || {};
                     const isMasterDataset = _.get(row, 'type') === DatasetType.MasterDataset;
-                    const datasetId = row?.id;
+                    const datasetId = row?.dataset_id;
                     const startDate = dayjs().subtract(1, 'day').format(dateFormat);
                     const endDate = dayjs().format(dateFormat);
                     const body = druidQueries.druid_avg_processing_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
@@ -366,7 +366,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                 Cell: ({ value, cell }: any) => {
                     const row = cell?.row?.original || {};
                     const isMasterDataset = _.get(row, 'type') === DatasetType.MasterDataset;
-                    const datasetId = row?.id;
+                    const datasetId = row?.dataset_id;
                     const startDate = dayjs().subtract(10, 'day').format(dateFormat);
                     const endDate = dayjs().add(1, 'day').format(dateFormat);
                     const body = druidQueries.last_synced_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
@@ -410,7 +410,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 <EyeOutlined />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="View Metrics" onClick={(e: any) => navigateToPath(`/datasets/${row?.id}`)}>
+                        <Tooltip title="View Metrics" onClick={(e: any) => navigateToPath(`/datasets/${row?.dataset_id}`)}>
                             <IconButton
                                 data-edataid={interactIds.view_dataset_metrics}
                                 data-objectid={row?.dataset_id}
@@ -429,6 +429,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 color="primary"
                                 size="large"
                                 onClick={(e) => handleClick(e, row)}
+                                disabled={true}
                             >
                                 <StyleIcon />
                             </IconButton>

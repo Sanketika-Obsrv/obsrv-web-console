@@ -6,7 +6,12 @@ import appConfig from '../resources/appConfig';
 export default {
     name: 'globalErrorHandler',
     handler: () => (error: any, request: Request, response: Response, next: NextFunction) => {
-        const { message = 'Internal Server Error', status = 500, responseCode = 'SERVER_ERROR', errorCode = 'SERVER_ERROR' } = error;
+        const {
+            message = error.message || 'Internal Server Error',
+            status = error.status || 500,
+            responseCode = error.responseCode || 'SERVER_ERROR',
+            errorCode = error.errorCode || 'SERVER_ERROR',
+        } = error;
 
         const { id = 'api' } = request.responsePayload || {};
 

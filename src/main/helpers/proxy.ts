@@ -19,5 +19,9 @@ export const onProxyRes = ({ entity }: any) => (proxyReq: any, req: any, res: Re
 export const onProxyReq = ({ entity }: any) => (proxyReq: any, req: any, res: Response) => {
     const startTime = Date.now();
     req.startTime = startTime;
+    const jwtToken: string = req.session?.token;
+    if (jwtToken) {
+        proxyReq.setHeader('x-user-token', `${jwtToken}`);
+    }
     incrementApiCalls({ entity, endpoint: req.url });
 }

@@ -9,7 +9,7 @@ export default {
         const { datasetId } = request.params;
         try {
             let liveDataset = await fetchDataset({ datasetId });
-            if (_.get(liveDataset, "version_key") !== "v2") {
+            if (_.get(liveDataset, "api_version") !== "v2") {
                 const liveDatasetsConfigs = await migrateV1Live(liveDataset)
                 liveDataset = { ...liveDataset, ...liveDatasetsConfigs }
             }
@@ -22,7 +22,7 @@ export default {
             const { timestamp_key: draftTS, data_key: draftDataKey } = draftDataset.dataset_config.keys_config;
             const { timestamp_key: liveTS, data_key: liveDataKey } = liveDataset.dataset_config.keys_config;
 
-            if (draftTS !== liveTS) {
+            if (draftDataset.type !== "master" && draftTS !== liveTS) {
                 modifications.push({
                     type: "timestamp",
                     value: {
@@ -33,7 +33,7 @@ export default {
             }
 
             //Data key
-            if (draftDataKey !== liveDataKey) {
+            if (draftDataset.type === "master" && draftDataKey !== liveDataKey) {
                 modifications.push({
                     type: "dataKey",
                     value: {
@@ -68,7 +68,7 @@ export default {
 
             // Dedup config
             const dedupDiff = getEdited(liveDataset, draftDataset, 'dedup_config', 'dedup')
-            dedupDiff && modifications.push(dedupDiff)
+            dedupDiff && draftDataset.type !== "master" && modifications.push(dedupDiff)
 
             // Denorm config
             const denormChanges = getDenormChanges(liveDataset, draftDataset)
@@ -134,10 +134,18 @@ const getEdited = (liveDataset: any, draftDataset: any, key: string, type: strin
 const getDenormChanges = (liveDataset: any, draftDataset: any) => {
     const draftDenormFields = _.get(draftDataset, 'denorm_config.denorm_fields') || [];
     const liveDenormFields = _.get(liveDataset, 'denorm_config.denorm_fields') || [];
+    const draftDenorms = _.map(draftDenormFields, fields => {
+        const { denorm_key, denorm_out_field } = fields
+        return { denorm_key, denorm_out_field }
+    })
+    const liveDenorms = _.map(liveDenormFields, fields => {
+        const { denorm_key, denorm_out_field } = fields
+        return { denorm_key, denorm_out_field }
+    })
     // addded
     const additions = []
-    if (_.size(draftDenormFields) >= _.size(liveDenormFields)) {
-        const addedItems = _.differenceWith(draftDenormFields, liveDenormFields, _.isEqual)
+    if (_.size(draftDenorms) >= _.size(liveDenorms)) {
+        const addedItems = _.differenceWith(draftDenorms, liveDenorms, _.isEqual)
         if (_.size(addedItems) > 0) {
             additions.push({
                 type: 'denorm',
@@ -152,8 +160,8 @@ const getDenormChanges = (liveDataset: any, draftDataset: any) => {
     }
 
     const removed = []
-    if (_.size(draftDenormFields) <= _.size(liveDenormFields)) {
-        const removedItems = _.differenceWith(liveDenormFields, draftDenormFields, _.isEqual)
+    if (_.size(draftDenorms) <= _.size(liveDenorms)) {
+        const removedItems = _.differenceWith(liveDenorms, draftDenorms, _.isEqual)
         if (_.size(removedItems) > 0) {
             removed.push({
                 type: 'denorm',

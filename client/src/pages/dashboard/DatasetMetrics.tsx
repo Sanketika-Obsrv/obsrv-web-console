@@ -1,16 +1,14 @@
 import { Box, Grid, Tab, Tabs } from "@mui/material";
 import { useState, cloneElement, useEffect } from "react";
 import { useParams } from "react-router";
-import { datasetRead, getSourceConfigs } from "services/dataset";
+import { datasetRead } from "services/dataset";
 import _ from 'lodash';
 import { useDispatch } from "react-redux";
 import { error } from "services/toaster";
 import { DotChartOutlined } from "@ant-design/icons";
 import DatasetDetails from "./datasetsDetails";
-import ConnectorMetrics from "./ConnectorMetrics";
 import MainCard from "components/MainCard";
 import { Typography } from "@mui/material";
-import { DatasetStatus } from "types/datasets";
 import Skeleton from "components/Skeleton";
 
 
@@ -21,19 +19,6 @@ const DatasetMetrics = () => {
     const params = useParams();
     const dispatch = useDispatch();
     const { datasetId } = params;
-
-    const fetchConnectors = async () => {
-        const payload = {
-            data: {
-                "filters": {
-                    "dataset_id": datasetId,
-                    "status": [DatasetStatus.Live]
-                }
-            },
-            config: {}
-        }
-        return getSourceConfigs(payload).then(response => _.get(response, 'data.result') || []);
-    }
 
     const updateTabs = (payload: Record<string, any> | Record<string, any>[]) => {
         const tabs = Array.isArray(payload) ? payload : [payload];
@@ -91,24 +76,12 @@ const DatasetMetrics = () => {
 
 
     const fetchDataset = async () => {
-        return datasetRead({ datasetId: `${datasetId}?status=${DatasetStatus.Live}` }).then(response => _.get(response, 'data.result'));
-    }
-
-    const renderConnector = (connector: Record<string, any>) => {
-        const { id, connector_type } = connector;
-        if(connector_type == "kafka") return null;
-        return {
-            id: id,
-            label: `${connector_type} Connector`,
-            icon: DotChartOutlined,
-            component: <ConnectorMetrics connector_config={connector} />
-        }
+        return datasetRead({ datasetId }).then(response => _.get(response, 'data.result'));
     }
 
     const configureTabs = async () => {
         try {
             const dataset = await fetchDataset();
-            const connectors = await fetchConnectors();
             setDataset({ data: dataset, status: 'success' });
             updateTabs([
                 {
@@ -116,8 +89,7 @@ const DatasetMetrics = () => {
                     label: "Dataset",
                     icon: DotChartOutlined,
                     component: <DatasetDetails />
-                },
-                ...(_.get(connectors, 'length') ? _.compact(_.map(connectors, renderConnector)) : [])
+                }
             ])
         } catch {
             dispatch(error({ message: 'Read Dataset Failed' }));

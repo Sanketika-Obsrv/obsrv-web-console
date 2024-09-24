@@ -59,4 +59,5 @@ export default {
         },
     },
     BASE_URL: env.BASE_URL || '/console',
+    USER_TOKEN_PRIVATE_KEY: env.USER_TOKEN_PRIVATE_KEY || '',
 };

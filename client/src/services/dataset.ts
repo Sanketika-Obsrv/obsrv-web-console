@@ -6,6 +6,8 @@ import { DatasetStatus, DatasetType } from 'types/datasets';
 import { aggregationFunctions, allowedSegmentGranurality } from 'pages/rollup/utils/commonUtils';
 import { generateRequestBody } from './utils';
 import { fetchDataset, generateDatasetState } from './datasetState';
+import moment from 'moment';
+import { v4 as uuid } from 'uuid';
 
 export const DEFAULT_TIMESTAMP = {
     indexValue: "obsrv_meta.syncts",
@@ -140,10 +142,6 @@ export const updateDataset = async ({ data = {}, config }: any) => {
 export const searchDatasets = ({ data = { filters: {} } }: any) => {
     const request = generateRequestBody({ request: data, apiId: "api.datasets.list" })
     return http.post(apiEndpoints.listDatasets, request);
-}
-
-export const getSourceConfigs = ({ data = { filters: {}, }, config }: any) => {
-    return http.post(apiEndpoints.sourceConfig, data, config);
 }
 
 export const fetchDatasets = (config: Record<string, any>) => {
@@ -354,12 +352,8 @@ export const saveTransformations = async (payload: any) => {
     return response
 }
 
-export const listTransformations = async (payload: any) => {
-    return http.post(`${apiEndpoints.listTransformations}`, payload);
-}
-
 export const publishDataset = async (state: Record<string, any>, storeState: any, master: any, masterDatasets: any) => {
-    const dataset_id = _.get(state, 'pages.datasetConfiguration.state.masterId')
+    const dataset_id = _.get(state, 'pages.datasetConfiguration.state.config.dataset_id')
     const { status } = await getVersionKey(dataset_id)
     if (status === DatasetStatus.Draft) {
         const transitionRequest = generateRequestBody({ request: { dataset_id, status: "ReadyToPublish" }, apiId: "api.datasets.status-transition" })
@@ -368,7 +362,16 @@ export const publishDataset = async (state: Record<string, any>, storeState: any
 }
 
 export const sendEvents = (datasetId: string | undefined, payload: any) => {
-    return http.post(`${apiEndpoints.sendEvents}/${datasetId}`, payload, {});
+    const request = {
+        "id": "api.data.in",
+        "ver": "v2",
+        "ts": moment().format(),
+        "params": {
+            "msgid": uuid()
+        },
+        "data": _.get(payload, ["data", "event"])
+    }
+    return http.post(`${apiEndpoints.sendEvents}/${datasetId}`, request, {});
 }
 
 export const getUploadUrls = async (files: any) => {
@@ -408,13 +411,9 @@ export const deleteTransformations = async (configs: Record<string, any>) => {
     return response
 }
 
-export const deleteDatasetSourceConfig = async (id: string) => {
-    return http.delete(`${apiEndpoints.deleteDatasetSourceConfig}/${id}`);
-}
-
-export const getDatasetState = async (datasetId: string, status: string = DatasetStatus.Draft) => {
+export const getDatasetState = async (datasetId: string, status: string = DatasetStatus.Draft, createAction: boolean = false) => {
     const dataset = await fetchDataset(datasetId, status);
-    return await generateDatasetState(dataset);
+    return await generateDatasetState(dataset, createAction);
 }
 
 export const resetDatasetState = async () => {
@@ -424,7 +423,7 @@ export const resetDatasetState = async () => {
     const wizardState = _.get(state, 'wizard');
     if (!wizardState) throw new Error("Something went wrong. Please try again later");
     const datasetConfig = _.omit(_.get(wizardState, 'pages.datasetConfiguration.state.config'), ["versionKey"]);
-    const datasetId = _.get(wizardState, 'pages.datasetConfiguration.state.masterId');
+    const datasetId = _.get(wizardState, 'pages.datasetConfiguration.state.config.dataset_id');
     const versionKeyValue = _.get(wizardState, 'pages.datasetConfiguration.state.config.versionKey');
 
     const updateDatasetConfig = async () => {
@@ -444,6 +443,7 @@ export const resetDatasetState = async () => {
         const pii = _.get(wizardState, 'pages.pii.selection') || [];
         const transformation = _.get(wizardState, 'pages.transform.selection') || [];
         const additionalFields = _.get(wizardState, 'pages.derived.selection') || [];
+        const connectors = _.keys(_.get(wizardState, "pages.dataSource.value"))
         const transformationConfigs = _.map(_.flatten([pii, transformation, additionalFields]), (fields) => {
             return {
                 value: {
@@ -451,7 +451,15 @@ export const resetDatasetState = async () => {
                 }, action: "remove"
             }
         });
-        const response = await updateDataset({ data: { validation_config, extraction_config, dedup_config, denorm_config, dataset_config, ...datasetConfig, dataset_id: datasetId, ...(_.size(transformationConfigs) && { transformations_config: transformationConfigs }), version_key: _.get(versionKeyMap, ["version_keys", datasetId]) || versionKeyValue || "" } });
+        const connectorsConfigs = _.map(connectors, (field) => {
+            return {
+                value: {
+                    connector_id: field,
+                    id: field
+                }, action: "remove"
+            }
+        });
+        const response = await updateDataset({ data: { validation_config, extraction_config, dedup_config, denorm_config, dataset_config, ...datasetConfig, dataset_id: datasetId, ...(_.size(transformationConfigs) && { transformations_config: transformationConfigs }), ...(_.size(connectorsConfigs) && { connectors_config: connectorsConfigs }), version_key: _.get(versionKeyMap, ["version_keys", datasetId]) || versionKeyValue || "" } });
         const versionKey = _.get(response, 'data.result.version_key') || ""
         _.set(versionKeyMap, "version_keys", { [datasetId]: versionKey })
     }
@@ -462,13 +470,7 @@ export const resetDatasetState = async () => {
         // return Promise.all(_.map(dataSourceIds, (id: string) => deleteDatasetSourceConfig(id)));
     }
 
-    const deleteDatasetSourceConfigs = async () => {
-        const dataSources = _.get(wizardState, 'pages.dataSource.value') || {};
-        const datasetSourceConfigIds = _.map(dataSources, (value) => _.get(value, 'id'));
-        return Promise.all(_.map(datasetSourceConfigIds, (id: string) => deleteDatasetSourceConfig(id)));
-    }
-
-    return Promise.all([updateDatasetConfig(), deleteDataSources(), deleteDatasetSourceConfigs()]);
+    return Promise.all([updateDatasetConfig(), deleteDataSources()]);
 }
 
 export const deleteDataset = async ({ id }: any) => {
@@ -495,7 +497,7 @@ export const exportDataset = async (dataset_id: string, status: string) => {
     return response;
 }
 
-export const importDataset = async (dataset: any, config: Record<string, any>, overwrite:boolean) => {
+export const importDataset = async (dataset: any, config: Record<string, any>, overwrite: boolean) => {
     const { dataset_id, name } = config;
     const apiVersion = _.get(dataset, "api_version")
     const payload = { id: dataset_id, dataset_id, name }
@@ -512,10 +514,6 @@ export const importDataset = async (dataset: any, config: Record<string, any>, o
     const request = generateRequestBody({ apiId: "api.datasets.import", request: _.omit(updatedDataset, ["properties", "required"]) })
     const response = await http.post(`${apiEndpoints.importDataset}?overwrite=${overwrite}`, request)
     return response;
-}
-
-export const createDraftOutofLiveDataset = async (datasetId: string) => {
-    return http.get(`${apiEndpoints.createDraftVersion}/${datasetId}`)
 }
 
 export const updateDatasetStatus = async (id: string, dataset_id: string, status: string) => {
@@ -661,24 +659,6 @@ export const saveDatasetIntermediateState = async (arg: Record<string, any>) => 
 export const getVersionKey = async (datasetId: string) => {
     const datasetRecord = await datasetReadWithParams({ datasetId, params: "status,version_key" })
     return { versionKey: _.get(datasetRecord, ["data", "result", "version_key"]), status: _.get(datasetRecord, ["data", "result", "status"]) }
-}
-
-export const fetchDraftSourceConfig = async () => {
-    try {
-        const data = await getSourceConfigs({ data: { filters: { status: [DatasetStatus.Draft, DatasetStatus.ReadyToPublish] } }, config: {}, });
-        const sourceConfigs = _.get(data, ['data', 'result']) || [];
-        return sourceConfigs;
-    }
-    catch (err: any) { return []; }
-}
-
-export const fetchLiveSourceConfig = async () => {
-    try {
-        const data = await getSourceConfigs({ data: { filters: { status: [DatasetStatus.Live, DatasetStatus.Retired] } }, config: {}, });
-        const sourceConfigs = _.get(data, ['data', 'result']) || [];
-        return sourceConfigs;
-    }
-    catch (err: any) { return []; }
 }
 
 export const getDraftTagsPayload = (configs: Record<string, any>) => {

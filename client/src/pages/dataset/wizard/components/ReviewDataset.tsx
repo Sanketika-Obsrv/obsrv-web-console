@@ -5,7 +5,7 @@ import ReviewWithSummary from "./ReviewSummary";
 import ReviewAllCongurations from "./ReviewAllConfigurations";
 import AnimateButton from "components/@extended/AnimateButton";
 import { StandardWidthButton } from "components/styled/Buttons";
-import { publishDataset } from "services/dataset";
+import { datasetRead, publishDataset, saveDatasetIntermediateState } from "services/dataset";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import { fetchDatasetsThunk } from "store/middlewares";
@@ -36,9 +36,11 @@ const ReviewDataset = ({ handleBack, master, datasetState, liveDataset = false }
     const navigate = useNavigate();
     const storeState: any = useSelector((state: any) => state);
     const wizardState: any = useSelector((state: any) => state?.wizard);
-    const datasets: any = useSelector((state: any) => _.get(state, 'dataset.data.data') || []);
+    const datasets: any = useSelector((state: any) => _.get(state, 'dataset.data') || []);
     const masterDatasets = getMasterDatasets(datasets);
+    const [isDatasetNameUpdated, setIsDatasetNameUpdated] = useState<boolean>(false)
     const datasetId = _.get(wizardState, 'pages.datasetConfiguration.state.config.dataset_id');
+    const updatedDatasetName = _.get(wizardState, 'pages.datasetConfiguration.state.config.name');
 
     const tabs = [
         {
@@ -71,9 +73,17 @@ const ReviewDataset = ({ handleBack, master, datasetState, liveDataset = false }
         }
     }
 
+    const fetchDataset = async () => {
+        return datasetRead({ datasetId: `${datasetId}?status=${DatasetStatus.Live}` }).then(response => {
+            const datasetName = response?.data?.result?.name;
+            setIsDatasetNameUpdated(datasetName !== updatedDatasetName)
+        }).catch((err) => { console.log(err) })
+    }
+
     useEffect(() => {
         fetchDiff();
-    }, []);
+        fetchDataset()
+    }, [updatedDatasetName]);
 
     const renderTabs = () => {
         return (
@@ -112,6 +122,9 @@ const ReviewDataset = ({ handleBack, master, datasetState, liveDataset = false }
     }
 
     const diffExist = (diff: Record<string, any>) => {
+        if (isDatasetNameUpdated) {
+            return false
+        }
         const { additions = [], deletions = [], modifications = [] } = diff;
         const noModifications = _.size(_.flatten([additions, deletions, modifications])) === 0;
         return noModifications;
@@ -135,7 +148,10 @@ const ReviewDataset = ({ handleBack, master, datasetState, liveDataset = false }
                         variant="contained"
                         type="button"
                         disabled={!_.isEmpty(diff) ? diffExist(diff) : false}
-                        onClick={() => setOpenDialog(true)}
+                        onClick={() => {
+                            saveDatasetIntermediateState({})
+                            setOpenDialog(true)
+                        }}
                     >
                         <Typography variant="h5">Save Dataset</Typography>
                     </StandardWidthButton>
@@ -163,6 +179,5 @@ const ReviewDataset = ({ handleBack, master, datasetState, liveDataset = false }
     </>
 
 }
-
 
 export default ReviewDataset
