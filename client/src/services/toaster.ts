@@ -6,15 +6,20 @@ const defaultConfig = {
     anchorOrigin: { vertical: 'top', horizontal: 'center' },
     variant: 'alert',
     alert: {
-        color: 'error'
+        color: 'error',
+        severity: 'error'
     },
     close: false
 }
 
 export const success = (config: Partial<typeof defaultConfig>) => {
-    return openSnackbar({ ...defaultConfig, alert: { color: 'success' }, ...config })
+    return openSnackbar({ ...defaultConfig, alert: { color: 'success', severity: 'success' }, ...config })
 }
 
 export const error = (config: Partial<typeof defaultConfig>) => {
     return openSnackbar({ ...defaultConfig, ...config })
+}
+
+export const warning = (config: Partial<typeof defaultConfig>) => {
+    return openSnackbar({ ...defaultConfig, alert: { color: 'warning', severity: 'warning' }, ...config })
 }

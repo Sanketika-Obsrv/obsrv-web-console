@@ -1,5 +1,7 @@
 import * as _ from 'lodash';
 import { v4 } from 'uuid'
+import { sendEvents } from './dataset';
+import { getConfigValue } from './configData';
 
 const getOptions = () => {
     return {
@@ -12,7 +14,7 @@ const getOptions = () => {
             type: 'User'
         },
         context: {
-            env: _.get(process, 'env.REACT_APP_ENV') || "local",
+            env: getConfigValue("ENV") || _.get(process, 'env.REACT_APP_ENV') || "local",
             sid: '42342',
             pdata: {
                 id: 'dev.obsrv.console',
@@ -26,7 +28,7 @@ const getOptions = () => {
 
 const sendTelemetryEvents = (event: Record<string, any>) => {
     const payload = { data: { id: v4(), events: [event] } }
-    console.log(payload);
+    // console.log(payload);
     // sendEvents("web-console-telemetry", payload);
 }
 

@@ -1,10 +1,11 @@
-import { Box, Chip, Grid, MenuItem, Select, Stack, Paper, Tooltip } from "@mui/material"
+import { Box, Chip, Grid, MenuItem, Select, Stack, Typography, Paper, Tooltip } from "@mui/material"
 import { v4 } from 'uuid'
 import React, { useState } from 'react';
 import * as _ from 'lodash';
 import { InfoCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import globalConfig from 'data/initialConfig';
 import dayjs from 'dayjs';
+import interactIds from "data/telemetry/interact.json";
 import { OverflowTypography } from "components/styled/Typography";
 
 const transformFilter = (filter: Record<string, any>) => {
@@ -62,9 +63,11 @@ const ApexWithFilters = (props: any) => {
             const variant = (_.get(transformedFilter, 'value') === filter) ? "filled" : "outlined";
             const color = _.get(filterMeta, 'color') || "primary"
             return <Chip
+                data-edataid={interactIds.chart_filter}
                 data-objectid={`${title}:${filterMeta.label}`}
                 data-objecttype="chart"
                 label={<div
+                    data-edataid={`${interactIds.chart_filter}:${filterMeta.telemetryid}`}
                     data-objectid={id}
                     data-objecttype="chart"
                 >{filterMeta.label}</div>}
@@ -82,7 +85,7 @@ const ApexWithFilters = (props: any) => {
     });
 
     return <>
-        <Paper elevation={globalConfig.elevation}>
+        <Paper elevation={globalConfig.elevation} style={{height: '100%'}}>
             <Grid item>
                 <Grid container>
                     <Grid item xs={12} sm={12} alignItems="stretch">

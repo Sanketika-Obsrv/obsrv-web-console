@@ -27,7 +27,12 @@ export const alertsFilterByLabels = (config: any) => {
         const labels = _.get(alert, 'labels') || {};
         if (_.size(matchLabels) === 0) return true;
         return _.every(matchLabels, (labelValue, labelKey) => {
-            const doesExists = _.find(labels, (value, key) => value === labelValue && key === labelKey);
+            let doesExists: boolean;
+            if (_.isArray(labelValue)) {
+                doesExists = _.find(labels, (value, key) => _.includes(labelValue, value) && key === labelKey);
+            } else {
+                doesExists = _.find(labels, (value, key) => value === labelValue && key === labelKey);
+            }
             return doesExists ? true : false;
         })
     }

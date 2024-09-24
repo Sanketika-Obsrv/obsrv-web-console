@@ -32,6 +32,19 @@
     "import/no-extraneous-dependencies": "off",
     "jsx-a11y/label-has-associated-control": "off",
     "jsx-a11y/no-autofocus": "off",
+    // "no-restricted-imports": [
+    //   "error",
+    //   {
+    //     "patterns": ["@mui/*/*/*", "!@mui/material/test-utils/*"]
+    //   }
+    // ],
+    // "@typescript-eslint/no-unused-vars": [
+    //   "error",
+    //   {
+    //     "vars": "all",
+    //     "args": "none"
+    //   }
+    // ],
     "prettier/prettier": [
       "warn",
       {

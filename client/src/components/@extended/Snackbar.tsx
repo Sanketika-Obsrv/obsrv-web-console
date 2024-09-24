@@ -13,6 +13,7 @@ import { CloseOutlined } from '@ant-design/icons';
 
 import { KeyedObject, RootStateProps } from 'types/root';
 import { closeSnackbar } from 'store/reducers/snackbar';
+import interactIds from 'data/telemetry/interact.json';
 
 
 function TransitionSlideLeft(props: SlideProps) {
@@ -70,11 +71,13 @@ const Snackbar = () => {
                         <>
                             <Button
                                 id="button"
+                                data-edataid={interactIds.snackbar_undo}
                                 color="secondary" size="small" onClick={handleClose}>
                                 UNDO
                             </Button>
                             <IconButton
                                 id="iconButton"
+                                data-edataid={interactIds.snackbar_close}
                                 size="small" aria-label="close" color="inherit" onClick={handleClose}>
                                 <CloseOutlined />
                             </IconButton>
@@ -93,12 +96,14 @@ const Snackbar = () => {
                 >
                     <Alert
                         variant={alert.variant}
+                        severity={alert.severity}
                         color={alert.color}
                         action={
                             <>
                                 {actionButton !== false && (
                                     <Button
                                         id="button"
+                                        data-edataid={interactIds.snackbar_undo}
                                         color={alert.color} size="small" onClick={handleClose}>
                                         UNDO
                                     </Button>
@@ -106,6 +111,7 @@ const Snackbar = () => {
                                 {close !== false && (
                                     <IconButton
                                         id="iconButton"
+                                        data-edataid={interactIds.snackbar_close}
                                         size="small"
                                         aria-label="close"
                                         variant="contained"

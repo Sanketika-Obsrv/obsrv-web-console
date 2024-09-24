@@ -44,7 +44,7 @@ const NavItem = ({ item, level }: any) => {
         if (currentIndex > -1) {
             dispatch(activeItem({ openItem: [item.id] }));
         }
-    }, []);
+    }, [document.location.pathname]);
 
     const textColor = 'text.primary';
     const iconSelectedColor = 'primary.400';

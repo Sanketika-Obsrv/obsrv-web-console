@@ -17,9 +17,15 @@ const menu = createSlice({
             const { payload } = action;
             const { key } = payload;
             delete state[key]
+        },
+        setConfigs(state, action) {
+            const { payload = {} } = action;
+            _.forEach(payload, (value, key) => {
+                state[key] = value;
+            })
         }
     }
 });
 
 export default menu.reducer;
-export const { setConfig } = menu.actions;
+export const { setConfig, setConfigs } = menu.actions;
