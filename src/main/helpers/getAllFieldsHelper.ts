@@ -83,12 +83,13 @@ export const updateDenormDerived = (schemaColumns: any, columns: any, fixedPrefi
 }
 
 const processDenormConfigurations = async (item: any, transformations: any) => {
-    const denormFieldsData: any = [];
+    let denormFieldsData: any = [];
     const dataset_id = _.get(item, 'dataset_id');
     const denorm_out_field = _.get(item, "denorm_out_field");
     const dataset = await fetchDatasetRecord(dataset_id, "Live");
+    const transformationsConfig = _.get(dataset, "transformations_config");
     let schema = flattenSchema(_.get(dataset, "data_schema"), denorm_out_field, true);
-    schema = updateDenormDerived(schema,transformations, denorm_out_field,);
+    schema = updateDenormDerived(schema, transformations, denorm_out_field,);
     denormFieldsData.push({
         "column": denorm_out_field,
         "type": "object",
@@ -99,7 +100,35 @@ const processDenormConfigurations = async (item: any, transformations: any) => {
         "arrival_format": "object",
         "data_type": "object",
     });
-    denormFieldsData.push(...schema);
+    denormFieldsData = _.map(schema, (item) => {
+        const transformedData = _.find(transformationsConfig, { field_key: _.replace(item.column, `${denorm_out_field}.`, "") });
+        if (transformedData) {
+            return {
+                ...item,
+                data_type: transformedData?.transformation_function?.datatype
+            };
+        }
+        return item;
+    });
+    const transformation = _.chain(transformationsConfig)
+        .map((item: any) => {
+            if (item?.transformation_function?.category === "derived") {
+                return {
+                    "column": `${denorm_out_field}.${item?.field_key}`,
+                    "type": "object",
+                    "key": `properties.${item?.field_key}`,
+                    "ref": `properties.${item?.field_key}`,
+                    "isModified": true,
+                    "required": false,
+                    "arrival_format": "object",
+                    "data_type": item?.transformation_function?.datatype,
+                }
+            }
+        })
+        .filter(Boolean)
+        .value();
+    const fields = [...denormFieldsData, ...transformation]
+    denormFieldsData = [...fields]
     return denormFieldsData;
 }
 
@@ -174,7 +203,7 @@ const getArrivalFormat = (data_type: string | undefined, dataMappings: Record<st
 
 export const formatNewFields = (newFields: Record<string, any>, dataMappings: any) => {
     if (newFields.length > 0) {
-        const derivedFields = _.filter(newFields,(field:any)=>{
+        const derivedFields = _.filter(newFields, (field: any) => {
             return field?.transformation_function?.category === "derived"
         })
         const final = _.map(derivedFields, (item: any) => {

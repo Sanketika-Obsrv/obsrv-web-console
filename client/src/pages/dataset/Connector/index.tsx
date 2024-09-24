@@ -50,7 +50,7 @@ const ConnectorSection = (props: any) => {
         try {
             dispatch(addState({ id, ...state }));
             if (payload) {
-                const datasetId = _.get(wizardState, 'pages.datasetConfiguration.state.masterId');
+                const datasetId = _.get(wizardState, 'pages.datasetConfiguration.state.config.dataset_id');
                 const { connector_type, source, id, ...rest } = payload;
                 const connectorPayload = {
                     id: `${datasetId}_${connector_type}`,

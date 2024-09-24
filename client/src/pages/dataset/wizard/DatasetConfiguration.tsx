@@ -102,7 +102,7 @@ const DatasetConfiguration = ({ setShowWizard, datasetType, generateInteractTele
 
     const fetchDatasetDetails = async (datasetId: string) => {
         try {
-            const datasetState = await getDatasetState(datasetId!, DatasetStatus.Draft);
+            const datasetState = await getDatasetState(datasetId!, DatasetStatus.Draft, true);
             restoreClientState(datasetState);
         } catch (err) {
             dispatch(error({ message: 'Dataset does not exists' }));

@@ -56,11 +56,12 @@ export default {
     "drop_duplicates": "Drop duplicates ?",
     "dataset_name": "Master dataset name",
     "denorm_key": "Output field",
-    "batch_id":"Batch identifier",
+    "batch_id": "Batch identifier",
     "validation_mode": "Validation mode",
-    "type":"Type",
-    "bucket":"Bucket name",
-    "prefix":"Prefix",
-    "region":"Region",
-    "topic":"Kafka topic"
+    "type": "Type",
+    "bucket": "Bucket name",
+    "prefix": "Prefix",
+    "region": "Region",
+    "topic": "Kafka topic",
+    "dedup_config.dedup_key": "Batch identifier"
 }

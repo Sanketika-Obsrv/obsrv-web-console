@@ -57,7 +57,7 @@ const UpdateSummary = (props: any) => {
     ];
 
     const data = _.filter(transform(diff), data => {
-        return !_.includes(["dedup_config.dedup_key"], _.get(data, "field"))
+        return !_.includes(["batch_id"], _.get(data, "field"))
     });
 
     const renderTable = () => {

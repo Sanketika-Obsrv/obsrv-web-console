@@ -7,7 +7,7 @@ export const fetchChartData = (config: Partial<IChartFetchRequest>, metadata: Re
     let { parse = (response => response), error } = config;
     const uuid = v4();
     const chartUUID = config.id || metadata.uuid;
-    return http.post(`/api/report/v1/metrics/${uuid}`,
+    return http.post(`/config/v2/data/metrics`,
         { query: config },
         { params: { ...chartUUID && { id: chartUUID } } })
         .then(response => response.data)

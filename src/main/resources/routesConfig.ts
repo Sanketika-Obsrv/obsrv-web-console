@@ -5,6 +5,10 @@ import logRequestsStartTimeMiddleware from '../middlewares/logStartTime'
 import passport from 'passport';
 import { authorization, ensureLoggedInMiddleware, token } from '../helpers/oauth';
 import appConfig from '../../shared/resources/appConfig';
+import passportAuthenticateCallback from '../middlewares/passportAuthenticate';
+import setContext from '../middlewares/setContext';
+import authorizationMiddleware from '../middlewares/authorization';
+import { permissions } from '../middlewares/authorization';
 
 const baseURL = appConfig.BASE_URL;
 export default [
@@ -17,9 +21,7 @@ export default [
                     {
                         path: 'login',
                         method: 'POST',
-                        middlewares: [
-                            passport.authenticate('local', { successReturnToOrRedirect: baseURL || "/", failureRedirect: `${baseURL}/login` })
-                        ],
+                        middlewares: [passportAuthenticateCallback.handler()],
                     },
                     {
                         path: 'logout',
@@ -133,25 +135,6 @@ export default [
         ],
     },
     {
-        path: 'report',
-        routes: [
-            {
-                path: 'v1',
-                routes: [
-                    {
-                        path: 'metrics/:id',
-                        method: 'POST',
-                        middlewares: [
-                            logRequestsStartTimeMiddleware.handler({}),
-                            authMiddleware.handler({}),
-                            controllers.get('metrics')?.handler({}),
-                        ]
-                    }
-                ],
-            },
-        ],
-    },
-    {
         path: "config",
         routes: [
             {
@@ -206,6 +189,81 @@ export default [
                     controllers.get('connector:test')?.handler({})
                 ]
             }
+        ]
+    },
+    {
+        path: 'user',
+        routes: [
+            {
+                path: 'read/:user_name',
+                method: 'GET',
+                middlewares: [setContext.handler(permissions.ReadUser), ensureLoggedInMiddleware, controllers.get('user:read')?.handler({})],
+            },
+            {
+                path: 'update',
+                method: 'PATCH',
+                middlewares: [
+                    setContext.handler(permissions.UpdateUser),
+                    ensureLoggedInMiddleware,
+                    schemaValidator.handler({
+                        entityName: 'userUpdate',
+                        schema: 'verify',
+                    }),
+                    controllers.get('user:update')?.handler({}),
+                ],
+            },
+            {
+                path: 'create',
+                method: 'POST',
+                middlewares: [
+                    setContext.handler(permissions.CreateUser),
+                    authorizationMiddleware.handler(),
+                    schemaValidator.handler({
+                        entityName: 'userCreate',
+                        schema: 'verify',
+                    }),
+                    controllers.get('user:create')?.handler({}),
+                ],
+            },
+            {
+                path: 'status/manage',
+                method: 'POST',
+                middlewares: [
+                    setContext.handler(permissions.UserStatus),
+                    authorizationMiddleware.handler(),
+                    schemaValidator.handler({
+                        entityName: 'userManageStatus',
+                        schema: 'verify',
+                    }),
+                    controllers.get('user:manage:status')?.handler({}),
+                ],
+            },
+            {
+                path: 'roles/manage',
+                method: 'POST',
+                middlewares: [
+                    setContext.handler(permissions.UserRoles),
+                    authorizationMiddleware.handler(),
+                    schemaValidator.handler({
+                        entityName: 'userManageRoles',
+                        schema: 'verify',
+                    }),
+                    controllers.get('user:manage:roles')?.handler({}),
+                ],
+            },
+            {
+                path: 'list',
+                method: 'POST',
+                middlewares: [
+                    setContext.handler(permissions.UserList),
+                    authorizationMiddleware.handler(),
+                    schemaValidator.handler({
+                        entityName: 'userList',
+                        schema: 'verify',
+                    }),
+                    controllers.get('user:list')?.handler({}),
+                ],
+            },
         ]
     }
 ];
