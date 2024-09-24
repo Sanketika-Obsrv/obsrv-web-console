@@ -6,6 +6,7 @@ import HeaderContent from './HeaderContent';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { ReactNode, useMemo } from 'react';
 import IconButton from 'components/@extended/IconButton';
+import interactIds from 'data/telemetry/interact.json'
 
 const Header = ({ open, handleDrawerToggle }: any) => {
     const theme = useTheme();
@@ -17,6 +18,7 @@ const Header = ({ open, handleDrawerToggle }: any) => {
     const mainHeader: ReactNode = (
         <Toolbar>
             <IconButton
+                data-edataid={!open ? interactIds.sidebar_open : interactIds.sidebar_close}
                 aria-label="open drawer"
                 onClick={handleDrawerToggle}
                 edge="start"

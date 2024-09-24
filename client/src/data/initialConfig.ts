@@ -19,5 +19,17 @@ export default {
         "MEDIUM": {
             "color": "warning"
         }
-    }
+    },
+    maxFileSize: 5242880,
+    rollupGranularityTypes: [
+        "none",
+        "all",
+        "day",
+        "second",
+        "minute",
+        "week",
+        "month",
+        "quarter",
+        "year"
+    ]
 }

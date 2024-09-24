@@ -1,21 +1,111 @@
-MIT License
+SANKETIKA CONSULTING PRIVATE LIMITED
 
-Copyright (c) 2023 Sunbird Obsrv
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+SOFTWARE LICENSE AGREEMENT
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Sanketika Consulting Pvt Ltd,  ("Sanketika") licenses Licensee to use the Obsrv software (the "Software) to which this license agreement ("Agreement") is attached, and related user documentation, subject to the following terms and conditions:
+
+
+ 1. Scope of License: 
+This license covers the Software, its user documentation, and any related computer programs, documentation and information provided by Sanketika.  Nothing in this Agreement will be deemed to grant Licensee any proprietary rights in the computer program(s) or in any other work embodied in the software or related materials supplied to Licensee by Sanketika.
+
+
+ 2. License:
+Subject to the provisions of this agreement, Sanketika grants the Licensee a limited period, nonassignable, nontransferable, nonexclusive trial license. The specific duration of this license period will be as agreed upon between both parties. This license specifically allows the Licensee to use the software solely for the purpose of trial and demonstration on a single instance for which it was issued. The license is not transferable to other instances or entities.
+
+
+Licensee WILL NOT:
+
+
+(a) Copy.
+Make any copies of any part of the computer program contained in the Software except for back up or for archival purposes, and will not make any copies of all or any part of the user documentation, except for Licensee's own use.  To every copy of the Software (whether in whole or in part) made by Licensee for the purposes set forth above, Licensee shall retain the same copyright or other proprietary rights notice as was originally affixed to the Software when delivered by Sanketika.
+
+
+(b) Disseminate.  
+Provide or disseminate all or any part of the Software to any other person or entity, except in accordance with Paragraph 5 below. Licensee will safeguard the Software and related user documentation with a reasonable degree of care, using procedures designed to protect the trade secrets and proprietary information of Sanketika, so that no unauthorised use is made of them and no disclosure of any part of their contents is made to anyone other than Licensee and any employees, agents or consultants of Licensee whose duties reasonably require such disclosure. 
+
+
+(c) Reverse Engineer.  
+Attempt to reverse engineer the Software. However, the Licensee is granted the right to modify or extend the Software exclusively for trial and demonstration purposes.
+
+
+ 3. Term and Termination:
+The license granted under this Agreement will continue in force until terminated, as set forth herein.  If Licensee fails to pay any monies or provide any services due in connection with the Software, or violates any term or condition of this Agreement, Sanketika or its agent may terminate this License immediately by giving notice of termination to Licensee.  Licensee is responsible for providing valid contact information to Sanketika.  If no valid contact information is available for Licensee in Sanketika’s records, Sanketika is not required to give notice of termination to Licensee.  Licensee also may terminate this License voluntarily by giving notice of termination to Sanketika and destroying or returning to Sanketika all copies of all or any part of the Software and related user documentation in Licensee's possession or under Licensee's control.
+
+
+ 4. Effect of Termination:
+ Immediately upon termination, Licensee will destroy or return to Sanketika all copies of all or any part of the Software in Licensee's possession or under Licensee's control.  Licensee will have no right to keep or use any copy of the Software and related user documentation for any purpose after termination of this Agreement.
+
+
+ 5. Transfer of Software:
+Licensee shall not have the right to transfer this Software license, without the prior written consent of Sanketika.
+
+
+6. Installation:
+ If Licensee requests installation services with respect to the Software, Sanketika will use its best efforts to install the Software on Licensee's server.  Due to factors outside of  Sanketika’s control, including but not limited to server configuration and file availability, successful installation of the Software is not guaranteed.  Sanketika will not be responsible for any losses or damages suffered by Licensee as a result of the installation or attempted installation of the Software.
+
+
+7. Confidentiality:
+The parties to this Agreement will take all reasonable steps to ensure that any material or information identified by either party to be confidential ("Confidential Information"), which the other party has possession or knowledge of in connection with this Agreement, will not be disclosed to others, in whole or in part, without the prior written permission of the other party.  Neither party will have the obligation to maintain the confidentiality of any data or information which 
+        (i) was in the receiving party's lawful possession prior to receipt from the other party, 
+        (ii) is later lawfully obtained by the receiving party from a third party having no obligation of secrecy to the other party, 
+        (iii) is available to the public through no act or failure of the receiving party,
+        (iv) is readily available in the public domain, or 
+        (v) is independently developed by the receiving party.  
+The receiving party will immediately return or destroy any or all Confidential Information that has been provided to it by the other party, upon the other party's request.
+
+
+8. Software Warranty: 
+Sanketika warrants the Software to conform to the description of its function and performance for the duration of this license.  The Warranty is void if failure of the Software has resulted from accident, abuse, misapplication, use of the Software other than as described by Sanketika, use of the Software in combination with other Software that are not specifically approved as compatible by Sanketika, or breach of the terms of this agreement by the Licensee. In the event that the Software does not perform in accordance with this warranty, Sanketika agrees to repair or fix any non-conformity free of charge, or to refund any amount paid by Licensee for the Software.  
+
+
+9. Refunds:
+In the event that Sanketika refunds any amounts paid by Licensee for the Software, pursuant to Paragraph 8 above, Licensee understands and agrees that this Agreement and the Software license are terminated, and Sanketika will withdraw all Software, code and related documentation provided under this Agreement.  Upon receipt of such refund, Licensee agrees that it will no longer use, display or otherwise control the Software, code or related documentation for which the refund was issued.
+
+
+ 10. DISCLAIMER OF WARRANTY FOR SOFTWARE:
+EXCEPT FOR THE EXPRESS WARRANTIES SET FORTH IN THIS AGREEMENT, Sanketika DISCLAIMS ALL IMPLIED WARRANTIES FOR THE SOFTWARE, INCLUDING WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  Saanketika MAKES NO REPRESENTATIONS CONCERNING THE QUALITY OF THE SOFTWARE AND DOES NOT PROMISE THAT THE SOFTWARE WILL BE ERROR FREE OR WILL OPERATE WITHOUT INTERRUPTION.  
+
+
+ 11. LIMITATION OF LIABILITY. 
+IN NO EVENT WILL Sanketika BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR OTHER DAMAGES ARISING OUT OF THE USE OF
+THE SOFTWARE BY ANY PERSON, REGARDLESS OF WHETHER Sanketika IS INFORMED OF THE POSSIBILITY OF DAMAGES IN ADVANCE.  THESE LIMITATIONS APPLY TO ALL CAUSES OF ACTION, INCLUDING BREACH OF CONTRACT, BREACH OF WARRANTY, Sanketika'S NEGLIGENCE, STRICT LIABILITY, MISREPRESENTATION AND OTHER TORTS.  
+
+
+12. Third Party Works:
+To the extent that any third party's intellectual property is incorporated within the Software,  you agree that such third party is a third-party beneficiary of the terms of this Agreement to the extent of the third party's license to Sanketika.
+
+
+ 13. Ownership of Software:
+Sanketika has and will retain all ownership rights in the Software, including all patent rights, copyrights, trade secrets, trademarks, service marks, related goodwill and confidential and proprietary information. Licensee will have no rights in the Software except as explicitly stated in this Agreement.
+
+
+ 14. Assignment and Delegation:
+Licensee may not assign this Agreement or any rights under it and may not delegate any duties under this Agreement without Sanketika's prior written consent.  Any attempt to assign or delegate without that consent will be void.
+
+
+ 15. Information Collection:
+Licensee grants permission for Sanketika or its authorised agents to collect identifiable information related to the Software installations and server where the Software is installed as defined by Sanketika's policies from time to time. These informations may be sent by the Software automatically or specifically requested by Sanketika. All such information collected by Sanketika will be owned solely by Sanketika and will not be shared, rented or sold to others for any purposes other than related to this Agreement. 
+
+
+ 16. General: 
+This Agreement constitutes the entire understanding between Sanketika and Licensee with respect to subject matter hereof.  Any change to this Agreement must be in writing, signed by Sanketika and Licensee.  Terms and conditions set forth in any purchase order which differ from, conflict with, or are not included in this Agreement, shall not become part of this Agreement unless specifically accepted by Sanketika in writing.  Licensee shall be responsible for and shall pay, and shall reimburse Sanketika on request if Sanketika is required to pay, any sales, use, value added (VAT), consumption or other tax (excluding any tax that is based on Sanketika's net income), assessment, duty, tariff, or other fee or charge of any kind or nature that is levied or imposed by any governmental authority on the Software. 
+
+
+No waiver by Sanketika of any breach of any term or provision of this Agreement shall be construed to be a waiver of any preceding or succeeding breach of the same or any other term or
+ provision hereof.  Our various rights and remedies hereunder shall be construed to be cumulative and no one of them is exclusive of any other or of any right or remedy allowed by law or in equity. This Agreement shall be governed by and construed in accordance with the laws of the State of Karnataka,India (without regard to its choice of law principles), except to the extent the local law of your local jurisdiction requires use of your local jurisdiction's law, and shall benefit Sanketika, its successors and assigns. Any claim or dispute between you and Sanketika or against any agent,  employee, successor or assignee of Sanketika, whether related to this Agreement or otherwise, and any claim or dispute related to this Agreement or the relationship or duties contemplated under  this Agreement, including the validity of this arbitration clause, shall be resolved under the applicable law of Karnataka state, India.  
+
+
+For any questions concerning this Agreement, please contact 
+Customer Support Service, 
+Sanketika Consulting Private Limited, 
+241, 4, Lotus square, 
+9th main road, 17th Cross, 
+HSR Layout, Bengaluru, Bengaluru Urban, Karnataka - 560102.
+email: connect@obsrv.ai
+
+
+
+
+LICENSEE HAS READ THIS AGREEMENT AND UNDERSTANDS AND AGREES TO ALL OF ITS TERMS AND CONDITIONS.

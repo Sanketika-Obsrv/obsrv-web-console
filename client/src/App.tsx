@@ -9,11 +9,16 @@ import { addHttpRequestsInterceptor, errorInterceptor, responseInterceptor } fro
 import { useNavigate } from 'react-router';
 import { useDispatch } from 'react-redux';
 import { globalInteractEventsHandler } from 'services/telemetry';
+import { fetchSystemSettings } from 'services/configData';
 
 const App = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  useEffect(() => {
+    fetchSystemSettings(dispatch);
+  }, []);
+  
   useEffect(() => {
     addHttpRequestsInterceptor({ responseInterceptor, errorInterceptor: errorInterceptor({ navigate, dispatch }) })
   }, [])

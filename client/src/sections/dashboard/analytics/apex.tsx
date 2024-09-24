@@ -6,8 +6,8 @@ import useConfig from 'hooks/useConfig';
 import ReactApexChart, { Props as ChartProps } from 'react-apexcharts';
 import { fetchChartData } from 'services/clusterMetrics';
 import globalConfig from 'data/initialConfig';
-import Loader from 'components/Loader';
 import { generateDatesBetweenInterval } from 'services/utils';
+import Loader from 'components/Loader';
 
 const parseResult = (interval: number, result: any = []) => {
     const resultData = _.map(result, 'data');
@@ -92,10 +92,14 @@ const ApexChart = (props: any) => {
         }));
     }, [mode, primary, secondary, line, theme]);
 
-    return <>
-        {loading && <Loader />}
-        <ReactApexChart options={options} series={series} type={type} {...rest} />
-    </>;
+    const renderChart = () => {
+        return <>
+            {loading && <Loader />}
+            <ReactApexChart key={Math.random()} options={options} series={series} type={type} {...rest} />
+        </>
+    }
+
+    return renderChart();
 };
 
 export default ApexChart;

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button, Grid, Stack, Typography } from '@mui/material';
 import config from 'config';
+import interactIds from 'data/telemetry/interact.json';
 
 function Error404() {
   return (
@@ -20,6 +21,7 @@ function Error404() {
               The requested page does not exists.
             </Typography>
             <Button
+              data-edataid={interactIds.page_not_found}
               component={Link} to={config.defaultPath} variant="contained">
               Back To Home
             </Button>

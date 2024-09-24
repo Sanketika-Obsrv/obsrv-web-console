@@ -10,3 +10,20 @@ export interface User {
     created_on: string;
     last_updated_on?: string;
 }
+
+export enum DatasetStatus {
+    Live = 'Live', Draft = 'Draft', Publish = 'Publish', Retired = 'Retired', Purged = 'Purged', ReadToPublish = "ReadyToPublish"
+}
+
+export enum TransformationMode {
+    Strict = 'Strict', Lenient = 'Lenient',
+}
+
+export enum ValidationMode {
+    Strict = 'Strict', IgnoreNewFields = 'IgnoreNewFields', DiscardNewFields = 'DiscardNewFields',
+}
+
+export enum DatasetType {
+    Dataset = 'dataset',
+    MasterDataset = 'master-dataset',
+}

@@ -4,3 +4,6 @@ declare namespace Express {
     session: any;
   }
 }
+
+declare module 'passport-activedirectory';
+

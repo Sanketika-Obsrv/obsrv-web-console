@@ -653,7 +653,7 @@ export default {
                 }))
             },
             error() {
-                return [0]
+                return []
             }
         }
     },
@@ -852,7 +852,7 @@ export default {
             type: 'api',
             url: endpoints.prometheusRead,
             method: 'GET',
-            headers: {}, 
+            headers: {},
             body: {},
             params: {
                 query: promql.cluster_running_nodes_count.query
@@ -936,67 +936,4 @@ export default {
             }
         }
     },
-    pv_total_size: {
-        query: {
-            id: 'pvTotalSize',
-            type: 'api',
-            url: endpoints.prometheusRead,
-            method: 'GET',
-            headers: {},
-            body: {},
-            params: {
-                query: promql.pv_total_size.query
-            },
-            parse: (response: any) => {
-                const result = _.get(response, 'data.result[0].value[1]');
-                if (!result) throw new Error();
-                return prettyBytes(+result);
-            },
-            error() {
-                return prettyBytes(0)
-            }
-        }
-    },
-    pv_used_size: {
-        query: {
-            id: 'pvUsedSize',
-            type: 'api',
-            url: endpoints.prometheusRead,
-            method: 'GET',
-            headers: {},
-            body: {},
-            params: {
-                query: promql.pv_used_size.query
-            },
-            parse: (response: any) => {
-                const result = _.get(response, 'data.result[0].value[1]');
-                if (!result) throw new Error();
-                return prettyBytes(+result);
-            },
-            error() {
-                return prettyBytes(0)
-            }
-        }
-    },
-    pv_usage_percent: {
-        query: {
-            id: 'pvUsagePercentage',
-            type: 'api',
-            url: endpoints.prometheusRead,
-            method: 'GET',
-            headers: {},
-            body: {},
-            params: {
-                query: promql.pv_usage_percent.query
-            },
-            parse: (response: any) => {
-                const result = _.get(response, 'data.result[0].value[1]');
-                if (!result) throw new Error();
-                return _.floor(result, 0);
-            },
-            error() {
-                return 0;
-            }
-        }
-    }
 }

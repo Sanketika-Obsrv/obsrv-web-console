@@ -1,20 +1,33 @@
 import * as _ from 'lodash';
-import { Grid, Tooltip, Typography, Stack, Box, Breadcrumbs, } from '@mui/material';
+import { Grid, Tooltip, Typography, Stack } from '@mui/material';
+import IconButton from 'components/@extended/IconButton';
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import MainCard from 'components/MainCard';
 import { metricsMetadata } from 'data/metrics';
-import { useNavigate, } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { error } from 'services/toaster';
-import globalConfig from 'data/initialConfig';
 import { InfoCircleOutlined } from '@ant-design/icons';
+import { Avatar } from '@mui/material';
+import { navigateToGrafana } from 'services/grafana';
+import { useTheme } from '@mui/material';
+import grafanaIcon from 'assets/images/icons/grafana_icon.svg';
+import pageIds from 'data/telemetry/pageIds';
+import useImpression from 'hooks/useImpression';
+import intereactIds from 'data/telemetry/interact.json'
 import { v4 } from 'uuid';
+import Health from './health';
 
 const MetricsDetails = (props: any) => {
+    const { id } = props;
+    const theme = useTheme();
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const params = useParams();
     const [metadata, setmetadata] = useState<Record<string, any>>();
-    const metricId = 'overallInfra';
+    const iconBackColor = theme.palette.mode === 'dark' ? 'background.default' : 'grey.100';
+    const metricId = id || _.get(params, 'metricId');
+    useImpression({ type: "detail", pageid: _.get(pageIds, ['metrics', metricId]) });
 
     const navigateToHome = ({ errMsg }: any) => {
         navigate('/');
@@ -72,29 +85,36 @@ const MetricsDetails = (props: any) => {
         }
     }
 
+    const renderGrafanaIcon = () => {
+        const link = _.get(metadata, 'links.grafana.link')
+        if (!link) return null;
+        return (
+            <Tooltip title="Navigate to Grafana Dashboard" onClick={_ => navigateToGrafana(link)}>
+                <IconButton
+                    data-edataid={`${intereactIds.grafana_navigate}:${metricId}`}
+                    color="secondary" variant="light" sx={{ color: 'text.primary', bgcolor: 'transparent', ml: 0.75 }}>
+                    <Avatar alt="Gradana" src={grafanaIcon} />
+                </IconButton>
+            </Tooltip>
+        );
+    }
+
     const renderTitle = () => {
+        const health = _.get(metadata, 'health');
         return (
             <>
-                <Stack
-                    direction="row"
-                    justifyContent="space-between"
+                <Stack direction="row"
+                    justifyContent="flex-start"
                     alignItems="center"
-                    spacing={2}
-                >
-                    <Box display="flex" alignItems="center" justifyContent="flex-start">
-                        <Typography variant="h5" mr={1}>
-                            {`${metadata?.primaryLabel || ""} Metrics `}
-                        </Typography>
-                        <Tooltip title={metadata?.description}>
-                            <InfoCircleOutlined />
-                        </Tooltip>
-                    </Box>
-                    <Box justifyContent="flex-end" alignItems="center">
-                        <Breadcrumbs aria-label="breadcrumb" sx={{ '& .MuiBreadcrumbs-ol': { justifyContent: "flex-end" } }}>
-                            <Typography variant="body3">Interval: {globalConfig.clusterMenu.interval} Min</Typography>
-                            <Typography variant="body3">Frequency: {globalConfig.clusterMenu.frequency} Sec</Typography>
-                        </Breadcrumbs>
-                    </Box>
+                    spacing={2}>
+                    <div>
+                        {`${metadata?.primaryLabel || ""} Metrics `}
+                    </div>
+                    {health && <Health metadata={health} />}
+                    <Tooltip title={metadata?.description}>
+                        <InfoCircleOutlined />
+                    </Tooltip>
+
                 </Stack>
 
             </>
@@ -103,7 +123,7 @@ const MetricsDetails = (props: any) => {
 
     return (
         <>
-            <MainCard title={renderTitle()}>
+            <MainCard title={renderTitle()} secondary={renderGrafanaIcon()}>
                 <Grid container spacing={2} marginBottom={1} alignItems="stretch">
                     {renderCharts(metadata)}
                 </Grid>

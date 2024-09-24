@@ -13,7 +13,8 @@ const initialState: SnackbarProps = {
   variant: 'default',
   alert: {
     color: 'primary',
-    variant: 'filled'
+    variant: 'filled',
+    severity: 'success'
   },
   transition: 'Fade',
   close: true,
@@ -35,7 +36,8 @@ const snackbar = createSlice({
       state.variant = variant || initialState.variant;
       state.alert = {
         color: alert?.color || initialState.alert.color,
-        variant: alert?.variant || initialState.alert.variant
+        variant: alert?.variant || initialState.alert.variant,
+        severity: alert?.severity || initialState.alert.severity
       };
       state.transition = transition || initialState.transition;
       state.close = close === false ? close : initialState.close;
