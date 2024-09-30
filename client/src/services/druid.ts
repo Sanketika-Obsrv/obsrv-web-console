@@ -30,8 +30,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -104,8 +104,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -171,8 +171,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -225,8 +225,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                     ]
                 },
@@ -269,8 +269,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -319,8 +319,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -368,8 +368,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "not",

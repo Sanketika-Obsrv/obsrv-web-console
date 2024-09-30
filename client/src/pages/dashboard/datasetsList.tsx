@@ -398,7 +398,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const row = cell?.row?.original || {};
                     if (row?.onlyTag) return null;
                     const isMaster: boolean = row?.type == DatasetType.MasterDataset;
-                    const fileName = `${row?.name}_${row?.status}_${row?.data_version}`;
+                    const fileName = `${row?.name}_${row?.status}_${row?.version}`;
                     return <Stack direction="row" justifyContent="flex-start" alignItems="center">
                         <Tooltip title="View Dataset" onClick={(e: any) => navigateToPath(`/datasets/management/${row?.dataset_id}?master=${isMaster}&status=${DatasetStatus.Live}`)}>
                             <IconButton

@@ -64,12 +64,12 @@ export default {
                             {
                                 "type": "selector",
                                 "dimension": "ctx_dataset_type",
-                                "value": "dataset"
+                                "value": "event"
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "DruidRouterJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -158,12 +158,12 @@ export default {
                             {
                                 "type": "selector",
                                 "dimension": "ctx_dataset_type",
-                                "value": "dataset"
+                                "value": "event"
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "DruidRouterJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -245,12 +245,12 @@ export default {
                             {
                                 "type": "selector",
                                 "dimension": "ctx_dataset_type",
-                                "value": "dataset"
+                                "value": "event"
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "DruidRouterJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -427,12 +427,12 @@ export default {
                             {
                                 "type": "selector",
                                 "dimension": "ctx_dataset_type",
-                                "value": "dataset"
+                                "value": "event"
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "DruidRouterJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -632,12 +632,12 @@ export default {
                             {
                                 "type": "selector",
                                 "dimension": "ctx_dataset_type",
-                                "value": "master-dataset"
+                                "value": "master"
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "MasterDataProcessorJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -841,8 +841,8 @@ export default {
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "DruidRouterJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -1046,8 +1046,8 @@ export default {
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "MasterDataProcessorJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -1162,12 +1162,12 @@ export default {
                             {
                                 "type": "selector",
                                 "dimension": "ctx_dataset_type",
-                                "value": "master-dataset"
+                                "value": "master"
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "MasterDataProcessorJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -1256,12 +1256,12 @@ export default {
                             {
                                 "type": "selector",
                                 "dimension": "ctx_dataset_type",
-                                "value": "master-dataset"
+                                "value": "master"
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "MasterDataProcessorJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",
@@ -1343,12 +1343,12 @@ export default {
                             {
                                 "type": "selector",
                                 "dimension": "ctx_dataset_type",
-                                "value": "master-dataset"
+                                "value": "master"
                             },
                             {
                                 "type": "selector",
-                                "dimension": "ctx_pdata_id",
-                                "value": "MasterDataProcessorJob"
+                                "dimension": "ctx_pdata_pid",
+                                "value": "router"
                             },
                             {
                                 "type": "selector",

@@ -110,7 +110,7 @@ const MoreOptions = (props: any) => {
                             <IconButton
                                 color="primary"
                                 size="large"
-                                onClick={(e: any) => handleDownloadButton(row?.dataset_id, row?.data_version, row?.status, fileName)}
+                                onClick={(e: any) => handleDownloadButton(row?.dataset_id, row?.version, row?.status, fileName)}
                                 data-objectid={row?.dataset_id}
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}
                             >

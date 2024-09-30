@@ -247,7 +247,7 @@ const ListColumns = (props: any) => {
         generateInteractTelemetry({ edata: { id: interactIds.download_JSON } });
         if (jsonSchema && flattenedData) {
             const data = _.get(downloadJSONSchema({ schema: jsonSchema }, { schema: flattenedData }), 'schema');
-            downloadJsonFile(data, 'json-schema');
+            downloadJsonFile(data, 'json-schema', true);
         }
     }
 
