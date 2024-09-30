@@ -85,6 +85,7 @@ export const druidQueries = {
                     "outputName": "dataset",
                     "outputType": "STRING"
                 },
+                "threshold": 100,
                 "metric": {
                     "type": "numeric",
                     "metric": "max_processing_time"
@@ -152,6 +153,7 @@ export const druidQueries = {
                     "outputName": "dataset",
                     "outputType": "STRING"
                 },
+                "threshold": 100,
                 "metric": {
                     "type": "numeric",
                     "metric": "min_processing_time"
