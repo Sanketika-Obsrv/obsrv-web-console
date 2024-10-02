@@ -63,5 +63,8 @@ export default {
     "prefix": "Prefix",
     "region": "Region",
     "topic": "Kafka topic",
-    "dedup_config.dedup_key": "Batch identifier"
+    "dedup_config.dedup_key": "Batch identifier",
+    "source_kafka_topic": "Topic",
+    "source_kafka_broker_servers": "Kafka Broker URL",
+    "kafka-connector-1.0.0": "kafka"
 }

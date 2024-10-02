@@ -77,7 +77,7 @@ const datasourceQues = {
         {
             name: "dataSource",
             label: "Events (Kafka)",
-            value: "kafka",
+            value: "kafka-connector-1.0.0",
             icon: <KafkaIcon />,
             required: true,
             form: forms.input_kafka,

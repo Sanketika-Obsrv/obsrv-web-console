@@ -13,13 +13,37 @@ const getDatasetId = (state: Record<string, any>) => {
     return datasetId;
 }
 
+const getConfigs = (configs: any, dataset_id: string) => {
+    const { connector_config, connector_id, version } = configs
+    if (version == "v2") {
+        switch (connector_id) {
+            case "kafka-connector-1.0.0":
+                const { kafkaBrokers, topic } = connector_config
+                return {
+                    "source_kafka_broker_servers": kafkaBrokers,
+                    "source_kafka_topic": topic,
+                    "source_kafka_auto_offset_reset": "EARLIEST",
+                    "source_kafka_consumer_id": `${dataset_id}_kafka-connector-consumer`,
+                    "source_data_format": "json"
+                }
+            default:
+                return connector_config
+        }
+    }
+    else {
+        return connector_config
+    }
+}
+
 export const saveConnectorDraft = async (payload: any, dataset_id: string) => {
     const { store } = require('store');
+    const connectorsConfig = getConfigs(payload, dataset_id)
+    const connectorsPayload = { ...payload, connector_config: connectorsConfig }
     const reduxState = store.getState();
     const wizardState = _.get(reduxState, 'wizard');
     const versionKeyValue = _.get(wizardState, 'pages.datasetConfiguration.state.config.versionKey');
     const requestPayload = {
-        connectors_config: [{ value: { ...payload }, action: "upsert" }],
+        connectors_config: [{ value: { ...connectorsPayload }, action: "upsert" }],
         version_key: _.get(versionKeyMap, ["version_keys", dataset_id]) || versionKeyValue || "",
         dataset_id
     }

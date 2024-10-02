@@ -56,7 +56,7 @@ const ConnectorSection = (props: any) => {
                     id: `${datasetId}_${connector_type}`,
                     connector_id: `${connector_type}`,
                     connector_config: { ...rest },
-                    version:"v1"
+                    version:"v2"
                 }
                 await saveConnectorDraft(connectorPayload,datasetId);
             }
@@ -95,7 +95,7 @@ const ConnectorSection = (props: any) => {
             const updatedValues = _.omit(formValues, [dataSource]);
             await deleteConnectorMetadata({ state: storeState, type: dataSource });
             addConnector({ formFieldSelection: updatedFormFields, value: updatedValues }, null);
-            dispatch(success({ message: `${_.capitalize(dataSource)} connector config deleted successfully` }));
+            dispatch(success({ message: `${_.capitalize(getKeyAlias(dataSource))} connector config deleted successfully` }));
         } catch (err) {
             dispatch(error({ message: "Failed to delete the connector" }));
         }
@@ -113,7 +113,7 @@ const ConnectorSection = (props: any) => {
     }
 
     const filterConfigs = (payload: Record<string, any>) => {
-        const configs = _.pick(payload, ["topic", "kafkaBrokers", "databaseName", "tableName", "source", "bucket", "prefix", "type"])
+        const configs = _.pick(payload, ["topic", "kafkaBrokers", "databaseName", "tableName", "source", "bucket", "prefix", "type", "source_kafka_broker_servers", "source_kafka_topic"])
         const filteredConfigs = _.omitBy(configs, (value) => _.isUndefined(value) || value === '');
         return filteredConfigs;
     }
