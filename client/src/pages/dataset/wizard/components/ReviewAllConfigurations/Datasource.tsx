@@ -25,7 +25,7 @@ const Datasource = (props: any) => {
 
         return <>
             {_.map(dataSourceConfig.formFieldSelection, (field: any) => {
-                if (field !== "kafka" && field !== "api") {
+                if (field !== "kafka-connector-1.0.0" && field !== "api") {
                     // Skip rendering for other fields
                     return null;
                 }

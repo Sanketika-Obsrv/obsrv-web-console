@@ -105,11 +105,11 @@ const ReviewAllCongurations = ({ master, datasetState }: any) => {
     }
 
     const handleDownloadButton = () => {
-        let data: Record<string, any> = jsonSchema;
+        let data: Record<string, any> = _.get(jsonSchema, "schema");
         if (flattenedData) {
             data = _.get(downloadJSONSchema(jsonSchema, { schema: flattenedData }), 'schema');
         }
-        downloadJsonFile(data, 'json-schema');
+        downloadJsonFile(data, 'json-schema', true);
     }
 
     const datasetActions: any = [

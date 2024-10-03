@@ -84,6 +84,16 @@ const getDataFormatState = (dataset: Record<string, any>) => {
     }
 }
 
+const omitFields = (obj: any) => {
+    const fieldsToOmit = ['source_kafka_auto_offset_reset', 'source_kafka_consumer_id', 'source_data_format'];
+    return Object.keys(obj)
+        .filter(key => !fieldsToOmit.includes(key))
+        .reduce((newObj: any, key) => {
+            newObj[key] = obj[key];
+            return newObj;
+        }, {});
+}
+
 const getDatasetConnectorsConfig = (datasetSourceConfigs: Record<string, any>[]) => {
     const connectorTypes = _.uniq(_.map(datasetSourceConfigs, 'connector_type')) || [];
     const connectorIds = _.uniq(_.map(datasetSourceConfigs, 'connector_id'))
@@ -94,12 +104,14 @@ const getDatasetConnectorsConfig = (datasetSourceConfigs: Record<string, any>[])
         value: _.reduce(datasetSourceConfigs, (output: Record<string, any>, datasetSourceConfig) => {
             if (datasetSourceConfig.connector_type) {
                 const { id, connector_type, connector_config } = datasetSourceConfig;
-                output[connector_type] = { id, connector_type, ...connector_config }
+                const connectorConfigs = omitFields(connector_config)
+                output[connector_type] = { id, connector_type, ...connectorConfigs }
                 return output;
             }
             else {
                 const { id, connector_id, connector_config } = datasetSourceConfig;
-                output[connector_id] = { id, connector_type: connector_id, ...connector_config }
+                const connectorConfigs = omitFields(connector_config)
+                output[connector_id] = { id, connector_type: connector_id, ...connectorConfigs }
                 return output;
             }
         }, {}),

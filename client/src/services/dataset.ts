@@ -575,7 +575,7 @@ export const saveDatasetIntermediateState = async (arg: Record<string, any>) => 
     const enableDedupe = _.get(dedupState, 'questionSelection.dedupe') || [];
     const timestamp_key = _.get(timestampState, 'indexCol') || '';
     const denorm_fields = _.get(denormState, 'values') || [];
-    const isMaster = datasetType === "master-dataset" ? true : false;
+    const isMaster = datasetType === "master" ? true : false;
     const versionKeyValue = _.get(datasetConfigState, 'state.config.versionKey');
     const sample_data = _.get(wizardState, 'pages.sample_data') || {};
 
@@ -638,9 +638,9 @@ export const saveDatasetIntermediateState = async (arg: Record<string, any>) => 
         dataset_config: {
             keys_config: { ...(data_key && { data_key }), ...(!_.isEmpty(timestamp_key) && { timestamp_key }) },
             indexing_config: {
-                "olap_store_enabled": true,
+                "olap_store_enabled": !isMaster,
                 "lakehouse_enabled": false,
-                "cache_enabled": false
+                "cache_enabled": isMaster
             }
         },
         ...(_.size(updatedDenormFields) && {

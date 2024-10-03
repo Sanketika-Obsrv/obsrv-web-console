@@ -30,8 +30,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -85,6 +85,7 @@ export const druidQueries = {
                     "outputName": "dataset",
                     "outputType": "STRING"
                 },
+                "threshold": 100,
                 "metric": {
                     "type": "numeric",
                     "metric": "max_processing_time"
@@ -104,8 +105,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -152,6 +153,7 @@ export const druidQueries = {
                     "outputName": "dataset",
                     "outputType": "STRING"
                 },
+                "threshold": 100,
                 "metric": {
                     "type": "numeric",
                     "metric": "min_processing_time"
@@ -171,8 +173,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -225,8 +227,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                     ]
                 },
@@ -269,8 +271,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -319,8 +321,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "selector",
@@ -368,8 +370,8 @@ export const druidQueries = {
                         },
                         {
                             "type": "selector",
-                            "dimension": "ctx_pdata_id",
-                            "value": master ? "MasterDataProcessorJob" : "DruidRouterJob"
+                            "dimension": "ctx_pdata_pid",
+                            "value": "router"
                         },
                         {
                             "type": "not",

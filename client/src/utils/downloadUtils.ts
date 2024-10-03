@@ -1,9 +1,9 @@
 import _ from "lodash";
 
-export const downloadJsonFile = (jsonData: any, fileName: string) => {
+export const downloadJsonFile = (jsonData: any, fileName: string, schema: boolean = false) => {
 
 
-    const updatedJson = _.omit(jsonData, ["properties", "required"])
+    const updatedJson = schema ? jsonData : _.omit(jsonData, ["properties", "required"])
     const json = JSON.stringify(updatedJson, null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const href = URL.createObjectURL(blob);
