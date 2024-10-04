@@ -29,7 +29,7 @@ const DataKeySelection = (props: any) => {
     })
 
     const pushStateToStore = (values: Record<string, any>) => dispatch(addState({ id, ...values, error: _.keys(formErrors).length > 0 }));
-    const setStoreToError = () => dispatch(addState({ id, ...existingState || {}, error: existingState ? false : true }));
+    const setStoreToError = () => dispatch(addState({ id, ...existingState || {}, error: _.get(existingState, "dataKey") ? false : true }));
     const onSubmission = (value: any) => { };
 
     useEffect(() => {

@@ -185,9 +185,10 @@ const getJsonSchemaState = async (dataset: Record<string, any>) => {
 
 const getDataKeyState = (dataset: Record<string, any>) => {
     const { dataset_config } = dataset;
+    const dataKey = dataset_config?.keys_config?.data_key || _.get(dataset_config, "data_key")
     return {
-        error: false,
-        dataKey: dataset_config?.keys_config?.data_key || _.get(dataset_config, "data_key")
+        error: !dataKey,
+        dataKey
     }
 }
 
