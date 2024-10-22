@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunksunbird_obsrv=self.webpackChunksunbird_obsrv||[]).push([[399],{69399:(s,r,e)=>{e.r(r),e.d(r,{default:()=>i});var n=e(68903),t=e(49213),c=e(70579);const i=s=>{let{master:r=!1}=s;return(0,c.jsx)(n.Ay,{container:!0,rowSpacing:4.5,columnSpacing:3,children:(0,c.jsx)(n.Ay,{item:!0,xs:12,children:(0,c.jsx)(t.A,{master:r,isImport:!0})})})}}}]);
-//# sourceMappingURL=399.69c39a97.chunk.js.map
