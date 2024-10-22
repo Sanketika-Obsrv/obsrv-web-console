@@ -2,7 +2,6 @@
   "name": "obsrv-management-console-ext",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:3000/console",
   "dependencies": {
     "@fontsource/montserrat": "^5.0.18",
     "@mui/icons-material": "^5.16.7",
