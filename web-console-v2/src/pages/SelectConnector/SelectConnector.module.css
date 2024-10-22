@@ -1,0 +1,108 @@
+.selectConnector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.selectConnector .mainInfo {
+  margin-top: 3.125rem;
+  margin-bottom: 3.125rem;
+  width: 49rem;
+  text-align: center;
+}
+
+.selectConnector .configureInfo {
+  margin-bottom: 3.625rem;
+}
+
+.searchAndFilter {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 3.313rem;
+}
+
+.searchAndFilter .search {
+  margin-right: 1rem;
+  display: flex;
+  align-items: center;
+  width: 23.75rem;
+  height: 3.25rem;
+  background-color: var(--white);
+  box-sizing: border-box;
+  border-radius: 0.375rem;
+  border: 0.063rem solid var(--light-grey);
+}
+
+.search .searchField {
+  margin-left: 0.5rem;
+  flex: 1;
+  color: var(--common-black);
+}
+
+.placeholder {
+  color: var(--common-black);
+  opacity: 1;
+}
+
+.search .iconButton {
+  padding: 0.625rem;
+}
+
+.search .searchIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--common-black);
+}
+.autocompleteRoot {
+  border-radius: 0.375rem;
+  height: fit-content;
+  min-height: 3.25rem;
+  width: fit-content;
+  min-width: 17.063rem;
+  max-width: 31.25rem;
+  background-color: var(--white);
+  box-sizing: border-box;
+  border: 0.063rem;
+  border-color: var(--light-grey);
+}
+
+.searchAndFilter .autocompleteRoot .inputField {
+  border-radius: 0.375rem;
+  padding-top: 0.528rem;
+  padding-bottom: 0.528rem;
+}
+
+.autocompleteRoot .expandIcon {
+  color: var(--common-black);
+}
+
+.container {
+  max-width: 75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container .gridContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container .gridItem {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container .button {
+  margin-top: 4rem;
+  width: 13.5rem;
+  height: 2.75rem;
+}
+
+.container .skipButton {
+  margin-top: 4rem;
+  width: 7.5rem;
+  height: 2.75rem;
+}

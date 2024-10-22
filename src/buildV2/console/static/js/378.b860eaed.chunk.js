@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunksunbird_obsrv=self.webpackChunksunbird_obsrv||[]).push([[378],{3378:(s,r,e)=>{e.r(r),e.d(r,{default:()=>a});var n=e(68903),c=e(49213),t=e(70579);const a=s=>{let{master:r=!1}=s;return(0,t.jsx)(n.Ay,{container:!0,rowSpacing:4.5,columnSpacing:3,children:(0,t.jsx)(n.Ay,{item:!0,xs:12,children:(0,t.jsx)(c.A,{master:r})})})}}}]);
+//# sourceMappingURL=378.b860eaed.chunk.js.map

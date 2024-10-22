@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunksunbird_obsrv=self.webpackChunksunbird_obsrv||[]).push([[82],{35082:(s,r,n)=>{n.r(r),n.d(r,{default:()=>t});var e=n(23687),u=n(55574),c=n(70579);const t=()=>{const s=u.cp;return(0,c.jsx)(c.Fragment,{children:(0,c.jsx)(e.A,{configuration:s})})}}}]);
+//# sourceMappingURL=82.b3d3ea58.chunk.js.map

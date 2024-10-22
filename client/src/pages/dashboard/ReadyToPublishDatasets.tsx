@@ -347,7 +347,13 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}
                                 color="primary"
                                 size="large"
-                                onClick={_ => navigateToPath(`/datasets/edit/${row.dataset_id}?master=${row.type === DatasetType.MasterDataset}&status=${row.status}`)}>
+                                onClick={() => {
+                                    const datasetId = row?.dataset_id;
+                                    const master = row?.type === DatasetType.MasterDataset;
+                                    const status = row?.status;
+                                    const url = `/home/ingestion/schema-details/${datasetId}`;
+                                    window.location.href = url;
+                                }}>
                                 <EditOutlined />
                             </IconButton>
                         </Tooltip>

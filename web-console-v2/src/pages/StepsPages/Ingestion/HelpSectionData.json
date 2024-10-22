@@ -1,0 +1,16 @@
+{
+    "menus": [
+        {
+            "id": "getStarted",
+            "title": "Get Started",
+            "index": 0,
+            "contents": "<div ><h1 color=\"red\" class=\"contentsHeader\">This is the content for getting started.</h1><p  class=\"contentBody\"> Usually, the creation of the dataset schema involves manual efforts while setting up data pipelines. However, Obsrv has an auto-schema detection feature that automatically generates the schema, minimizing significant manual intervention. Users simply have to review the automatically generatedschema and make any necessary minor adjustments. </p></div>"
+        },
+        {
+            "id": "setupGuide",
+            "title": "Setup Guide",
+            "index": 1,
+            "contents": "<div><h1 class=\"contentsHeader\">Setup Guide for Dataset Schema</h1><p class=\"contentBody\">This section provides guidelines for filling out the Dataset Schema. Please ensure that you follow the instructions for each field to ensure the data is valid and consistent.</p><h1 class=\"contentsHeader\">Dataset Schema</h1><h3 class=\"contentsHeader\" id=\"section1\" >Dataset Name</h3><p class=\"contentBody\"><strong>Description:</strong> This field is used to specify the name of the dataset.<br /><strong>Format:</strong> The name should not include any special characters. It must adhere to the following pattern: <code>^[^!@#$%^&*()+{}\\[\\]:;<>,?~\\\\|]*$</code>. This pattern ensures that the name is composed only of acceptable characters.<br /><strong>Example:</strong> <code>SalesData2024</code></p><h3 class=\"contentsHeader\" id=\"section2\">Upload Data</h3><h1 class=\"contentsHeader\">Upload Sample Data and Schema Files</h1><p class=\"contentBody\">To upload sample data, choose from the following formats: JSON, CSV, XML, Parquet, Avro, or ORC. Ensure that the sample data is in the correct format and adheres to any specific requirements.</p><p class=\"contentBody\">For schema files, upload according to the data format:</p><ul class=\"customList\"><li class=\"contentBody\">JSON: Upload a JSON schema file as per <a class=\"links\" href=\"https://json-schema.org/specification\">JSON Schema Specification</a>.</li><br /><li class=\"contentBody\">XML: Upload an XSD file.</li><br /><li class=\"contentBody\">ProtoBuf: Upload a .proto file.</li><br /><li class=\"contentBody\">CSV: Upload a CSV schema as per <a class=\"links\" href=\"http://digital-preservation.github.io/csv-schema/\">CSV Schema Specification</a>.</li><br /><li class=\"contentBody\">Avro: Upload an .avsc file which has a JSON structure.</li></ul></p></div>"
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+.iconStyle {
+    color: #f58601;
+}
+
+.circleNumber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #f58601;
+    color: white;
+    font-weight: bold;
+}
+
+.backIcon {
+    color: black;
+    width: 1.5rem;
+    height: 1.5rem;
+}

@@ -1,0 +1,43 @@
+.container {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  width: 12.5rem;
+  height: 10.5rem;
+  margin-right: auto;
+  margin-left: auto;
+  position: relative;
+  align-items: center;
+}
+
+.centeredBox {
+  position: absolute;
+  top: 63%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  padding: 1rem;
+  background: linear-gradient(
+    101.71deg,
+    rgba(100, 182, 86, 0.3) 13.91%,
+    rgba(203, 198, 77, 0.3) 45.21%,
+    rgba(240, 204, 74, 0.3) 62.53%,
+    rgba(235, 175, 69, 0.3) 78.13%,
+    rgba(217, 79, 54, 0.3) 99.84%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nodesText {
+  position: relative;
+  top: -0.8rem;
+  z-index: 1;
+  padding: 0.5rem 2rem;
+  background-color: var(--white);
+  box-shadow: 0.125rem 0.125rem 1.25rem 0 rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
+}

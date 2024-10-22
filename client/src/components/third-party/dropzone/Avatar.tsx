@@ -122,7 +122,7 @@ const AvatarUpload = ({ error, file, setFieldValue, sx, ...other }: UploadProps)
           </PlaceholderWrapper>
         </DropzoneWrapper>
       </RootWrapper>
-      {fileRejections.length > 0 && <RejectionFiles fileRejections={fileRejections} />}
+      {fileRejections.length > 0 && <RejectionFiles fileRejections={[...fileRejections]} />}
     </>
   );
 };

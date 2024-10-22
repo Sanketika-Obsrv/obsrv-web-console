@@ -1,0 +1,11 @@
+.alertContainer {
+  position: fixed;
+  top: 0.1rem;
+  right: 0.5rem;
+  width: 82.5%;
+  z-index: 2;
+}
+
+.alertContent {
+  padding: 1rem;
+}
