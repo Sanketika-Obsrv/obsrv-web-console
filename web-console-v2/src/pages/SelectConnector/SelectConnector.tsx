@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useConnectorsList } from 'services/dataset';
 import _ from 'lodash';
 import Loader from 'components/Loader';
+import { t } from 'utils/i18n';
 
 interface ConnectorType {
     id: string;
@@ -121,11 +122,10 @@ const SelectConnector = () => {
             ) : (
                 <div className={styles.selectConnector}>
                     <Typography variant="h1" className={styles.mainInfo} lineHeight="2.125rem">
-                        API connector has already pushed the data to Obsrv. You can configure
-                        additional data with it.
+                        {t('selectConnector.chooseConnectors')}
                     </Typography>
                     <Typography variant="h2Secondary" className={styles.configureInfo}>
-                        Configure Connector
+                        {t('selectConnector.addDataSource')}
                     </Typography>
                     <Box className={styles.searchAndFilter}>
                         <Paper variant="outlined" className={styles.search}>
@@ -199,7 +199,7 @@ const SelectConnector = () => {
                                     className={styles.button}
                                     onClick={handleProceedClick}
                                 >
-                                    <Typography variant="buttonContained">Proceed</Typography>
+                                    <Typography variant="buttonContained">{t('selectConnector.proceed')}</Typography>
                                 </Button>
                             ) : (
                                 <Button
@@ -207,7 +207,7 @@ const SelectConnector = () => {
                                     className={styles.skipButton}
                                     onClick={handleSkipClick}
                                 >
-                                    <Typography variant="buttonContained">Skip</Typography>
+                                    <Typography variant="buttonContained">{t('selectConnector.skip')}</Typography>
                                 </Button>
                             )}
                         </Box>
