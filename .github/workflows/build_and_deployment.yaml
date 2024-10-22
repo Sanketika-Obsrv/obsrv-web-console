@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/sb-obsrv-web-console:${{ github.ref_name }}
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/obsrv-web-console:${{ github.ref_name }}
 
   aws-deploy:
     needs: [check-tag, docker-build]
