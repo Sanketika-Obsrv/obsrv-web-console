@@ -20,11 +20,15 @@ app.set('logger', logger);
 app.disable('x-powered-by');
 // app.use(helmet());
 app.use(cors());
+app.use(express.static(path.join(__dirname, 'buildV2')));
 app.use(express.static(path.join(__dirname, 'build')));
 
 // mount routers
 mountRoutes(app);
-// handler for invalid route
+
+app.get(['/home/new-dataset', '/home/ingestion/schema-details/:datasetId'], function (req, res) {
+  res.sendFile(path.join(__dirname, 'buildV2', 'index.html'));
+});
 
 app.get('*', function (req, res) {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));

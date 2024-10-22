@@ -1,0 +1,81 @@
+.helpSectionContainer {
+  background-color: var(--white-color);
+  position: fixed;
+  top: 3.438rem;
+  right: 0;
+  height: calc(100vh - 3.438rem);
+  display: flex;
+  flex-direction: column;
+  transition:
+      width 0.3s ease,
+      transform 0.3s ease;
+  box-shadow: var(--drop-shadow-small);
+  z-index: 3;
+}
+
+.expanded {
+  width: 28.313rem;
+}
+
+.collapsed {
+  width: 3rem;
+}
+
+.toggleButton {
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  left: -0.625rem;
+  top: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.buttonIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--white);
+  border-radius: 50%;
+  background-color: var(--secondary-color);
+}
+
+.buttonIcon.expanded {
+  transform: rotate(0deg);
+}
+
+.buttonIcon.collapsed {
+  transform: rotate(180deg);
+}
+
+.arrowIcon {
+  color: var(--white);
+  border-radius: 3.125rem;
+  height: 1em;
+}
+
+.tabContainer {
+  background-color: var(--white-color);
+  box-shadow: var(--drop-shadow-small);
+  height: 3.063rem;
+}
+
+.tabMenus {
+  display: flex;
+  justify-content: space-evenly;
+  cursor: pointer;
+}
+
+.menusNames {
+  margin: 15px;
+}
+
+.contentContainer {
+  padding: 1rem;
+  flex-grow: 1;
+  overflow-y: auto;
+}

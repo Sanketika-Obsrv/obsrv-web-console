@@ -1,0 +1,46 @@
+.mainContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2rem;
+  padding-bottom: 8rem;
+  padding: 1rem;
+}
+
+.chartContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 0rem;
+  height: 100%;
+}
+
+.alertContainer {
+  display: flex !important;
+  flex-direction: column !important;
+  padding-block: 0.4rem;
+}
+
+.inputLabel {
+  display: flex;
+  justify-content: center;
+  top: 0.125rem;
+}
+
+.headerMetaData {
+  height: 100%;
+}
+
+.ingestionMetaData {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  gap: 0
+}
+
+.processingMetaData {
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 100%;
+}

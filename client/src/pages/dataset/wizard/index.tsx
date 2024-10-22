@@ -152,6 +152,10 @@ const DatasetOnboarding = ({ edit = false, master = false, key = Math.random(), 
         </Stepper>
     );
 
+    useEffect(() => {
+        window.location.href = "/home/new-dataset"
+    }, [])
+
     return (
         <>
             <Box>

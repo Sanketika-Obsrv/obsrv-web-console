@@ -1,0 +1,14 @@
+.actionContainers {
+  width: 100%;
+  height: 5.25rem;
+  box-shadow: var(--drop-shadow-small);
+  background-color: var(--white-color);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  left: -1.23rem;
+  position: relative;
+  transition:
+    width 0.3s ease,
+    transform 0.3s ease;
+}

@@ -1,0 +1,48 @@
+/* api meta data */
+.monitorIcon {
+    color: var(--monitor-icon);
+    border-radius: 40%;
+    font-size: 2.5rem !important;
+}
+
+.watchIcon {
+    color: var(--watch-icon);
+    font-size: 2.5rem !important;
+}
+
+.eastOutlineIcon {
+    font-size: 1.2rem !important;
+    margin-left: 1.5rem !important;
+    margin-top: -0.5rem;
+    color: var(--east-icon);
+}
+
+.apiHealthContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.watchLaterIcon {
+    color: var(--watch-later-icon);
+    font-size: 2.5rem !important;
+}
+
+.tradingDownIcon {
+    background: var(--trading-down-icon);
+    color: white;
+    border-radius: 50%;
+    padding: 0.6rem;
+    font-size: 1rem !important;
+}
+
+/* ingestion meta data */
+.assessmentIcon {
+    color: var(--assessment-icon);
+    border-radius: 40%;
+    font-size: 2.5rem !important;
+}
+
+.assessmentIcon2 {
+    color: var(--assessment-icon-2);
+    font-size: 2.5rem !important;
+}

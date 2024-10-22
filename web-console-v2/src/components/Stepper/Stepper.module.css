@@ -1,0 +1,33 @@
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 3rem;
+  background-color: var(--white-color);
+  height: 4rem;
+  box-shadow: var(--shadow-large);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  padding: 0.625rem;
+  margin-right: 1rem;
+}
+
+.circle {
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+}
+
+.circle.completed {
+  color: var(--white-color);
+  border: 0;
+}

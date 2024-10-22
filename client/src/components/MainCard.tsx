@@ -55,7 +55,7 @@ const MainCard = forwardRef(
             tagLine,
             modal = false,
             ...others
-        }: MainCardProps,
+        }: any,
         ref: Ref<HTMLDivElement>
     ) => {
         const theme = useTheme();

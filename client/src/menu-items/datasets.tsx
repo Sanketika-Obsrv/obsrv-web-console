@@ -24,7 +24,7 @@ const other: NavItemType = {
             id: 'new',
             title: <FormattedMessage id="new-dataset" />,
             type: 'item',
-            url: '/dataset/new',
+            url: '/home/new-dataset',
             icon: icons.PlusCircleOutlined
         },
         {

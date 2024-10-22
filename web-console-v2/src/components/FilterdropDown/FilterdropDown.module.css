@@ -1,0 +1,29 @@
+.heading {
+  margin: 0rem 1rem 0rem 1rem !important;
+}
+
+.filtersContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 2rem 0rem 1rem 0rem;
+  background-color: var(--white);
+  height: 5.625rem;
+  border-radius: 0.5rem;
+}
+
+.filterSelect {
+  height: 2.3rem;
+  min-width: 8.3rem;
+  max-width: 8.5rem;
+  margin-right: 1rem;
+}
+
+.searchField input {
+  height: 0.21rem;
+  min-width: 12.5rem;
+}
+
+.search {
+  margin-right: 1rem;
+}

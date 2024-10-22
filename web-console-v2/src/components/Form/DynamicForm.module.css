@@ -1,0 +1,37 @@
+.container {
+    position: relative;
+    overflow: hidden;
+    left: -1rem;
+}
+
+.sectionContainers {
+    margin: 2rem;
+    background-color: var(--white-color);
+    border-radius: 0.5rem;
+    padding: 0rem 1.5rem 1.5rem 1.5rem;
+}
+
+.connectorName {
+    text-align: left;
+    left: 2rem;
+    position: relative;
+    top: 1rem;
+}
+
+.customContainerClass {
+    padding: 20px;
+    background-color: #f9f9f9;
+}
+
+.customSectionContainerClass {
+    margin-bottom: 30px;
+}
+
+.customConnectorNameClass {
+    font-size: 24px;
+    color: #333;
+}
+
+.customSectionContainersClass {
+    margin-top: 16px;
+}

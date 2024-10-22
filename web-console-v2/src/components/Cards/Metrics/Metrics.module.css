@@ -1,0 +1,57 @@
+.card {
+  width: 100%;
+  border-radius: 1.125rem !important;
+  padding: 0 !important;
+}
+
+.metricsCard {
+  background-color: var(--white) !important;
+}
+
+.metricsCard2 {
+  background-color: var(--white) !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+}
+
+.heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+.heading2 {
+  display: flex;
+  flex-direction: row;
+  margin-left: 1rem;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cardsContainer {
+  display: flex;
+  gap: 0.7rem;
+}
+
+.grafana {
+  background-color: var(--lighter-grey);
+  border-radius: 0.3rem;
+}
+
+.title {
+  font-size: 1.25rem !important;
+}
+
+.menuItem {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}

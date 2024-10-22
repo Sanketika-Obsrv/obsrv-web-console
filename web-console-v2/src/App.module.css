@@ -1,0 +1,21 @@
+.appContainer {
+  display: flex;
+  height: 100vh;
+
+}
+
+.mainContainer {
+  flex-grow: 1;
+  margin-top: 2.5rem;
+  padding: 1rem 0 1rem 0;
+  transition: margin-left 0.3s ease;
+  height: 110vh;
+}
+
+.expanded .mainContainer {
+  margin-left: 18.75rem;
+}
+
+.collapsed .mainContainer {
+  margin-left: 3.75rem;
+}

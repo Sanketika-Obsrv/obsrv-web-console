@@ -138,7 +138,7 @@ export const renderStatusChip = (payload: Record<string, any>) => {
 export const getSilenceComponent = (props: any) => {
     return () => {
         const { silenceData, setAlertStatus, fetchDataHandler, toggleFilter, removeFilter } = props;
-        return _.map(silenceData, (value, state) => (
+        return _.map(silenceData, (value: any, state: any) => (
             <Chip
                 key={state}
                 size="small"
@@ -162,7 +162,7 @@ export const getSilenceComponent = (props: any) => {
 export const getStatusComponent = (props: any) => {
     return () => {
         const { statusData, setSilenceStatus, fetchDataHandler, toggleFilter, removeFilter } = props;
-        return _.map(statusData, (value, status) => (
+        return _.map(statusData, (value:any, status:any) => (
             <Chip
                 key={status}
                 size="small"
