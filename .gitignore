@@ -44,7 +44,7 @@ lerna-debug.log*
 
 # production
 /build
-/buildV2
+/src/buildV2
 /dist
 
 # Logs

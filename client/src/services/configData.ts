@@ -22,6 +22,6 @@ export const getConfigValue = (variable: string) => {
 };
 
 export const getBaseURL = () => {
-    const baseUrl = getConfigValue('BASE_URL') || process.env.REACT_APP_BASE_URL || '';
+    const baseUrl = getConfigValue('BASE_URL') || process.env.REACT_APP_BASE_URL || '/console';
     return baseUrl;
 };
