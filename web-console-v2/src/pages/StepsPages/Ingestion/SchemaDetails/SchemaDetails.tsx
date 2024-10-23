@@ -394,7 +394,8 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     };
 
     const handleNavigate = () => {
-        navigate(-1);
+        window.location.href = '/console/datasets?status=Draft'
+        // navigate('/console/datasets?status=Draft'); for local testing use this navigation
     };
 
     const markRowAsDeleted = (cellValue: Record<string, any>) => {
