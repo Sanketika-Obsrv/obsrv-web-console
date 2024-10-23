@@ -248,7 +248,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                     })}
                 </List>
 
-                <List sx={{ marginTop: 'auto' }}>
+                {/* <List sx={{ marginTop: 'auto' }}>
                     <Tooltip title={!expand ? 'Settings' : ''} placement="right">
                         <ListItem
                             className={`${styles.listItem} ${
@@ -312,7 +312,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                             )}
                         </ListItemButton>
                     </Tooltip>
-                </List>
+                </List> */}
             </Box>
         </div>
     );

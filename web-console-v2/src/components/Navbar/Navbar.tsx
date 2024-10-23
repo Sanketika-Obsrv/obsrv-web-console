@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Typography, Breadcrumbs, Grid } from '@mui/material';
+import { Typography, Breadcrumbs, Grid, Box } from '@mui/material';
 import { NavLink, useLocation } from 'react-router-dom';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import styles from './Navbar.module.css';
@@ -7,7 +7,7 @@ import Grafana from 'assets/icons/Grafana';
 import Superset from 'assets/icons/Superset';
 import _ from 'lodash';
 
-const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string;
+const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/datasets?status=Live";
 
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
@@ -27,9 +27,9 @@ function BasicBreadcrumbs(): JSX.Element {
     return (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
             <Grid item xs={1.5} className={styles.logo}>
-                <NavLink to={OBSRV_WEB_CONSOLE}>
+                <Box onClick={handleNavigate}>
                     <img src="/images/obsrvLogo.svg" alt="Logo" width={130} />
-                </NavLink>
+                </Box>
             </Grid>
             <Grid item xs={9.5} className={styles.breadcrumb}>
                 <Breadcrumbs aria-label="breadcrumb">
@@ -65,7 +65,7 @@ function BasicBreadcrumbs(): JSX.Element {
                     })}
                 </Breadcrumbs>
             </Grid>
-            <Grid item xs={1} className={styles.navIcons}>
+            {/* <Grid item xs={1} className={styles.navIcons}>
                 <div className={styles.icons}>
                     <Grafana color="secondary" />
                 </div>
@@ -75,7 +75,7 @@ function BasicBreadcrumbs(): JSX.Element {
                 <div className={styles.icons}>
                     <NotificationsNoneOutlinedIcon />
                 </div>
-            </Grid>
+            </Grid> */}
         </Grid>
     );
 }
