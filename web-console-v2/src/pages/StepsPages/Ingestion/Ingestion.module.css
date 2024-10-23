@@ -7,3 +7,17 @@
     width: 1.5rem;
     height: 1.5rem;
 }
+
+.datasetDetails {
+    padding: 1.5rem;
+}
+
+.gridContainer {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+}
+
+.heading {
+    padding-bottom: 1rem;
+}
