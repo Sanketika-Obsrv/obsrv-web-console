@@ -29,6 +29,7 @@ import ingestionStyle from './Ingestion.module.css';
 import helpSectionData from './HelpSectionData.json';
 import axios from 'axios';
 import localStyles from "./Ingestion.module.css";
+import RejectionFiles from 'components/Dropzone/RejectionFiles';
 interface FormData {
     [key: string]: unknown;
 }
@@ -79,6 +80,9 @@ const Ingestion = () => {
     const connectorConfigData = sessionStorage.getItem('connectorConfigDetails');
 
     const ConnectorConfiguration = connectorConfigData ? JSON.parse(connectorConfigData) : null;
+
+    const [fileErrors, setFileErrors] = useState<any>(null);
+     const maxFileSizeConfig = 4194304;
 
     const {
         data: uploadData,
@@ -503,6 +507,8 @@ const Ingestion = () => {
                                                 files={files}
                                                 setFiles={setFiles}
                                                 allowSchema
+                                                maxFileSize={maxFileSizeConfig}
+                                                subscribeErrors={setFileErrors}
                                             />
                                             {!_.isEmpty(files) && (
                                                 <Box mx={3} mt={18}>
@@ -523,6 +529,9 @@ const Ingestion = () => {
                                                     />
                                                 </Box>
                                             )}
+                                            <Box sx={{marginTop: 30, mr: 1, ml: 1, mb:1}}>
+                                                 {fileErrors?.length > 0 && <RejectionFiles fileRejections={fileErrors} />}
+                                             </Box>
                                         </GenericCard>
                                     </Box>
                                 </Box>
