@@ -82,7 +82,7 @@ const Ingestion = () => {
     const ConnectorConfiguration = connectorConfigData ? JSON.parse(connectorConfigData) : null;
 
     const [fileErrors, setFileErrors] = useState<any>(null);
-     const maxFileSizeConfig = 4194304;
+     const maxFileSizeConfig = 5242880;
 
     const {
         data: uploadData,
