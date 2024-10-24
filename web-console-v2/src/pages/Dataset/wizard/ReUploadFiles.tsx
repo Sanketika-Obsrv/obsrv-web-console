@@ -194,7 +194,7 @@ const ReUploadFiles = (props: any) => {
     const onSubmission = async () => {
         try {
             if (!_.isEmpty(files) && _.size(files) > MAX_FILES) {
-                showAlert('Pre-signed URL generation failed: limit exceeded', 'error');
+                showAlert(`Exceeded the maximum number of files, ${MAX_FILES} files are allowed`, 'error');
                 return;
             }
             await onUpload(data);
