@@ -31,7 +31,9 @@ export const extractTransformationOptions = (schema: any, path: string[] = []): 
         for (const key in schema.properties) {
             const currentPath = [...path, key].join('.');
 
-            options.push(currentPath);
+            if(!schema.properties[key].properties){
+                options.push(currentPath);
+            }
 
             if (schema.properties[key].properties) {
                 options.push(

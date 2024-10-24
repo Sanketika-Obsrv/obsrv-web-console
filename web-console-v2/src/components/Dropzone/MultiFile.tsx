@@ -6,6 +6,7 @@ import uploadImage from 'assets/upload/upload.svg';
 import uploadIcon from 'assets/upload/upload_icon.svg';
 import PlaceholderContent from './PlaceholderContent';
 import { CustomFile, DropzopType, UploadMultiFileProps } from 'types/dropzone';
+import _ from 'lodash';
 
 const DropzoneWrapper = styled('div')(({ theme }) => ({
     outline: 'none',
@@ -58,7 +59,7 @@ const MultiFileUpload = ({
                 });
             });
             setFieldValue('files', data);
-            onUpload(data);
+            !_.isEmpty(data) && onUpload(data);
         }
     };
 

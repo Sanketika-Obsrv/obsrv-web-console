@@ -27,6 +27,7 @@ const Actions = ({ buttons, onClick }: ActionsProps) => {
                         disabled={buttonConfig.disabled || false}
                         onClick={() => onClick(buttonConfig.id)}
                         className={styles.button}
+                        sx={{mr: 8}}
                     >
                         {buttonConfig.icon && <Button color="primary">{buttonConfig.icon}</Button>}
                         {buttonConfig.label}
