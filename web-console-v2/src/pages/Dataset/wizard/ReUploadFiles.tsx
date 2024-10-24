@@ -190,8 +190,13 @@ const ReUploadFiles = (props: any) => {
         );
     };
 
+    const MAX_FILES = 10;
     const onSubmission = async () => {
         try {
+            if (!_.isEmpty(files) && _.size(files) > MAX_FILES) {
+                showAlert(`Exceeded the maximum number of files, ${MAX_FILES} files are allowed`, 'error');
+                return;
+            }
             await onUpload(data);
         } catch (err) {
             setIsErrorUpload(true);

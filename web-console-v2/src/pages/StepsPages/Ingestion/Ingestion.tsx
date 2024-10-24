@@ -356,7 +356,7 @@ const Ingestion = () => {
         sessionStorage.setItem('configDetails', JSON.stringify(initialConfigDetails));
 
         if (!_.isEmpty(files) && _.size(files) > MAX_FILES) {
-            showAlert('Pre-signed URL generation failed: limit exceeded', 'error');
+            showAlert(`Exceeded the maximum number of files, ${MAX_FILES} files are allowed`, 'error');
             return;
         }
         if (data || !_.isEmpty(files)) {
