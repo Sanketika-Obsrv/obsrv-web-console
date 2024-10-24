@@ -384,7 +384,8 @@ export const setAdditionalProperties = (
     const helperFn = (propertySchema: any) => {
         const { type, properties, items } = propertySchema;
         if (type === 'object') {
-            _.set(propertySchema, 'additionalProperties', validationMode !== ValidationMode.Strict);
+            //TODO: needs to changed based on the new validation modes
+            _.set(propertySchema, 'additionalProperties', validationMode === ValidationMode.IgnoreNewFields);
             if (properties) {
                 for (const [key, value] of Object.entries(properties)) {
                     helperFn(value);
