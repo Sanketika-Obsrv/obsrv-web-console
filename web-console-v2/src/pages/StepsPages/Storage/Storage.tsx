@@ -210,7 +210,7 @@ const Storage = () => {
                 {
                     onSuccess: () => {
                         showAlert('Storage details updated', 'success');
-                        navigate('/home/preview');
+                        navigate(`/home/preview/${datasetId}`);
                     }
                 }
             );
