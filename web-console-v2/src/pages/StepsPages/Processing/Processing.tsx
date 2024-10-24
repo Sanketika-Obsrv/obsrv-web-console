@@ -232,7 +232,7 @@ const Processing: React.FC = () => {
     };
 
     const handleButtonClick = () => {
-        navigate('/home/storage');
+        navigate(`/home/storage/${datasetId}`);
     };
     const handleDatasetNameClick = (id: string) => setHighlightedSection(id);
 
@@ -467,9 +467,9 @@ const Processing: React.FC = () => {
                     position: 'fixed',
                     bottom: 0,
                     left: -30,
-                    backgroundColor: theme.palette.background.paper,
                     width: isHelpSectionOpen ? 'calc(100% - 450px)' : '100%',
                     transition: 'width 0.3s ease',
+                    zIndex:50
                 }}
             >
                 <Action

@@ -60,9 +60,9 @@ const routeConfigurations: RouteConfig[] = [
         children: [
             { path: 'ingestion', element: <IngestionPage /> },
             { path: 'ingestion/schema-details/:datasetId', element: <SchemaDetailsPage /> },
-            { path: 'processing', element: <ProcessingPage /> },
-            { path: 'storage', element: <StoragePage /> },
-            { path: 'preview', element: <PreviewPage /> }
+            { path: 'processing/:datasetId', element: <ProcessingPage /> },
+            { path: 'storage/:datasetId', element: <StoragePage /> },
+            { path: 'preview/:datasetId', element: <PreviewPage /> }
         ]
     },
     {
