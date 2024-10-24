@@ -22,7 +22,7 @@ import helpSectionData from './HelpSectionData.json';
 import Loader from 'components/Loader';
 import { useDetectPiiFields } from 'services/system';
 import { fetchSessionStorageValue } from 'utils/sessionStorage';
-import { flattenObject } from 'services/json-schema';
+import { flattenObject, setAdditionalProperties } from 'services/json-schema';
 
 export const extractTransformationOptions = (schema: any, path: string[] = []): string[] => {
     const options: string[] = [];
@@ -120,6 +120,8 @@ const keyMapping: any = {
     denorm: 'denorm_config'
 };
 
+let updatedSchema = {};
+
 const Processing: React.FC = () => {
     const datasetId = fetchSessionStorageValue('configDetails', 'dataset_id') || '';
 
@@ -201,8 +203,17 @@ const Processing: React.FC = () => {
 
     const handleAddOrEdit = (data: any, mapKey: string) => {
         const keyName = keyMapping[mapKey];
-
-        updateDataset({ data: { [keyName]: data } });
+        if (mapKey === 'validation') {
+            
+            updateDataset({ 
+                data: { 
+                    [keyName]: data,
+                    data_schema: updatedSchema
+                } 
+            });
+        } else {
+            updateDataset({ data: { [keyName]: data } });
+        }
     };
 
     const handleDelete = (fieldKey: string, data: any) => {
@@ -256,7 +267,7 @@ const Processing: React.FC = () => {
                                 validate: data ? true : false,
                                 mode: data
                             };
-
+                            updatedSchema = setAdditionalProperties(_.get(datasetData, ['data_schema']), data);
                             handleAddOrEdit(validation, 'validation');
                         }}
                     />
