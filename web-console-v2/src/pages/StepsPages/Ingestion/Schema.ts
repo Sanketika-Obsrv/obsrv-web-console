@@ -24,11 +24,10 @@ const schemas: FormSchema[] = [
                         },
                         datasetId: {
                             type: 'string',
-                            title: ingestionData.section1.datasetId.title,
-                            readOnly: true
+                            title: ingestionData.section1.datasetId.title
                         }
                     },
-                    required: ['datasetName']
+                    required: ['datasetName', 'datasetId']
                 }
             },
             required: ['section1']
@@ -45,10 +44,7 @@ const schemas: FormSchema[] = [
                     'ui:widget': 'text'
                 },
                 datasetId: {
-                    'ui:widget': 'text',
-                    'ui:options': {
-                        disabled: true
-                    }
+                    'ui:widget': 'text'
                 }
             }
         }

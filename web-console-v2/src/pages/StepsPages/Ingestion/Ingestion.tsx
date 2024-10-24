@@ -545,7 +545,7 @@ const Ingestion = () => {
                                 <HelpSection
                                     helpSection={{
                                         isOpen: isHelpSectionOpen,
-                                        activeMenuId: 'getStarted',
+                                        activeMenuId: 'setupGuide',
                                         menus: helpSectionData.menus,
                                         highlightedSection
                                     }}
