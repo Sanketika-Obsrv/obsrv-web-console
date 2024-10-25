@@ -7,19 +7,26 @@ import Grafana from 'assets/icons/Grafana';
 import Superset from 'assets/icons/Superset';
 import _ from 'lodash';
 import { getConfigValue } from 'services/dataset';
+import Notification from 'components/Notification/Notification';
+import { useState } from 'react';
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/datasets?status=Live";
 
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
     const pathname = location.pathname;
+    const [openNotification, setOpenNotification] = useState(false);
+
+    const toggleNotification = () => {
+        setOpenNotification((prev) => !prev);
+    };
+
     const pathnames = pathname.split('/').filter((x) => x);
     const navigate = (path: any) => {
         if (path) {
             window.open(path);
         }
     }
-
 
     const handleNavigate = () => {
         window.location.assign(OBSRV_WEB_CONSOLE);
@@ -69,15 +76,18 @@ function BasicBreadcrumbs(): JSX.Element {
             </Grid>
             <Grid item xs={1} className={styles.navIcons}>
                 <div className={styles.icons}
-                    onClick={() => { navigate(getConfigValue("GRAFANA_URL")) }}>
+                    onClick={() => { navigate(getConfigValue("GRAFANA_URL")) }} style={{ cursor: "pointer" }}>
                     <Grafana color="secondary" />
                 </div>
-                <div className={styles.icons} onClick={() => { navigate(getConfigValue("SUPERSET_URL")) }}>
+                <div className={styles.icons} onClick={() => { navigate(getConfigValue("SUPERSET_URL")) }} style={{ cursor: "pointer" }}>
                     <Superset />
                 </div>
-                {/* <div className={styles.icons}>
+                <div className={styles.icons} onClick={toggleNotification} style={{ cursor: "pointer" }}>
                     <NotificationsNoneOutlinedIcon />
-                </div> */}
+                </div>
+            </Grid>
+            <Grid className={styles.alertNotification}>
+                {openNotification && <Notification open={openNotification} setOpen={setOpenNotification} />}
             </Grid>
         </Grid>
     );
