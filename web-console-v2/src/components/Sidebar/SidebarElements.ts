@@ -1,5 +1,6 @@
 import React from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { AlertOutlined, MailOutlined } from '@ant-design/icons';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import ConnectorManagement from 'assets/icons/ConnectorManagement';
 import DatasetManagementIcon from 'assets/icons/DatasetManagement';
@@ -101,6 +102,18 @@ const SidebarElements = () => {
       icon: React.createElement(AddCircleOutlineIcon),
       title: 'Dataset Creation',
       route: '/home/new-dataset'
+    },
+    {
+      id: 'alertcreation',
+      icon: React.createElement(AlertOutlined),
+      title: 'Alerts',
+      route: '/console/alertRules'
+    },
+    {
+      id: 'notifications',
+      icon: React.createElement(MailOutlined),
+      title: 'Notification Channels',
+      route: '/console/alertChannels'
     }
   ];
 
