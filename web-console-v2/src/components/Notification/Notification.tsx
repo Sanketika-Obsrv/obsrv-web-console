@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import {
     Box, ClickAwayListener, Divider, List, ListItemButton, ListItemAvatar, ListItemText,
     Paper, Popper, Typography
@@ -10,22 +10,12 @@ import Transitions from 'components/@extended/Transitions';
 import Avatar from 'components/@extended/Avatar';
 import * as _ from 'lodash';
 import dayjs from 'dayjs';
-import { fetchFiringAlerts } from '../../services/alerts';
 import { AlertOutlined } from '@ant-design/icons';
 import styles from './Notification.module.css';
 
 const Notification = (props: any) => {
-    const { open, setOpen } = props || {}
+    const { open, setOpen, alerts } = props || {}
     const anchorRef = useRef<any>(null);
-    const [alerts, setAlerts] = useState<any>([])
-
-    useEffect(() => {
-        const fetchAlerts = async () => {
-            const alertsData = await fetchFiringAlerts({});
-            setAlerts(alertsData)
-        }
-        fetchAlerts();
-    }, [alerts.length])
 
     const handleClose = (event: MouseEvent | TouchEvent) => {
         if (anchorRef.current && anchorRef.current.contains(event.target)) {

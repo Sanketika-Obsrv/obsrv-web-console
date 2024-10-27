@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Typography, Breadcrumbs, Grid, Box } from '@mui/material';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Typography, Breadcrumbs, Grid, Box, Badge } from '@mui/material';
+import { NavLink, useLocation } from 'react-router-dom';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import styles from './Navbar.module.css';
 import Grafana from 'assets/icons/Grafana';
@@ -8,7 +8,8 @@ import Superset from 'assets/icons/Superset';
 import _ from 'lodash';
 import { getConfigValue } from 'services/dataset';
 import Notification from 'components/Notification/Notification';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchFiringAlerts } from 'services/alerts';
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/datasets?status=Live";
 
@@ -16,6 +17,8 @@ function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
     const pathname = location.pathname;
     const [openNotification, setOpenNotification] = useState(false);
+    const [alerts, setAlerts] = useState<any>(null)
+    const [read, setRead] = useState<any>(_.get(alerts, 'length') || 0);
 
     const toggleNotification = () => {
         setOpenNotification((prev) => !prev);
@@ -31,6 +34,19 @@ function BasicBreadcrumbs(): JSX.Element {
     const handleNavigate = () => {
         window.location.assign(OBSRV_WEB_CONSOLE);
     };
+
+    useEffect(() => {
+        const fetchAlerts = async () => {
+            try {
+                const alertsData: any = await fetchFiringAlerts({});
+                setAlerts(alertsData);
+                setRead(_.size(alertsData));
+            } catch {
+                setAlerts([]);
+            }
+        };
+        if(openNotification || _.isNull(alerts)) fetchAlerts();
+    }, [openNotification]);
 
     return (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
@@ -83,11 +99,13 @@ function BasicBreadcrumbs(): JSX.Element {
                     <Superset />
                 </div>
                 <div className={styles.icons} onClick={toggleNotification} style={{ cursor: "pointer" }}>
-                    <NotificationsNoneOutlinedIcon />
+                    <Badge badgeContent={read} color="primary">
+                        <NotificationsNoneOutlinedIcon />
+                    </Badge>
                 </div>
             </Grid>
             <Grid className={styles.alertNotification}>
-                {openNotification && <Notification open={openNotification} setOpen={setOpenNotification} />}
+                {openNotification && <Notification open={openNotification} setOpen={setOpenNotification} alerts={alerts} />}
             </Grid>
         </Grid>
     );
