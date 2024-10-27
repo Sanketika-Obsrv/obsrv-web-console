@@ -92,13 +92,13 @@ function BasicBreadcrumbs(): JSX.Element {
             </Grid>
             <Grid item xs={1} className={styles.navIcons}>
                 <div className={styles.icons}
-                    onClick={() => { navigate(getConfigValue("GRAFANA_URL")) }} style={{ cursor: "pointer" }}>
+                    onClick={() => { navigate(getConfigValue("GRAFANA_URL")) }}>
                     <Grafana color="secondary" />
                 </div>
-                <div className={styles.icons} onClick={() => { navigate(getConfigValue("SUPERSET_URL")) }} style={{ cursor: "pointer" }}>
+                <div className={styles.icons} onClick={() => { navigate(getConfigValue("SUPERSET_URL")) }}>
                     <Superset />
                 </div>
-                <div className={styles.icons} onClick={toggleNotification} style={{ cursor: "pointer" }}>
+                <div className={styles.icons} onClick={toggleNotification}>
                     <Badge badgeContent={read} color="primary">
                         <NotificationsNoneOutlinedIcon />
                     </Badge>
