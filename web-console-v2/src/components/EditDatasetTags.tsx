@@ -5,26 +5,29 @@ import AnimateButton from "./@extended/AnimateButton";
 import AddIcon from '@mui/icons-material/Add';
 import { hasSpecialCharacters } from "services/utils";
 import en from 'utils/locales/en.json'
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const EditDatasetTags = ({ dataset, open, anchorEl, handleClose = () => { }, handleSave = () => { }, }: any) => {
     const textRef: any = useRef();
     const [tagsData, setTagsData] = useState<string[]>(_.get(dataset, 'tags') || []);
     const maxTagsLimit: any = 5;
     const [disable, setDisable] = useState<boolean>(true);
+    const { showAlert } = useAlert();
+
 
     const checkInput = (newTag: string) => {
         if (newTag !== undefined && newTag !== null && newTag !== '') {
             const exists = _.findIndex(tagsData, (tag: string) => tag === _.trim(_.toUpper(newTag)));
             if (exists > -1) {
-                dispatch(error({ message: 'Tag already exists' }));
+                showAlert('Tag already exists', "error");
                 return false;
             }
             if (hasSpecialCharacters(newTag)) {
-                dispatch(error({ message: 'Tag cannot have special characters' }));
+                showAlert('Tag cannot have special characters', "error")
                 return false;
             }
             if (_.size(newTag) > 20) {
-                dispatch(error({ message: 'Tag cannot have more than 20 characters' }));
+                showAlert('Tag cannot have more than 20 characters', "error");
                 return false;
             }
             return true;
@@ -36,7 +39,7 @@ const EditDatasetTags = ({ dataset, open, anchorEl, handleClose = () => { }, han
         const newTag: string = _.trim(_.toUpper(textRef.current.value));
         if (checkInput(newTag)) {
             if (tagsData.length >= maxTagsLimit) {
-                dispatch(error({ message: en.maxTagsLimit.replace('{maxTagsLimit}', maxTagsLimit) }));
+                showAlert(en.maxTagsLimit.replace('{maxTagsLimit}', maxTagsLimit), "error");
             } else {
                 setTagsData((prevState: string[]) => {
                     const data = [...prevState, newTag];
