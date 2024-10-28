@@ -10,6 +10,7 @@ import Box from '@mui/material/Box';
 import { readJsonFileContents } from 'services/utils';
 import interactIds from 'data/telemetry/interact.json';
 import Loader from 'components/Loader';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const tabProps = (index: number) => ({ id: `tab-${index}`, 'aria-controls': `tabpanel-${index}` });
 
@@ -34,9 +35,9 @@ export function TabPanel(props: any) {
 }
 
 const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema = false, subscribeErrors = null, generateInteractTelemetry, isMultiple = true, datasetImport = false, setNewFile }: any) => {
-    const dispatch = useDispatch();
     const [tabIndex, setTabIndex] = useState(0);
     const [loading, setLoading] = useState(false)
+    const { showAlert } = useAlert();
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
 
@@ -77,10 +78,10 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
             if (_.size(flattenedContents) === 0) throw new Error("Invalid file content");
             setData(flattenedContents);
             setFiles(files);
-            dispatch(success({ message: 'Files uploaded.' }))
+            showAlert('Files uploaded.', "success");
         } catch (err: any) {
-            err?.message && dispatch(error({ message: err?.message }));
-            (typeof err === 'string') && dispatch(error({ message: err }));
+            err?.message && showAlert(err?.message, "error");
+            (typeof err === 'string') && showAlert(err, "error");
             setFiles(null);
             form.setFieldValue("files", null);
             setData(null);
@@ -93,7 +94,7 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
         const jsObject = _.isArray(event) ? event : [event] || {};
         const flattenedData = flattenContents(jsObject);
         if (jsObject && _.isEmpty(flattenedData)) {
-            dispatch(error({ message: "Paste valid JSON Data/Schema" }))
+            showAlert("Paste valid JSON Data/Schema", "error");
             setData()
             return;
         }
