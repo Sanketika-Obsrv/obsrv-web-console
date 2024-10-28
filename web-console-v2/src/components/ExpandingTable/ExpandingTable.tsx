@@ -131,7 +131,7 @@ const ReactTable = ({
                                     borderBottom: "none", ...styles
                                 }}
                             >
-                                <Typography variant="h5">{cell.render('Cell')}</Typography>
+                                <Typography variant="h3">{cell.render('Cell')}</Typography>
                             </TableCell>
                         ))}
                     </TableRow>

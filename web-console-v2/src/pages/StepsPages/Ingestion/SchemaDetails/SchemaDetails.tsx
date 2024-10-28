@@ -699,12 +699,13 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                 flex: 1, // Makes the content above the action buttons scrollable
                                 overflowY: 'auto', // Allows scrolling for the content
                                 paddingBottom: '80px', // Ensures no overlap with the fixed action buttons
-                                mx: 4
+                                mx: 4,
+                                paddingTop: '3.5rem'
                             }}
                         >
                             {!showTableOnly && (
                                 <>
-                                    {fetchLiveDataset?.data !== undefined ? <></> : <Box mt={-0.3}>
+                                    {fetchLiveDataset?.data !== undefined ? <></> : <Box marginBlock={2}>
                                         <Button
                                             variant="text"
                                             sx={{ color: theme.palette.common.black, mt: 0.5 }}
@@ -726,7 +727,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                     >
                                         <Box display="flex" alignItems="center">
                                             <Typography
-                                                variant="h6"
+                                                variant="h1"
                                                 component="span"
                                                 fontWeight={600}
                                             >

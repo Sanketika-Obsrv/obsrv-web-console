@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { Typography, Breadcrumbs, Grid, Box } from '@mui/material';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import styles from './Navbar.module.css';
 import Grafana from 'assets/icons/Grafana';
 import Superset from 'assets/icons/Superset';
 import _ from 'lodash';
+import { getConfigValue } from 'services/dataset';
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/datasets?status=Live";
 
@@ -13,15 +14,15 @@ function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
     const pathname = location.pathname;
     const pathnames = pathname.split('/').filter((x) => x);
+    const navigate = (path: any) => {
+        if (path) {
+            window.open(path);
+        }
+    }
 
-    const formatBreadcrumb = (string: string): string =>
-        string
-            .split('-')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
 
     const handleNavigate = () => {
-        window.location.href = OBSRV_WEB_CONSOLE;
+        window.location.assign(OBSRV_WEB_CONSOLE);
     };
 
     return (
@@ -66,17 +67,18 @@ function BasicBreadcrumbs(): JSX.Element {
                     })}
                 </Breadcrumbs>
             </Grid>
-            {/* <Grid item xs={1} className={styles.navIcons}>
-                <div className={styles.icons}>
+            <Grid item xs={1} className={styles.navIcons}>
+                <div className={styles.icons}
+                    onClick={() => { navigate(getConfigValue("GRAFANA_URL")) }}>
                     <Grafana color="secondary" />
                 </div>
-                <div className={styles.icons}>
+                <div className={styles.icons} onClick={() => { navigate(getConfigValue("SUPERSET_URL")) }}>
                     <Superset />
                 </div>
-                <div className={styles.icons}>
+                {/* <div className={styles.icons}>
                     <NotificationsNoneOutlinedIcon />
-                </div>
-            </Grid> */}
+                </div> */}
+            </Grid>
         </Grid>
     );
 }

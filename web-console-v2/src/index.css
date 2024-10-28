@@ -118,3 +118,13 @@ code {
 div.HelpSection_expanded__vqSxk{
   z-index: 1301;
 }
+
+.section {
+  color: inherit;
+  opacity: 0.1;
+}
+
+.section.highlighted {
+  color: orange;
+  opacity: 1;
+}

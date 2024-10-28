@@ -26,10 +26,11 @@ import {
 } from 'services/dataset';
 import { readJsonFileContents } from 'services/utils';
 import ingestionStyle from './Ingestion.module.css';
-import helpSectionData from './HelpSectionData.json';
 import axios from 'axios';
 import localStyles from "./Ingestion.module.css";
 import RejectionFiles from 'components/Dropzone/RejectionFiles';
+import CreateDataset from 'assets/help/createDataset';
+
 interface FormData {
     [key: string]: unknown;
 }
@@ -65,7 +66,7 @@ const Ingestion = () => {
     const [datasetId, setDatasetId] = useState('');
     const [nameError, setNameError] = useState('');
 
-    const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(false);
+    const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
 
     const formikRef = useRef<any>();
 
@@ -219,7 +220,6 @@ const Ingestion = () => {
             console.error('Error fetching dataset:', error);
         })
     }
-
     const debouncedFetchDataset = useMemo(
         () => _.debounce(fetchDataset, 800), []
     );
@@ -356,7 +356,7 @@ const Ingestion = () => {
         sessionStorage.setItem('configDetails', JSON.stringify(initialConfigDetails));
 
         if (!_.isEmpty(files) && _.size(files) > MAX_FILES) {
-            showAlert('Pre-signed URL generation failed: limit exceeded', 'error');
+            showAlert(`Exceeded the maximum number of files, ${MAX_FILES} files are allowed`, 'error');
             return;
         }
         if (data || !_.isEmpty(files)) {
@@ -448,12 +448,13 @@ const Ingestion = () => {
                                     flex: 1, 
                                     overflowY: 'auto',
                                     paddingBottom: '80px',
+                                    paddingTop: '3.5rem'
                                 }}
                             >
                                 <Box mx={4}>
                                     <Button
                                         variant="text"
-                                        sx={{ color: theme.palette.common.black, mt: 2 }}
+                                        sx={{ color: theme.palette.common.black, marginBlock    : 2 }}
                                         startIcon={
                                             <KeyboardBackspaceIcon className={ingestionStyle.iconStyle} />
                                         }
@@ -468,7 +469,7 @@ const Ingestion = () => {
                                         className={`${styles.formContainer} ${ingestionStyle.container} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
                                     >
 
-                                        <GenericCard className={localStyles.datasetDetails}>
+                                        <GenericCard className={localStyles.datasetDetails} onClick={() => handleDatasetNameClick('section1')}>
                                             <Box className={localStyles?.heading}>
                                                 <Typography variant='h1'>Dataset Details</Typography>
                                             </Box>
@@ -537,11 +538,10 @@ const Ingestion = () => {
                                 </Box>
                                 <HelpSection
                                     helpSection={{
-                                        isOpen: isHelpSectionOpen,
-                                        activeMenuId: 'getStarted',
-                                        menus: helpSectionData.menus,
-                                        highlightedSection
+                                        defaultHighlight: "section1"
                                     }}
+                                    helpText={<CreateDataset />}
+                                    highlightSection = {highlightedSection}
                                     onExpandToggle={() => setIsHelpSectionOpen((prev) => !prev)}
                                     expand={isHelpSectionOpen}
                                 />
@@ -553,9 +553,9 @@ const Ingestion = () => {
                                 sx={{
                                     position: 'fixed',
                                     bottom: 0,
-                                    left: -20,
+                                    left: 0,
                                     backgroundColor: theme.palette.background.paper,
-                                    width: isHelpSectionOpen ? 'calc(100% - 400px)' : '100%',
+                                    width: isHelpSectionOpen ? 'calc(100% - 23rem)' : '100%',
                                     transition: 'width 0.3s ease',
                                 }}
                             >
