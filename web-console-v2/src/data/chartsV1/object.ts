@@ -6,7 +6,7 @@ import prettyMilliseconds from 'pretty-ms';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc'
 import apiEndpoints from 'data/apiEndpoints';
-import chartMeta from 'data/charts';
+import chartMeta from 'data/chartsV1';
 import { fetchChartData } from 'services/clusterMetrics';
 import { IChartFetchRequest } from 'types/metadata';
 

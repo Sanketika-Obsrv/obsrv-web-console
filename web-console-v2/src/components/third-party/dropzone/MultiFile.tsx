@@ -104,7 +104,7 @@ const MultiFileUpload = ({ error, showList = false, files, type, setFieldValue, 
                     {type === DropzopType.standard && files && files.length > 0 && (
                         <Button
                             data-edataid={interactIds.file_remove_multiple}
-                            variant="contained" color="error" size="extraSmall" onClick={onRemoveAll}>
+                            variant="contained" color="error" size="small" onClick={onRemoveAll}>
                             Remove all
                         </Button>
                     )}
