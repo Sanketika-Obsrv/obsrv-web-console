@@ -499,7 +499,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
     }
 
     return (
-        <MainCard content={false}>
+        <MainCard content={false} border={false}>
             <BackdropLoader open={loading} />
             {loading ? renderSkeleton({ config: { type: "table", width: "100%" } }) :
                 <>
