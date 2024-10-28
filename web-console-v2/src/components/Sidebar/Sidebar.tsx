@@ -24,7 +24,7 @@ interface Props {
 }
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string;
-const redirectUrl = ['/home/dashboard', '/home/dataset-management', '/home/connector-management'];
+const redirectUrl = ['/home/dashboard', '/home/connector-management'];
 
 const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     const theme = useTheme();

@@ -27,6 +27,7 @@ import SettingsPage from 'pages/Settings/Settings';
 import UploadPage from 'pages/IngestionPage/IngestionPage';
 //import DatasetList from 'pages/DatasetList/DatasetList';
 import DatasetsList from 'pages/dashboardV1/datasetsList';
+import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 
 // TypeScript interface to define the structure of route configuration
 interface RouteConfig {
@@ -95,7 +96,11 @@ const routeConfigurations: RouteConfig[] = [
     {
         path: `${BASE_PATH}/settings`,
         element: <SettingsPage />
-    }
+    },
+    {
+        path: 'datasets/:datasetId',
+        element: <DatasetMetrics />
+    },
 ];
 
 // Recursive function to render routes with potential nested routes
