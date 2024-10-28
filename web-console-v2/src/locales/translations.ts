@@ -7,8 +7,8 @@ export const translations = {
         skip: "Skip"
     },
     newDataset: {
-        realTimeDataTransfer: 'You can move the data from any source to destination in near real-time', // New key
-        seamlessTransfer: 'Seamlessly transfer your data from any source to any destination in real-time! Experience instant updates and integration, ensuring your information is always current and accessible.',
+        realTimeDataTransfer: 'You can move data from any source to Obsrv in near real-time', // New key
+        seamlessTransfer: 'Seamlessly transfer your data from any source to Obsrv in real-time! Experience instant updates and integration, ensuring your information is always current and accessible.',
         createNewDataset: 'Create New Dataset'
     }
   },

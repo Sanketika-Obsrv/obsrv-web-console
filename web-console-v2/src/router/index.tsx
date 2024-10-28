@@ -44,7 +44,7 @@ const routeConfigurations: RouteConfig[] = [
     },
     {
         path: `${BASE_PATH}`,
-        element: <Navigate to={`${BASE_PATH}`} replace />
+        element: <Navigate to={`${BASE_PATH}/new-dataset`} replace />
     },
     {
         path: `${BASE_PATH}/new-dataset/connector-configuration`,
