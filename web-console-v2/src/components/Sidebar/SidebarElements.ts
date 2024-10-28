@@ -8,46 +8,51 @@ import { theme } from 'theme';
 
 const SidebarElements = () => {
   const elements = [
-    // {
-    //     id: 'dashboard',
-    //     icon: React.createElement(DashboardOutlinedIcon),
-    //     title: 'Dashboard',
-    //     route: '/home/dashboard',
-    //     dropdownIcon: React.createElement(ExpandMoreOutlinedIcon),
-    //     children: [
-    //         {
-    //             id: 'infrastructure',
-
-    //             color: theme.palette.primary.main,
-    //             title: 'Infrastructure',
-    //             route: '/home/dashboard/infrastructure'
-    //         },
-    //         {
-    //             id: 'ingestion',
-    //             color: theme.palette.secondary.main,
-    //             title: 'Ingestion',
-    //             route: '/home/dashboard/ingestion'
-    //         },
-    //         {
-    //             id: 'processing',
-    //             color: theme.palette.tertiary.main,
-    //             title: 'Processing',
-    //             route: '/home/dashboard/processing'
-    //         },
-    //         {
-    //             id: 'storage',
-    //             color: theme.palette.info.dark,
-    //             title: 'Storage',
-    //             route: '/home/dashboard/storage'
-    //         },
-    //         {
-    //             id: 'query',
-    //             color: theme.palette.secondary.main,
-    //             title: 'Query',
-    //             route: '/home/dashboard/query'
-    //         }
-    //     ]
-    // },
+    {
+      id: 'dashboard',
+      icon: React.createElement(DashboardOutlinedIcon),
+      title: 'Dashboard',
+      route: '/home/dashboard',
+      dropdownIcon: React.createElement(ExpandMoreOutlinedIcon),
+      children: [
+        {
+          id: 'infrastructure',
+          color: theme.palette.primary.main,
+          title: 'Infrastructure',
+          route: '/home/dashboard/infrastructure'
+        },
+        {
+          id: 'ingestion',
+          color: theme.palette.secondary.main,
+          title: 'Ingestion',
+          route: '/home/dashboard/ingestion'
+        },
+        {
+          id: 'api',
+          color: theme.palette.secondary.main,
+          title: 'Api',
+          route: '/home/dashboard/api'
+        },
+        {
+          id: 'processing',
+          color: theme.palette.tertiary.main,
+          title: 'Processing',
+          route: '/home/dashboard/processing'
+        },
+        {
+          id: 'storage',
+          color: theme.palette.info.dark,
+          title: 'Storage',
+          route: '/home/dashboard/storage'
+        }
+        // {
+        //     id: 'query',
+        //     color: theme.palette.secondary.main,
+        //     title: 'Query',
+        //     route: '/home/dashboard/query'
+        // }
+      ]
+    },
     // {
     //     id: 'datasetmanagement',
     //     icon: React.createElement(DatasetManagementIcon),
@@ -101,7 +106,13 @@ const SidebarElements = () => {
       icon: React.createElement(AddCircleOutlineIcon),
       title: 'Dataset Creation',
       route: '/home/new-dataset'
-    }
+    },
+    {
+      id: 'datasetmanagement',
+      icon: React.createElement(DatasetManagementIcon),
+      title: 'Dataset Management',
+      route: '/home/dataset-management',
+    },
   ];
 
   return elements;

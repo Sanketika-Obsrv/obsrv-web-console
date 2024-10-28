@@ -24,7 +24,7 @@ interface Props {
 }
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string;
-const redirectUrl = ['/home/dashboard', '/home/dataset-management', '/home/connector-management'];
+const redirectUrl: any = [""];
 
 const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     const theme = useTheme();
@@ -38,12 +38,12 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     useEffect(() => {
         const pathSegments = location.pathname.split('/').filter(Boolean);
         if (
-            
+
             pathSegments[1] === 'new-dataset' ||
-                pathSegments[1] === 'ingestion' ||
-                pathSegments[1] === 'processing' ||
-                pathSegments[1] === 'storage' ||
-                pathSegments[1] === 'preview'
+            pathSegments[1] === 'ingestion' ||
+            pathSegments[1] === 'processing' ||
+            pathSegments[1] === 'storage' ||
+            pathSegments[1] === 'preview'
         ) {
             setSelectedItem('/home/new-dataset');
         } else if (pathSegments.length > 2) {
@@ -65,7 +65,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     }, [location.pathname]);
 
     const redirectToConsole = () => {
-        window.location.href = `${OBSRV_WEB_CONSOLE}`;
+        window.location.assign(OBSRV_WEB_CONSOLE);
     };
 
     const handleParentClick = (route: string) => {
@@ -131,11 +131,10 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                         return (
                             <div key={item.id}>
                                 <ListItem
-                                    className={`${styles.listItem} ${
-                                        isSelected && !hasSelectedChild
+                                    className={`${styles.listItem} ${isSelected && !hasSelectedChild
                                             ? styles.selected
                                             : styles.unselected
-                                    }`}
+                                        }`}
                                     disablePadding
                                     sx={{
                                         color:
@@ -199,11 +198,10 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                                     placement="right"
                                                 >
                                                     <ListItem
-                                                        className={`${styles.childItem} ${
-                                                            isChildSelected
+                                                        className={`${styles.childItem} ${isChildSelected
                                                                 ? styles.selected
                                                                 : styles.unselected
-                                                        } ${expand ? styles.expand : styles.collapsed}`}
+                                                            } ${expand ? styles.expand : styles.collapsed}`}
                                                         sx={{
                                                             borderLeft: isChildSelected
                                                                 ? `0.25rem solid ${theme.palette.secondary.main}`
@@ -230,7 +228,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                                                 sx={{
                                                                     color: isChildSelected
                                                                         ? theme.palette.secondary
-                                                                              .main
+                                                                            .main
                                                                         : theme.palette.text.primary
                                                                 }}
                                                             >

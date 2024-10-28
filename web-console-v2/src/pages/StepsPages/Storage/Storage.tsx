@@ -422,8 +422,9 @@ const Storage = () => {
                     bottom: 0,
                     right: 0,
                     left: -30,
-                    width: isHelpSectionOpen ? 'calc(100% - 450px)' : '100%',
+                    width: isHelpSectionOpen ? 'calc(100% - 400px)' : '102%',
                     transition: 'width 0.3s ease',
+                    zIndex:100
                 }}
             >
                 <Action
