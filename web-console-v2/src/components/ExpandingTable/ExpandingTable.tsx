@@ -39,7 +39,7 @@ const ReactTable = ({
     styles = {},
     context = {}
 }: Props) => {
-    const tableSx = limitHeight ? { height: 'auto', width: '100%' } : { width: '100%' };
+    const tableSx = limitHeight ? { height: 'auto', width: '100%', pt: 1 } : { width: '100%', pt: 1 };
     const { disableRowColor = false } = context;
     const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } = useTable(
         {
