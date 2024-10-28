@@ -40,7 +40,7 @@ const AsyncLabel = (props: any) => {
     }, []);
 
     return <>
-        {loading && <Loader />}
+        {loading && <Loader loading={loading} />}
         <Typography {...rest} >
             {prefix} {label} {suffix}
         </Typography>

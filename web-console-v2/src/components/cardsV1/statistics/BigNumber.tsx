@@ -1,7 +1,7 @@
 import { styled } from '@mui/material/styles';
 import { Card, CardContent, Grid, Typography } from '@mui/material';
 
-import { GenericCardProps } from 'types/root';
+import { GenericCardProps } from 'types/rootV1';
 
 const IconWrapper = styled('div')({
   position: 'absolute',

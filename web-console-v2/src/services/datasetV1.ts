@@ -44,7 +44,7 @@ const processDenormConfigurations = async (item: any, masterDatasets: any) => {
     const dataset_id = _.get(item, 'dataset_id');
     const denorm_out_field = _.get(item, 'denorm_out_field');
     const dataset = _.find(masterDatasets, ['dataset_id', dataset_id]);
-    let schema = flattenSchema(_.get(dataset, 'data_schema'), denorm_out_field, true, false);
+    const schema = flattenSchema(_.get(dataset, 'data_schema'), denorm_out_field, true, false);
     denormFieldsData.push({
         "column": denorm_out_field,
         "type": "object",
@@ -250,7 +250,7 @@ export const generateRollupIngestionSpec = async (list: any, schema: any, datase
     const jsonSchema = _.get(schema, 'jsonSchema');
     const timestampCol = _.get(schema, 'timestamp.indexCol') || DEFAULT_TIMESTAMP.indexValue;
     let updatedColumns = _.get(schema, 'columns.state.schema', []);
-    let transformedFields = _.get(schema, 'transformation.selection', []);
+    const transformedFields = _.get(schema, 'transformation.selection', []);
     let newField: any = _.get(schema, 'additionalFields.selection') || [];
     updatedColumns = _.map(updatedColumns, (item) => {
         const transformedData = _.find(transformedFields, { column: item.column });
@@ -304,44 +304,6 @@ export const generateRollupIngestionSpec = async (list: any, schema: any, datase
     return http.post(apiEndpoints.generateIngestionSpec, modifiedPayload, config);
 }
 
-export const saveTransformations = async (payload: any) => {
-    const { dataset_id, edit, id, existingTransformations, selectedValues, ...rest } = payload
-
-    const { store } = require('store');
-    const reduxState = store.getState();
-    const wizardState = _.get(reduxState, 'wizard');
-    const versionKeyValue = _.get(wizardState, 'pages.datasetConfiguration.state.config.versionKey');
-    let record: any[] = []
-    const transformations = _.get(existingTransformations, "selection")
-
-    if (!edit) {
-        record.push({ value: { ...rest }, action: "upsert" })
-    }
-
-    if (edit) {
-        const result = _.find(transformations, fields => _.get(fields, "column") === _.get(rest, "field_key"))
-        if (_.size(result)) {
-            record.push({ value: { ...rest }, action: "upsert" })
-        } else {
-            const { dataset_id, edit, id, existingTransformations, selectedValues, ...rest } = payload
-            record.push({ value: { field_key: _.get(selectedValues, "column") }, action: "remove" })
-            record.push({ value: { ...rest }, action: "upsert" })
-        }
-    }
-
-    const updatedConfigs = _.flattenDeep(_.compact(record))
-
-    const requestPayload = {
-        transformations_config: updatedConfigs,
-        dataset_id,
-        version_key: _.get(versionKeyMap, ["version_keys", dataset_id]) || versionKeyValue || ""
-    }
-    const transformationPayload = generateRequestBody({ request: _.omit(requestPayload, ["published_date"]), apiId: "api.datasets.update" })
-    const response = await http.patch(`${apiEndpoints.updateDataset}`, transformationPayload);
-    const versionKey = _.get(response, 'data.result.version_key') || ""
-    _.set(versionKeyMap, "version_keys", { [dataset_id]: versionKey })
-    return response
-}
 
 export const publishDataset = async (state: Record<string, any>, storeState: any, master: any, masterDatasets: any) => {
     const dataset_id = _.get(state, 'pages.datasetConfiguration.state.config.dataset_id')
@@ -383,86 +345,13 @@ export const uploadToUrl = async (url: string, file: any) => {
     });
 }
 
-export const deleteTransformations = async (configs: Record<string, any>) => {
-    const { dataset_id, field_key } = configs
-    const { store } = require('store');
-    const reduxState = store.getState();
-    const wizardState = _.get(reduxState, 'wizard');
-    const versionKeyValue = _.get(wizardState, 'pages.datasetConfiguration.state.config.versionKey');
 
-    const requestPayload = {
-        transformations_config: [{ value: { field_key }, action: "remove" }],
-        dataset_id,
-        version_key: _.get(versionKeyMap, ["version_keys", dataset_id]) || versionKeyValue || ""
-    }
-    const transformationPayload = generateRequestBody({ request: _.omit(requestPayload, ["published_date"]), apiId: "api.datasets.update" })
-    const response = await http.patch(`${apiEndpoints.updateDataset}`, transformationPayload);
-    const versionKey = _.get(response, 'data.result.version_key') || ""
-    _.set(versionKeyMap, "version_keys", { [dataset_id]: versionKey })
-    return response
-}
-
-export const getDatasetState = async (datasetId: string, status: string = DatasetStatus.Draft, createAction: boolean = false) => {
+export const getDatasetState = async (datasetId: string, status: string = DatasetStatus.Draft, createAction = false) => {
     const dataset = await fetchDataset(datasetId, status);
     return await generateDatasetState(dataset, createAction);
 }
 
-export const resetDatasetState = async () => {
 
-    const { store } = require('store');
-    const state = store.getState();
-    const wizardState = _.get(state, 'wizard');
-    if (!wizardState) throw new Error("Something went wrong. Please try again later");
-    const datasetConfig = _.omit(_.get(wizardState, 'pages.datasetConfiguration.state.config'), ["versionKey"]);
-    const datasetId = _.get(wizardState, 'pages.datasetConfiguration.state.config.dataset_id');
-    const versionKeyValue = _.get(wizardState, 'pages.datasetConfiguration.state.config.versionKey');
-
-    const updateDatasetConfig = async () => {
-        const denormConfigs = _.get(wizardState, 'pages.denorm') || {};
-        const validationMode = _.get(wizardState, 'pages.dataValidation.formFieldSelection')
-        const validation_config = { validate: true, mode: validationMode || "Strict" };
-        const extraction_config = { is_batch_event: false, extraction_key: "" };
-        const dedup_config = { drop_duplicates: false, dedup_key: "" };
-        const denorm_config = { ...denormConfigs, "denorm_fields": [] };
-        const dataset_config = {
-            keys_config: { timestamp_key: "", data_key: "" }, indexing_config: {
-                "olap_store_enabled": true,
-                "lakehouse_enabled": false,
-                "cache_enabled": false
-            }
-        };
-        const pii = _.get(wizardState, 'pages.pii.selection') || [];
-        const transformation = _.get(wizardState, 'pages.transform.selection') || [];
-        const additionalFields = _.get(wizardState, 'pages.derived.selection') || [];
-        const connectors = _.keys(_.get(wizardState, "pages.dataSource.value"))
-        const transformationConfigs = _.map(_.flatten([pii, transformation, additionalFields]), (fields) => {
-            return {
-                value: {
-                    field_key: _.get(fields, "column")
-                }, action: "remove"
-            }
-        });
-        const connectorsConfigs = _.map(connectors, (field) => {
-            return {
-                value: {
-                    connector_id: field,
-                    id: field
-                }, action: "remove"
-            }
-        });
-        const response = await updateDataset({ data: { validation_config, extraction_config, dedup_config, denorm_config, dataset_config, ...datasetConfig, dataset_id: datasetId, ...(_.size(transformationConfigs) && { transformations_config: transformationConfigs }), ...(_.size(connectorsConfigs) && { connectors_config: connectorsConfigs }), version_key: _.get(versionKeyMap, ["version_keys", datasetId]) || versionKeyValue || "" } });
-        const versionKey = _.get(response, 'data.result.version_key') || ""
-        _.set(versionKeyMap, "version_keys", { [datasetId]: versionKey })
-    }
-
-    const deleteDataSources = async () => {
-        const dataSources = _.get(wizardState, 'pages.rollup') || {};
-        const dataSourceIds = _.keys(dataSources);
-        // return Promise.all(_.map(dataSourceIds, (id: string) => deleteDatasetSourceConfig(id)));
-    }
-
-    return Promise.all([updateDatasetConfig(), deleteDataSources()]);
-}
 
 export const deleteDataset = async ({ id }: any) => {
     const request = generateRequestBody({ apiId: "api.datasets.status-transition", request: { dataset_id: id, status: "Delete" } })
@@ -540,112 +429,7 @@ export const fetchDatasetDiff = (datasetId: string) => {
         .then(response => response?.data)
 }
 
-export const saveDatasetIntermediateState = async (arg: Record<string, any>) => {
-    const { denormFields, denormMetadata } = arg
-    const { store } = require('store');
-    const reduxState = store.getState();
-    const wizardState = _.get(reduxState, 'wizard');
 
-    const datasetConfigState = _.get(wizardState, 'pages.datasetConfiguration');
-    const dataFormatState = _.get(wizardState, 'pages.dataFormat');
-    const dataValidationState = _.get(wizardState, 'pages.dataValidation');
-    const dedupState = _.get(wizardState, 'pages.dedupe');
-    const dataKeyState = _.get(wizardState, 'pages.dataKey');
-    const timestampState = _.get(wizardState, 'pages.timestamp');
-    const jsonSchemaState = _.cloneDeep(_.get(wizardState, 'pages.jsonSchema'));
-    const denormState = _.get(wizardState, 'pages.denorm');
-
-    const datasetId = _.get(datasetConfigState, 'state.config.dataset_id');
-    const datasetName = _.get(datasetConfigState, 'state.config.name')
-    const datasetType = _.get(datasetConfigState, 'state.datasetType');
-
-    const validate = _.get(dataValidationState, 'formFieldSelection') || {};
-    const extractionConfig = _.get(dataFormatState, 'value') || {};
-    const dedupeConfig = _.get(dedupState, 'optionSelection') || {};
-    const data_key = _.get(dataKeyState, 'dataKey') || null;
-    const enableDedupe = _.get(dedupState, 'questionSelection.dedupe') || [];
-    const timestamp_key = _.get(timestampState, 'indexCol') || '';
-    const denorm_fields = _.get(denormState, 'values') || [];
-    const isMaster = datasetType === "master" ? true : false;
-    const versionKeyValue = _.get(datasetConfigState, 'state.config.versionKey');
-    const sample_data = _.get(wizardState, 'pages.sample_data') || {};
-
-
-    let updatedColumns = _.get(wizardState, 'pages.columns.state.schema') || [];
-    const updatePayload = { schema: [...updatedColumns] };
-    const data_schema = _.get(updateJSONSchema(jsonSchemaState, updatePayload), 'schema');
-    setAdditionalProperties(data_schema, validate)
-    const validation_config = { validate: validate !== "none", mode: validate };
-    const isBatchEvent = _.get(extractionConfig, 'type') === 'yes'
-
-    const batchDedup = { dedup_key: isMaster ? '' : _.get(extractionConfig, 'batchId'), drop_duplicates: isMaster ? false : isBatchEvent }
-
-    const extraction_config = {
-        is_batch_event: isBatchEvent, batch_id: _.get(extractionConfig, 'batchId'), extraction_key: _.get(extractionConfig, 'extractionKey'),
-        dedup_config: batchDedup,
-    };
-
-    const enableDedupeChecked = enableDedupe.includes("yes");
-    const dedupKey = isMaster ? '' : enableDedupeChecked ? _.get(dedupeConfig, 'dedupeKey') : '';
-    const dedup_config = { dedup_key: dedupKey, drop_duplicates: isMaster ? false : enableDedupeChecked };
-
-    let updatedDenormFields: any[] = []
-    if (_.size(denormFields)) {
-        if (_.isEmpty(denorm_fields)) {
-            updatedDenormFields.push({
-                "value": _.omit(denormFields, ["redis_db", "dataset_name"]),
-                "action": "upsert"
-            })
-        }
-        else {
-            const denormExists = _.find(denorm_fields, fields => _.get(fields, "denorm_out_field") === _.get(denormFields, "denorm_out_field"))
-            if (_.isEmpty(denormExists)) {
-                updatedDenormFields.push({
-                    "value": _.omit(denormFields, ["redis_db", "dataset_name"]),
-                    "action": "upsert"
-                })
-            }
-        }
-    }
-    if (_.size(denormMetadata)) {
-        const toDeleteDenorm = _.find(denorm_fields, fields => _.get(fields, "denorm_out_field") === _.get(denormMetadata, 'denorm_out_field'))
-        if (toDeleteDenorm) {
-            updatedDenormFields.push({
-                "value": _.omit(toDeleteDenorm, ["redis_db", "dataset_name"]),
-                "action": "remove"
-            })
-        }
-    }
-
-    const payload = {
-        dataset_id: datasetId,
-        name: datasetName,
-        ...(dataValidationState && { validation_config }),
-        ...(dataFormatState && { extraction_config }),
-        ...(!_.isEmpty(dedupKey) && { validation_config }),
-        sample_data,
-        dedup_config,
-        data_schema,
-        dataset_config: {
-            keys_config: { ...(data_key && { data_key }), ...(!_.isEmpty(timestamp_key) && { timestamp_key }) },
-            indexing_config: {
-                "olap_store_enabled": !isMaster,
-                "lakehouse_enabled": false,
-                "cache_enabled": isMaster
-            }
-        },
-        ...(_.size(updatedDenormFields) && {
-            denorm_config: {
-                ..._.omit(denormState, ['value']),
-                denorm_fields: updatedDenormFields
-            }
-        })
-    }
-    const request = generateRequestBody({ request: { ...payload, version_key: _.get(versionKeyMap, ["version_keys", datasetId]) || versionKeyValue || "" }, apiId: "api.datasets.update" });
-    const response = await http.patch(apiEndpoints.updateDataset, request, {});
-    const versionKey = _.get(response, 'data.result.version_key') || ""
-    _.set(versionKeyMap, "version_keys", { [datasetId]: versionKey })
-}
 
 export const getVersionKey = async (datasetId: string) => {
     const datasetRecord = await datasetReadWithParams({ datasetId, params: "status,version_key" })
@@ -654,7 +438,7 @@ export const getVersionKey = async (datasetId: string) => {
 
 export const getDraftTagsPayload = (configs: Record<string, any>) => {
     const { tags, tagsData } = configs
-    let tagPayload: any[] = []
+    const tagPayload: any[] = []
     const removedTags = _.difference(tags, tagsData)
     const addedTags = _.difference(tagsData, tags)
     if (_.size(removedTags)) {
