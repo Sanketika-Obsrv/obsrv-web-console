@@ -18,12 +18,11 @@ import DataValidation from './ProcessingSection/DataValidation/DataValidation';
 import { useFetchDatasetsById, useDatasetList, useUpdateDataset } from 'services/dataset';
 import { TransformationMode } from 'types/datasets';
 import { useNavigate } from 'react-router-dom';
-import helpSectionData from './HelpSectionData.json';
 import Loader from 'components/Loader';
 import { useDetectPiiFields } from 'services/system';
 import { fetchSessionStorageValue } from 'utils/sessionStorage';
 import { flattenObject, setAdditionalProperties } from 'services/json-schema';
-
+import ProcessingHelpText from 'assets/help/processing';
 export const extractTransformationOptions = (schema: any, path: string[] = []): string[] => {
     const options: string[] = [];
 
@@ -238,11 +237,6 @@ const Processing: React.FC = () => {
 
     const handleHelpSectionToggle = () => setIsHelpSectionOpen(!isHelpSectionOpen);
 
-    const helpSection = {
-        isOpen: isHelpSectionOpen,
-        activeMenuId: 'setupGuide',
-        menus: helpSectionData.menus
-    };
 
     const actions = [
         { label: 'Mask', component: '', value: 'mask' },
@@ -452,10 +446,11 @@ const Processing: React.FC = () => {
 
                     <HelpSection
                         helpSection={{
-                            ...helpSection,
-                            highlightedSection: highlightedSection
+                            defaultHighlight: "section1"
                         }}
+                        helpText={<ProcessingHelpText />}
                         onExpandToggle={handleHelpSectionToggle}
+                        highlightSection={highlightedSection}
                         expand={isHelpSectionOpen}
                     />
                 </Box>

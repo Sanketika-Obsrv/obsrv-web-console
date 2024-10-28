@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import ConfigureConnectorForm from 'components/Form/DynamicForm';
-import Action from 'components/ActionButtons/Actions';
-import { Box, Button } from '@mui/material';
-import schemas, { STORE_TYPE, CustomSchema } from './Schema';
-import { UiSchema } from '@rjsf/utils';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
-import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
+import { Box, Button } from '@mui/material';
+import { UiSchema } from '@rjsf/utils';
+import StorageHelpText from 'assets/help/storage';
+import Action from 'components/ActionButtons/Actions';
+import ConfigureConnectorForm from 'components/Form/DynamicForm';
 import HelpSection from 'components/HelpSection/HelpSection';
-import _ from 'lodash';
-import helpSectionData from './HelpSectionData.json';
-import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
-import { useAlert } from 'contexts/AlertContextProvider';
-import { useNavigate } from 'react-router-dom';
 import Loader from 'components/Loader';
+import { useAlert } from 'contexts/AlertContextProvider';
+import _ from 'lodash';
+import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
 import { extractTransformationOptions } from '../Processing/Processing';
+import schemas, { CustomSchema, STORE_TYPE } from './Schema';
 
 interface FormData {
     [key: string]: unknown;
@@ -227,12 +227,6 @@ const Storage = () => {
         setIsHelpSectionOpen(!isHelpSectionOpen);
     };
 
-    const helpSection = {
-        isOpen: isHelpSectionOpen,
-        activeMenuId: 'setupGuide',
-        menus: helpSectionData.menus
-    };
-
     const updateRequiredCacheKeys = (
         storageTypeSelected: string | string[],
         required: string[],
@@ -405,10 +399,11 @@ const Storage = () => {
                     </Box>
                     <HelpSection
                         helpSection={{
-                            ...helpSection,
-                            highlightedSection: highlightedSection
+                            defaultHighlight: "section1"
                         }}
+                        helpText={<StorageHelpText />}
                         onExpandToggle={handleHelpSectionToggle}
+                        highlightSection={highlightedSection}
                         expand={isHelpSectionOpen}
                     />
                 </Box>

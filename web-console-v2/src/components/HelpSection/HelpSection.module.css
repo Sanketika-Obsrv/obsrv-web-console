@@ -14,7 +14,7 @@
 }
 
 .expanded {
-  width: 28.313rem;
+  width: 25rem;
 }
 
 .collapsed {
@@ -78,4 +78,14 @@
   padding: 1rem;
   flex-grow: 1;
   overflow-y: auto;
+}
+
+.section {
+  color: inherit;
+  opacity: 0.1;
+}
+
+.section.highlighted {
+  color: orange;
+  opacity: 1;
 }
