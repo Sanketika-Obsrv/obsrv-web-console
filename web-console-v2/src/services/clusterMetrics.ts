@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { IChartFetchRequest } from 'types/metadata';
 import { http } from './http'
 import { v4 } from 'uuid';

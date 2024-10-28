@@ -20,7 +20,7 @@ enum datasetStatus {
 }
 
 const axiosInstance = axios.create({
-  baseURL: '/v2',
+  baseURL: '/config/v2',
   headers: {
     'Content-Type': 'application/json',
   },

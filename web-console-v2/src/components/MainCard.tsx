@@ -42,7 +42,7 @@ export interface MainCardProps extends KeyedObject {
 const MainCard = forwardRef(
     (
         {
-            border = true,
+            border = false,
             children,
             subheader,
             content = true,

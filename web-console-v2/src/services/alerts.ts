@@ -1,14 +1,23 @@
-import { http } from 'services/http';
-import endpoints from 'data/apiEndpoints';
-import _ from 'lodash';
-import { transformAlertDescription } from './utils';
+import _ from "lodash";
+import { http } from "./http";
 
-export const fetchAlerts = ({ config }: any) => {
-    return http.get(endpoints.alerts, config).then((response) => _.get(response, 'data.data.groups'));
+//For local
+// const ENDPOINTS = {
+//     GRAFANA_RULES: "/alertmanager/api/prometheus/grafana/api/v1/rules"
+// };
+
+// For dev
+const ENDPOINTS = {
+    GRAFANA_RULES: "/console/alertmanager/api/prometheus/grafana/api/v1/rules"
 };
 
-export const fetchFiringAlerts = (groups: Array<Record<string, any>>) => {
-    const rules = _.flatten(_.map(groups, (group) => _.get(group, 'rules') || []));
+const fetchGrafanaRules = ({ rules = [] }) => {
+    return http.get(`${ENDPOINTS.GRAFANA_RULES}`).then((response) => _.get(response, 'data.data.groups'));
+};
+
+export const fetchFiringAlerts = async ({ groups = [] }) => {
+    const alerts = await fetchGrafanaRules({});
+    const rules = _.flatten(_.map(alerts, (group) => _.get(group, 'rules') || []));
     const firingRules = _.filter(rules, ['state', 'firing']);
     const activeAlerts = _.flatten(_.map(firingRules, (firingRule) => _.get(firingRule, 'alerts') || []));
     const firingAlerts = _.filter(activeAlerts, fields => fields?.state !== "Normal");
@@ -22,38 +31,15 @@ export const fetchFiringAlerts = (groups: Array<Record<string, any>>) => {
     return uniqFiringAlerts;
 };
 
-export const addAlert = (payload: any) => {
-    return http.post(`${endpoints.addCustomAlerts}`, payload).then((response) => _.get(response, 'data.result'));
-};
+export const transformAlertDescription = (payload: Record<string, any>) => {
+    const { description = "", labels = {} } = payload;
+    if (!description) return;
+    let alertDescription = description;
 
-export const deleteAlert = ({ id }: any) => {
-    return http.delete(`${endpoints.retireAlert}/${id}`).then((response) => _.get(response, 'data.result'));
-};
-
-export const editAlert = ({ id, data }: any) => {
-    return http.patch(`${endpoints.updateAlert}/${id}`, data).then((response) => _.get(response, 'data.result'));
-}
-
-export const searchAlert = ({ config }: any) => {
-    return http.post(`${endpoints.searchAlerts}`, config).then((response) => _.get(response, 'data.result'));
-};
-
-export const getAlertDetail = ({ id }: any) => {
-    return http.get(`${endpoints.getAlert}/${id}`).then((response: any) => _.get(response, 'data.result.alerts'));
-};
-
-export const publishAlert = ({ id }: any) => {
-    return http.get(`${endpoints.publishAlert}/${id}`).then((response: any) => _.get(response, "data.result"));
-};
-
-export const getMetricAlias = ({ config }: any) => {
-    return http.post(`${endpoints.listMetricsAlias}`, config).then((response) => _.get(response, 'data.result'));
-}
-
-export const addSilence = (payload: any) => {
-    return http.post(`${endpoints.addSilence}`, payload).then((response) => _.get(response, 'data.result'));
-}
-
-export const deleteSilence = (silenceId: string) => {
-    return http.delete(`${endpoints.deleteSilence}/${silenceId}`).then((response) => _.get(response, 'data.result'));
+    _.keys(labels).forEach((key) => {
+        const templateVariable = `{{ \\$\\$labels\\.${key} }}`;
+        const regex = new RegExp(templateVariable, 'g');
+        alertDescription = alertDescription?.replace(regex, labels[key]);
+    });
+    return alertDescription;
 }

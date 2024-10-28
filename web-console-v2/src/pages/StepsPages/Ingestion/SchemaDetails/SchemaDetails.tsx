@@ -394,8 +394,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     };
 
     const handleNavigate = () => {
-        window.location.href = '/console/datasets?status=Draft'
-        // navigate('/console/datasets?status=Draft'); for local testing use this navigation
+        window.location.assign('/console/datasets?status=Draft')
     };
 
     const markRowAsDeleted = (cellValue: Record<string, any>) => {
@@ -696,11 +695,10 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                     ) : (
                         <Box
                             sx={{
-                                flex: 1, // Makes the content above the action buttons scrollable
-                                overflowY: 'auto', // Allows scrolling for the content
-                                paddingBottom: '80px', // Ensures no overlap with the fixed action buttons
+                                flex: 1, 
+                                overflowY: 'auto',
+                                paddingBottom: '80px',
                                 mx: 4,
-                                paddingTop: '3.5rem'
                             }}
                         >
                             {!showTableOnly && (

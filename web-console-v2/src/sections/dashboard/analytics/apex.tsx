@@ -1,3 +1,5 @@
+/* eslint-disable */
+import react from "react";
 import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import _ from 'lodash'
@@ -94,7 +96,7 @@ const ApexChart = (props: any) => {
 
     const renderChart = () => {
         return <>
-            {loading && <Loader loading={false} />}
+            {loading && <Loader loading={loading}/>}
             <ReactApexChart key={Math.random()} options={options} series={series} type={type} {...rest} />
         </>
     }

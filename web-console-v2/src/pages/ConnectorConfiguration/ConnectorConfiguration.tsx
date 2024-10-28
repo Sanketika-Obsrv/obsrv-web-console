@@ -170,8 +170,8 @@ const ConnectorConfiguration: React.FC = () => {
             connectors_config: [
                 {
                     value: {
-                        id: selectedCardId,
-                        connector_id: selectedConnectorId,
+                        id: selectedConnectorId,
+                        connector_id: selectedCardId,
                         connector_config: flattenedConnectorConfig?.source || {},
                         operations_config: flattenedConnectorConfig?.operations_config || {}
                     },

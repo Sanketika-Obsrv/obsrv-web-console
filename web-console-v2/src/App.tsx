@@ -2,8 +2,9 @@ import React, { useState, useCallback, FC } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import _ from 'lodash';
-import { BrowserRouter } from 'react-router-dom';
 import { AlertContextProvider } from 'contexts/AlertContextProvider';
+import { BrowserRouter } from 'react-router-dom';
+
 import SideBar from 'components/Sidebar/Sidebar';
 import Navbar from 'components/Navbar/Navbar';
 import AlertComponent from 'components/@extended/CustomAlert';

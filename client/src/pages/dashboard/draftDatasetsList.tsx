@@ -287,7 +287,7 @@ const DraftDatasetsList = (props: any) => {
                                     const master = row?.type === DatasetType.MasterDataset;
                                     const status = row?.status;
                                     const url = `/home/ingestion/schema-details/${datasetId}`;
-                                    window.location.href = url;
+                                    window.location.assign(url);
                                 }}>
                                 <EditOutlined />
                             </IconButton>

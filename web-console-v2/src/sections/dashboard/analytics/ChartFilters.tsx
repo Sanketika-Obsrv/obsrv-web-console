@@ -6,7 +6,6 @@ import { InfoCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import globalConfig from 'data/initialConfig';
 import dayjs from 'dayjs';
 import interactIds from "data/telemetry/interact.json";
-import { OverflowTypography } from "components/Styled/Typography";
 
 const transformFilter = (filter: Record<string, any>) => {
 
@@ -93,7 +92,7 @@ const ApexWithFilters = (props: any) => {
                             <Grid container alignItems="center">
                                 <Grid item xs={10}>
                                     <Tooltip title={title}>
-                                        <OverflowTypography sx={{ maxWidth: "95%" }} color="textSecondary" mr={1}>{title}</OverflowTypography>
+                                        <Typography sx={{ maxWidth: "95%" }} color="textSecondary" mr={1}>{title}</Typography>
                                     </Tooltip>
                                 </Grid>
                                 <Grid item xs={2}>
@@ -102,7 +101,7 @@ const ApexWithFilters = (props: any) => {
                                             <InfoCircleOutlined />
                                         </Tooltip>
                                         <Tooltip title={'Refresh'}>
-                                            <ReloadOutlined onClick={_ => setRefresh(pre => pre + 1)} />
+                                            <ReloadOutlined onClick={() => setRefresh(pre => pre + 1)} />
                                         </Tooltip>
                                     </Stack>
                                 </Grid>

@@ -424,7 +424,7 @@ const Processing: React.FC = () => {
                         Back
                     </Button>
                 </Box>
-                <Box overflow="auto" display="flex" flexDirection="column" mt={1}>
+                <Box overflow="auto" display="flex" flexDirection="column">
                     <Box
                         className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
                         pr={9}

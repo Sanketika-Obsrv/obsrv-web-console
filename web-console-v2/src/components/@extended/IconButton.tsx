@@ -5,7 +5,6 @@ import { alpha, styled, useTheme } from '@mui/material/styles';
 import { IconButtonProps } from '@mui/material';
 
 import getColors from 'utils/getColors';
-import getShadow from 'utils/getShadow';
 
 import { ButtonVariantProps, ExtendedStyleProps, IconButtonShapeProps } from 'types/extended';
 
@@ -18,7 +17,7 @@ function getColorStyle({ variant, theme, color }: IconButtonStyleProps) {
     const { lighter, light, dark, main, contrastText } = colors;
 
     const buttonShadow = `${color}Button`;
-    const shadows = getShadow(theme, buttonShadow);
+    const shadows = "none";
 
     const commonShadow = {
         '&::after': {
@@ -54,7 +53,7 @@ function getColorStyle({ variant, theme, color }: IconButtonStyleProps) {
             };
         case 'shadow':
             return {
-                boxShadow: shadows,
+                boxShadow: 'none',
                 color: contrastText,
                 backgroundColor: main,
                 '&:hover': {
