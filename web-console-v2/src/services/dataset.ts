@@ -5,33 +5,33 @@ import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionS
 import { generateRequestBody, setVersionKey, transformResponse } from './utils';
 import { queryClient } from 'queryClient';
 
-const ENDPOINTS = {
-    DATASETS_READ: '/console/config/v2/datasets/read',
-    CREATE_DATASET: '/console/config/v2/datasets/create',
-    UPLOAD_FILES: '/console/config/v2/files/generate-url',
-    GENERATE_JSON_SCHEMA: '/console/config/v2/datasets/dataschema',
-    UPDATE_DATASCHEMA: '/console/config/v2/datasets/update',
-    LIST_DATASET: '/console/config/v2/datasets/list',
-    DATASETS_DIFF: '/console/api/dataset/diff',
-    PUBLISH_DATASET: '/console/config/v2/datasets/status-transition',
-    LIST_CONNECTORS: '/console/config/v2/connectors/list',
-    READ_CONNECTORS: '/console/config/v2/connectors/read'
-};
+// const ENDPOINTS = {
+//     DATASETS_READ: '/console/config/v2/datasets/read',
+//     CREATE_DATASET: '/console/config/v2/datasets/create',
+//     UPLOAD_FILES: '/console/config/v2/files/generate-url',
+//     GENERATE_JSON_SCHEMA: '/console/config/v2/datasets/dataschema',
+//     UPDATE_DATASCHEMA: '/console/config/v2/datasets/update',
+//     LIST_DATASET: '/console/config/v2/datasets/list',
+//     DATASETS_DIFF: '/console/api/dataset/diff',
+//     PUBLISH_DATASET: '/console/config/v2/datasets/status-transition',
+//     LIST_CONNECTORS: '/console/config/v2/connectors/list',
+//     READ_CONNECTORS: '/console/config/v2/connectors/read'
+// };
 
 //USE THESE ROUTES FOR LOCAL TESTING
 
-// const ENDPOINTS = {
-//     DATASETS_READ: '/config/v2/datasets/read',
-//     CREATE_DATASET: '/config/v2/datasets/create',
-//     UPLOAD_FILES: '/config/v2/files/generate-url',
-//     GENERATE_JSON_SCHEMA: '/config/v2/datasets/dataschema',
-//     UPDATE_DATASCHEMA: '/config/v2/datasets/update',
-//     LIST_DATASET: '/config/v2/datasets/list',
-//     DATASETS_DIFF: '/api/dataset/diff',
-//     PUBLISH_DATASET: '/config/v2/datasets/status-transition',
-//     LIST_CONNECTORS: '/config/v2/connectors/list',
-//     READ_CONNECTORS: '/config/v2/connectors/read'
-// };
+const ENDPOINTS = {
+    DATASETS_READ: '/config/v2/datasets/read',
+    CREATE_DATASET: '/config/v2/datasets/create',
+    UPLOAD_FILES: '/config/v2/files/generate-url',
+    GENERATE_JSON_SCHEMA: '/config/v2/datasets/dataschema',
+    UPDATE_DATASCHEMA: '/config/v2/datasets/update',
+    LIST_DATASET: '/config/v2/datasets/list',
+    DATASETS_DIFF: '/api/dataset/diff',
+    PUBLISH_DATASET: '/config/v2/datasets/status-transition',
+    LIST_CONNECTORS: '/config/v2/connectors/list',
+    READ_CONNECTORS: '/config/v2/connectors/read'
+};
 
 const configDetailKey = 'configDetails';
 

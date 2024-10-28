@@ -25,6 +25,8 @@ import ConnectorManagementPage from 'pages/ConnectorManagement/ConnectorManageme
 import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
 import SettingsPage from 'pages/Settings/Settings';
 import UploadPage from 'pages/IngestionPage/IngestionPage';
+//import DatasetList from 'pages/DatasetList/DatasetList';
+import DatasetsList from 'pages/dashboardV1/datasetsList';
 
 // TypeScript interface to define the structure of route configuration
 interface RouteConfig {
@@ -79,15 +81,10 @@ const routeConfigurations: RouteConfig[] = [
             { path: 'storage', element: <StorageDashboardPage /> }
         ]
     },
-    // {
-    //     path: `${BASE_PATH}/dataset-management`,
-    //     element: <DatasetManagementPage />,
-    //     children: [
-    //         { path: 'manage', element: <ManageDatasetPage /> },
-    //         { path: 'observe-monitor', element: <ObserveMonitorPage /> },
-    //         { path: 'playground', element: <PlaygroundPage /> }
-    //     ]
-    // },
+    {
+        path: `${BASE_PATH}/dataset-management`,
+        element: <DatasetsList />
+    },
     {
         path: `${BASE_PATH}/connector-management`,
         element: <ConnectorConfigurationPage />,

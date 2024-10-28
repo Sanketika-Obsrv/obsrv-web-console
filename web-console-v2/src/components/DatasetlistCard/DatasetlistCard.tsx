@@ -37,6 +37,14 @@ interface Action {
 
 interface DatasetlistCardProps {
   dataset: Dataset;
+  draftDatasetConfigStatus: {
+    isIngestionFilled: boolean;
+    isProcessingFilled: boolean;
+    isStorageFilled: boolean;
+    progress: number;
+    isConnectorPresent: boolean;
+    isConnectorFilled: boolean;
+  };
   actions: (status: string) => Action[];
   onMenuAction: (
     event: React.MouseEvent<HTMLElement>,
@@ -154,8 +162,112 @@ const DatasetlistCard: React.FC<DatasetlistCardProps> = ({
                           <span className={styles.hyphen}>-</span>
                         </Typography>
                       )}
-                      <Typography variant="caption">
-                        {dataset[field as keyof Dataset] ?? 'NA'}
+                      <Typography variant="caption" >
+                        {field === 'status' ? (
+                          <Box className={styles.draftStatusGroup}>
+                            <span className={styles.draftStatusLabel}>
+                              {dataset[field as keyof Dataset] ?? 'NA'}
+                            </span>
+                            <FormGroup row className={styles.formGroup}>
+                              {draftDatasetConfigStatus.isConnectorPresent ? <FormControlLabel
+                                control={
+                                  draftDatasetConfigStatus.isConnectorFilled ? (
+                                    <Checkbox
+                                      checked={draftDatasetConfigStatus.isConnectorFilled}
+                                      disabled
+                                      sx={{
+                                        color: theme.palette.secondary.main,
+                                        '&.Mui-checked': {
+                                          color: theme.palette.secondary.main,
+                                        },
+                                        '& .MuiSvgIcon-root': { fontSize: 16 }
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box
+                                      className={styles.unchecked}
+                                    >
+                                    </Box>
+                                  )
+                                }
+                                label="Connectors"
+                              />: ''}
+                              <FormControlLabel
+                                control={
+                                  draftDatasetConfigStatus.isIngestionFilled ? (
+                                    <Checkbox
+                                      checked={draftDatasetConfigStatus.isIngestionFilled}
+                                      disabled
+                                      sx={{
+                                        color: theme.palette.secondary.main,
+                                        '&.Mui-checked': {
+                                          color: theme.palette.secondary.main,
+                                        },
+                                        '& .MuiSvgIcon-root': { fontSize: 16 }
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box
+                                      className={styles.unchecked}
+                                    >
+                                    </Box>
+                                  )
+                                }
+                                label="Ingestion"
+                              />
+                              <FormControlLabel
+                                control={
+                                  draftDatasetConfigStatus.isProcessingFilled ? (
+                                    <Checkbox
+                                      checked={draftDatasetConfigStatus.isProcessingFilled}
+                                      disabled
+                                      sx={{
+                                        color: theme.palette.secondary.main,
+                                        '&.Mui-checked': {
+                                          color: theme.palette.secondary.main,
+                                        },
+                                        '& .MuiSvgIcon-root': { fontSize: 16 }
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box
+                                      className={styles.unchecked}
+                                    >
+                                    </Box>
+                                  )
+                                }
+                                label="Processing"
+                              />
+                              <FormControlLabel
+                                control={
+                                  draftDatasetConfigStatus.isStorageFilled ? (
+                                    <Checkbox
+                                      checked={draftDatasetConfigStatus.isStorageFilled}
+                                      disabled
+                                      sx={{
+                                        color: theme.palette.secondary.main,
+                                        '&.Mui-checked': {
+                                          color: theme.palette.secondary.main,
+                                        },
+                                        '& .MuiSvgIcon-root': { fontSize: 16 }
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box
+                                      className={styles.unchecked}
+                                    >
+                                    </Box>
+                                  )
+                                }
+                                label="Storage"
+                              />
+                            </FormGroup>
+                          </Box>
+                        ) : field === 'completion %' ? (
+                          <LinearProgressWithLabel value={draftDatasetConfigStatus.progress} />
+                        ) : (
+                          dataset[field as keyof Dataset] ?? 'NA'
+                        )}
                       </Typography>
                     </div>
                   ) : (

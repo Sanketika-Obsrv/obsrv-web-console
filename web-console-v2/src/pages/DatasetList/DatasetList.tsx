@@ -241,7 +241,7 @@ const DatasetList: React.FC = () => {
       setCopyAnchorEl(event?.currentTarget ?? null);
       setCopyPopoverOpen(true);
     } else if (actionType === 'Edit') {
-      navigate('/edit');
+      navigate(`/home/ingestion/schema-details/${datasetId}`);
     }
   };
 
@@ -353,6 +353,63 @@ const DatasetList: React.FC = () => {
     }
   };
 
+  const datasetConfigStatus = (dataset: Dataset) => {
+    const isConnectorPresent = !_.isEmpty(dataset?.connectors_config)
+    let isConnectorFilled = false;
+    const connectorRequiredFields = ['id', 'connector_id', 'connector_config', 'version'];
+    if (!_.isEmpty(dataset?.connectors_config)) {
+      isConnectorFilled = _.every(dataset.connectors_config, connector => {
+        const allFieldsFilled = _.every(connectorRequiredFields, key => !_.isEmpty((connector as any)[key]));
+        const operationsConfigFilled = connector?.operations_config ? !_.isEmpty(connector.operations_config) : true;
+        return allFieldsFilled && operationsConfigFilled;
+      });
+    }
+
+    const requiredFields = ['name', 'dataset_id', 'data_schema', 'type'];
+    const isIngestionFilled = _.every(requiredFields, key => !_.isEmpty((dataset as any)[key]));
+
+    const isValidationValid = _.get(dataset,'validation_config.validate') && _.get(dataset, 'validation_config.mode');
+    const hasDenormFields = _.isArray(_.get(dataset, 'denorm_config.denorm_fields')) && !_.isEmpty(_.get(dataset, 'denorm_config.denorm_fields'));
+    const isDedupChecked = _.get(dataset, 'dedup_config.drop_duplicates');
+    const dedupValuesProvided = !_.isEmpty(_.get(dataset, 'dedup_config.dedup_key'));
+    const isProcessingFilled = (
+      isValidationValid &&
+      (hasDenormFields || _.isEmpty(_.get(dataset, 'denorm_config.denorm_fields'))) &&
+      (!isDedupChecked || (isDedupChecked && dedupValuesProvided))
+    ) ? true : false;
+
+    const olapStoreEnabled = _.get(dataset, 'dataset_config.indexing_config.olap_store_enabled');
+    const lakehouseEnabled = _.get(dataset, 'dataset_config.indexing_config.lakehouse_enabled');
+    const cacheEnabled = _.get(dataset, 'dataset_config.indexing_config.cache_enabled');
+
+    const timestampKeyProvided = !!_.get(dataset, 'dataset_config.keys_config.timestamp_key');
+    const dataKeyProvided = !!_.get(dataset, 'dataset_config.keys_config.data_key');
+    const partitionKeyProvided = !!_.get(dataset, 'dataset_config.keys_config.partition_key');
+
+    const isStorageFilled = (
+      (!olapStoreEnabled || timestampKeyProvided) &&
+      (!lakehouseEnabled || (dataKeyProvided && partitionKeyProvided)) &&
+      (!cacheEnabled || dataKeyProvided)
+    );
+
+    let progress = 0;
+    if (!_.isEmpty(dataset?.connectors_config)) {
+      progress = (isIngestionFilled ? 25 : 0) +
+        (isProcessingFilled ? 25 : 0) +
+        (isStorageFilled ? 25 : 0) +
+        (isConnectorFilled ? 25 : 0);
+    } else {
+      if (isIngestionFilled && isProcessingFilled && isStorageFilled) {
+        progress = 100;
+      } else {
+        progress = (isIngestionFilled ? 33.33 : 0) +
+                   (isProcessingFilled ? 33.33 : 0) +
+                   (isStorageFilled ? 33.33 : 0);
+      }
+    }
+    return { isIngestionFilled, isProcessingFilled, isStorageFilled, progress, isConnectorPresent, isConnectorFilled};
+  }
+
   const renderContent = () => {
     if (loading) return <Loader loading={loading} />;
     if (error)
@@ -383,7 +440,7 @@ const DatasetList: React.FC = () => {
 
   return (
     <div className={styles.mainContainer}>
-      <Typography variant="bodyBold">All Datasets</Typography>
+      <Typography variant="majorh4">All Datasets</Typography>
       {alertOpen && <CustomAlert type={alertType} title={alertTitle} />}
 
       <FilterdropDown

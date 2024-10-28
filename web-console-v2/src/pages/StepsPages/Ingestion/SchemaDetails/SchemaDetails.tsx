@@ -707,7 +707,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                     {fetchLiveDataset?.data !== undefined ? <></> : <Box mt={-0.3}>
                                         <Button
                                             variant="text"
-                                            sx={{ color: theme.palette.common.black }}
+                                            sx={{ color: theme.palette.common.black, mt: 0.5 }}
                                             startIcon={
                                                 <KeyboardBackspaceIcon
                                                     className={ingestionStyle.iconStyle}
