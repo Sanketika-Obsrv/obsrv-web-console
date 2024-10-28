@@ -48,7 +48,7 @@ const PlaceholderWrapper = styled('div')(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'center',
   color: theme.palette.text.secondary,
-  backgroundColor: alpha(theme.palette.primary.lighter, 0.75),
+  backgroundColor: alpha(theme.palette.primary.light, 0.75),
   transition: theme.transitions.create('opacity', {
     easing: theme.transitions.easing.easeInOut,
     duration: theme.transitions.duration.shorter
