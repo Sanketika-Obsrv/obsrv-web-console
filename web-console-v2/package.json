@@ -13,6 +13,7 @@
     "@mui/icons-material": "^5.16.7",
     "@mui/lab": "5.0.0-alpha.173",
     "@mui/material": "^5.16.7",
+    "@mui/styles": "^6.1.5",
     "@mui/x-charts": "^7.15.0",
     "@rjsf/core": "^5.18.3",
     "@rjsf/mui": "^5.18.3",

@@ -8,11 +8,10 @@ import { IWizard } from 'types/formWizard';
 
 import UploadFiles from './UploadFiles';
 import React, { useEffect, useRef, useState } from 'react';
-import { error, success } from 'services/toaster';
 import { useFormik } from 'formik';
 import { generateSlug } from 'utils/stringUtils';
 import HtmlTooltip from 'components/HtmlTooltip';
-import { datasetRead, importDataset, searchDatasets } from 'services/dataset';
+import { datasetRead, importDataset, searchDatasets } from 'services/datasetV1';
 import FilesPreview from 'components/third-party/dropzone/FilesPreview';
 import { CardTitle, GenericCard } from 'components/Styled/Cards';
 import interactIds from 'data/telemetry/interact.json';
@@ -23,7 +22,8 @@ import BackdropLoader from 'components/BackdropLoader';
 import en from 'utils/locales/en.json';
 import { DatasetStatus } from 'types/datasets';
 import { useNavigate } from 'react-router';
-import ImportDailog from './components/transformationDialogs/ImportDailog';
+import ImportDailog from './ImportDialog';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 export const pageMeta = { pageId: 'datasetConfiguration' };
 export const datasourceMeta = { pageId: 'dataSource' }
@@ -51,6 +51,7 @@ const ImportDataset = ({ setShowWizard, datasetType, generateInteractTelemetry }
     const validationLimitConfig = useSelector((state: any) => state?.config?.validationLimit || {});
     const formikRef = useRef<any>();
     const navigate = useNavigate();
+    const { showAlert } = useAlert();
 
     const validationSchema: any = (validationLimitConfig: Record<string, any>) => checkvalidation && yup.object().shape({
         name: yup
@@ -120,7 +121,7 @@ const ImportDataset = ({ setShowWizard, datasetType, generateInteractTelemetry }
                 }
                 await importDataset(data[0], config, overwrite);
                 navigate(`/datasets?status=${DatasetStatus.Draft}`);
-                dispatch(success({ message: `Dataset imported successfully` }));
+                showAlert(`Dataset imported successfully`, "success");
             } catch (err) {
                 const errStatus = _.get(err, ["response", "status"]);
                 const errCode = _.get(err, ["response", "data", "error", "code"])
@@ -170,7 +171,7 @@ const ImportDataset = ({ setShowWizard, datasetType, generateInteractTelemetry }
         if (_.size(flattenedContents) === 0) {
             setFiles(filteredItems);
             setData(flattenedContents);
-            if (!_.isEmpty(filteredItems)) dispatch(error({ message: 'Invalid file contents' }));
+            if (!_.isEmpty(filteredItems)) showAlert('Invalid file contents', "error");
         } else {
             setFiles(filteredItems);
             setData(flattenedContents);
@@ -208,7 +209,7 @@ const ImportDataset = ({ setShowWizard, datasetType, generateInteractTelemetry }
 
     return (
         <>
-            {loading && <Loader />}
+            {loading && <Loader loading={loading} />}
             <BackdropLoader open={loading} />
             <Grid container spacing={1}>
                 <Grid item xs={12} sm={12}>

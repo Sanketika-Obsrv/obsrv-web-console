@@ -7,7 +7,6 @@ import * as _ from 'lodash';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import PasteData from './PasteData';
 import { readJsonFileContents } from 'services/utils';
 import interactIds from 'data/telemetry/interact.json';
 import Loader from 'components/Loader';
@@ -35,6 +34,7 @@ export function TabPanel(props: any) {
 }
 
 const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema = false, subscribeErrors = null, generateInteractTelemetry, isMultiple = true, datasetImport = false, setNewFile }: any) => {
+    const dispatch = useDispatch();
     const [tabIndex, setTabIndex] = useState(0);
     const [loading, setLoading] = useState(false)
 
@@ -77,10 +77,10 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
             if (_.size(flattenedContents) === 0) throw new Error("Invalid file content");
             setData(flattenedContents);
             setFiles(files);
-            showAlert('Files uploaded.', "success");
+            dispatch(success({ message: 'Files uploaded.' }))
         } catch (err: any) {
-            err?.message && showAlert(err?.message, "error");
-            (typeof err === 'string') && showAlert(err, "error");
+            err?.message && dispatch(error({ message: err?.message }));
+            (typeof err === 'string') && dispatch(error({ message: err }));
             setFiles(null);
             form.setFieldValue("files", null);
             setData(null);
@@ -93,7 +93,7 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
         const jsObject = _.isArray(event) ? event : [event] || {};
         const flattenedData = flattenContents(jsObject);
         if (jsObject && _.isEmpty(flattenedData)) {
-            showAlert("Paste valid JSON Data/Schema", "error");
+            dispatch(error({ message: "Paste valid JSON Data/Schema" }))
             setData()
             return;
         }
@@ -106,7 +106,7 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
 
     return (
         <>
-            {loading && <Loader loading={loading} />}
+            {loading && <Loader loading={loading}/>}
             <Grid container spacing={1}>
                 <Grid item xs={12}>
                     <Box sx={{ width: '100%' }}>
@@ -142,7 +142,6 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
                             </form>
                         </TabPanel>
                         <TabPanel value={tabIndex} index={1}>
-                            <PasteData initialData={data} onChange={onDataPaste}></PasteData>
                             <Stack direction="row" justifyContent="center"
                                 alignItems="center" spacing={1.5} sx={{ mt: 1.5 }}>
                             </Stack>
@@ -155,7 +154,3 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
 };
 
 export default UploadFiles;
-function showAlert(arg0: string, arg1: string) {
-    throw new Error('Function not implemented.');
-}
-

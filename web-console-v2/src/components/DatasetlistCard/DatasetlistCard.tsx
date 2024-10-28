@@ -7,12 +7,16 @@ import {
   Menu,
   MenuItem,
   IconButton,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import prettyBytes from 'pretty-bytes';
 import millify from 'millify';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import styles from './DatasetlistCard.module.css';
 import * as _ from 'lodash';
+import { theme } from 'theme';
 
 interface Dataset {
   dataset_id: string;
@@ -59,6 +63,7 @@ enum DatasetStatus {
 
 const DatasetlistCard: React.FC<DatasetlistCardProps> = ({
   dataset,
+  draftDatasetConfigStatus,
   actions,
   onMenuAction,
 }) => {
