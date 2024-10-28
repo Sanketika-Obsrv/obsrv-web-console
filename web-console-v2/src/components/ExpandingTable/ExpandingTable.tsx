@@ -108,7 +108,8 @@ const ReactTable = ({
                     <TableRow
                         {...row.getRowProps()}
                         sx={{
-                            // border: '2px solid black',
+                            outline: '1px solid #d6d6d6',
+                            borderRadius: '0.5rem',
                             backgroundColor: theme.palette.common.white,
                             ...(!disableRowColor && bgColor()),
                             marginLeft: isSubRow ? `${depth * 20}px` : '0'
@@ -151,7 +152,7 @@ const ReactTable = ({
 
     return (
         <TableContainer sx={tableSx}>
-            <Table sx={{ marginTop: showHeaders ? 0 : '1rem' }} {...getTableProps()}>
+            <Table sx={{ marginTop: showHeaders ? 0 : '1rem', width: '99.8%', marginRight: '0.063rem', marginLeft: '0.063rem' }} {...getTableProps()}>
                 {!showHeaders && (
                     <TableHead sx={tHeadHeight ? { height: tHeadHeight } : {}}>
                         {headerGroups.map((headerGroup) => (

@@ -237,3 +237,8 @@ const omitSuggestions = (schema: any): any => {
     }
     return schema;
 }
+
+export const getConfigValue = (variable: string) => {
+    const config: string | any = sessionStorage.getItem('systemSettings');
+    return _.get(JSON.parse(config), variable);
+};

@@ -109,6 +109,7 @@ const FieldSection = (props: any) => {
                 sx={{
                     '& .MuiAccordion-root': {
                         borderColor: theme.palette.divider,
+                        border: '1px solid #d6d6d6',
                         '& .MuiAccordionSummary-root': {
                             bgcolor: 'transparent',
                             boxShadow: 'none',

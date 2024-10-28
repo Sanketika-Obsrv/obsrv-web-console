@@ -1,16 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Box, Button, Card, Typography } from '@mui/material';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, Card, Grid, Paper, TextField, Typography } from '@mui/material';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { styled } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import { useFormik } from 'formik';
-import _ from 'lodash';
+import _, { isEmpty } from 'lodash';
 import { useNavigate } from 'react-router-dom';
 import { theme } from 'theme';
 import { useAlert } from 'contexts/AlertContextProvider';
 import Actions from 'components/ActionButtons/Actions';
 import FilesPreview from 'components/Dropzone/FilesPreview';
-import InjestionForm from 'components/Form/DynamicForm';
 import HelpSection from 'components/HelpSection/HelpSection';
 import Loader from 'components/Loader';
 import Retry from 'components/Retry/Retry';
@@ -26,12 +25,11 @@ import {
     useReadUploadedFiles
 } from 'services/dataset';
 import { readJsonFileContents } from 'services/utils';
-import schemas from './Schema';
 import ingestionStyle from './Ingestion.module.css';
 import helpSectionData from './HelpSectionData.json';
-import { getConfigValue } from 'services/configData';
 import axios from 'axios';
-
+import localStyles from "./Ingestion.module.css";
+import RejectionFiles from 'components/Dropzone/RejectionFiles';
 interface FormData {
     [key: string]: unknown;
 }
@@ -63,28 +61,13 @@ const Ingestion = () => {
     const navigate = useNavigate();
     const initialConfigDetails = JSON.parse(sessionStorage.getItem('configDetails') || '{}');
 
-    const datasetId = getConfigValue('dataset_id') || '';
-    const datasetName = getConfigValue('name') || '';
-    const versionKey = getConfigValue('version_key') || '';
-
-    const [formData, setFormData] = useState<FormData>({
-        section0: {
-            section1: {
-                datasetName: datasetName,
-                datasetId: datasetId
-            }
-        }
-    });
-
-    const [formErrors, setFormErrors] = useState<unknown[]>([]);
-
-    const [extraErrors, setExtraErrors] = useState<any>({});
+    const [datasetName, setDatasetName] = useState('');
+    const [datasetId, setDatasetId] = useState('');
+    const [nameError, setNameError] = useState('');
 
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(false);
 
     const formikRef = useRef<any>();
-
-    const datasetIdRef = useRef<string>('');
 
     const { data: dataState, files: filesState, config: configState } = {} as any;
 
@@ -94,11 +77,12 @@ const Ingestion = () => {
 
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
 
-    const datasetIdtoFetch = datasetId ? datasetId : datasetIdRef.current;
-
     const connectorConfigData = sessionStorage.getItem('connectorConfigDetails');
 
     const ConnectorConfiguration = connectorConfigData ? JSON.parse(connectorConfigData) : null;
+
+    const [fileErrors, setFileErrors] = useState<any>(null);
+     const maxFileSizeConfig = 5242880;
 
     const {
         data: uploadData,
@@ -131,7 +115,7 @@ const Ingestion = () => {
     } = useGenerateJsonSchema();
 
     const { data: fetchData, refetch } = useFetchDatasetsById({
-        datasetId: datasetIdtoFetch,
+        datasetId: datasetId,
         queryParams: 'status=Draft&mode=edit&fields=dataset_config'
     });
 
@@ -141,9 +125,6 @@ const Ingestion = () => {
         isPending: isUpdateLoading,
         isError: isErrorUpdate
     } = useUpdateDataset();
-
-    const generateDatasetId = (datasetName: string) =>
-        datasetName.toLowerCase().replace(/\s+/g, '-');
 
     const extractValidJsonFromMultipart = (multipartData: string): string => {
         const boundaryPattern = /------WebKitFormBoundary[\s\S]*?\r?\n\r?\n/;
@@ -227,67 +208,29 @@ const Ingestion = () => {
         }
     }, [filenames, readUploadedFiles.data]);
 
-    const fetchDataset = _.debounce(async (datasetId) => {
-        try {
-            const newExtraErrors = {
-                section1: {
-                    datasetName: {
-                        __errors: []
-                    }
-                }
-            };
-
-            const response = await refetch();
-
+    const fetchDataset = (id: string) => {
+        refetch().then(response => {
             if (response.isSuccess) {
-                const message = 'DatasetId is already taken';
-
-                _.set(newExtraErrors, ['section1', 'datasetName', '__errors', 0], message);
-
-                setExtraErrors(newExtraErrors);
-
-                setFormErrors([message]);
+                setNameError('Dataset already exists');
             } else {
-                setExtraErrors(newExtraErrors);
+                setNameError('');
+            }
+        }).catch(error => {
+            console.error('Error fetching dataset:', error);
+        })
+    }
 
-                setFormErrors([]);
-            }
-        } catch {
-            showAlert('Error fetching dataset:', 'error');
-        }
-    }, 3000);
+    const debouncedFetchDataset = useMemo(
+        () => _.debounce(fetchDataset, 800), []
+    );
+
     useEffect(() => {
-        const datasetName = _.get(formData, ['section0', 'section1', 'datasetName']) as
-            | string
-            | undefined;
-        const generatedId = datasetName ? generateDatasetId(datasetName) : '';
-        if (datasetId === '') {
-            if (_.get(formData, ['section0', 'section1', 'datasetId']) !== generatedId) {
-                const updatedFormData = _.set(
-                    _.cloneDeep(formData),
-                    ['section0', 'section1', 'datasetId'],
-                    generatedId
-                );
-                setFormData(updatedFormData);
-                datasetIdRef.current = generatedId;
-                fetchDataset(generatedId);
-            }
+        if (datasetId) {
+            debouncedFetchDataset(datasetId);
         }
-    }, [formData, fetchDataset]);
+    }, [datasetId]);
 
     const handleDatasetNameClick = (id: string) => setHighlightedSection(id);
-
-    const handleChange: ConfigureConnectorFormProps['onChange'] = (newFormData, errors) => {
-        setFormData(newFormData);
-
-        if (errors) {
-            setFormErrors(errors);
-        } else {
-            setFormErrors([]);
-        }
-
-        if (newFormData) handleDatasetNameClick('section1');
-    };
 
     const onFileRemove = async (file: File | string) => {
         const filteredItems = !_.isEmpty(files)
@@ -321,7 +264,7 @@ const Ingestion = () => {
                 )
             );
 
-            const dataset = _.get(formData, ['section0', 'section1', 'datasetName']);
+            const dataset = datasetId;
 
             const payload = _.isArray(data) ? data : [data];
 
@@ -330,16 +273,16 @@ const Ingestion = () => {
                 payload: { data: payload, config: { dataset } }
             });
         }
-    }, [uploadData, uploadToUrlMutate, files, formData, data, generateJsonSchemaMutate]);
+    }, [uploadData, uploadToUrlMutate, files, data, generateJsonSchemaMutate]);
 
     useEffect(() => {
         if (!_.isEmpty(uploadData) && generateData) {
             const { schema } = generateData;
             const filePaths = _.map(uploadData, 'filePath');
-            if (!datasetId) {
+            if (datasetId) {
                 const config = {
-                    name: _.get(formData, ['section0', 'section1', 'datasetName']),
-                    dataset_id: _.get(formData, ['section0', 'section1', 'datasetId']),
+                    name: datasetName,
+                    dataset_id: datasetId,
                     dataset_config: {
                         keys_config: {},
                         indexing_config: {},
@@ -358,12 +301,13 @@ const Ingestion = () => {
                                 (fetchData && fetchData.dataset_config?.indexing_config) || {},
                             file_upload_path: filePaths
                         },
-                        data_schema: schema
+                        data_schema: schema,
+                        dataset_id: datasetId
                     }
                 });
             }
         }
-    }, [uploadData, generateData, formData, createDatasetMutate]);
+    }, [uploadData, generateData, createDatasetMutate]);
 
     useEffect(() => {
         if (createData) {
@@ -408,11 +352,11 @@ const Ingestion = () => {
     }, [updateDatasetData, navigate]);
 
     const onSubmit = () => {
-        initialConfigDetails.name = _.get(formData, ['section0', 'section1', 'datasetName']);
+        initialConfigDetails.name = datasetName;
         sessionStorage.setItem('configDetails', JSON.stringify(initialConfigDetails));
 
         if (!_.isEmpty(files) && _.size(files) > MAX_FILES) {
-            showAlert('Pre-signed URL generation failed: limit exceeded', 'error');
+            showAlert(`Exceeded the maximum number of files, ${MAX_FILES} files are allowed`, 'error');
             return;
         }
         if (data || !_.isEmpty(files)) {
@@ -440,6 +384,26 @@ const Ingestion = () => {
         setFiles(null);
 
         setData(null);
+    };
+
+    useEffect(() => {
+        if (datasetName) {
+            const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
+            setDatasetId(generatedId);
+        } else {
+            setDatasetId('');
+        }
+    }, [datasetName]);
+
+    const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        if (nameRegex.test(newValue)) {
+            setDatasetName(newValue);
+            setNameError('');
+        } else {
+            setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
+        }
     };
 
     return (
@@ -500,18 +464,42 @@ const Ingestion = () => {
                                 </Box>
                                 <Box>
                                     <Box
-                                        px={3}
+                                        px={2}
                                         className={`${styles.formContainer} ${ingestionStyle.container} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
                                     >
-                                        <Box onClick={() => handleDatasetNameClick('section1')}>
-                                            <InjestionForm
-                                                schemas={schemas}
-                                                formData={formData}
-                                                setFormData={setFormData}
-                                                onChange={handleChange}
-                                                extraErrors={extraErrors}
-                                            />
-                                        </Box>
+
+                                        <GenericCard className={localStyles.datasetDetails}>
+                                            <Box className={localStyles?.heading}>
+                                                <Typography variant='h1'>Dataset Details</Typography>
+                                            </Box>
+
+                                            <Grid container spacing={3} className={localStyles?.gridContainer}>
+                                                <Grid item xs={12} sm={6} lg={6}>
+                                                    <TextField
+                                                        name={'name'}
+                                                        label={'Dataset Name'}
+                                                        value={datasetName}
+                                                        onChange={handleNameChange}
+                                                        required
+                                                        variant="outlined"
+                                                        fullWidth
+                                                        error={Boolean(nameError)}
+                                                        helperText={nameError}
+                                                    />
+                                                </Grid>
+                                                <Grid item xs={12} sm={6} lg={6}>
+                                                    <TextField
+                                                        name={'dataset_id'}
+                                                        label={'Dataset ID'}
+                                                        value={datasetId}
+                                                        required
+                                                        variant="outlined"
+                                                        fullWidth
+                                                        disabled
+                                                    />
+                                                </Grid>
+                                            </Grid>
+                                        </GenericCard>
                                         <GenericCard onClick={() => handleDatasetNameClick('section2')}>
                                             <UploadFiles
                                                 data={data}
@@ -519,6 +507,8 @@ const Ingestion = () => {
                                                 files={files}
                                                 setFiles={setFiles}
                                                 allowSchema
+                                                maxFileSize={maxFileSizeConfig}
+                                                subscribeErrors={setFileErrors}
                                             />
                                             {!_.isEmpty(files) && (
                                                 <Box mx={3} mt={18}>
@@ -539,6 +529,9 @@ const Ingestion = () => {
                                                     />
                                                 </Box>
                                             )}
+                                            <Box sx={{marginTop: 30, mr: 1, ml: 1, mb:1}}>
+                                                 {fileErrors?.length > 0 && <RejectionFiles fileRejections={fileErrors} />}
+                                             </Box>
                                         </GenericCard>
                                     </Box>
                                 </Box>
@@ -573,10 +566,7 @@ const Ingestion = () => {
                                             label: datasetId !== '' ? 'Proceed' : 'Create Schema',
                                             variant: 'contained',
                                             color: 'primary',
-                                            disabled:
-                                                _.isEmpty(formData) ||
-                                                _.isEmpty(data) ||
-                                                !_.isEmpty(formErrors)
+                                            disabled: !_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files)
                                         }
                                     ]}
                                     onClick={onSubmit}

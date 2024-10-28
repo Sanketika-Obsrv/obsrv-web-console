@@ -123,7 +123,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
 
             <Box className={styles.box}>
                 <List>
-                    {elements.map((item) => {
+                    {elements.map((item: any) => {
                         const isSelected = item.route === selectedItem;
                         const isOpen = item.route === openParent;
                         const hasSelectedChild = isOpen && selectedChildItem;
@@ -189,7 +189,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
 
                                 {((expand && isOpen) || (!expand && isOpen)) && item.children && (
                                     <List>
-                                        {item.children.map((child) => {
+                                        {item.children.map((child: any) => {
                                             const isChildSelected =
                                                 child.route === selectedChildItem;
                                             return (
@@ -248,7 +248,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                     })}
                 </List>
 
-                <List sx={{ marginTop: 'auto' }}>
+                {/* <List sx={{ marginTop: 'auto' }}>
                     <Tooltip title={!expand ? 'Settings' : ''} placement="right">
                         <ListItem
                             className={`${styles.listItem} ${
@@ -312,7 +312,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                             )}
                         </ListItemButton>
                     </Tooltip>
-                </List>
+                </List> */}
             </Box>
         </div>
     );

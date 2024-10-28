@@ -394,7 +394,8 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     };
 
     const handleNavigate = () => {
-        navigate(-1);
+        window.location.href = '/console/datasets?status=Draft'
+        // navigate('/console/datasets?status=Draft'); for local testing use this navigation
     };
 
     const markRowAsDeleted = (cellValue: Record<string, any>) => {
@@ -568,7 +569,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                 {
                     onSuccess: () => {
                         showAlert('Schema updated successfully', 'success');
-                        navigate('/home/processing');
+                        navigate(`/home/processing/${datasetId}`);
                     }
                 }
             );
@@ -859,9 +860,9 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                         position: 'fixed',
                         bottom: 0,
                         right: 0,
-                        left: -30,
+                        left: -50,
                         backgroundColor: theme.palette.background.paper,
-                        transition: 'width 0.3s ease',
+                        zIndex:100
                     }}
                 >
                     <Actions
