@@ -79,12 +79,12 @@ const Preview: FC = (): ReactElement => {
                 { payload },
                 {
                     onSuccess: () => {
-                        window.location.href = urlToPublish;
+                        window.location.assign(urlToPublish);
                     }
                 }
             );
         } else {
-            window.location.href = urlToPublish;
+            window.location.assign(urlToPublish);
         }
         setOpen(false);
     };

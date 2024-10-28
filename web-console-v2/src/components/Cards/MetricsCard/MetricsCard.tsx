@@ -50,7 +50,7 @@ const MetricsCard: React.FC<any> = (props: any) => {
           >
             <span>{icon}</span>
             <Typography variant="bodyBold" className={styles.loadingText}>
-              {loading ? 'Loading...' : value}
+              {loading ? 'Loading...' : value[0] || value}
             </Typography>
 
             <Grid

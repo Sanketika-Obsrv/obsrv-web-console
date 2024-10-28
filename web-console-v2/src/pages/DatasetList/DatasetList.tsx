@@ -52,7 +52,7 @@ const allActions: Action[] = [
   { label: 'Publish', icon: NearMeOutlinedIcon, type: 'Live' },
   { label: 'Retire', icon: NotInterestedOutlinedIcon, type: 'Retire' },
   // { label: 'Archive', icon: InboxOutlinedIcon, type: 'archive' },
-];
+]
 
 const excludedActions: Record<string, string[]> = {
   Draft: ['Live', 'Retire', 'Export', 'archive'],
