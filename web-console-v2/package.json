@@ -4,6 +4,7 @@
   "private": true,
   "proxy": "http://localhost:3000/console",
   "dependencies": {
+    "@ant-design/icons": "^5.5.1",
     "@emotion/react": "11.11.4",
     "@emotion/styled": "11.11.5",
     "@fontsource/montserrat": "^5.0.18",
@@ -25,7 +26,6 @@
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
     "ajv-errors": "3.0.0",
-    "antd": "^5.21.5",
     "apexcharts": "^3.53.0",
     "axios": "^1.7.7",
     "dayjs": "^1.11.13",
