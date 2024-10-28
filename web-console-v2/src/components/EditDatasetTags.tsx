@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, } from "react";
 import * as _ from "lodash";
 import { Popover, Card, Box, TextField, Typography, Button, Chip, Tooltip, InputAdornment, } from "@mui/material";
-import { useDispatch, useSelector, } from "react-redux";
-import { error, } from "services/toaster";
 import AnimateButton from "./@extended/AnimateButton";
 import AddIcon from '@mui/icons-material/Add';
 import { hasSpecialCharacters } from "services/utils";
@@ -11,8 +9,7 @@ import en from 'utils/locales/en.json'
 const EditDatasetTags = ({ dataset, open, anchorEl, handleClose = () => { }, handleSave = () => { }, }: any) => {
     const textRef: any = useRef();
     const [tagsData, setTagsData] = useState<string[]>(_.get(dataset, 'tags') || []);
-    const dispatch = useDispatch();
-    const maxTagsLimit: any = useSelector((state: any) => state?.config?.validationLimit?.maxTag || 5);
+    const maxTagsLimit: any = 5;
     const [disable, setDisable] = useState<boolean>(true);
 
     const checkInput = (newTag: string) => {
