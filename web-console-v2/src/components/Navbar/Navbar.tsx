@@ -7,7 +7,7 @@ import Grafana from 'assets/icons/Grafana';
 import Superset from 'assets/icons/Superset';
 import _ from 'lodash';
 import { getConfigValue } from 'services/dataset';
-import Notification from 'components/Notification/Notification';
+import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
 

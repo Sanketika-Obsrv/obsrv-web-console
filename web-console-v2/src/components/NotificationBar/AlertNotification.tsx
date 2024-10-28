@@ -11,7 +11,7 @@ import Avatar from 'components/@extended/Avatar';
 import * as _ from 'lodash';
 import dayjs from 'dayjs';
 import { AlertOutlined } from '@ant-design/icons';
-import styles from './Notification.module.css';
+import styles from './AlertNotification.module.css';
 
 const Notification = (props: any) => {
     const { open, setOpen, alerts } = props || {}
