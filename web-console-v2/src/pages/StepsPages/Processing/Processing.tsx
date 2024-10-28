@@ -194,7 +194,7 @@ const Processing: React.FC = () => {
 
     const { mutate: updateDataset } = useUpdateDataset();
 
-    const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(false);
+    const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
 
     const handleProceed = (value: boolean) => {
         setCanProceed(value);
@@ -295,6 +295,7 @@ const Processing: React.FC = () => {
             component: (
                 <div onClick={() => handleDatasetNameClick('section3')}>
                     <ProcessingSection
+                        onClick={() => handleDatasetNameClick('section3')}
                         id="pii"
                         actions={actions}
                         transformation_mode={transformation_mode}
@@ -408,10 +409,10 @@ const Processing: React.FC = () => {
                     flex: 1,
                     overflowY: 'auto',
                     paddingBottom: '80px',
-                    paddingTop: 2
+                    paddingTop: '3.5rem'
                 }}
             >
-                <Box mx={3.5} mt={-3} mb={1.7}>
+                <Box mx={3.5} mb={2}>
                     <Button
                         variant="text"
                         sx={{ color: theme.palette.text.primary }}
@@ -461,8 +462,8 @@ const Processing: React.FC = () => {
                 sx={{
                     position: 'fixed',
                     bottom: 0,
-                    left: -30,
-                    width: isHelpSectionOpen ? 'calc(100% - 450px)' : '100%',
+                    left: 0,
+                    width: isHelpSectionOpen ? 'calc(100% - 23rem)' : '100%',
                     transition: 'width 0.3s ease',
                     zIndex:50
                 }}

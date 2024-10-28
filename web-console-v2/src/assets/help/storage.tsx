@@ -3,9 +3,9 @@ import React from 'react';
 const StorageHelpText = () =>{
     return (
         <div className="displayContent">
-            <div className="section" id="section1">
+            <h1 className="contentsHeader">Setup Guide for Dataset Storage</h1>
+            <section className="section" id="section1">
                 <div className="displayContent">
-                    <h1 className="contentsHeader">Setup Guide for Dataset Storage</h1>
                     <h1 className="contentsHeader">Dataset Storage</h1>
                     <h3 className="contentsHeader">Dataset Type</h3>
                     <p className="contentBody">
@@ -17,9 +17,9 @@ const StorageHelpText = () =>{
                         <li className="contentBody"><strong>Transactional</strong></li>
                     </ul>
                 </div>
-            </div>
+            </section>
             
-            <div className="section" id="section2">
+            <section className="section" id="section2">
                 <div className="displayContent">
                     <h3 className="contentsHeader">Dataset Store</h3>
                     <ul className="customList">
@@ -27,9 +27,9 @@ const StorageHelpText = () =>{
                         <li className="contentBody"><strong>Real-time Store</strong></li>
                     </ul>
                 </div>
-            </div>
+            </section>
             
-            <div className="section" id="section3">
+            <section className="section" id="section3">
                 <div className="displayContent">
                     <h3 className="contentsHeader">Indexing Config</h3>
                     <ul className="customList">
@@ -38,7 +38,7 @@ const StorageHelpText = () =>{
                         <li className="contentBody"><strong>A partition key for tenanting, efficient querying of data:</strong> Can be any text/number field. Partition key can be a combination of more than one field.</li>
                     </ul>
                 </div>
-            </div>
+            </section>
         </div>
     );
 }

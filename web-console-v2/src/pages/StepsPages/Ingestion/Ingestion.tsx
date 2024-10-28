@@ -448,12 +448,13 @@ const Ingestion = () => {
                                     flex: 1, 
                                     overflowY: 'auto',
                                     paddingBottom: '80px',
+                                    paddingTop: '3.5rem'
                                 }}
                             >
                                 <Box mx={4}>
                                     <Button
                                         variant="text"
-                                        sx={{ color: theme.palette.common.black, mt: 2 }}
+                                        sx={{ color: theme.palette.common.black, marginBlock    : 2 }}
                                         startIcon={
                                             <KeyboardBackspaceIcon className={ingestionStyle.iconStyle} />
                                         }

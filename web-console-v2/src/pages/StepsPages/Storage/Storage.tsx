@@ -47,9 +47,10 @@ export const getDatasetType = (type: string) => {
 };
 
 const Storage = () => {
+
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
     const [formData, setFormData] = useState<{ [key: string]: unknown }>({});
-    const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(false);
+    const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
 
     const [datasetType, setDatasetType] = useState<string>('');
@@ -353,6 +354,7 @@ const Storage = () => {
                     flex: 1,
                     overflowY: 'auto',
                     paddingBottom: '80px',
+                    paddingTop: '4rem'
                 }}
             >
                 <Button
@@ -363,7 +365,7 @@ const Storage = () => {
                             sx={{ color: 'black', width: '1.5rem', height: '1.5rem' }}
                         />
                     }
-                    sx={{ fontSize: '1rem', ml: 2, mt: 2 }}
+                    sx={{ fontSize: '1rem', ml: 2 }}
                     onClick={() => {
                         navigate(-1);
                     }}

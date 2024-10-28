@@ -3,8 +3,8 @@ import React from 'react';
 const ProcessingHelpText = () =>{
     return (
         <div className="displayContent">
+            <h1 className="contentsHeader">Setup Guide for Dataset Processing</h1>
             <section className="section" id="section1">
-                <h1 className="contentsHeader">Setup Guide for Dataset Processing</h1>
                 <h1 className="contentsHeader">Data Validation</h1>
                 <p className="contentBody"></p>
                 <ul className="customList">
@@ -43,10 +43,10 @@ const ProcessingHelpText = () =>{
                 <p className="contentBody">Create new columns by applying custom transform expressions.</p>
             </section>
 
-            <div className="section" id="section6">
+            <section className="section" id="section6">
                 <h1 className="contentsHeader">Dedupe Events</h1>
                 <p className="contentBody">Drop the duplicate fields.</p>
-            </div>
+            </section>
         </div>
     );
 }

@@ -1,4 +1,6 @@
 .stepper {
+  position: fixed;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -6,6 +8,7 @@
   background-color: var(--white-color);
   height: 4rem;
   box-shadow: var(--shadow-large);
+  z-index: 50;
 }
 
 .step {

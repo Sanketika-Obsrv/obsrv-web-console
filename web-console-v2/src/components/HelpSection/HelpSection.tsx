@@ -18,12 +18,14 @@ interface Props {
     highlightSection: string | null;
     expand: boolean;
 }
-
+let highlightedSection = "";
 const HelpSection: React.FC<Props> = ({ helpSection, helpText, highlightSection, onExpandToggle, expand }) => {
-
-    const highlightedSection = highlightSection || helpSection.defaultHighlight;
     
     const generateDynamicStyles = (): Record<string, any> => {
+        if(highlightSection === highlightedSection) {
+            return {};
+        }
+        highlightedSection = highlightSection || helpSection.defaultHighlight;
         const styles: Record<string, any> = {};
         if(helpText) {
             const sections = document.getElementsByTagName('section');
@@ -114,7 +116,7 @@ const HelpSection: React.FC<Props> = ({ helpSection, helpText, highlightSection,
                                                     color: 'primary.main'
                                                 }}
                                             >
-                                                {helpSection.title}
+                                                {helpSection.title || "Setup Guide"}
                                             </Typography>
                                         </Box>
                                     </Box>
