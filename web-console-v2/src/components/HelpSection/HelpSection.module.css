@@ -3,7 +3,7 @@
   position: fixed;
   top: 3.438rem;
   right: 0;
-  height: calc(100vh - 3.438rem);
+  max-height: calc(100vh - 3.438rem);
   display: flex;
   flex-direction: column;
   transition:
