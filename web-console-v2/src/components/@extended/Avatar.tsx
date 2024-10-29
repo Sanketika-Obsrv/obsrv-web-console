@@ -1,4 +1,4 @@
-import * as React from 'react';
+/* eslint-disable */
 import { ReactNode } from 'react';
 
 

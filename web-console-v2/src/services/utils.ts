@@ -23,6 +23,20 @@ export const hasSpacesInField = (
     return !regex.test(value);
 };
 
+export const validateFormValues = async (form: React.MutableRefObject<any>, value: Record<string, any>) => {
+    let validationStatus = true;
+    if (form.current) {
+        const formikReference = form.current as any;
+        for (const field in value) {
+            formikReference.setFieldTouched(field)
+        }
+        const validationState = await formikReference.validateForm(value);
+        validationStatus = _.size(validationState) === 0;
+    }
+
+    return validationStatus;
+}
+
 export const readJsonFileContents = (file: File) => {
     return new Promise((resolve, reject) => {
         if (file.type === 'application/json') {

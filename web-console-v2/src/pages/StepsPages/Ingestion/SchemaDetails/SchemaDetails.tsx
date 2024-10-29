@@ -706,7 +706,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                     {fetchLiveDataset?.data !== undefined ? <></> : <Box marginBlock={2}>
                                         <Button
                                             variant="text"
-                                            sx={{ color: theme.palette.common.black }}
+                                            sx={{ color: theme.palette.common.black, mt: 0.5 }}
                                             startIcon={
                                                 <KeyboardBackspaceIcon
                                                     className={ingestionStyle.iconStyle}
@@ -725,7 +725,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                     >
                                         <Box display="flex" alignItems="center">
                                             <Typography
-                                                variant="h6"
+                                                variant="h1"
                                                 component="span"
                                                 fontWeight={600}
                                             >
