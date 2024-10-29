@@ -8,7 +8,7 @@ const http = axios.create({ baseURL: getBaseURL() });
 const responseInterceptor = (response: any) => response;
 
 const checkForSessionExpiry = (config: any) => {
-    const { navigate, status, dispatch } = config;
+    const { navigate, status } = config;
     if (status === 401) {
         // alert('Unauthorized access !!');
         navigate(`/login`);
@@ -16,10 +16,10 @@ const checkForSessionExpiry = (config: any) => {
 }
 
 const errorInterceptor = (config: any) => {
-    const { navigate, dispatch } = config;
+    const { navigate } = config;
     return (error: any) => {
         const status = error?.response?.status;
-        checkForSessionExpiry({ navigate, status, dispatch });
+        checkForSessionExpiry({ navigate, status });
         return Promise.reject(error)
     }
 }
