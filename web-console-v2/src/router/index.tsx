@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+
 // Import pages for different routes
 import NewDatasetPage from 'pages/NewDataset/NewDataset';
 import IngestionPage from 'pages/StepsPages/Ingestion/Ingestion';
@@ -17,6 +18,7 @@ import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/
 import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
 import ClusterHealth from 'pages/dashboardV1/datasets';
+
 import StepperPage from 'pages/StepsPages/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
