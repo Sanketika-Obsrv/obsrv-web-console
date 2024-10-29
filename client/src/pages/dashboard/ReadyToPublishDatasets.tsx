@@ -144,8 +144,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
             const exportDatasetResponse = await exportDataset(dataset_id, DatasetStatus.Draft);
             const jsonSchema: any = _.get(exportDatasetResponse, 'data.result')
             if (jsonSchema) {
-                const data = _.get(downloadJSONSchema({ schema: jsonSchema }, { schema: flattenSchema(jsonSchema?.data_schema) }), 'schema');
-                downloadJsonFile(data, fileName);
+                downloadJsonFile(jsonSchema, fileName);
             }
         }
         catch (err) {
@@ -352,7 +351,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                     const master = row?.type === DatasetType.MasterDataset;
                                     const status = row?.status;
                                     const url = `/home/ingestion/schema-details/${datasetId}`;
-                                    window.location.href = url;
+                                    window.location.assign(url);
                                 }}>
                                 <EditOutlined />
                             </IconButton>

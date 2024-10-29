@@ -417,7 +417,7 @@ const Processing: React.FC = () => {
                     paddingTop: 2
                 }}
             >
-                <Box mx={3.5} mt={-3} mb={1.7}>
+                <Box mx={3.5} marginBlock={2} mt={-2}>
                     <Button
                         variant="text"
                         sx={{ color: theme.palette.text.primary }}
@@ -429,7 +429,7 @@ const Processing: React.FC = () => {
                         Back
                     </Button>
                 </Box>
-                <Box overflow="auto" display="flex" flexDirection="column" mt={1}>
+                <Box overflow="auto" display="flex" flexDirection="column">
                     <Box
                         className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
                         pr={9}
@@ -467,7 +467,7 @@ const Processing: React.FC = () => {
                     position: 'fixed',
                     bottom: 0,
                     left: -30,
-                    width: isHelpSectionOpen ? 'calc(100% - 450px)' : '100%',
+                    width: isHelpSectionOpen ? 'calc(100% - 400px)' : '102%',
                     transition: 'width 0.3s ease',
                     zIndex:50
                 }}

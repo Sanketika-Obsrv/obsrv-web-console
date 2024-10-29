@@ -535,7 +535,7 @@ export const createDraftversion = async ({ selection, navigateToPath, dispatch, 
             navigateToPath(`/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
             return;
         }
-        navigateToPath(`/datasets/edit/${datasetResponse?.data?.result?.dataset_id}?master=${_.get(datasetResponse, 'data.result.type') === DatasetType.MasterDataset}&status=${DatasetStatus.Draft}&page=0`)
+        window.location.assign(`/home/ingestion/schema-details/${datasetResponse?.data?.result?.dataset_id}`)
         _.set(versionKeyMap, "version_keys", { [selection]: _.get(datasetResponse, "data.result.version_key") })
         return;
     }
