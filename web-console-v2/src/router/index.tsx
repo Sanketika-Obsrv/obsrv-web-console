@@ -17,7 +17,7 @@ import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/
 import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
 import ClusterHealth from 'pages/dashboardV1/datasets';
-import RollupConfig from 'pages/rollup/components';
+import RollupConfig from 'pages/Rollup/components';
 import DatasetManagement from 'pages/DatasetManagement/components/DatasetManagement';
 import StepperPage from 'pages/StepsPages/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
