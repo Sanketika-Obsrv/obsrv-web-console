@@ -11,9 +11,10 @@ import _ from 'lodash';
 import { theme } from 'theme';
 import { storeSessionStorageItem } from 'utils/sessionStorage';
 import { getConfigValue } from 'services/configData';
+import sampleSchema from './Schema';
 
 interface ConfigureConnectorFormProps {
-    schemas: Schema[];
+    schema: Schema;
     formData: FormData;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     onChange: (formData: FormData, errors?: unknown[] | null) => void;
@@ -24,17 +25,15 @@ const ConnectorConfiguration: React.FC = () => {
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [selectedConnectorId, setSelectedConnectorId] = useState<string | null>(null);
-
+    const [connectorHelpText, setConnectorHelpText] = useState<string | null>(null);
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
-    const [schemas, setSchemas] = useState<Schema[]>([]);
+    const [schema, setSchema] = useState<Schema>(sampleSchema);
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
 
     const location = useLocation();
 
     const { selectedCardId, selectedCardName } = location.state || {};
-
     const readConnector = useReadConnectors({ connectorId: selectedCardId });
-
     const navigate = useNavigate();
     const datasetId = getConfigValue('dataset_id');
 
@@ -43,14 +42,6 @@ const ConnectorConfiguration: React.FC = () => {
         queryParams: 'status=Draft&mode=edit&fields=connectors_config'
     });
     const connectionResponse = fetchDatasetById.data;
-    let connectorHelpText = "";
-
-    useEffect(() => {
-        if (schemas.length > 0) {
-            const combinedHelpContent = generateHelpSectionContent(schemas[0].schema);
-            connectorHelpText = combinedHelpContent.join('');
-        }
-    }, [schemas]);
 
     useEffect(() => {
         if (connectionResponse) {
@@ -67,17 +58,13 @@ const ConnectorConfiguration: React.FC = () => {
         if (selectedCardId && readConnector.data) {
             const selectedConnectorId = readConnector.data.connector_id;
             setSelectedConnectorId(selectedConnectorId);
-
-            const apiSchema = readConnector.data.ui_spec.schema;
+            const apiSchema = readConnector.data.ui_spec;
             if (apiSchema) {
-                const transformedSchemas = transformSchema(apiSchema);
-                setSchemas(transformedSchemas);
+                setSchema(transformSchema(apiSchema));
+                setHelpSectionContent(apiSchema);
                 setErrorMessage(null);
             } else {
-                setErrorMessage(
-                    'uiSchema for this connector type not available.  Please contact administrator'
-                );
-                setSchemas([]);
+                setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
         }
     }, [selectedCardId, readConnector.data]);
@@ -86,100 +73,68 @@ const ConnectorConfiguration: React.FC = () => {
         setHighlightedSection(sectionId);
     };
 
-    const transformSchema = (apiSchema: any): Schema[] => {
-        const schemas: Schema[] = [];
-
-        if (apiSchema && apiSchema.properties) {
-            const connectorConfig = apiSchema;
-
-            if (connectorConfig) {
-                schemas.push({
-                    title: '',
-                    schema: {
-                        type: 'object',
-                        ...connectorConfig
-                    },
-                    uiSchema: {}
-                });
-            }
+    const transformSchema = (apiSchema: any): Schema => {
+        return {
+            title: '',
+            schema: {
+                type: 'object',
+                ...apiSchema
+            },
+            uiSchema: {}
         }
-
-        return schemas;
     };
 
-    const generateHelpSectionContent = (schema: any): string[] => {
+    const setHelpSectionContent = (schema: any): string[] => {
+
+        // TODO: Convert this to a JSX Element
         const combinedHelp: string[] = [];
-
-        const processProperties = (properties: any, parentKey = '', isMainTitle = false) => {
-            Object.keys(properties).forEach((key) => {
-                const property = properties[key];
-                const fullKey = parentKey ? `${parentKey}.${key}` : key;
-
-                if (isMainTitle && property.title) {
-                    combinedHelp.push(
-                        `<h1 class="contentsHeader" id="${fullKey}">${property.title} :</h1>`
-                    );
-                }
-
-                let content = '';
-                if (property.title && !isMainTitle) {
-                    content += `<p class="contentBody" style="padding-left: 1rem" id=${property.title}><strong> ${property.title} :  </strong>`;
-                }
-                if (property.fieldDescription && Array.isArray(property.fieldDescription)) {
-                    const descriptions = property.fieldDescription
-                        .map((descObj: { description: any }) => descObj.description)
-                        .filter((desc: any) => desc)
-                        .join(' ');
-
-                    content += `${descriptions || 'Description not available'}`;
-                }
-
-                if (content) {
-                    combinedHelp.push(content);
-                }
-
-                if (property.type === 'object' && property.properties) {
-                    processProperties(property.properties, fullKey, false);
-                }
-
-                if (property.dependencies) {
-                    Object.keys(property.dependencies).forEach((dependencyKey) => {
-                        const dependency = property.dependencies[dependencyKey];
-
-                        if (dependency.oneOf && dependency.oneOf[0]?.properties) {
-                            processProperties(
-                                dependency.oneOf[0].properties,
-                                `${fullKey} (Dependency: ${dependencyKey})`,
-                                false
-                            );
-                        }
-                    });
-                }
-            });
-        };
-
         if (schema?.properties) {
-            processProperties(schema.properties, '', true);
+            combinedHelp.push(`
+                <div class="displayContent">
+                    <h1 class="contentsHeader">${schema.title}</h1>
+                    <p class="contentBody">${schema.helptext || schema.description}</p>
+            `);
+
+            let firstProperty: string | undefined = undefined;
+            _.forIn(schema.properties, function (value, key) {
+                if (!firstProperty) {
+                    firstProperty = key;
+                }
+                combinedHelp.push(`
+                    <section id="${key}" class="section">
+                        <header class="displayContent">
+                            <h3 class="contentsHeader">${value.title}</h3>
+                        </header>
+                        <p class="contentBody">
+                            ${value.helptext || value.description}
+                        </p>
+                    </section>
+                `);
+            });
+            combinedHelp.push(`</div>`);
+            setConnectorHelpText(combinedHelp.join(''));
+            setHighlightedSection(firstProperty || '');
         }
 
         return combinedHelp;
     };
 
     const handleButtonClick = () => {
+        const connectorConfig: any = formData || {};
         const connectionData = {
             connectors_config: [
                 {
                     value: {
                         id: selectedConnectorId,
                         connector_id: selectedCardId,
-                        connector_config: flattenedConnectorConfig?.source || {},
-                        operations_config: flattenedConnectorConfig?.operations_config || {}
+                        connector_config: connectorConfig || {},
+                        operations_config: {}
                     },
                     action: 'upsert'
                 }
             ]
         };
-
+        console.log("#### connectionData", connectionData)
         storeSessionStorageItem('connectorConfigDetails', connectionData);
         navigate('/home/ingestion');
     };
@@ -200,36 +155,6 @@ const ConnectorConfiguration: React.FC = () => {
         navigate('/home/new-dataset/connector-list');
     };
 
-    const flattenData = (obj: any) => {
-        const result: any = {
-            source: {},
-            operations_config: {}
-        };
-        function recursiveFlatten(currentObj: any, parentKey: any, targetKey: string): void {
-            for (const [key, value] of Object.entries(currentObj)) {
-                const flattenedKey = parentKey ? `${parentKey}_${key}` : key;
-                if (key === 'kafka_broker_servers' && Array.isArray(value)) {
-                    result[targetKey][flattenedKey] = value.join(',');
-                    continue
-                }
-                if (typeof value === 'object' && value !== null) {
-                    recursiveFlatten(value, flattenedKey, targetKey);
-                } else {
-                    result[targetKey][flattenedKey] = value;
-                }
-            }
-        }
-        // Flattening "source" object
-        if (obj['source']) {
-            recursiveFlatten(obj.source, 'source', 'source');
-        }
-        // Flattening "operations-config" object
-        if (obj['operations-config']) {
-            recursiveFlatten(obj['operations-config'], 'operations_config', 'operations_config');
-        }
-        return result;
-    }
-    const flattenedConnectorConfig = flattenData(_.get(formData, "section0") || {});
 
     return (
         <Box>
@@ -259,7 +184,7 @@ const ConnectorConfiguration: React.FC = () => {
                     </Typography>
                 ) : (
                     <ConfigureConnectorForm
-                        schemas={schemas}
+                        schema={schema!}
                         formData={formData}
                         setFormData={setFormData}
                         onChange={handleChange}
@@ -288,8 +213,8 @@ const ConnectorConfiguration: React.FC = () => {
             </Box>
             <HelpSection
                 helpSection={{
-                    defaultHighlight: "section0",
-                    contents: connectorHelpText
+                    defaultHighlight: highlightedSection || "section0",
+                    contents: connectorHelpText || ""
                 }}
                 highlightSection={highlightedSection}
                 onExpandToggle={handleHelpSectionToggle}
