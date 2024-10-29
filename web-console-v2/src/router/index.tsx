@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Import pages for different routes
@@ -18,14 +18,22 @@ import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
 import ClusterHealth from 'pages/dashboardV1/datasets';
 import StepperPage from 'pages/StepsPages/StepperPage';
-
+import AlertRules from 'pages/alertManager/views/AlertRules';
+import SystemAlerts from 'pages/alertManager/views/SystemRules';
+import AddAlert from 'pages/alertManager/views/AddRule';
+import ViewAlert from 'pages/alertManager/views/ViewRule';
+import EditAlert from 'pages/alertManager/views/EditRule';
+import ListChannels from 'pages/notificationChannels/ListChannels';
+import AddChannel from 'pages/notificationChannels/AddChannel';
+import ViewChannel from 'pages/notificationChannels/ViewChannel';
+import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
 // Type definition for the route configuration
 interface RouteConfig {
     path: string;
     element: React.ReactElement;
     children?: RouteConfig[];
 }
-
+const CustomAlerts = lazy(() => import('pages/alertManager/views/CustomRules'));
 // Base path for all routes
 const BASE_PATH = '/home';
 
@@ -33,8 +41,8 @@ const routeConfigurations: RouteConfig[] = [
     { path: '/', element: <Navigate to={`${BASE_PATH}/dashboard`} replace /> },
     { path: `${BASE_PATH}`, element: <Navigate to={`${BASE_PATH}`} replace /> },
     { path: `${BASE_PATH}/new-dataset`, element: <NewDatasetPage /> },
-    { 
-        path: `${BASE_PATH}`, 
+    {
+        path: `${BASE_PATH}`,
         element: <StepperPage />,
         children: [
             { path: 'ingestion', element: <IngestionPage /> },
@@ -55,24 +63,39 @@ const routeConfigurations: RouteConfig[] = [
     { path: `${BASE_PATH}/connector-management`, element: <ConnectorConfigurationPage /> },
     { path: `${BASE_PATH}/connector-management/manage`, element: <ManageConnectorsPage /> },
     { path: `${BASE_PATH}/settings`, element: <SettingsPage /> },
+    {
+        path: `${BASE_PATH}/alertRules`,
+        element: <AlertRules />,
+        children: [
+            { path: 'custom', element: <CustomAlerts /> },
+            { path: 'system', element: <SystemAlerts /> }
+        ],
+    },
+    { path: `${BASE_PATH}/alertRules/add`, element: <AddAlert /> },
+    { path: `${BASE_PATH}/alertRules/view/:id`, element: <ViewAlert /> },
+    { path: `${BASE_PATH}/alertRules/edit/:id`, element: <EditAlert /> },
+    { path: `${BASE_PATH}/alertChannels`, element: <ListChannels /> },
+    { path: `${BASE_PATH}/alertChannels/new`, element: <AddChannel /> },
+    { path: `${BASE_PATH}/alertChannels/edit/:id`, element: <UpdateChannel /> },
+    { path: `${BASE_PATH}/alertChannels/view/:id`, element: <ViewChannel /> },
     { path: `${BASE_PATH}/datasets`, element: <ClusterHealth /> },
     { path: `${BASE_PATH}/datasets/:datasetId`, element: <DatasetMetrics /> },
-    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> },
+    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> }
 ];
 
 const AppRouter = () => (
     <Routes>
         {routeConfigurations.map(({ path, element, children }: RouteConfig) => (
-            <Route 
-                key={`${path}-route`} 
-                path={path} 
+            <Route
+                key={`${path}-route`}
+                path={path}
                 element={<Suspense fallback={<div>Loading...</div>}>{element}</Suspense>}
             >
                 {children && children.map(({ path: childPath, element: childElement }: RouteConfig) => (
-                    <Route 
-                        key={`${path}-${childPath}`} 
-                        path={childPath} 
-                        element={<Suspense fallback={<div>Loading...</div>}>{childElement}</Suspense>} 
+                    <Route
+                        key={`${path}-${childPath}`}
+                        path={childPath}
+                        element={<Suspense fallback={<div>Loading...</div>}>{childElement}</Suspense>}
                     />
                 ))}
             </Route>
