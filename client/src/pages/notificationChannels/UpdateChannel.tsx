@@ -70,7 +70,7 @@ const UpdateChannel = () => {
                     data: { ..._.omit(formData, ['error']) }
                 });
 
-                navigate('/home/alertChannels');
+                navigate('/alertChannels');
             }
         } catch (err) {
             dispatch(error({ message: "Failed to update channel" }));
@@ -111,7 +111,7 @@ const UpdateChannel = () => {
             name: 'cancel',
             label: 'Cancel',
             variant: 'contained',
-            onClick: (e: any) => navigate('/home/alertChannels')
+            onClick: (e: any) => navigate('/alertChannels')
         }
     ];
 
