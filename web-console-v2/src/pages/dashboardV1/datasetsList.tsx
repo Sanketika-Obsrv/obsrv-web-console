@@ -409,7 +409,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 <EyeOutlined />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="View Metrics" onClick={(e: any) => navigateToPath(`/datasets/${row?.dataset_id}`)}>
+                        <Tooltip title="View Metrics" onClick={(e: any) => navigateToPath(`/home/datasets/${row?.dataset_id}`)}>
                             <IconButton
                                 data-edataid={interactIds.view_dataset_metrics}
                                 data-objectid={row?.dataset_id}
