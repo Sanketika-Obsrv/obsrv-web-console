@@ -12,6 +12,7 @@ import AppRouter from 'router';
 import styles from 'App.module.css';
 import { queryClient } from 'queryClient';
 import Locales from 'components/Locales';
+import { getBaseURL } from 'services/configData';
 
 const useSidebarToggle = () => {
 
@@ -39,7 +40,7 @@ const App: FC = () => {
     return (
         <QueryClientProvider client={queryClient}>
             <Locales>
-            <BrowserRouter>
+            <BrowserRouter basename={getBaseURL()}>
                 <Navbar />
                 <div
                     className={`${styles.appContainer} ${isSidebarExpanded ? styles.expanded : styles.collapsed}`}

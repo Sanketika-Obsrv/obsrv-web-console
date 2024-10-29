@@ -2,6 +2,7 @@
   "name": "obsrv-management-console-ext",
   "version": "0.1.0",
   "private": true,
+  "homepage": "/console",
   "proxy": "http://localhost:3005/console",
   "dependencies": {
     "@ant-design/colors": "^6.0.0",
@@ -63,6 +64,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "postbuild": "mkdir build/console && mv build/static build/console/static",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
