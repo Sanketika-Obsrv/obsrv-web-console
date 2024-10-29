@@ -38,7 +38,7 @@ const Preview: FC = (): ReactElement => {
 
     const publishDataset = usePublishDataset();
 
-    const urlToPublish = `/console/datasets?status=ReadyToPublish`;
+    const urlToPublish = `datasets?status=ReadyToPublish`;
 
     const fetchDatasetById = useFetchDatasetsById({
         datasetId,
@@ -79,12 +79,12 @@ const Preview: FC = (): ReactElement => {
                 { payload },
                 {
                     onSuccess: () => {
-                        window.location.assign(urlToPublish);
+                        navigate(urlToPublish)
                     }
                 }
             );
         } else {
-            window.location.assign(urlToPublish);
+            navigate(urlToPublish);
         }
         setOpen(false);
     };
