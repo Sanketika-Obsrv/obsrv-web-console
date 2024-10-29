@@ -181,9 +181,8 @@ const ClusterHealth = () => {
                 open={openModal} 
                 onClose={handleClose}
             />
-        </>
         </Box>
-
+        
     )
 };
 

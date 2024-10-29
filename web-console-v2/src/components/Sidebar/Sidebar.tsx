@@ -47,6 +47,13 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
             pathSegments[1] === 'preview'
         ) {
             setSelectedItem('/home/new-dataset');
+        } else if (
+            pathSegments[1] === 'alertRules'
+        ) {
+            const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
+            const subRoute = location.pathname;
+            setSelectedItem(mainRoute);
+            (mainRoute.match(subRoute)?.index === 0) ? navigate(mainRoute+'/custom') : navigate(subRoute);
         } else if (pathSegments.length > 2) {
             const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
             const subRoute = location.pathname;

@@ -118,7 +118,7 @@ const SidebarElements = () => {
       id: 'alertmanagement',
       icon: React.createElement(AlertOutlined),
       title: 'Alerts',
-      route: '/home/alertRules/custom'
+      route: '/home/alertRules'
     },
     {
       id: 'notifications',
