@@ -26,20 +26,28 @@ const DedupeEvent = (props: any) => {
     const { data, handleAddOrEdit, transformationOptions, isSuccess, isProceed } = props;
     const dropDuplicates = _.get(data, ['drop_duplicates']);
     const dedupKey = _.get(data, ['dedup_key']);
-    const existingData = {
-        section0: {
-            section1: {
-                dropDuplicates: dropDuplicates ? 'Enable Deduplication' : '',
-                dedupeKey: dropDuplicates ? dedupKey : ''
-            }
+    const existingData = { 
+        section1: {
+            dropDuplicates: dropDuplicates ? 'Enable Deduplication' : '',
+            dedupeKey: dropDuplicates ? dedupKey : ''
         }
     };
 
     const [formData, setFormData] = useState<{ [key: string]: unknown }>(existingData);
 
+    const transformationOption = useMemo(() => {
+        if (!_.isEmpty(transformationOptions))
+            _.set(
+                schema,
+                ['schema', 'properties', 'section1', 'properties', 'dedupeKey', 'enum'],
+                transformationOptions
+            );
+    }, [transformationOptions]);
+
+
     useEffect(() => {
-        const formDropDuplicates = _.get(formData, ['section0', 'section1', 'dropDuplicates']);
-        const formDedupKey = _.get(formData, ['section0', 'section1', 'dedupeKey']);
+        const formDropDuplicates = _.get(formData, ['section1', 'dropDuplicates']);
+        const formDedupKey = _.get(formData, ['section1', 'dedupeKey']);
         if (formDropDuplicates !== dropDuplicates && formDedupKey !== dedupKey) {
             setFormData(existingData);
         }
@@ -51,8 +59,8 @@ const DedupeEvent = (props: any) => {
     const handleChange: ConfigureConnectorFormProps['onChange'] = (formInfo) => {
         isProceed(false);
         setFormData(formInfo);
-        const value = _.get(formInfo, ['section0', 'section1']);
-        const dedupeKey = _.get(formInfo, ['section0', 'section1']);
+        const value : any = _.get(formInfo, ['section1']);
+        const dedupeKey = _.get(formInfo, ['section1']);
         const dropDuplicates = _.get(value, 'dropDuplicates');
         if (!_.isUndefined(dropDuplicates)) {
             const isDropDuplicates = dropDuplicates.includes('Enable Deduplication');
@@ -64,11 +72,9 @@ const DedupeEvent = (props: any) => {
 
             if (!isDropDuplicates) {
                 const updatedData = {
-                    section0: {
-                        section1: {
-                            dropDuplicates: '',
-                            dedupeKey: ''
-                        }
+                    section1: {
+                        dropDuplicates: '',
+                        dedupeKey: ''
                     }
                 };
 

@@ -56,7 +56,7 @@ const Storage = () => {
     const [datasetType, setDatasetType] = useState<string>('');
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [uiSchema, setUiSchema] = useState<Schema>();
+    const [uiSchema, setUiSchema] = useState<Schema>(schemas);
     const updateDatasetMutate = useUpdateDataset();
     const sessionData = sessionStorage.getItem('configDetails');
     const configData = sessionData ? JSON.parse(sessionData) : null;
@@ -94,19 +94,19 @@ const Storage = () => {
         const nonTimestampKeys = getColumns.filter((key) => !timestampKeys.includes(key));
         _.set(
             schemas,
-            [0, 'schema', 'properties', 'section3', 'properties', 'timestamp', 'enum'],
+            ['schema', 'properties', 'section3', 'properties', 'timestamp', 'enum'],
             [...timestampKeys, 'Event Arrival Time']
         );
 
         _.set(
             schemas,
-            [0, 'schema', 'properties', 'section3', 'properties', 'partition', 'enum'],
+            ['schema', 'properties', 'section3', 'properties', 'partition', 'enum'],
             nonTimestampKeys
         );
 
         _.set(
             schemas,
-            [0, 'schema', 'properties', 'section3', 'properties', 'primary', 'enum'],
+            ['schema', 'properties', 'section3', 'properties', 'primary', 'enum'],
             nonTimestampKeys
         );
     }, [schemaProperties]);
@@ -126,42 +126,38 @@ const Storage = () => {
             timestamp_key !== 'obsrv_meta.syncts'
         ) {
             const existingData = {
-                section0: {
-                    section1: {
-                        datasetType: getDatasetType(type),
-                        lakehouse: lakehouse_enabled,
-                        realTimeStore: olap_store_enabled
-                    },
-                    section2: {
-                        storageType: [
-                            lakehouse_enabled && STORE_TYPE.LAKEHOUSE,
-                            olap_store_enabled && STORE_TYPE.REAL_TIME_STORE,
-                            cache_enabled && STORE_TYPE.CACHE
-                        ]
-                    },
-                    section3: {
-                        ...(data_key !== '' && { primary: data_key }),
-                        ...(timestamp_key !== '' && {
-                            timestamp: timestamp_key
-                        }),
-                        ...(partition_key !== '' && { partition: partition_key })
-                    }
+                section1: {
+                    datasetType: getDatasetType(type),
+                    lakehouse: lakehouse_enabled,
+                    realTimeStore: olap_store_enabled
+                },
+                section2: {
+                    storageType: [
+                        lakehouse_enabled && STORE_TYPE.LAKEHOUSE,
+                        olap_store_enabled && STORE_TYPE.REAL_TIME_STORE,
+                        cache_enabled && STORE_TYPE.CACHE
+                    ]
+                },
+                section3: {
+                    ...(data_key !== '' && { primary: data_key }),
+                    ...(timestamp_key !== '' && {
+                        timestamp: timestamp_key
+                    }),
+                    ...(partition_key !== '' && { partition: partition_key })
                 }
             };
             setFormData(existingData);
         } else {
             const existingData = {
-                section0: {
-                    section1: {
-                        datasetType: getDatasetType(type)
-                    },
-                    section2: {
-                        storageType: [
-                            lakehouse_enabled && STORE_TYPE.LAKEHOUSE,
-                            olap_store_enabled && STORE_TYPE.REAL_TIME_STORE,
-                            cache_enabled && STORE_TYPE.CACHE
-                        ]
-                    }
+                section1: {
+                    datasetType: getDatasetType(type)
+                },
+                section2: {
+                    storageType: [
+                        lakehouse_enabled && STORE_TYPE.LAKEHOUSE,
+                        olap_store_enabled && STORE_TYPE.REAL_TIME_STORE,
+                        cache_enabled && STORE_TYPE.CACHE
+                    ]
                 }
             };
             setFormData(existingData);
@@ -169,13 +165,13 @@ const Storage = () => {
     }, [datasetConfig_indexing, datasetConfig_keys, type]);
 
     const handleButtonClick = (id: string) => {
-        const storageTypeSelected = _.get(formData, 'section0.section2.storageType') as
+        const storageTypeSelected = _.get(formData, 'section2.storageType') as
             | string[]
             | undefined;
 
-        const primaryOption = _.get(formData, 'section0.section3.primary');
-        const timestampOption = _.get(formData, 'section0.section3.timestamp');
-        const partitionOption = _.get(formData, 'section0.section3.partition');
+        const primaryOption = _.get(formData, 'section3.primary');
+        const timestampOption = _.get(formData, 'section3.timestamp');
+        const partitionOption = _.get(formData, 'section3.partition');
 
         if (formErrors.length > 0) {
             showAlert('Failed to update storage', 'error');
@@ -243,26 +239,25 @@ const Storage = () => {
     };
 
     useEffect(() => {
-        const selectedDatasetType = _.get(formData, 'section0.section1.datasetType') as string;
+        const selectedDatasetType = _.get(formData, 'section1.datasetType') as string;
         if (selectedDatasetType) setDatasetType(selectedDatasetType);
 
-        const storageTypeSelected = _.get(formData, 'section0.section2.storageType') as string[];
+        const storageTypeSelected = _.get(formData, 'section2.storageType') as string[];
 
         if (storageTypeSelected?.length <= 0) setCanProceed(false);
-
         const updatedUiSchema: UiSchema = {
-            ...schema.uiSchema,
+            ...schemas.uiSchema,
 
             section3: {
-                ...schema.uiSchema.section3,
+                ...schemas.uiSchema.section3,
                 primary: {
-                    ...schema.uiSchema.section3.primary
+                    ...schemas.uiSchema.section3.primary
                 },
                 partition: {
-                    ...schema.uiSchema.section3.partition
+                    ...schemas.uiSchema.section3.partition
                 },
                 timestamp: {
-                    ...schema.uiSchema.section3.timestamp
+                    ...schemas.uiSchema.section3.timestamp
                 }
             }
         };
@@ -322,11 +317,11 @@ const Storage = () => {
         }
 
         const updatedSchema: CustomSchema = {
-            ...schema.schema,
+            ...schemas.schema,
             properties: {
-                ...schema.schema.properties,
+                ...schemas.schema.properties,
                 section3: {
-                    ...(schema.schema.properties?.section3 as any),
+                    ...(schemas.schema.properties?.section3 as any),
                     required: required
                 }
             }
