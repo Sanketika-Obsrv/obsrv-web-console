@@ -1,3 +1,4 @@
+import React from 'react';
 import { Button, Grid } from "@mui/material";
 import MUIForm from "components/form";
 import { useEffect, useRef, useState } from "react";
@@ -5,7 +6,6 @@ import * as yup from 'yup';
 import _ from 'lodash';
 import LabelsList from "./LabelsList";
 import { validateFormValues } from "services/utils";
-import { useSelector } from "react-redux";
 import en from 'utils/locales/en.json'
 import { hasSpecialCharacters } from "services/utils";
 
@@ -23,7 +23,7 @@ const LabelComponent = (props: any) => {
     const { formData, setFormData, existingState, sectionLabel } = props;
     const [value, subscribe] = useState<any>({});
     const [isEdit, setIsEdit] = useState(false);
-    const validationConfigs = useSelector((state: any) => state?.config?.validationLimit || {})
+    const validationConfigs = { alertRuleNameMaxLen: 100 }
     const onSubmission = (value: any) => {
 
     };

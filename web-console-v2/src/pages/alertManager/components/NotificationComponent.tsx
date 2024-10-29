@@ -1,6 +1,7 @@
+import React from 'react';
 import { Box, Button, Grid, Stack, Typography } from "@mui/material";
 import MUIForm from "components/form";
-import { StandardWidthButton } from "components/styled/Buttons";
+import { StandardWidthButton } from "components/Styled/Buttons";
 import { useEffect, useRef, useState } from "react";
 import { fetchChannels } from "services/notificationChannels";
 import interactIds from "data/telemetry/interact.json";
@@ -12,7 +13,8 @@ const NotificationComponent = (props: any) => {
     const existingNotifications = _.get(existingState, 'notification') || {};
     const channelId = _.get(existingNotifications, 'channels[0]');
     const [value, subscribe] = useState<any>(channelId ? { notificationChannel: channelId } : {});
-    const onSubmission = (value: any) => { };
+    // eslint-disable-next-line
+    const onSubmission = (value: any) => {};
     const [notificationFieldOptions, setNotificationFieldOptions] = useState<Record<string, any>[]>([]);
     const formikRef = useRef(null);
     const navigate = useNavigate();
@@ -35,7 +37,7 @@ const NotificationComponent = (props: any) => {
 
     const fetchNotifications = async () => {
         const channels = await getChannels();
-        let transformedChannels = transformChannels(channels);
+        const transformedChannels = transformChannels(channels);
         setNotificationFieldOptions(transformedChannels);
     }
 
@@ -87,7 +89,7 @@ const NotificationComponent = (props: any) => {
                 />
             </Grid>
             <Grid item xs={6}>
-                <Button variant="contained" onClick={() => navigate("/alertChannels")}>Add Notification Channel</Button>
+                <Button variant="contained" onClick={() => navigate("/home/alertChannels")}>Add Notification Channel</Button>
             </Grid>
         </Grid>
     }
@@ -101,7 +103,7 @@ const NotificationComponent = (props: any) => {
                 <Box>
                     <StandardWidthButton
                         data-edataid={interactIds.add_notification_channel}
-                        onClick={() => navigate('/alertChannels')}
+                        onClick={() => navigate('/home/alertChannels')}
                         variant="contained"
                         size="large"
                         sx={{ width: 'auto' }}

@@ -1,12 +1,11 @@
+import React from 'react';
 import { Box, Dialog, Grid, Tooltip } from "@mui/material";
 import MainCard from "components/MainCard";
 import ScrollX from "components/ScrollX";
 import TableWithCustomHeader from "components/TableWithCustomHeader";
 import { useEffect, useMemo, useState } from "react";
-import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router";
 import { getChannel, publishChannel, retireChannel } from "services/notificationChannels";
-import { error, success } from "services/toaster";
 import { Button } from '@mui/material';
 import { Stack } from '@mui/material';
 import _ from 'lodash';
@@ -19,16 +18,17 @@ import { getKeyAlias } from "services/keysAlias";
 import { dialogBoxContext } from "pages/alertManager/services/utils";
 import AlertDialog from "components/AlertDialog";
 import { renderSkeleton } from "services/skeleton";
+import { useAlert } from "contexts/AlertContextProvider";
 
 const ViewChannel = () => {
 
     const [loading, setLoading] = useState(false);
     const { id } = useParams();
     const [channelMetadata, setChannelMetadata] = useState({});
-    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [testChannelDialogOpen, setTestChannelDialogOpen] = useState(false);
     const [dialogContext, setDialogContext] = useState<any>(null);
+    const { showAlert } = useAlert();
 
     const fetchNotificationChannel = async (id: string) => {
         try {
@@ -36,7 +36,7 @@ const ViewChannel = () => {
             const channelMetadata = _.omit(_.get(response, 'result'), ['manager']);
             setChannelMetadata(channelMetadata);
         } catch (err) {
-            dispatch(error({ message: "Failed to fetch channel metadata" }))
+            showAlert("Failed to fetch channel metadata", "error")
         } finally {
             setLoading(false);
         }
@@ -73,16 +73,16 @@ const ViewChannel = () => {
                 },
                 color: 'success',
                 onClick: async (context: Record<string, any>) => {
-                    const { payload, dispatch } = context;
+                    const { payload, showAlert } = context;
                     const { id } = payload;
                     const publish = async () => {
                         setLoading(true)
                         try {
                             await publishChannel({ id });
                             fetchNotificationChannel(id);
-                            dispatch(success({ message: "Channel published successfully" }))
+                            showAlert("Channel published successfully", "success")
                         } catch (err) {
-                            dispatch(error({ message: "Failed to publish channel" }));
+                            showAlert("Failed to publish channel","error")
                         } finally {
                             setLoading(false)
                         }
@@ -124,9 +124,9 @@ const ViewChannel = () => {
                         try {
                             await retireChannel({ id })
                             fetchNotificationChannel(id);
-                            dispatch(success({ message: "Channel retired successfully" }))
+                            showAlert("Channel retired successfully", "success")
                         } catch (err) {
-                            dispatch(error({ message: "Failed to retire channel" }))
+                            showAlert("Failed to retire channel", "error")
                         } finally {
                             setLoading(false)
                         }
@@ -166,7 +166,7 @@ const ViewChannel = () => {
                 return (
                     <Box>
                         {_.entries(rowValue).map(([key, value]: any) => (
-                            <Chip key={key} label={`${key} : ${value}`} color="info" variant="combined" sx={{ marginRight: '0.5rem' }} />
+                            <Chip key={key} label={`${key} : ${value}`} color="info" variant="outlined" sx={{ marginRight: '0.5rem' }} />
                         ))}
                     </Box>
                 );
@@ -180,7 +180,7 @@ const ViewChannel = () => {
                                     label={rowValue.toUpperCase()}
                                     color={rowValue == 'draft' ? 'warning' : rowValue == 'retired' ? 'secondary' : 'success'}
                                     size="small"
-                                    variant={rowKey == 'status' ? 'filled' : 'combined'}
+                                    variant={rowKey == 'status' ? 'filled' : "outlined"}
                                 />
                             </Box>
                         );
@@ -226,7 +226,7 @@ const ViewChannel = () => {
 
     const renderActionButton = (btn: Record<string, any>) => {
         const { label, isDisabled, icon, onClick, color, variant = 'contained' } = btn;
-        const context = { payload: channelMetadata, dispatch, navigate };
+        const context = { payload: channelMetadata, showAlert, navigate };
         return <> <Button onClick={_ => onClick(context)} startIcon={icon} color={color} variant={variant} disabled={isDisabled({ payload: channelMetadata })}>{label}</Button></>
     }
 
@@ -273,7 +273,7 @@ const ViewChannel = () => {
     const renderTestChannelDialog = () => {
         const handleClose = (context?: Record<string, any>) => setTestChannelDialogOpen(false);
         return <Dialog open={testChannelDialogOpen} fullWidth={true}>
-            <SendTestMessage onClose={handleClose} channel={channelMetadata} />
+            <SendTestMessage onClose={handleClose} channel={channelMetadata} setTestChannel={setTestChannelDialogOpen}/>
         </Dialog>
     }
 

@@ -1,3 +1,4 @@
+import React from 'react';
 import * as _ from 'lodash';
 import { Button, Grid, Stack, Typography } from '@mui/material';
 import { GlobalFilter } from 'utils/react-table';
@@ -54,7 +55,7 @@ const AlertTableHeader = (props: any) => {
                     globalFilter={state.globalFilter}
                     setGlobalFilter={setGlobalFilter}
                 />
-                {configuration?.list?.showAddAlertBtn && <Button sx={{ mx: 1 }} variant="contained" onClick={(e) => navigate('/alertRules/add')}>
+                {configuration?.list?.showAddAlertBtn && <Button sx={{ mx: 1 }} variant="contained" onClick={(e) => navigate('/home/alertRules/add')}>
                     Add Alert Rule
                 </Button>}
             </>

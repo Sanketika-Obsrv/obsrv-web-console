@@ -1,3 +1,4 @@
+import React from 'react';
 import { Button, Dialog } from '@mui/material';
 import { Box, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import interactIds from 'data/telemetry/interact.json';

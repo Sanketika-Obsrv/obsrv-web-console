@@ -1,9 +1,9 @@
+import React from 'react';
 import { Grid, Stack } from "@mui/material";
 import _ from 'lodash';
 import dayjs from 'dayjs';
 import endpoints from 'data/apiEndpoints';
 import ApexChart from "sections/dashboard/analytics/apex";
-import MainCard from "components/MainCard";
 import { Button } from "@mui/material";
 import { CloseOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
@@ -186,7 +186,7 @@ const RunQuery = (props: any) => {
     }
 
     const renderChart = () => {
-        if (loading) return <Loader />
+        if (loading) return <Loader loading={loading}/>
         if (!metadata) return null;
         let refresh = false;
 

@@ -1,3 +1,4 @@
+import React from 'react';
 import _ from 'lodash';
 import { Button, Grid } from '@mui/material';
 import MUIForm from 'components/form';
@@ -182,18 +183,28 @@ const QueryBuilder = (props: any) => {
         category: yup.string().required(en.isRequired),
         metric: yup.string().required(en.isRequired),
         operator: yup.string().required(en.isRequired),
-        threshold: yup.number().when('operator', {
-            is: (operator: any) => !_.includes(["within_range", "outside_range"], operator),
-            then: yup.number().required(en.isRequired)
+        threshold: yup.number().when('operator', (operator:any, schema) => {
+            return !_.includes(["within_range", "outside_range"], operator)
+                ? schema.required(en.isRequired)
+                : schema;
         }),
-        threshold_from: yup.number().when('operator', {
-            is: (operator: any) => _.includes(["within_range", "outside_range"], operator),
-            then: yup.number().required(en.isRequired).min(0)
+        threshold_from: yup.number().when('operator', (operator:any, schema) => {
+            return _.includes(["within_range", "outside_range"], operator)
+                ? schema.required(en.isRequired).min(0)
+                : schema;
         }),
-        threshold_to: yup.number().when('operator', {
-            is: (operator: any) => _.includes(["within_range", "outside_range"], operator),
-            then: yup.number().required(en.isRequired).min(0)
-                .test('Greater threshold_to', 'Value must be greater than Threshold - From.', (testValue: any) => testValue > _.get(value, "threshold_from"))
+        threshold_to: yup.number().when('operator', (operator:any, schema) => {
+            return _.includes(["within_range", "outside_range"], operator)
+                ? schema.required(en.isRequired)
+                    .min(0)
+                    .test(
+                        'greater-than-threshold-from',
+                        'Value must be greater than Threshold - From.',
+                        function (testValue) {
+                            return testValue > _.get(this.parent, "threshold_from");
+                        }
+                    )
+                : schema;
         })
     });
 

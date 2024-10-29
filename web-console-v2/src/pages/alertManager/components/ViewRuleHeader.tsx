@@ -1,3 +1,4 @@
+import React from 'react';
 import _, { set } from 'lodash';
 import { DeleteOutlined, EditOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { Box, Button, Grid, Stack, Tooltip, Typography } from '@mui/material';
@@ -6,24 +7,23 @@ import { addSilence, deleteAlert, deleteSilence, publishAlert } from 'services/a
 import { useMemo, useState } from 'react';
 import AlertDialog from 'components/AlertDialog';
 import { alertHealthStatus, dialogBoxContext, SilenceDialog } from '../services/utils';
-import { useDispatch } from 'react-redux';
-import { error, success } from 'services/toaster';
 import { NotificationsActiveOutlined, NotificationsOff, RefreshOutlined } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import Loader from 'components/Loader';
 import { getConfigValue } from 'services/configData';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 dayjs.extend(utc);
 const RuleHeader = (props: any) => {
     const { alerts, refresh, configuration } = props;
     const navigate = useNavigate();
-    const dispatch = useDispatch();
     const [dialogContext, setDialogContext] = useState<any>(null);
     const [endDate, setEndDate] = useState<Date>(dayjs.utc().add(1, 'day').toDate());
     const pathToNavigate = _.toLower(_.get(alerts, 'context.alertType'));
     const [loading, setLoading] = useState(false);
     const [customSilence, setCustomSilence] = useState<boolean>(false);
+    const { showAlert } = useAlert();
 
     const silence = _.get(alerts, 'silenceState');
     const isSilenced = silence?.state === 'unmuted';
@@ -45,11 +45,11 @@ const RuleHeader = (props: any) => {
         try {
             const res = await deleteAlert({ id });
             if (res) {
-                navigate(`/alertRules/${pathToNavigate}`);
-                dispatch(success({ message: 'Alert Rule retired successfully' }));
+                navigate(`/home/alertRules/${pathToNavigate}`);
+                showAlert("Alert Rule retired successfully", "success")
             }
         } catch {
-            dispatch(error({ message: 'Failed to retire alert rule' }));
+            showAlert("Failed to retire alert rule", "error")
         } finally {
             setLoading(false);
         }
@@ -58,10 +58,10 @@ const RuleHeader = (props: any) => {
     const publishAlertHandler = (id: string) => async () => {
         setLoading(true);
         try {
-            await publishAlert({ id }).then((res: any) => navigate(`/alertRules/${pathToNavigate}`));
-            dispatch(success({ message: 'Alert Rule published successfully' }));
+            await publishAlert({ id }).then((res: any) => navigate(`/home/alertRules/${pathToNavigate}`));
+            showAlert("Alert Rule published successfully", "success")
         } catch {
-            dispatch(error({ message: 'Failed to publish alert rule' }));
+            showAlert("Failed to publish alert rule", "error")
         } finally {
             setLoading(false)
         }
@@ -74,13 +74,13 @@ const RuleHeader = (props: any) => {
                 startDate: dayjs.utc(startDate).format(),
                 endDate: dayjs.utc(endDate).format(),
                 alertId: id,
-                manager: getConfigValue("ALERT_MANAGER")
+                manager: "grafana"
             };
             await addSilence(payload);
             refresh();
-            dispatch(success({ message: 'Alert has been muted successfully' }));
+            showAlert("Alert has been muted successfully", "success")
         } catch {
-            dispatch(error({ message: 'Failed to mute alert' }));
+            showAlert("Failed to mute alert", "error")
         } finally {
             setCustomSilence(false)
             setLoading(false)
@@ -93,9 +93,9 @@ const RuleHeader = (props: any) => {
         try {
             await deleteSilence(silenceId);
             refresh();
-            dispatch(success({ message: 'Alert is now unmuted' }));
+            showAlert("Alert is now unmuted", "success")
         } catch {
-            dispatch(error({ message: 'Failed to unmute alert' }));
+            showAlert("Failed to unmute alert", "error")
         } finally {
             setCustomSilence(false)
             setLoading(false)
@@ -177,7 +177,7 @@ const RuleHeader = (props: any) => {
                 label: 'Back',
                 variant: 'outlined',
                 color: 'primary',
-                onClick: () => navigate(`/alertRules/${pathToNavigate}`)
+                onClick: () => navigate(`/home/alertRules/${pathToNavigate}`)
             },
             {
                 id: 'silence-button',
@@ -194,7 +194,7 @@ const RuleHeader = (props: any) => {
                 variant: 'contained',
                 color: 'primary',
                 icon: <EditOutlined />,
-                onClick: () => navigate(`/alertRules/edit/${alerts?.id}`)
+                onClick: () => navigate(`/home/alertRules/edit/${alerts?.id}`)
             },
             {
                 name: 'publish',

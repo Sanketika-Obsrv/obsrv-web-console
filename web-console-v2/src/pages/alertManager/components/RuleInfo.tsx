@@ -1,3 +1,4 @@
+import React from 'react';
 import _ from 'lodash';
 import { Grid } from "@mui/material";
 import MUIForm from "components/form";
@@ -8,7 +9,6 @@ import { querySeverity } from '../services/queryBuilder';
 import { asyncValidation } from '../services/utils';
 import en from 'utils/locales/en.json'
 import { hasSpecialCharacters, validateFormValues } from "services/utils";
-import { useSelector } from 'react-redux';
 const { spacing } = config;
 
 const validator = asyncValidation();
@@ -31,7 +31,7 @@ const transformExistingState = (existingState: Record<string, any>) => {
 
 const AlertInfo = (props: any) => {
     const { formData, setFormData, existingState, sectionLabel, isFieldEditable } = props;
-    const validationConfigs = useSelector((state: any) => state?.config?.validationLimit || {})
+    const validationConfigs = { alertRuleNameMaxLen: 100 }
     const [value, subscribe] = useState<any>(transformExistingState(existingState));
     const onSubmission = (value: any) => { };
     const formikRef = useRef<any>();

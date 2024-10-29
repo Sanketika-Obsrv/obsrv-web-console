@@ -1,14 +1,17 @@
+import React from 'react';
 import * as _ from 'lodash';
 import { useEffect, useState } from 'react';
 import { Grid } from '@mui/material';
 import { searchAlert } from 'services/alerts';
 import ListAlerts from '../components/ListAlerts';
 import Loader from 'components/Loader';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const ManagedAlerts = (props: any) => {
     const { configuration } = props;
     const [alerts, setAlert] = useState<any>([]);
     const [loading, setLoading] = useState(false);
+    const { showAlert } = useAlert();
 
     const fetchAlerts = async (config?: any) => {
         try {
@@ -50,7 +53,4 @@ const ManagedAlerts = (props: any) => {
 };
 
 export default ManagedAlerts;
-function showAlert(arg0: string, arg1: string) {
-    throw new Error('Function not implemented.');
-}
 

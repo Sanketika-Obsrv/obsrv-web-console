@@ -1,3 +1,4 @@
+import React from 'react';
 import _ from 'lodash';
 import { Alert, Box, Chip, Grid, Stack, Tooltip, Typography } from '@mui/material';
 import { EyeOutlined, PlayCircleOutlined, DeleteFilled, EditOutlined } from '@ant-design/icons';
@@ -20,8 +21,8 @@ import AlertTableHeader from './tableHeader';
 import { NotificationsActiveOutlined, NotificationsOff } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import { getConfigValue } from 'services/configData';
 import Loader from 'components/Loader';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 dayjs.extend(utc);
 const ListAlerts = (props: any) => {
@@ -31,6 +32,7 @@ const ListAlerts = (props: any) => {
     const [endDate, setEndDate] = useState<Date>(dayjs.utc().add(1, 'day').toDate());
     const [loading, setLoading] = useState(false);
     const [customSilence, setCustomSilence] = useState<boolean>(false);
+    const { showAlert } = useAlert();
 
     const handleEndDateChange = (date: Date, id: string) => {
         setDialogContext(silenceOptionsDialogContext(id, date, true));
@@ -98,7 +100,7 @@ const ListAlerts = (props: any) => {
                 startDate: dayjs.utc(startDate).format(),
                 endDate: dayjs.utc(endDate).format(),
                 alertId: id,
-                manager: getConfigValue("ALERT_MANAGER")
+                manager: "grafana"
             };
             await addSilence(payload);
             fetchAlerts();
@@ -224,11 +226,10 @@ const ListAlerts = (props: any) => {
             return false;
         };
 
-        let isSilenced: boolean;
-        let silenceId: string;
+
         const silence = _.get(row, 'silenceState');
-        isSilenced = silence?.state === 'muted';
-        silenceId = silence?.silenceId;
+        const isSilenced: boolean = silence?.state === 'muted';
+        const silenceId: string = silence?.silenceId;
 
         const actions = [
             {
@@ -256,14 +257,14 @@ const ListAlerts = (props: any) => {
                 name: 'view',
                 label: 'View',
                 color: 'primary',
-                onclick: (_: any) => navigate(`/alertRules/view/${id}`),
+                onclick: (_: any) => navigate(`/home/alertRules/view/${id}`),
                 icon: <EyeOutlined />
             },
             {
                 name: 'edit',
                 label: 'Edit',
                 color: 'primary',
-                onclick: (_: any) => navigate(`/alertRules/edit/${id}`),
+                onclick: (_: any) => navigate(`/home/alertRules/edit/${id}`),
                 icon: <EditOutlined />
             },
             {
@@ -386,7 +387,4 @@ const ListAlerts = (props: any) => {
 };
 
 export default ListAlerts;
-function showAlert(arg0: string, arg1: string) {
-    throw new Error('Function not implemented.');
-}
 

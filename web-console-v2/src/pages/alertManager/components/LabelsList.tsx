@@ -1,3 +1,4 @@
+import React from 'react';
 import { useMemo } from 'react';
 import MainCard from 'components/MainCard';
 import ScrollX from 'components/ScrollX';

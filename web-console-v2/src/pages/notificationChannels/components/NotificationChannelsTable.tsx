@@ -1,3 +1,4 @@
+import React from 'react';
 import { useMemo, useState } from 'react';
 import { Alert, Grid, Stack, Tooltip, Typography } from '@mui/material';
 import MainCard from 'components/MainCard';
@@ -11,12 +12,11 @@ import { Box } from '@mui/system';
 import TableWithCustomHeader from 'components/TableWithCustomHeader';
 import { Chip } from '@mui/material';
 import { publishChannel, retireChannel } from 'services/notificationChannels';
-import { useDispatch } from 'react-redux';
-import { error, success } from 'services/toaster';
 import NotificationChannelsHeader from './NotificationChannelsHeader';
 import { alertStatusColor, dialogBoxContext } from 'pages/alertManager/services/utils';
 import AlertDialog from 'components/AlertDialog';
 import { renderSkeleton } from 'services/skeleton';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const actions = [
     {
@@ -43,17 +43,17 @@ const actions = [
             return false;
         },
         onClick: (context: Record<string, any>) => {
-            const { payload, dispatch, getAllChannels, setDialogContext, setLoading } = context;
+            const { payload, showAlert, getAllChannels, setDialogContext, setLoading } = context;
             const { id } = payload;
 
             const publish = async () => {
                 setLoading(true)
                 try {
                     await publishChannel({ id });
-                    dispatch(success({ message: "Channel published successfully" }));
+                    showAlert("Channel published successfully", "success")
                     getAllChannels();
                 } catch (err) {
-                    dispatch(error({ message: "Failed to publish channel" }));
+                    showAlert("Failed to publish channel", "error")
                 } finally {
                     setLoading(false)
                 }
@@ -92,16 +92,16 @@ const actions = [
         },
         icon: <DeleteFilled />,
         onClick: async (context: Record<string, any>) => {
-            const { payload, dispatch, getAllChannels, setDialogContext, setLoading } = context;
+            const { payload, showAlert, getAllChannels, setDialogContext, setLoading } = context;
             const { id } = payload;
             const retire = async () => {
                 setLoading(true)
                 try {
                     await retireChannel({ id });
-                    dispatch(success({ message: "Channel retired successfully" }));
+                    showAlert("Channel retired successfully", "success")
                     getAllChannels();
                 } catch (err) {
-                    dispatch(error({ message: "Failed to retire channel" }))
+                    showAlert("Failed to retire channel", "error")
                 } finally {
                     setLoading(false)
                 }
@@ -122,13 +122,14 @@ const NotificationChannelsTable = (props: any) => {
     const [refreshData, setRefreshData] = useState<string>('false');
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate();
-    const dispatch = useDispatch();
+    const { showAlert } = useAlert();
     const [dialogContext, setDialogContext] = useState<any>(null);
 
+    // eslint-disable-next-line
     const renderAction = (payload: Record<string, any>) => (action: Record<string, any>) => {
         const { label, color, size, icon, onClick, isDisabled } = action;
         return (
-            <Tooltip key={Math.random()} title={label} onClick={(e: any) => onClick({ payload, dispatch, getAllChannels, navigate, setDialogContext, setLoading })}>
+            <Tooltip key={Math.random()} title={label} onClick={(e: any) => onClick({ payload, showAlert, getAllChannels, navigate, setDialogContext, setLoading })}>
                 <IconButton color={color} size={size} disabled={isDisabled({ payload })}>
                     {icon}
                 </IconButton>
