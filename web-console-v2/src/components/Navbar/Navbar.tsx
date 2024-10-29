@@ -10,6 +10,8 @@ import { getConfigValue } from 'services/dataset';
 import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
+import logo from 'assets/images/obsrvLogo.svg';
+import { getBaseURL } from 'services/configData';
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/datasets?status=Live";
 
@@ -52,7 +54,7 @@ function BasicBreadcrumbs(): JSX.Element {
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
             <Grid item xs={1.5} className={styles.logo}>
                 <Box onClick={handleNavigate}>
-                    <img src="/images/obsrvLogo.svg" alt="Logo" width={130} />
+                    <img src={`${getBaseURL()}/images/obsrvLogo.svg`} alt="Logo" width={130} />
                 </Box>
             </Grid>
             <Grid item xs={9.5} className={styles.breadcrumb}>
