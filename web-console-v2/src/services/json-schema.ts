@@ -143,6 +143,37 @@ export const getNesting = (payload: any, jsonSchemaData: any) => {
     return data.subRows;
 };
 
+export const getNestingV1 = (payload: any, jsonSchemaData: any) => {
+    const data: any = transformDataV1(payload, jsonSchemaData);
+    return data.subRows;
+};
+
+const transformDataV1 = (data: any, jsonSchemaData: any) => {
+    return _.reduce(data, (result: any, obj) => {
+        const columns = obj.column.split('.');
+        let parent: any = result;
+        columns.forEach((column: any, index: any) => {
+            const originalColumn = obj.column;
+            const rootType = _.size(columns) > 1 ? _.cloneDeep(columns).slice(0, -1) : columns;
+            const columnWithoutDots = column.replace(/\./g, '');
+            let subRows: any = _.get(parent, 'subRows');
+            if (!subRows) {
+                subRows = [];
+                parent.subRows = subRows;
+            }
+            let subRow = _.find(subRows, { column: columnWithoutDots });
+            if (!subRow) {
+                subRow = { column: columnWithoutDots, originalColumn, type: _.get(jsonSchemaData, ['properties', ...insertProperties(rootType), 'type', columnWithoutDots]), ..._.omit(obj, ['column']) };
+                subRows.push(subRow);
+            }
+            if (_.has(subRow, 'subRows')) _.set(subRow, 'disableActions', true);
+            parent = subRow;
+        });
+        return result;
+    }, { "subRows": [] });
+}
+
+
 const flatten = (schemaObject: Record<string, any>, rollup = false) => {
     const schemaObjectData = schemaObject;
     const result: Record<string, any> = {};
