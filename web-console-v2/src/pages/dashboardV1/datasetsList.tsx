@@ -399,7 +399,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const isMaster: boolean = row?.type == DatasetType.MasterDataset;
                     const fileName = `${row?.name}_${row?.status}_${row?.version}`;
                     return <Stack direction="row" justifyContent="flex-start" alignItems="center">
-                        <Tooltip title="View Dataset" onClick={(e: any) => navigateToPath(`/datasets/management/${row?.dataset_id}?master=${isMaster}&status=${DatasetStatus.Live}`)}>
+                        <Tooltip title="View Dataset" onClick={(e: any) => navigateToPath(`/home/datasets/management/${row?.dataset_id}?master=${isMaster}&status=${DatasetStatus.Live}`)}>
                             <IconButton
                                 data-objectid={row?.dataset_id}
                                 data-objecttype="dataset"
