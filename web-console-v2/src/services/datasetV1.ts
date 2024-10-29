@@ -4,7 +4,7 @@ import { http } from 'services/http';
 import { flattenSchema, setAdditionalProperties, updateDenormDerived, updateJSONSchema } from './json-schema';
 import apiEndpoints from 'data/apiEndpoints';
 import { DatasetStatus, DatasetType } from 'types/datasets';
-import { aggregationFunctions, allowedSegmentGranurality } from 'pages/rollup/utils/commonUtils';
+import { aggregationFunctions, allowedSegmentGranurality } from './commonUtils';
 import { generateRequestBody } from './utils';
 import { fetchDataset, generateDatasetState } from './datasetState';
 import moment from 'moment';
@@ -414,7 +414,7 @@ export const createDraftversion = async ({ selection, navigateToPath, rollupRedi
         if (rollupRedirect) {
             const transitionRequest = generateRequestBody({ request: { dataset_id: datasetResponse?.data?.result?.dataset_id, status: "ReadyToPublish" }, apiId: "api.datasets.status-transition" })
             await http.post(`${apiEndpoints.statusTransition}`, transitionRequest);
-            navigateToPath(`/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
+            navigateToPath(`/home/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
             return;
         }
         navigateToPath(`/home/ingestion/schema-details/${datasetResponse?.data?.result?.dataset_id}`)
