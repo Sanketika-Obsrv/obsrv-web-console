@@ -1,4 +1,4 @@
-import React, { useState, useCallback, FC, lazy } from 'react';
+import React, { useState, useCallback, FC, lazy, useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import SideBar from 'components/Sidebar/Sidebar';
@@ -11,7 +11,7 @@ import AppRouter from 'router';
 import styles from 'App.module.css';
 import { queryClient } from 'queryClient';
 import Locales from 'components/Locales';
-import { getBaseURL } from 'services/configData';
+import { fetchSystemSettings, getBaseURL } from 'services/configData';
 import Loadable from 'pages/auth/components/Loadable';
 const Login = Loadable(lazy(() => import('pages/auth/Login')));
 
@@ -37,6 +37,9 @@ const useSidebarToggle = () => {
 
 const App: FC = () => {
     const { isSidebarExpanded, toggleSidebar } = useSidebarToggle();
+    useEffect(() => {
+        fetchSystemSettings();
+    }, []);
 
     return (
         <QueryClientProvider client={queryClient}>
@@ -65,3 +68,4 @@ const App: FC = () => {
 };
 
 export default App;
+

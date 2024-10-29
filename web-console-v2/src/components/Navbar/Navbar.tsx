@@ -11,7 +11,7 @@ import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
 import logo from 'assets/images/obsrvLogo.svg';
-import { getBaseURL } from 'services/configData';
+import { getBaseURL, getConfigValueV1 } from 'services/configData';
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/datasets?status=Live";
 
@@ -95,10 +95,10 @@ function BasicBreadcrumbs(): JSX.Element {
             </Grid>
             <Grid item xs={1} className={styles.navIcons}>
                 <div className={styles.icons}
-                    onClick={() => { navigate(getConfigValue("GRAFANA_URL")) }}>
+                    onClick={() => { navigate(getConfigValueV1("GRAFANA_URL")) }}>
                     <Grafana color="secondary" />
                 </div>
-                <div className={styles.icons} onClick={() => { navigate(getConfigValue("SUPERSET_URL")) }}>
+                <div className={styles.icons} onClick={() => { navigate(getConfigValueV1("SUPERSET_URL")) }}>
                     <Superset />
                 </div>
                 <div className={styles.icons} onClick={toggleNotification}>

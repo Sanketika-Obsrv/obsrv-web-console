@@ -15,7 +15,7 @@ export const downloadJsonFile = (jsonData: any, fileName: string) => {
     URL.revokeObjectURL(href);
 };
 
-export const downloadJsonFileV1 = (jsonData: any, fileName: string, schema: boolean = false) => {
+export const downloadJsonFileV1 = (jsonData: any, fileName: string, schema = false) => {
 
 
     const updatedJson = schema ? jsonData : _.omit(jsonData, ["properties", "required"])

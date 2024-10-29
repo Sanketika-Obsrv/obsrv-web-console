@@ -3,15 +3,16 @@ import { Box, Button, Grid, Stack, Tooltip, Typography } from "@mui/material";
 import _ from "lodash";
 import { useState } from "react";
 import { v4 } from "uuid";
+import React from "react";
 
 const getCurlCommand = ({ datasetId,configuredBatchId, configuredBatchKey, isBatch = false }: Record<string, any>) => {
     const curlCommands: any = {
-        true: [`curl --location '{{api-host}}/data/v1/in/${datasetId}'`,
-            `\ --header 'Content-Type: application/json'`,
-        `\ --data '{\"data\": {"${configuredBatchId}": "${v4()}" ,"${configuredBatchKey}": [{}]}}'`],
-        false: [`curl --location '{{api-host}}/data/v1/in/${datasetId}'`,
-            `\ --header 'Content-Type: application/json'`,
-            `\ --data '{\"data\": {\"event\": {}}}'`]
+        true: [`curl --location '{{api-host}}/data/v1/in/${datasetId}'
+             --header 'Content-Type: application/json'
+             --data '{"data": {"${configuredBatchId}": "${v4()}" ,"${configuredBatchKey}": [{}]}}'`],
+        false: [`curl --location '{{api-host}}/data/v1/in/${datasetId}'
+             --header 'Content-Type: application/json'
+             --data '{"data": {"event": {}}}'`]
     }
     return _.get(curlCommands, `${isBatch}`) || []
 }

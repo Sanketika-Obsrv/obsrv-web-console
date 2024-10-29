@@ -40,7 +40,7 @@ const Transformations = (props: any) => {
                     </TableHead>
                     <TableBody>
                         {data.map((item: any) => (
-                            <TableRow>
+                            <TableRow key={item.id}>
                                 {displayModifiedColumns(id).map((cellName: any) => {
                                     if (cellName.id === "_transformationType" && item[cellName.id] === "custom")
                                         return (
@@ -77,7 +77,7 @@ const Transformations = (props: any) => {
                         {customTypes.map(({ title, data, id }) => {
                             if (_.size(data) > 0)
                                 return (
-                                    <Grid item xs={12} sm={12} md={12} lg={12}>
+                                    <Grid item xs={12} sm={12} md={12} lg={12} key={id}>
                                         {renderTable(title, data, id)}
                                     </Grid>
                                 ); else return null;
