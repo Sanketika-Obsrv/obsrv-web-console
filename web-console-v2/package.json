@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "homepage": "/console",
-  "proxy": "http://localhost:3000/console",
+  "proxy": "http://localhost:3000/",
   "dependencies": {
     "@ant-design/colors": "^6.0.0",
     "@ant-design/icons": "^5.5.1",
