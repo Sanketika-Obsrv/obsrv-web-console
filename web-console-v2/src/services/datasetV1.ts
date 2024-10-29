@@ -8,6 +8,7 @@ import { generateRequestBody } from './utils';
 import { fetchDataset, generateDatasetState } from './datasetState';
 import moment from 'moment';
 import { v4 as uuid } from 'uuid';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 export const DEFAULT_TIMESTAMP = {
     indexValue: "obsrv_meta.syncts",
@@ -405,7 +406,7 @@ export const updateDatasetStatus = async (id: string, dataset_id: string, status
     return http.patch(apiEndpoints.updateDataset, payload, {})
 }
 
-export const createDraftversion = async ({ selection, navigateToPath, rollupRedirect }: any) => {
+export const createDraftversion = async ({ selection, navigateToPath, rollupRedirect, showAlert }: any) => {
     try {
         const datasetResponse = await editLiveDataset({ datasetId: selection });
         sessionStorage.setItem(`${selection}_activePage`, "0");
@@ -468,6 +469,3 @@ export const setVersionKey = (config: Record<string, any>) => {
     _.set(versionKeyList, "version_keys", resultantKeys)
 }
 
-function showAlert(arg0: string, arg1: string) {
-    throw new Error('Function not implemented.');
-}

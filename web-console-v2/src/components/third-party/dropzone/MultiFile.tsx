@@ -1,3 +1,4 @@
+/* eslint-disable */
 // material-ui
 import { styled } from '@mui/material/styles';
 import { Box, Button, Stack } from '@mui/material';

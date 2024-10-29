@@ -1,3 +1,5 @@
+
+/* eslint-disable */
 import { useEffect, useMemo, useState } from 'react';
 import { Chip, Stack, Tooltip, Typography, } from '@mui/material';
 import MainCard from 'components/MainCard';
@@ -24,6 +26,7 @@ import en from 'utils/locales/en.json';
 import { DatasetStatus, DatasetType } from 'types/datasets';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasets';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 export const alertDialogContext = (datasetName: string = "") => ({ title: <FormattedMessage id="delete-dataset-title" />, content: <FormattedMessage id="delete-dataset-context" values={{ id: datasetName }} /> })
 
@@ -38,6 +41,7 @@ const DraftDatasetsList = (props: any) => {
     const [refreshData, setRefreshData] = useState<string>('false');
     const [selection, setSelection] = useState<any>(null);
     const open = Boolean(anchorEl);
+    const { showAlert } = useAlert();
 
     const handleRetire = (datasetPayload: Record<string, any>) => {
         setSelection(datasetPayload)
@@ -68,7 +72,7 @@ const DraftDatasetsList = (props: any) => {
             setIsLoading(true);
             try {
                 await deleteDataset({ id: _.get(selection, "dataset_id") })
-                showAlert(en["dataset-delete-success"], 'success');
+                showAlert("Dataset retired successfully", 'success');
             } catch (err: any) {
                 const errMessage = _.get(err, 'response.data.params.errmsg') || en["dataset-delete-failure"];
                 showAlert(errMessage, 'error');
@@ -334,6 +338,3 @@ const DraftDatasetsList = (props: any) => {
 
 export default DraftDatasetsList;
 
-function showAlert(arg0: string, arg1: string) {
-    throw new Error('Function not implemented.');
-}

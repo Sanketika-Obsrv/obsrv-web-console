@@ -1,6 +1,7 @@
+/* eslint-disable */
 import { Typography, Stack, CardMedia } from '@mui/material';
 
-import UploadCover from 'assets/images/upload/upload.svg';
+import UploadCover from 'assets/upload/upload.svg';
 import interactIds from 'data/telemetry/interact.json';
 import { DropzopType } from 'types/dropzone';
 

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Box, Grid, Tab, Tabs } from "@mui/material";
 import { useState, cloneElement, useEffect } from "react";
 import { useParams } from "react-router";

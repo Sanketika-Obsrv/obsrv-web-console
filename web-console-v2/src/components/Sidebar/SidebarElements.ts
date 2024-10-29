@@ -110,8 +110,8 @@ const SidebarElements = () => {
     {
           id: 'datasetmanagement',
           icon: React.createElement(DatasetManagementIcon),
-          title: 'Dataset Management',
-          route: '/home/dataset-management',
+          title: 'Datasets',
+          route: '/home/datasets',
     }
   ];
 

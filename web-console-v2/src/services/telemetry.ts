@@ -13,7 +13,7 @@ const getOptions = () => {
             type: 'User'
         },
         context: {
-            env: getConfigValue("ENV") || _.get(process, 'env.REACT_APP_ENV') || "local",
+            env: getConfigValue("ENV") || "local",
             sid: '42342',
             pdata: {
                 id: 'dev.obsrv.console',

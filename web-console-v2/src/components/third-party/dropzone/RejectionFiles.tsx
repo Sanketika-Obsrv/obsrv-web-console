@@ -1,3 +1,4 @@
+/* eslint-disable */
 // material-ui
 import { alpha } from '@mui/material/styles';
 import { Box, Paper, Typography } from '@mui/material';

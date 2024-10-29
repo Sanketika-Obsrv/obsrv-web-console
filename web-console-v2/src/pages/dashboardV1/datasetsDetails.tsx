@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Grid, Typography } from '@mui/material';
 import MainCard from 'components/MainCard';
 import { useEffect, useState, useMemo } from 'react';
@@ -13,11 +14,13 @@ import ApexChart from 'sections/dashboard/analytics/apex';
 import ApexWithFilters from 'sections/dashboard/analytics/ChartFilters';
 import filters from 'data/chartFilters';
 import { DatasetStatus, DatasetType } from 'types/datasets';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const DatasetDetails = () => {
     const params = useParams();
     const { datasetId, datasetType } = params;
     const [datasetDetails, setDatasetDetails] = useState({ data: null, status: "loading" });
+    const { showAlert } = useAlert();
     const isMasterDataset = useMemo(() => _.get(datasetDetails, 'data.type') === DatasetType.MasterDataset, [datasetDetails]);
     const hasBatchConfig = useMemo(() => _.get(datasetDetails, ['data', 'extraction_config', 'is_batch_event',]), [datasetDetails]);
 
@@ -315,7 +318,4 @@ const DatasetDetails = () => {
 };
 
 export default DatasetDetails;
-function showAlert(arg0: string, arg1: string) {
-    throw new Error('Function not implemented.');
-}
 

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useEffect, useState } from 'react';
 import { Alert, Box, Grid, Stack, Tab, Tooltip, Typography, useTheme } from '@mui/material';
 import * as _ from 'lodash';

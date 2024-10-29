@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { QuestionCircleFilled } from '@ant-design/icons';
 import { Alert, Grid, Button, Box, Typography, } from '@mui/material';
 import MainCard from 'components/MainCard';

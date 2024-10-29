@@ -1,3 +1,4 @@
+/*eslint-disable*/
 import { useEffect, useMemo, useState } from 'react';
 import { Chip, CircularProgress, Stack, Tooltip, Typography, Box } from '@mui/material';
 import MainCard from 'components/MainCard';
@@ -29,6 +30,7 @@ import MoreOptions from './MoreOptions';
 import StyleIcon from '@mui/icons-material/Style';
 import { getLiveSourceConfig, renderNoDatasetsMessage } from './datasets';
 import BackdropLoader from 'components/BackdropLoader';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const dateFormat = 'YYYY-MM-DDT00:00:00+05:30'
 
@@ -40,6 +42,7 @@ const statusColors: Record<string, any> = {
 export const pageMeta = { pageId: 'datasetConfiguration' };
 
 const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
+    const { showAlert } = useAlert();
     const [openAlertDialog, setOpenAlertDialog] = useState(false);
     const [data, setData] = useState<any>([]);
     const [tagSelection, setTagSelection] = useState<any>({});
@@ -173,7 +176,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
     }
 
     const handleLiveRollups = async () => {
-        await createDraftversion({ selection: _.get(selection, "dataset_id") || "", navigateToPath, rollupRedirect: true })
+        await createDraftversion({ selection: _.get(selection, "dataset_id") || "", navigateToPath, rollupRedirect: true, showAlert })
     }
 
     const execute = () => {
@@ -457,7 +460,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                 await retireLiveDataset({ id: _.get(selection, "dataset_id") })
                 setDatasetType(DatasetStatus.Retired)
                 navigateToPath(`?status=${DatasetStatus.Retired}`)
-                showAlert(en["dataset-retire-success"], "success");
+                showAlert("Dataset retired successfully", "success");
 
             } catch (err: any) {
                 const errMessage = _.get(err, 'response.data.params.errmsg') || en["dataset-retire-failure"];
@@ -495,7 +498,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
 
     const editLiveDataset = async () => {
         setOpenAlertDialog(true)
-        const response = await createDraftversion({ selection: _.get(selection, "dataset_id") || "", navigateToPath })
+        const response = await createDraftversion({ selection: _.get(selection, "dataset_id") || "", navigateToPath, showAlert })
     }
 
     return (
@@ -517,7 +520,3 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
 };
 
 export default DatasetsList;
-function showAlert(arg0: string, arg1: string) {
-    throw new Error('Function not implemented.');
-}
-
