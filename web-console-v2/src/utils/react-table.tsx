@@ -96,7 +96,7 @@ export function SelectStatusFilter({ column: { filterValue, setFilter, preFilter
     const filterVal = useMemo(() => filterValue, [filterValue])
 
     return (
-        <Select 
+        <Select
             defaultValue={null}
             value={filterVal}
             onChange={(e) => {
@@ -119,7 +119,7 @@ export function SelectStatusFilter({ column: { filterValue, setFilter, preFilter
 export function SelectBooleanFilter({ column: { filterValue, setFilter, preFilteredRows, id, customValue } }: any) {
     const filterVal = useMemo(() => {
         if (filterValue !== undefined && filterValue !== null) {
-            let value = filterValue !== '' ? JSON.parse(filterValue) : null;
+            const value = filterValue !== '' ? JSON.parse(filterValue) : null;
             if (value === null) return "";
             else if (value) return 'true';
             else if (!value) return 'false';
@@ -129,13 +129,13 @@ export function SelectBooleanFilter({ column: { filterValue, setFilter, preFilte
 
     useEffect(() => {
         if (customValue !== null) {
-            let value = customValue !== '' ? JSON.parse(customValue) : null;
+            const value = customValue !== '' ? JSON.parse(customValue) : null;
             setFilter(value);
         }
     }, [customValue]);
 
     const handleChange = (value: string) => {
-        let parsedValue = value !== '' ? JSON.parse(value) : null;
+        const parsedValue = value !== '' ? JSON.parse(value) : null;
         setFilter(parsedValue);
     }
 
@@ -227,9 +227,7 @@ export function NumberRangeColumnFilter({ column: { filterValue = [], preFiltere
     );
 }
 
-// @ts-ignore
-function fuzzyTextFilterFn(rows, id, filterValue) {
-    // @ts-ignore
+function fuzzyTextFilterFn(rows: any, id: any, filterValue: any) {
     return matchSorter(rows, filterValue, { keys: [(row: any) => row.values[id]] });
 }
 
@@ -245,8 +243,7 @@ export const renderFilterTypes = () => ({
     }
 });
 
-// @ts-ignore
-export function filterGreaterThan(rows, id, filterValue) {
+export function filterGreaterThan(rows: any, id: any, filterValue: any) {
     return rows.filter((row: any) => {
         const rowValue = row.values[id];
         return rowValue >= filterValue;
