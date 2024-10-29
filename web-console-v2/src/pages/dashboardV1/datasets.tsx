@@ -169,9 +169,9 @@ const ClusterHealth = () => {
     }
 
     return (
-        <>
+        <Box p={2}>
             {renderDatasetTabs()}
-        </>
+        </Box>
     )
 };
 
