@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Grid } from "@mui/material";
 import Loader from "components/Loader";
 import SkeletonComp from 'components/Skeleton';

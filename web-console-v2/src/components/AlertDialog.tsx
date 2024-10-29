@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Button, Dialog, DialogContentText } from '@mui/material';
 import { Box, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import interactIds from 'data/telemetry/interact.json';

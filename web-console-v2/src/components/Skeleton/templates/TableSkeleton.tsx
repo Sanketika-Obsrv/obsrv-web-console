@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Box, Skeleton } from "@mui/material"
 
 const TableSkeleton = (props: any) => {

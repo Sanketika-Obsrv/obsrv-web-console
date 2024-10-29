@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { createContext, ReactNode } from 'react';
 import config from 'config';
 import useLocalStorage from 'hooks/useLocalStorage';

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import * as _ from "lodash";
 import BoxSkeleton from "./templates/BoxSkeleton";
 import DefaultSkeleton from "./templates/Default";

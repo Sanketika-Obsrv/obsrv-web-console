@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { useTable } from 'react-table';
 

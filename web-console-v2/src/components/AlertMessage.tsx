@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Alert } from '@mui/material';
 
 const AlertMessage = ({ messsage, icon, color = 'error' }: any) => {

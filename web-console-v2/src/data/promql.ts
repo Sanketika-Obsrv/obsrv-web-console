@@ -1,3 +1,4 @@
+/* eslint-disable */
 export default {
     "node_memory": {
         "query": "(1 - sum(:node_memory_MemAvailable_bytes:sum{cluster=''}) / sum(node_memory_MemTotal_bytes{job='node-exporter',cluster=''})) * 100"

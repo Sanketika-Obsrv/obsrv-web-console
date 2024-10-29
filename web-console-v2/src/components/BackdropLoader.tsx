@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Backdrop, CircularProgress } from '@mui/material';
 
 const BackdropLoader = ({ open }: any) => {

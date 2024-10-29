@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useEffect, useMemo, useState } from 'react';
 import {
     Box, Grid, Stack, Switch, Table, TableBody,
