@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { http } from "./http";
+import endpoints from 'data/apiEndpoints';
 
 //For local
 // const ENDPOINTS = {
@@ -43,3 +44,7 @@ export const transformAlertDescription = (payload: Record<string, any>) => {
     });
     return alertDescription;
 }
+
+export const searchAlert = ({ config }: any) => {
+    return http.post(`${endpoints.searchAlerts}`, config).then((response) => _.get(response, 'data.result'));
+};

@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import _ from 'lodash';
 
@@ -17,6 +17,7 @@ import DatasetList from 'pages/DatasetList/DatasetList';
 import Dashboard from 'pages/Dashboard/Dashboard';
 import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/IndividualDashboardPage';
 
+const CustomAlerts = lazy(() => import('pages/alertManager/views/CustomRules'));
 // Base path for all routes
 const BASE_PATH = '/home';
 
@@ -41,7 +42,8 @@ const routeConfigurations: any[] = [
     { path: `${BASE_PATH}/dataset-management`, element: <DatasetList /> },
     { path: `${BASE_PATH}/connector-management`, element: <ConnectorConfigurationPage /> },
     { path: `${BASE_PATH}/connector-management/manage`, element: <ManageConnectorsPage /> },
-    { path: `${BASE_PATH}/settings`, element: <SettingsPage /> }
+    { path: `${BASE_PATH}/settings`, element: <SettingsPage /> },
+    { path: `${BASE_PATH}/alertRules/custom`, element: <CustomAlerts /> },  
 ];
 
 // Main router component that renders all routes individually
