@@ -11,10 +11,13 @@ import AlertComponent from 'components/@extended/CustomAlert';
 import AppRouter from 'router';
 import styles from 'App.module.css';
 import { queryClient } from 'queryClient';
+import Locales from 'components/Locales';
 
 const useSidebarToggle = () => {
+
+    const sidebarExpandValue = localStorage.getItem('sidebarExpand')
     const [isSidebarExpanded, setSidebarExpanded] = useState<boolean>(
-        _.isEqual(localStorage.getItem('sidebarExpand'), true)
+        _.isEqual(localStorage.getItem('sidebarExpand'), "true")
     );
 
     const toggleSidebar = useCallback(() => {
@@ -35,6 +38,7 @@ const App: FC = () => {
 
     return (
         <QueryClientProvider client={queryClient}>
+            <Locales>
             <BrowserRouter>
                 <Navbar />
                 <div
@@ -50,6 +54,7 @@ const App: FC = () => {
                 </div>
             </BrowserRouter>
             <ReactQueryDevtools initialIsOpen={false} />
+            </Locales>
         </QueryClientProvider>
     );
 };

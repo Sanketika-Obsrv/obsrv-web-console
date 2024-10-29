@@ -13,10 +13,11 @@ import ConnectorConfigurationPage from 'pages/ConnectorConfiguration/ConnectorCo
 import SelectConnectorPage from 'pages/SelectConnector/SelectConnector';
 import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
 import SettingsPage from 'pages/Settings/Settings';
-import DatasetList from 'pages/DatasetList/DatasetList';
 import Dashboard from 'pages/Dashboard/Dashboard';
 import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/IndividualDashboardPage';
-
+import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
+import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
+import ClusterHealth from 'pages/dashboardV1/datasets';
 // Base path for all routes
 const BASE_PATH = '/home';
 
@@ -38,10 +39,12 @@ const routeConfigurations: any[] = [
     { path: `${BASE_PATH}/dashboard/api`, element: <IndividualMetricDashboards id='api'/> },
     { path: `${BASE_PATH}/dashboard/processing`, element: <IndividualMetricDashboards id='processing'/> },
     { path: `${BASE_PATH}/dashboard/storage`, element: <IndividualMetricDashboards id='storage' /> },
-    { path: `${BASE_PATH}/dataset-management`, element: <DatasetList /> },
     { path: `${BASE_PATH}/connector-management`, element: <ConnectorConfigurationPage /> },
     { path: `${BASE_PATH}/connector-management/manage`, element: <ManageConnectorsPage /> },
-    { path: `${BASE_PATH}/settings`, element: <SettingsPage /> }
+    { path: `${BASE_PATH}/settings`, element: <SettingsPage /> },
+    { path: `${BASE_PATH}/datasets`, element: <ClusterHealth /> },
+    { path: `${BASE_PATH}/datasets/:datasetId`, element: <DatasetMetrics /> },
+    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> },
 ];
 
 // Main router component that renders all routes individually

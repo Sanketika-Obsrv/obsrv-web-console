@@ -7,3 +7,4 @@ export const DATASET_UPDATE_ENDPOINT = '/datasets/update';
 export const DATASET_EXPORT_ENDPOINT = (datasetId: string, status: string) =>
   `/datasets/export/${datasetId}?status=${status}`;
 export const DATASET_COPY_ENDPOINT = '/datasets/copy';
+export const DATASET_READ = (datasetId: string, params: string) => `/datasets/read/${datasetId}?${params}`;
