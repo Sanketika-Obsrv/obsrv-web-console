@@ -1,3 +1,4 @@
+/*eslint-disable*/
 import { Alert, Box, Button, DialogContent, DialogTitle, Grid, TextField, Typography } from "@mui/material";
 import MUIForm from "components/form";
 import HtmlTooltip from "components/HtmlTooltip";
@@ -7,7 +8,7 @@ import { useEffect, useState } from "react";
 const onSubmission = (value: any) => { };
 
 const ImportDailog = (props: any) => {
-    const { setFiles, setOpenDailog, setCheckValidation, form, handleNameChange, onSubmit, isLiveExists } = props
+    const { setOpenDailog, setCheckValidation, datasetId, datasetName, setDatasetId, setDatasetName, onSubmit, isLiveExists } = props
     const [value, subscribe] = useState<any>({})
     const options = [
         { label: 'Import as new dataset', component: '', value: 'new' },
@@ -27,26 +28,23 @@ const ImportDailog = (props: any) => {
 
     const selectImportOption = async () => {
         const { importType } = value
-        const { initialValues, values } = form
-        const formValues = importType === "new" ? values : initialValues
-        await onSubmit({ ...formValues, importType })
+       
+        await onSubmit({ datasetName, datasetId, importType })
         setOpenDailog(false)
     }
 
     const onClose = () => {
-        const { initialValues } = form
-        form.setFieldValue("name", _.get(initialValues, ""))
-        form.setFieldValue("dataset_id", _.get(initialValues, ""))
+        setDatasetName( "")
+        setDatasetId("")
         setCheckValidation(true)
         setOpenDailog(false);
-        setFiles([])
     }
 
     useEffect(() => {
         const { importType } = value
         if (importType === "new") {
-            form.setFieldValue("name", "")
-            form.setFieldValue("dataset_id", "")
+            setDatasetName("")
+            setDatasetId("")
             setCheckValidation(true)
         }
     }, [value])
@@ -77,16 +75,11 @@ const ImportDailog = (props: any) => {
                                 <TextField
                                     name={'name'}
                                     label={'Dataset Name'}
-                                    onBlur={form.handleBlur}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                        handleNameChange(e, form.setFieldValue, 'dataset_id', 'name')
-                                    }
+                                    onChange={(e) => setDatasetName(e.target.value)}
                                     required
-                                    value={_.get(form.values, "name") || ''}
+                                    value={datasetName}
                                     variant="outlined"
                                     fullWidth
-                                    error={Boolean(form.errors["name"])}
-                                    helperText={form.touched["name"] && form.errors["name"] && String(form.errors["name"])}
                                 />
                             </HtmlTooltip>
                         </Grid>
@@ -95,14 +88,11 @@ const ImportDailog = (props: any) => {
                                 <TextField
                                     name={'dataset_id'}
                                     label={'Dataset ID'}
-                                    onBlur={form.handleBlur}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.handleChange(e)}
+                                    onChange={(e) => setDatasetId(e.target.value)}
                                     required
-                                    value={_.get(form.values, "dataset_id") || ''}
+                                    value={datasetId}
                                     variant="outlined"
                                     fullWidth
-                                    error={Boolean(form.errors["dataset_id"])}
-                                    helperText={form.touched["dataset_id"] && form.errors["dataset_id"] && String(form.errors["dataset_id"])}
                                 />
                             </HtmlTooltip>
                         </Grid>
@@ -111,7 +101,7 @@ const ImportDailog = (props: any) => {
                 <Grid item xs={12} margin={1}>
                     <Grid container>
                         <Grid item marginRight={2}>
-                            <Button variant="contained" onClick={selectImportOption} disabled={_.isEmpty(value) || _.get(value, "importType") === "new" ? Boolean(form.errors["dataset_id"] || form.errors["dataset_id"]) : false}>
+                            <Button variant="contained" onClick={selectImportOption} disabled={_.isEmpty(value) }>
                                 Import
                             </Button>
                         </Grid>
