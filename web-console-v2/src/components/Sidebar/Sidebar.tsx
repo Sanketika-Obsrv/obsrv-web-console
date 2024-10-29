@@ -17,6 +17,9 @@ import styles from './Sidebar.module.css';
 import SidebarElements from './SidebarElements';
 import { useTheme } from '@mui/material/styles';
 import _ from 'lodash';
+import apiEndpoints from 'data/apiEndpoints';
+import { http } from 'services/http';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 interface Props {
     onExpandToggle: () => void;
@@ -29,6 +32,7 @@ const redirectUrl: any = [""];
 const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     const theme = useTheme();
     const elements = SidebarElements();
+    const { showAlert } = useAlert();
     const navigate = useNavigate();
     const location = useLocation();
     const pathname = location.pathname;
@@ -107,7 +111,11 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     };
 
     const handleLogout = () => {
-        alert('logout');
+            http.get(apiEndpoints.logout).then(() => {
+                navigate(`/login`);
+            }).catch(() => {
+            showAlert('Failed to logout', 'error');
+        })
     };
 
     const DrawerList = (
@@ -254,8 +262,8 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                     })}
                 </List>
 
-                {/* <List sx={{ marginTop: 'auto' }}>
-                    <Tooltip title={!expand ? 'Settings' : ''} placement="right">
+                <List sx={{ marginTop: 'auto' }}>
+                    {/* <Tooltip title={!expand ? 'Settings' : ''} placement="right">
                         <ListItem
                             className={`${styles.listItem} ${
                                 selectedItem === '/home/settings'
@@ -301,7 +309,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                 )}
                             </ListItemButton>
                         </ListItem>
-                    </Tooltip>
+                    </Tooltip> */}
                     <Tooltip title={!expand ? 'Logout' : ''} placement="right">
                         <ListItemButton onClick={handleLogout}>
                             <Icon>
@@ -318,7 +326,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                             )}
                         </ListItemButton>
                     </Tooltip>
-                </List> */}
+                </List>
             </Box>
         </div>
     );
