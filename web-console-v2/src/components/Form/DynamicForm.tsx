@@ -23,7 +23,7 @@ export interface Schema {
 }
 
 interface DynamicFormProps {
-    schemas: Schema[];
+    schema: Schema;
     formData: FormData;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     onChange: (formData: FormData, errors?: unknown[] | null) => void;
@@ -40,7 +40,7 @@ interface DynamicFormProps {
 }
 
 const DynamicForm = ({
-    schemas,
+    schema,
     formData,
     setFormData,
     onChange,
@@ -49,6 +49,7 @@ const DynamicForm = ({
     extraErrors = {},
     handleClick
 }: DynamicFormProps) => {
+
     const customErrors = (errors: null | ErrorObject[] = []) => {
         if (_.isEmpty(errors)) return;
 
@@ -61,100 +62,98 @@ const DynamicForm = ({
             };
 
             const keyword = _.get(error, 'keyword', '');
-
             const customMessage = _.get(errorMessage, [keyword], '');
-
             const defaultMessage = _.get(error, 'message', '');
-
             error.message = customMessage || defaultMessage;
         });
     };
 
     const validator = customizeValidator({}, customErrors);
 
-    const handleFormDataChange = (index: number, data: FormData, sectionKey: string) => {
-        const validate = ajv.compile(schemas[index].schema);
-
-        const valid = validate(data);
+    const handleFormDataChange = (data: FormData) => {
+        
+        const valid = ajv.validate(schema, data);
 
         if (valid) {
             setFormData((prevData: FormData) => {
-                const updatedData = { ...prevData, [`section${index}`]: data };
-
+                const updatedData = { ...prevData, ...data };
                 onChange(updatedData, null);
-
                 return updatedData;
             });
         } else {
-            const errors = validate.errors?.map((error) => error.message) || [];
-
-            const updatedData = { ...formData, [`section${index}`]: data };
-
+            const errors = ajv.errors?.map((error) => error.message) || [];
+            const updatedData = { ...formData, ...data };
             onChange(updatedData, errors);
         }
     };
+
+    const getSchema = (sectionKey: string, sectionValue: any) => {
+        const fieldSchema = {
+            type: "object", 
+            properties: {
+                [sectionKey]: sectionValue as RJSFSchema
+            },
+            required: schema.schema.required && schema.schema.required.includes(sectionKey) ? [sectionKey] : []
+        }
+        return fieldSchema;
+    }
 
     return (
         <Box
             className={customClassNames?.container || styles.container}
             style={customStyles?.container}
         >
-            {_.map(schemas, (schema, index) => (
-                <Box
-                    key={index}
-                    className={customClassNames?.sectionContainer || styles.sectionContainer}
-                    style={customStyles?.sectionContainer}
+            <Box
+                className={customClassNames?.sectionContainer || styles.sectionContainer}
+                style={customStyles?.sectionContainer}
+            >
+                <Typography
+                    variant="h1"
+                    className={customClassNames?.connectorName || styles.connectorName}
+                    style={customStyles?.connectorName}
                 >
-                    <Typography
-                        variant="h1"
-                        className={customClassNames?.connectorName || styles.connectorName}
-                        style={customStyles?.connectorName}
-                    >
-                        {schema.title}
-                    </Typography>
-                    {schema.schema.properties &&
-                        _.entries(schema.schema.properties).map(([sectionKey, sectionValue]) => {
-                            return (
-                                <Box
-                                    key={sectionKey}
-                                    className={
-                                        customClassNames?.sectionContainers ||
-                                        styles.sectionContainers
-                                    }
-                                    style={customStyles?.sectionContainers}
-                                >
-                                    <CustomForm
-                                        schema={{
-                                            type: 'object',
-                                            properties: {
-                                                [sectionKey]: sectionValue as RJSFSchema
-                                            }
-                                        }}
-                                        uiSchema={{
-                                            [sectionKey]: {
-                                                ...schema.uiSchema[sectionKey]
-                                            }
-                                        }}
-                                        formData={formData[`section${index}`] as FormData}
-                                        validator={validator}
-                                        showErrorList={false}
-                                        onChange={(e) => {
-                                            handleClick?.(sectionKey);
-                                            handleFormDataChange(index, e.formData, sectionKey);
-                                        }}
-                                        liveValidate={true}
-                                        templates={{
-                                            ButtonTemplates: {
-                                                SubmitButton: () => null
-                                            }
-                                        }}
-                                        extraErrors={extraErrors}
-                                    />
-                                </Box>
-                            );
-                        })}
-                </Box>
-            ))}
+                    {schema.title}
+                </Typography>
+                {schema.schema.properties &&
+                    _.entries(schema.schema.properties).map(([sectionKey, sectionValue]) => {
+                        return (
+                            <Box
+                                key={sectionKey}
+                                className={
+                                    customClassNames?.sectionContainers ||
+                                    styles.sectionContainers
+                                }
+                                style={customStyles?.sectionContainers}
+                                onClick={() => handleClick?.(sectionKey)}
+                            >
+                                <CustomForm
+                                    schema={getSchema(sectionKey, sectionValue) as RJSFSchema}
+                                    uiSchema={{
+                                        [sectionKey]: {
+                                            ...schema.uiSchema[sectionKey]
+                                        }
+                                    }}
+                                    formData={formData as FormData}
+                                    validator={validator}
+                                    showErrorList={false}
+                                    onChange={(e) => {
+                                        handleClick?.(sectionKey);
+                                        handleFormDataChange(e.formData);
+                                    }}
+                                    liveValidate={true}
+                                    templates={{
+                                        ButtonTemplates: {
+                                            SubmitButton: () => null
+                                        }
+                                    }}
+                                    extraErrors={extraErrors}
+                                    onBlur={() => handleClick?.(sectionKey)}
+                                />
+                            </Box>
+                        );
+                    })}
+            </Box>
+            
         </Box>
     );
 };

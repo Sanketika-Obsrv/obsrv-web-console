@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Stack } from '@mui/material';
 import DedupeEvents from 'components/Form/DynamicForm';
-import schemas from './Schema';
+import schema from './Schema';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import _ from 'lodash';
 
@@ -16,7 +16,7 @@ interface Schema {
 }
 
 interface ConfigureConnectorFormProps {
-    schemas: Schema[];
+    schema: Schema;
     formData: FormData;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     onChange: (formData: FormData, errors?: unknown[] | null) => void;
@@ -36,15 +36,6 @@ const DedupeEvent = (props: any) => {
     };
 
     const [formData, setFormData] = useState<{ [key: string]: unknown }>(existingData);
-
-    const transformationOption = useMemo(() => {
-        if (!_.isEmpty(transformationOptions))
-            _.set(
-                schemas,
-                [0, 'schema', 'properties', 'section1', 'properties', 'dedupeKey', 'enum'],
-                transformationOptions
-            );
-    }, [transformationOptions]);
 
     useEffect(() => {
         const formDropDuplicates = _.get(formData, ['section0', 'section1', 'dropDuplicates']);
@@ -97,7 +88,7 @@ const DedupeEvent = (props: any) => {
     return (
         <Stack mt={-8} ml={-0.5}>
             <DedupeEvents
-                schemas={schemas}
+                schema={schema}
                 formData={formData}
                 setFormData={setFormData}
                 onChange={handleChange}

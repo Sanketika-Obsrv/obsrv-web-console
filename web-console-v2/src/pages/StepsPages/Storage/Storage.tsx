@@ -26,7 +26,7 @@ interface Schema {
 }
 
 interface ConfigureConnectorFormProps {
-    schemas: Schema[];
+    schema: Schema;
     formData: FormData;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     onChange: (formData: FormData, errors?: unknown[] | null) => void;
@@ -56,7 +56,7 @@ const Storage = () => {
     const [datasetType, setDatasetType] = useState<string>('');
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [uiSchema, setUiSchema] = useState<Schema[]>(schemas);
+    const [uiSchema, setUiSchema] = useState<Schema>();
     const updateDatasetMutate = useUpdateDataset();
     const sessionData = sessionStorage.getItem('configDetails');
     const configData = sessionData ? JSON.parse(sessionData) : null;
@@ -251,18 +251,18 @@ const Storage = () => {
         if (storageTypeSelected?.length <= 0) setCanProceed(false);
 
         const updatedUiSchema: UiSchema = {
-            ...schemas[0].uiSchema,
+            ...schema.uiSchema,
 
             section3: {
-                ...schemas[0].uiSchema.section3,
+                ...schema.uiSchema.section3,
                 primary: {
-                    ...schemas[0].uiSchema.section3.primary
+                    ...schema.uiSchema.section3.primary
                 },
                 partition: {
-                    ...schemas[0].uiSchema.section3.partition
+                    ...schema.uiSchema.section3.partition
                 },
                 timestamp: {
-                    ...schemas[0].uiSchema.section3.timestamp
+                    ...schema.uiSchema.section3.timestamp
                 }
             }
         };
@@ -322,17 +322,17 @@ const Storage = () => {
         }
 
         const updatedSchema: CustomSchema = {
-            ...schemas[0].schema,
+            ...schema.schema,
             properties: {
-                ...schemas[0].schema.properties,
+                ...schema.schema.properties,
                 section3: {
-                    ...(schemas[0].schema.properties?.section3 as any),
+                    ...(schema.schema.properties?.section3 as any),
                     required: required
                 }
             }
         };
 
-        setUiSchema([{ title: '', schema: updatedSchema, uiSchema: updatedUiSchema }]);
+        setUiSchema({ title: '', schema: updatedSchema, uiSchema: updatedUiSchema });
     }, [formData, datasetType]);
 
     const handleDatasetNameClicks = (id: any) => {
@@ -386,7 +386,7 @@ const Storage = () => {
                         }}
                     >
                         <ConfigureConnectorForm
-                            schemas={uiSchema}
+                            schema={uiSchema!}
                             formData={formData}
                             setFormData={setFormData}
                             onChange={handleChange}

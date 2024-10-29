@@ -31,7 +31,7 @@ interface Schema {
 }
 
 interface TransformationFormProps {
-    schemas: Schema[];
+    schema: Schema;
     formData: FormData;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     onChange: (formData: FormData, errors?: unknown[] | null) => void;
@@ -208,7 +208,7 @@ const AddTransformationExpression = (props: any) => {
                 <DialogContent>
                     <Stack mt={-4} width="auto">
                         <TransformationForm
-                            schemas={schema}
+                            schema={schema}
                             formData={formData}
                             setFormData={setFormData}
                             onChange={handleChange}

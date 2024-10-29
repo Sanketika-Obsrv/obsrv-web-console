@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Stack } from '@mui/material';
 import DataValidationForm from 'components/Form/DynamicForm';
-import schemas from './Schema';
+import schema from './Schema';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import _ from 'lodash';
 
@@ -16,7 +16,7 @@ interface Schema {
 }
 
 interface ConfigureConnectorFormProps {
-    schemas: Schema[];
+    schema: Schema;
     formData: FormData;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     onChange: (formData: FormData, errors?: unknown[] | null) => void;
@@ -59,7 +59,7 @@ const DataValidation = (props: any) => {
     return (
         <Stack mt={-8} ml={-1}>
             <DataValidationForm
-                schemas={schemas}
+                schema={schema}
                 formData={formData}
                 setFormData={setFormData}
                 onChange={handleChange}
