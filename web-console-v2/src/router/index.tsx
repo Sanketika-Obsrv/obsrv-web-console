@@ -27,6 +27,7 @@ import ListChannels from 'pages/notificationChannels/ListChannels';
 import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
+import DatasetManagement from 'pages/datasetManagement/components/DatasetManagement';
 // Type definition for the route configuration
 interface RouteConfig {
     path: string;
@@ -80,7 +81,8 @@ const routeConfigurations: RouteConfig[] = [
     { path: `${BASE_PATH}/alertChannels/view/:id`, element: <ViewChannel /> },
     { path: `${BASE_PATH}/datasets`, element: <ClusterHealth /> },
     { path: `${BASE_PATH}/datasets/:datasetId`, element: <DatasetMetrics /> },
-    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> }
+    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> },
+    { path: `${BASE_PATH}/datasets/management/:datasetId`, element: <DatasetManagement /> }
 ];
 
 const AppRouter = () => (
