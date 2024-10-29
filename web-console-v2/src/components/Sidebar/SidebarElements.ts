@@ -2,6 +2,7 @@ import React from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import ConnectorManagement from 'assets/icons/ConnectorManagement';
+import { AlertOutlined, MailOutlined } from '@ant-design/icons';
 import DatasetManagementIcon from 'assets/icons/DatasetManagement';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import { theme } from 'theme';
@@ -108,11 +109,23 @@ const SidebarElements = () => {
       route: '/home/new-dataset'
     },
     {
-          id: 'datasetmanagement',
-          icon: React.createElement(DatasetManagementIcon),
-          title: 'Datasets',
-          route: '/home/datasets',
-    }
+      id: 'datasetmanagement',
+      icon: React.createElement(DatasetManagementIcon),
+      title: 'Datasets',
+      route: '/home/datasets',
+    },
+    {
+      id: 'alertmanagement',
+      icon: React.createElement(AlertOutlined),
+      title: 'Alerts',
+      route: '/home/alertRules/custom'
+    },
+    {
+      id: 'notifications',
+      icon: React.createElement(MailOutlined),
+      title: 'Notifications',
+      route: '/home/alertChannels',
+    },
   ];
 
   return elements;

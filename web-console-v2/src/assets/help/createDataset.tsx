@@ -28,11 +28,11 @@ const CreateDataset = () =>{
                 <p className="contentBody">For schema files, upload according to the data format:</p>
                 <ul className="customList">
                     <li className="contentBody">JSON: Upload a JSON schema file as per <a className="links"
-                            href="https://json-schema.org/specification">JSON Schema Specification</a>.</li><br />
+                            href="https://json-schema.org/specification" target="_blank" rel="noreferrer">JSON Schema Specification</a>.</li><br />
                     <li className="contentBody">XML: Upload an XSD file.</li><br />
                     <li className="contentBody">ProtoBuf: Upload a .proto file.</li><br />
                     <li className="contentBody">CSV: Upload a CSV schema as per <a className="links"
-                            href="http://digital-preservation.github.io/csv-schema/">CSV Schema Specification</a>.</li><br />
+                            href="http://digital-preservation.github.io/csv-schema/" target="_blank" rel="noreferrer">CSV Schema Specification</a>.</li><br />
                     <li className="contentBody">Avro: Upload an .avsc file which has a JSON structure.</li>
                 </ul>
             </section>
