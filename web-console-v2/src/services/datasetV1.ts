@@ -1,3 +1,4 @@
+/*eslint-disable*/
 import * as _ from 'lodash';
 import { http } from 'services/http';
 import { flattenSchema, setAdditionalProperties, updateDenormDerived, updateJSONSchema } from './json-schema';
@@ -416,7 +417,7 @@ export const createDraftversion = async ({ selection, navigateToPath, rollupRedi
             navigateToPath(`/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
             return;
         }
-        navigateToPath(`/datasets/edit/${datasetResponse?.data?.result?.dataset_id}?master=${_.get(datasetResponse, 'data.result.type') === DatasetType.MasterDataset}&status=${DatasetStatus.Draft}&page=0`)
+        navigateToPath(`/home/ingestion/schema-details/${datasetResponse?.data?.result?.dataset_id}`)
         _.set(versionKeyMap, "version_keys", { [selection]: _.get(datasetResponse, "data.result.version_key") })
         return;
     }

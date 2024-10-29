@@ -100,13 +100,13 @@ const ClusterHealth = () => {
     }, {
         id: "add-dataset",
         label: <FormattedMessage id="dataset-actions-add-dataset" />,
-        onClick: () => navigate('/dataset/new'),
+        onClick: () => navigate(`/home/new-dataset`),
         icon: <PlusOutlined />,
         disabled: false
     }, {
         id: "add-master-dataset",
         label: <FormattedMessage id="dataset-actions-add-master-dataset" />,
-        onClick: () => navigate('/dataset/new/master?master=true'),
+        onClick: () => navigate(`/home/new-dataset`),
         icon: <PlusOutlined />,
         disabled: false
     }]
