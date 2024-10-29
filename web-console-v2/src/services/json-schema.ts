@@ -100,6 +100,31 @@ const insertProperties = (data: any) =>
         index === data.length - 1 ? [item] : [item, 'properties']
     );
 
+const transformDataV1 = (data: any, jsonSchemaData: any) => {
+    return _.reduce(data, (result: any, obj) => {
+        const columns = obj.column.split('.');
+        let parent: any = result;
+        columns.forEach((column: any, index: any) => {
+            const originalColumn = obj.column;
+            const rootType = _.size(columns) > 1 ? _.cloneDeep(columns).slice(0, -1) : columns;
+            const columnWithoutDots = column.replace(/\./g, '');
+            let subRows: any = _.get(parent, 'subRows');
+            if (!subRows) {
+                subRows = [];
+                parent.subRows = subRows;
+            }
+            let subRow = _.find(subRows, { column: columnWithoutDots });
+            if (!subRow) {
+                subRow = { column: columnWithoutDots, originalColumn, type: _.get(jsonSchemaData, ['properties', ...insertProperties(rootType), 'type', columnWithoutDots]), ..._.omit(obj, ['column']) };
+                subRows.push(subRow);
+            }
+            if (_.has(subRow, 'subRows')) _.set(subRow, 'disableActions', true);
+            parent = subRow;
+        });
+        return result;
+    }, { "subRows": [] });
+}
+
 const transformData = (data: any, jsonSchemaData: any) => {
     return _.reduce(
         data,
@@ -140,6 +165,11 @@ const transformData = (data: any, jsonSchemaData: any) => {
 
 export const getNesting = (payload: any, jsonSchemaData: any) => {
     const data: any = transformData(payload, jsonSchemaData);
+    return data.subRows;
+};
+
+export const getNestingV1 = (payload: any, jsonSchemaData: any) => {
+    const data: any = transformDataV1(payload, jsonSchemaData);
     return data.subRows;
 };
 
@@ -236,6 +266,27 @@ export const updateDenormDerived = (
     });
     return _.concat(schemaColumns, result);
 };
+
+export const flattenSchemaV1 = (schema: Record<string, any>, fixedPrefix?: string | undefined, modified?: boolean, rollup = false) => {
+    const flattend = flatten(schema, rollup);
+    if (fixedPrefix)
+        return _.map(flattend, (value, key) => {
+            const { key: propertyKey, ref } = value;
+            const keySplit = _.split(propertyKey, '.');
+            const refSplit = _.split(ref, '.');
+            keySplit.splice(1, 0, fixedPrefix, 'properties');
+            refSplit.splice(1, 0, fixedPrefix, 'properties');
+            const data = {
+                column: `${fixedPrefix}.${key}`,
+                ...value,
+                key: keySplit.join('.'),
+                ref: refSplit.join('.'),
+            };
+            if (modified) { data.isModified = true; data.required = false; }
+            return data;
+        });
+    return _.map(flattend, (value, key) => ({ column: key, ...value }));
+}
 
 export const flattenSchema = (
     schema: Record<string, any>,
@@ -454,8 +505,8 @@ export const formatSchemaItem = (key: string, item: any): any => {
         item.resolved !== undefined
             ? item.resolved
             : canExpand
-              ? allChildWithSuggestionsResolved
-              : !item.suggestions?.length;
+                ? allChildWithSuggestionsResolved
+                : !item.suggestions?.length;
 
     return {
         key: key,
@@ -568,8 +619,8 @@ export const checkForMustFixConflict = (row: Record<string, any>) => {
         const isResolved = _.has(subRow, 'resolved')
             ? _.get(subRow, 'resolved')
             : isCritical
-              ? false
-              : true;
+                ? false
+                : true;
         conflict = conflict || isCritical;
         resolved = resolved && isResolved;
         for (const subRow of subRows) {
@@ -641,3 +692,23 @@ export const flattenObject = (obj: any) => {
     flatten(obj);
     return flattenedObject;
 };
+
+export const getFilteredMetricData = (data: Record<string, any>[]) => {
+    const columns = new Set();
+
+    const getDerivedColumns = (columnName: string) => {
+        const keys = _.split(columnName, '.');
+        for (let index = 0; index < keys.length; index++) {
+            columns.add(_.join(_.slice(keys, 0, index + 1), '.'));
+        }
+    }
+
+    _.forEach(data, columnMetadata => {
+        const factValuedData = _.get(columnMetadata, 'rollupType');
+        if (factValuedData === 'fact' || factValuedData === 'count') {
+            return getDerivedColumns(_.get(columnMetadata, 'column'));
+        }
+    });
+
+    return _.compact(_.map([...columns], column => _.find(data, ['column', column])));
+}

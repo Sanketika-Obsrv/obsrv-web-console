@@ -25,6 +25,8 @@ import ConnectorManagementPage from 'pages/ConnectorManagement/ConnectorManageme
 import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
 import SettingsPage from 'pages/Settings/Settings';
 import UploadPage from 'pages/IngestionPage/IngestionPage';
+import RollupConfig from 'pages/Rollup/components';
+import DatasetManagement from 'pages/DatasetManagement/components/DatasetManagement';
 
 // TypeScript interface to define the structure of route configuration
 interface RouteConfig {
@@ -98,6 +100,14 @@ const routeConfigurations: RouteConfig[] = [
     {
         path: `${BASE_PATH}/settings`,
         element: <SettingsPage />
+    },
+    {
+        path: `${BASE_PATH}/datasets/rollups/:datasetId`,
+        element: <RollupConfig />
+    },
+    {
+        path:`${BASE_PATH}/datasets/management/:datasetId`,
+        element: <DatasetManagement />
     }
 ];
 
