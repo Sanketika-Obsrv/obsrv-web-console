@@ -31,6 +31,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     const elements = SidebarElements();
     const navigate = useNavigate();
     const location = useLocation();
+    const pathname = location.pathname;
     const [openParent, setOpenParent] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<string | null>(null);
     const [selectedChildItem, setSelectedChildItem] = useState<string | null>(null);
@@ -315,7 +316,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
         </div>
     );
 
-    return <div>{DrawerList}</div>;
+    return pathname !== '/login' ? <div>{DrawerList}</div> : <></>;
 };
 
 export default Sidebar;

@@ -1,12 +1,11 @@
 import React, { useState, useCallback, FC, lazy } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import _ from 'lodash';
-import { AlertContextProvider } from 'contexts/AlertContextProvider';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
-
 import SideBar from 'components/Sidebar/Sidebar';
 import Navbar from 'components/Navbar/Navbar';
+import _ from 'lodash';
+import { AlertContextProvider } from 'contexts/AlertContextProvider';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import AlertComponent from 'components/@extended/CustomAlert';
 import AppRouter from 'router';
 import styles from 'App.module.css';
@@ -42,7 +41,7 @@ const App: FC = () => {
     return (
         <QueryClientProvider client={queryClient}>
             <Locales>
-                <BrowserRouter>
+                <BrowserRouter basename={getBaseURL()}>
                     <Routes>
                         <Route path='/login' element={<Login />} />
                     </Routes>

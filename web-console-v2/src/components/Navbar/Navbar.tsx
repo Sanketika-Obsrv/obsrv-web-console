@@ -18,6 +18,7 @@ const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
     const pathname = location.pathname;
+    
     const [openNotification, setOpenNotification] = useState(false);
     const [alerts, setAlerts] = useState<any>(null)
     const [read, setRead] = useState<any>(_.get(alerts, 'length') || 0);
@@ -50,7 +51,7 @@ function BasicBreadcrumbs(): JSX.Element {
         if(openNotification || _.isNull(alerts)) fetchAlerts();
     }, [openNotification]);
 
-    return (
+    return (pathname !== '/login' ? (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
             <Grid item xs={1.5} className={styles.logo}>
                 <Box onClick={handleNavigate}>
@@ -110,7 +111,7 @@ function BasicBreadcrumbs(): JSX.Element {
                 {openNotification && <Notification open={openNotification} setOpen={setOpenNotification} alerts={alerts} />}
             </Grid>
         </Grid>
-    );
+    ) : <></>);
 }
 
 export default BasicBreadcrumbs;
