@@ -10,7 +10,6 @@ import { renderSections } from 'pages/alertManager/services/utils';
 import MainCard from 'components/MainCard';
 import SendTestMessage from './components/SendTestMessage';
 import { renderSkeleton } from 'services/skeleton';
-import { getConfigValue } from 'services/configData';
 import { useAlert } from 'contexts/AlertContextProvider';
 
 const isValid = (config: Record<string, any>) => {

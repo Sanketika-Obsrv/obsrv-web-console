@@ -23,7 +23,7 @@ const DataFormats = (props: any) => {
         <Grid container display={"flex"} flexDirection={"column"}>
             <Grid item xs={4}>
                 <Box display="flex" alignItems="center">
-                    <Checkbox checked={true} onChange={() => { }} />
+                    <Checkbox checked={true} />
                     <Typography variant="h6" fontWeight={400}>
                         {"Individual Events"}
                     </Typography>
@@ -35,7 +35,7 @@ const DataFormats = (props: any) => {
                         <Grid container display={"flex"} flexDirection={"column"}>
                             <Grid item xs={3}>
                                 <Box display="flex" alignItems="center">
-                                    <Checkbox checked={true} onChange={() => { }} />
+                                    <Checkbox checked={true} />
                                     <Typography variant="h6" fontWeight={400}>
                                         {"Batch Mode"}
                                     </Typography>
