@@ -1,6 +1,6 @@
 export const ingestionData = {
     section1: {
-        title: 'Dataset Schema',
+        title: 'Create Dataset',
         datasetName: {
             title: 'Dataset Name',
             pattern: '^[^!@#$%^&*()+{}\\[\\]:;<>,?~\\\\|]*$'

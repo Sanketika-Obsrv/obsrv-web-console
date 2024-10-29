@@ -103,7 +103,7 @@ const renderColumnCell = ({ cell, value }: any) => {
                     maxWidth="80%"
                 >
                     <Typography
-                        variant="h2"
+                        variant="h3"
                         component="span"
                         textOverflow="ellipsis"
                         overflow="hidden"
@@ -214,7 +214,7 @@ const renderDataTypeCell = ({
     if (row?.isModified && row?.isNewlyAdded && row?.arrival_format === 'object')
         return (
             <Box px={2}>
-                <Typography variant="h2" component="span">
+                <Typography variant="h3" component="span">
                     {value}
                 </Typography>
             </Box>
@@ -352,7 +352,7 @@ const renderDataTypeCell = ({
                                 value={option}
                                 key={option}
                             >
-                                <Typography variant="h2" component="span">
+                                <Typography variant="h3" component="span">
                                     {option}{' '}
                                 </Typography>
                             </MenuItem>
@@ -638,7 +638,7 @@ const renderActionsCell = ({
             <Dialog open={edit} onClose={handleClose}>
                 <DialogTitle display="flex" justifyContent="space-between" alignItems="center">
                     <Typography
-                        variant="h2"
+                        variant="h3"
                         component="span"
                         maxWidth={'70%'}
                         textOverflow="ellipsis"
@@ -768,7 +768,7 @@ const renderArrivalFormatCell = ({
     if (row?.isModified && row?.isNewlyAdded && row?.arrival_format === 'object')
         return (
             <Box px={2}>
-                <Typography variant="h2" component="span">
+                <Typography variant="h3" component="span">
                     {value}
                 </Typography>
             </Box>
@@ -907,7 +907,7 @@ const renderArrivalFormatCell = ({
                                     value={option}
                                     key={option}
                                 >
-                                    <Typography variant="h2" component="span">
+                                    <Typography variant="h3" component="span">
                                         {option}
                                     </Typography>
                                 </MenuItem>

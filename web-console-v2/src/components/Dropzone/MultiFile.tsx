@@ -136,7 +136,7 @@ const MultiFileUpload = ({
                                 <PlaceholderContent
                                     imageUrl={uploadIcon}
                                     mainText="Upload Sample Data"
-                                    subText="Accepted formats: JSON, CSV, XML, Parquet, Avro, and ORC"
+                                    subText="JSON"
                                     type="upload"
                                 />
                             </Box>
@@ -144,7 +144,7 @@ const MultiFileUpload = ({
                                 <PlaceholderContent
                                     imageUrl={uploadImage}
                                     mainText="Upload Schema File"
-                                    subText="JSON, XML, ProtoBuf, CSV and Avro"
+                                    subText="JSON"
                                     type="upload"
                                 />
                             </Box>

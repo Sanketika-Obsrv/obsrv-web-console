@@ -492,6 +492,24 @@ export const prepareFieldsFromJson = (fields: any): any => {
     }
 };
 
+export const downloadJSONSchemaV1 = (schema: Record<string, any>, updatePayload: Record<string, any>) => {
+    const clonedOriginal = _.cloneDeep(schema);
+    const modifiedRows = _.get(updatePayload, 'schema');
+    _.forEach(modifiedRows, modifiedRow => {
+        const { isDeleted = false, required = false, key, type, description = null, arrival_format, data_type, isModified = false } = modifiedRow;
+        if (isDeleted) {
+            deleteItemFromSchema(clonedOriginal, `schema.${key}`, false);
+        } else {
+            updateTypeInSchema(clonedOriginal, `schema.${key}`, type, true);
+            updateFormatInSchema(clonedOriginal, `schema.${key}`, arrival_format);
+            updateDataTypeInSchema(clonedOriginal, `schema.${key}`, data_type, isModified);
+            descriptionInSchema(clonedOriginal, `schema.${key}`, description);
+            changeRequiredPropertyInSchema(clonedOriginal, `schema.${key}`, required);
+        }
+    });
+    return clonedOriginal;
+}
+
 export const downloadJSONSchema = (
     schema: Record<string, any>,
     updatePayload: Record<string, any>,
