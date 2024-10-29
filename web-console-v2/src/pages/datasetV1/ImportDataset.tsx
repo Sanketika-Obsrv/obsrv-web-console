@@ -24,8 +24,10 @@ const ImportDataset = ({ open, onClose }: any) => {
     const [checkValidation, setCheckValidation] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isLiveExists, setIsLiveExists] = useState<boolean>(false);
+    const [contents, setContents] = useState<string[]>([]);
     const navigate = useNavigate();
     const { showAlert } = useAlert();
+    
 
     const flattenContents = (content: Record<string, any> | any) => {
         return content.flat().filter((field: any) => field && Object.keys(field).length > 0);
@@ -35,6 +37,7 @@ const ImportDataset = ({ open, onClose }: any) => {
         const contents = await Promise.all(acceptedFiles.map((file: File) => readJsonFileContents(file)));
         console.log('contents', contents);
          if (contents.length > 0) {
+            setContents(contents as string[])
             const firstContent: any = contents[0]; 
             setDatasetId(firstContent.dataset_id || ''); 
             setDatasetName(firstContent.name || '');
@@ -44,26 +47,25 @@ const ImportDataset = ({ open, onClose }: any) => {
         try {
             datasetData = await fetchDatasets({ data: { filters: {} } });
             const datasetsArray = datasetData.data;
-            console.log(datasetsArray);
             if (!Array.isArray(datasetsArray)) {
                 throw new Error("Expected datasetData.data to be an array");
             }
 
             const datasetIds = datasetsArray.map((dataset: any) => dataset.dataset_id);
-            console.log(datasetIds);
 
             const contentDatasetIds = contents.map((data: any) => data.dataset_id).filter(Boolean);
-            console.log('Content dataset IDs:', contentDatasetIds);
 
             const matchingIds = contentDatasetIds.filter((id: string) => datasetIds.includes(id));
 
             if (matchingIds.length > 0) {
                 const conflictingIds = matchingIds;
-                setOpenImportDialog(true);
                 setIsProceedEnabled(false);
                 setConflictingIds(conflictingIds);
                 setMessage(`Conflicting dataset IDs found: ${conflictingIds.join(', ')}.`);
                 setCheckValidation(true);
+                setMessage('');
+                onClose();
+                setOpenImportDialog(true);
             } else {
                 setIsProceedEnabled(true);
                 setConflictingIds([]);
@@ -82,11 +84,12 @@ const ImportDataset = ({ open, onClose }: any) => {
         }).catch((err: any) => { console.log(err) })
     }
 
-    const onSubmit = async () => {
+    const onSubmit = async (config: any) => {
         setLoading(true);
-        if ((datasetId || datasetName) ) {
+        if ((contents) && config) {
             setLoading(true)
             try {
+                const overwrite = _.get(config, "importType") === "overwrite" ? true : false
                 const liveDatasetExists = await fetchDataset();
                 if (liveDatasetExists && !isLiveExists) {
                     setOpenImportDialog(true)
@@ -94,7 +97,8 @@ const ImportDataset = ({ open, onClose }: any) => {
                     setIsLiveExists(true)
                     return
                 }
-                await importDataset(datasetId, {}, true);
+                console.log('contents', contents[0])
+                await importDataset(contents[0], config, overwrite);
                 navigate(`/datasets?status=${DatasetStatus.Draft}`);
                 showAlert(`Dataset imported successfully`, "success");
             } catch (err) {
@@ -154,6 +158,7 @@ const ImportDataset = ({ open, onClose }: any) => {
                         mainText="Upload Sample Data"
                         subText="JSON"
                         type="upload"
+                        
                     />
                 </Box>
                 <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ p: 2 }}>
