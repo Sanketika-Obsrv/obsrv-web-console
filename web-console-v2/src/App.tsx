@@ -1,9 +1,9 @@
-import React, { useState, useCallback, FC } from 'react';
+import React, { useState, useCallback, FC, lazy } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import _ from 'lodash';
 import { AlertContextProvider } from 'contexts/AlertContextProvider';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import SideBar from 'components/Sidebar/Sidebar';
 import Navbar from 'components/Navbar/Navbar';
@@ -13,6 +13,8 @@ import styles from 'App.module.css';
 import { queryClient } from 'queryClient';
 import Locales from 'components/Locales';
 import { getBaseURL } from 'services/configData';
+import Loadable from 'pages/auth/components/Loadable';
+const Login = Loadable(lazy(() => import('pages/auth/Login')));
 
 const useSidebarToggle = () => {
 
@@ -40,21 +42,24 @@ const App: FC = () => {
     return (
         <QueryClientProvider client={queryClient}>
             <Locales>
-            <BrowserRouter basename={getBaseURL()}>
-                <Navbar />
-                <div
-                    className={`${styles.appContainer} ${isSidebarExpanded ? styles.expanded : styles.collapsed}`}
-                >
-                    <SideBar onExpandToggle={toggleSidebar} expand={isSidebarExpanded} />
-                    <AlertContextProvider>
-                        <AlertComponent />
-                        <main className={styles.mainContainer}>
-                            <AppRouter />
-                        </main>
-                    </AlertContextProvider>
-                </div>
-            </BrowserRouter>
-            <ReactQueryDevtools initialIsOpen={false} />
+                <BrowserRouter>
+                    <Routes>
+                        <Route path='/login' element={<Login />} />
+                    </Routes>
+                    <Navbar />
+                    <div
+                        className={`${styles.appContainer} ${isSidebarExpanded ? styles.expanded : styles.collapsed}`}
+                    >
+                        <SideBar onExpandToggle={toggleSidebar} expand={isSidebarExpanded} />
+                        <AlertContextProvider>
+                            <AlertComponent />
+                            <main className={styles.mainContainer}>
+                                <AppRouter />
+                            </main>
+                        </AlertContextProvider>
+                    </div>
+                </BrowserRouter>
+                <ReactQueryDevtools initialIsOpen={false} />
             </Locales>
         </QueryClientProvider>
     );

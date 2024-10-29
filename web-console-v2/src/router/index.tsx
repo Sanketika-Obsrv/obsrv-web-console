@@ -1,6 +1,7 @@
-import React, { Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import _ from 'lodash';
+
 
 // Import pages for different routes
 import NewDatasetPage from 'pages/NewDataset/NewDataset';
@@ -18,6 +19,9 @@ import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/
 import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
 import ClusterHealth from 'pages/dashboardV1/datasets';
+import Loadable from 'pages/auth/components/Loadable';
+const Login = Loadable(lazy(() => import('pages/auth/Login')));
+
 // Base path for all routes
 const BASE_PATH = '/home';
 
@@ -44,7 +48,7 @@ const routeConfigurations: any[] = [
     { path: `${BASE_PATH}/settings`, element: <SettingsPage /> },
     { path: `${BASE_PATH}/datasets`, element: <ClusterHealth /> },
     { path: `${BASE_PATH}/datasets/:datasetId`, element: <DatasetMetrics /> },
-    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> },
+    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> }
 ];
 
 // Main router component that renders all routes individually
