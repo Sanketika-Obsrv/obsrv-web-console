@@ -10,14 +10,17 @@ import {
   DATASET_UPDATE_ENDPOINT,
   DATASET_EXPORT_ENDPOINT,
   DATASET_COPY_ENDPOINT,
+  DATASET_READ,
 } from './../constants/endpoints';
+import { response } from 'express';
+import { useFetchDatasetsById } from './dataset';
 
 enum datasetStatus {
   Live = 'Live',
 }
 
 const axiosInstance = axios.create({
-  baseURL: '/v2',
+  baseURL: '/config/v2',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -85,7 +88,15 @@ export const combineDatasetWithHealth = async (): Promise<{
 }> => {
   try {
     const { datasets } = await fetchDatasets();
-    const datasetHealthPromises = datasets.map((dataset: Dataset) => {
+    console.log('datasets', datasets);
+
+    const datasetRead = await Promise.all(datasets.map((dataset: Dataset) => {
+      const defaultFields = ["dataset_id", "name", "type", "status", "tags", "version", "api_version", "dataset_config", "created_date", "updated_date",'data_schema','validation_config','dedup_config','denorm_config'];
+      const params = (dataset.status === "Draft") ? `fields=${[...defaultFields, "connectors_config"]}&mode=edit` : `fields=${defaultFields}`;
+      return axiosInstance.get(DATASET_READ(dataset.dataset_id, params)).then((response) => {return (response.data.result)});
+    }));
+    console.log('datasetRead',datasetRead);
+    const datasetHealthPromises = datasetRead.map((dataset: Dataset) => {
       if (dataset.status === datasetStatus.Live) {
         return getDatasetHealth(dataset.dataset_id).then((health) => ({
           ...dataset,
@@ -107,7 +118,7 @@ export const combineDatasetWithHealth = async (): Promise<{
             return result.value;
           } else {
             return {
-              ...datasets[index],
+              ...datasetRead[index],
               'Current Health': 'Failed to fetch',
             };
           }

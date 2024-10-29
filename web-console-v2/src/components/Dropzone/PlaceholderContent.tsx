@@ -15,8 +15,8 @@ const PlaceholderContent = ({ imageUrl, mainText, subText, type }: PlaceholderCo
             {type !== DropzopType.standard && (
                 <Card
                     sx={{
-                        width: '18.75rem',
-                        height: '14.375rem',
+                        width: '22rem',
+                        height: '11rem',
                         margin: 4,
                         boxShadow: '0.625rem 0.625rem 2.75rem 0 rgba(0, 0, 0, 0.1)'
                     }}
@@ -37,22 +37,17 @@ const PlaceholderContent = ({ imageUrl, mainText, subText, type }: PlaceholderCo
                             <Typography variant="h2" textAlign="center">
                                 {mainText}
                             </Typography>
-                            <Typography variant="body1">
-                                Drag & Drop or{' '}
+                            <Typography variant="body1" textAlign="center">
+                                Drag & Drop or {' '}
                                 <Typography
                                     component="span"
                                     variant="body1"
                                     color="primary"
                                     sx={{ textDecoration: 'underline', cursor: 'pointer' }}
                                 >
-                                    Choose File
+                                    Choose a JSON File
                                 </Typography>{' '}
                                 to upload
-                            </Typography>
-
-                            <Typography variant="caption" textAlign="center" fontWeight={400}>
-                                Formats Supported: <br />
-                                {subText}
                             </Typography>
                         </Stack>
                     </CardContent>

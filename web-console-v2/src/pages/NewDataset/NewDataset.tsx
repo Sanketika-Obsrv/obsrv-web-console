@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './NewDataset.module.css';
 import { Grid, Typography, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { t } from 'utils/i18n';
 
 const NewDataset: React.FC = () => {
     const navigate = useNavigate();
@@ -25,12 +26,10 @@ const NewDataset: React.FC = () => {
                         lineHeight="3.1875rem"
                         className={styles.mainText}
                     >
-                        You can move the data from any source to destination in near real-time
+                        {t('newDataset.realTimeDataTransfer')}
                     </Typography>
                     <Typography variant="body1" lineHeight="1.5rem">
-                        In publishing and graphic design, Lorem ipsum is a placeholder text commonly
-                        used to demonstrate the visual form of a document or a typeface without
-                        relying on meaningful content.
+                        {t('newDataset.seamlessTransfer')}
                     </Typography>
                     <Box className={styles.button}>
                         <Button
@@ -39,7 +38,7 @@ const NewDataset: React.FC = () => {
                             onClick={handleClick}
                             sx={{ width: '14.375rem' }}
                         >
-                            <Typography variant="buttonContained">Create New Dataset</Typography>
+                            <Typography variant="buttonContained">{t('newDataset.createNewDataset')}</Typography>
                         </Button>
                     </Box>
                 </Grid>

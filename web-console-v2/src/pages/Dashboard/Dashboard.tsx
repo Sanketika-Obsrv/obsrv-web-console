@@ -18,6 +18,7 @@ import AlertDialog from 'components/AlertDialog/AlertDialog';
 import { theme } from 'theme';
 import { InputLabel } from '@mui/material';
 import { FormControl } from '@mui/material';
+
 const Dashboard = () => {
   const sections = ['header', 'infrastructure', 'api', 'ingestion', 'processing', 'storage'];
   const [interval, setInterval] = useState<any>();

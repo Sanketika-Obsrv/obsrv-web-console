@@ -26,6 +26,7 @@
   justify-content: center;
   padding-right: 2rem;
   border-radius: 0.25rem;
+  cursor: pointer;
 }
 
 .icons {
@@ -37,4 +38,11 @@
 
 .noUnderline {
   text-decoration: none;
+}
+
+.alertNotification {
+  position: fixed;
+  top: 4rem;
+  right: 0;
+  width: 25rem;
 }

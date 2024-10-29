@@ -394,8 +394,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     };
 
     const handleNavigate = () => {
-        window.location.href = '/console/datasets?status=Draft'
-        // navigate('/console/datasets?status=Draft'); for local testing use this navigation
+        window.location.assign('/console/datasets?status=Draft')
     };
 
     const markRowAsDeleted = (cellValue: Record<string, any>) => {
@@ -696,18 +695,18 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                     ) : (
                         <Box
                             sx={{
-                                flex: 1, // Makes the content above the action buttons scrollable
-                                overflowY: 'auto', // Allows scrolling for the content
-                                paddingBottom: '80px', // Ensures no overlap with the fixed action buttons
-                                mx: 4
+                                flex: 1, 
+                                overflowY: 'auto',
+                                paddingBottom: '80px',
+                                mx: 4,
                             }}
                         >
                             {!showTableOnly && (
                                 <>
-                                    {fetchLiveDataset?.data !== undefined ? <></> : <Box mt={-0.3}>
+                                    {fetchLiveDataset?.data !== undefined ? <></> : <Box marginBlock={2}>
                                         <Button
                                             variant="text"
-                                            sx={{ color: theme.palette.common.black }}
+                                            sx={{ color: theme.palette.common.black, mt: 0.5 }}
                                             startIcon={
                                                 <KeyboardBackspaceIcon
                                                     className={ingestionStyle.iconStyle}
@@ -726,7 +725,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                     >
                                         <Box display="flex" alignItems="center">
                                             <Typography
-                                                variant="h6"
+                                                variant="h1"
                                                 component="span"
                                                 fontWeight={600}
                                             >

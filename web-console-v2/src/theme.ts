@@ -201,6 +201,12 @@ export const theme = createTheme({
             fontSize: '1rem',
             color: '#111111'
         },
+        h3: {
+            fontFamily: 'Montserrat',
+            fontWeight: 500,
+            fontSize: '1rem',
+            color: '#111111'
+        },
         h5: {
             fontFamily: 'Montserrat',
             fontWeight: 600,

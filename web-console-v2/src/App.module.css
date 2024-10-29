@@ -1,7 +1,6 @@
 .appContainer {
   display: flex;
   height: 100vh;
-
 }
 
 .mainContainer {
@@ -13,7 +12,8 @@
 }
 
 .expanded .mainContainer {
-  margin-left: 18.75rem;
+  margin-left: 16rem;
+  width: 65rem;
 }
 
 .collapsed .mainContainer {

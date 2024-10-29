@@ -2,18 +2,22 @@ import React, { useState, useCallback, FC } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import _ from 'lodash';
-import { BrowserRouter } from 'react-router-dom';
 import { AlertContextProvider } from 'contexts/AlertContextProvider';
+import { BrowserRouter } from 'react-router-dom';
+
 import SideBar from 'components/Sidebar/Sidebar';
 import Navbar from 'components/Navbar/Navbar';
 import AlertComponent from 'components/@extended/CustomAlert';
 import AppRouter from 'router';
 import styles from 'App.module.css';
 import { queryClient } from 'queryClient';
+import Locales from 'components/Locales';
 
 const useSidebarToggle = () => {
+
+    const sidebarExpandValue = localStorage.getItem('sidebarExpand')
     const [isSidebarExpanded, setSidebarExpanded] = useState<boolean>(
-        _.isEqual(localStorage.getItem('sidebarExpand'), true)
+        _.isEqual(localStorage.getItem('sidebarExpand'), "true")
     );
 
     const toggleSidebar = useCallback(() => {
@@ -34,6 +38,7 @@ const App: FC = () => {
 
     return (
         <QueryClientProvider client={queryClient}>
+            <Locales>
             <BrowserRouter>
                 <Navbar />
                 <div
@@ -49,6 +54,7 @@ const App: FC = () => {
                 </div>
             </BrowserRouter>
             <ReactQueryDevtools initialIsOpen={false} />
+            </Locales>
         </QueryClientProvider>
     );
 };

@@ -11,7 +11,6 @@ import _ from 'lodash';
 import { theme } from 'theme';
 import { storeSessionStorageItem } from 'utils/sessionStorage';
 import { getConfigValue } from 'services/configData';
-import getStartedHelpSectionData from './HelpSectionData.json';
 
 interface ConfigureConnectorFormProps {
     schemas: Schema[];
@@ -28,7 +27,6 @@ const ConnectorConfiguration: React.FC = () => {
 
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
     const [schemas, setSchemas] = useState<Schema[]>([]);
-    const [helpSectionData, setHelpSectionData] = useState<string[]>([]);
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
 
     const location = useLocation();
@@ -45,11 +43,12 @@ const ConnectorConfiguration: React.FC = () => {
         queryParams: 'status=Draft&mode=edit&fields=connectors_config'
     });
     const connectionResponse = fetchDatasetById.data;
+    let connectorHelpText = "";
 
     useEffect(() => {
         if (schemas.length > 0) {
             const combinedHelpContent = generateHelpSectionContent(schemas[0].schema);
-            setHelpSectionData(combinedHelpContent);
+            connectorHelpText = combinedHelpContent.join('');
         }
     }, [schemas]);
 
@@ -171,8 +170,8 @@ const ConnectorConfiguration: React.FC = () => {
             connectors_config: [
                 {
                     value: {
-                        id: selectedCardId,
-                        connector_id: selectedConnectorId,
+                        id: selectedConnectorId,
+                        connector_id: selectedCardId,
                         connector_config: flattenedConnectorConfig?.source || {},
                         operations_config: flattenedConnectorConfig?.operations_config || {}
                     },
@@ -289,20 +288,10 @@ const ConnectorConfiguration: React.FC = () => {
             </Box>
             <HelpSection
                 helpSection={{
-                    isOpen: isHelpSectionOpen,
-                    activeMenuId: 'setupGuide',
-                    menus: [
-                        ...getStartedHelpSectionData.menus,
-
-                        {
-                            id: 'setupGuide',
-                            title: 'Setup Guide',
-                            index: 1,
-                            contents: helpSectionData.join('')
-                        }
-                    ],
-                    highlightedSection: highlightedSection
+                    defaultHighlight: "section0",
+                    contents: connectorHelpText
                 }}
+                highlightSection={highlightedSection}
                 onExpandToggle={handleHelpSectionToggle}
                 expand={isHelpSectionOpen}
             />

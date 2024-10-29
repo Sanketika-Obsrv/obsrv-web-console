@@ -39,7 +39,7 @@ const ReactTable = ({
     styles = {},
     context = {}
 }: Props) => {
-    const tableSx = limitHeight ? { height: 'auto', width: '100%' } : { width: '100%' };
+    const tableSx = limitHeight ? { height: 'auto', width: '100%', pt: 1 } : { width: '100%', pt: 1 };
     const { disableRowColor = false } = context;
     const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } = useTable(
         {
@@ -89,7 +89,7 @@ const ReactTable = ({
                 </>
             );
         }
-        return rows.map((row: any) => {
+        return rows.map((row: any, index: number) => {
             prepareRow(row);
             const [hasSevereConflict, areAllConflictsResolved] = checkForMustFixConflict(
                 _.get(row, 'original')
@@ -103,6 +103,10 @@ const ReactTable = ({
             };
 
             const isSubRow = row.depth > 0;
+            const isLastRow = index === row.length - 1;
+            const isLastSubRow = isSubRow && isLastRow;
+            const isExpandedWithSubRows = row.isExpanded && row.subRows && row.subRows.length > 0;
+
             return (
                 <React.Fragment key={uuidv4()}>
                     <TableRow
@@ -127,7 +131,7 @@ const ReactTable = ({
                                     borderBottom: "none", ...styles
                                 }}
                             >
-                                <Typography variant="h5">{cell.render('Cell')}</Typography>
+                                <Typography variant="h3">{cell.render('Cell')}</Typography>
                             </TableCell>
                         ))}
                     </TableRow>
@@ -145,6 +149,19 @@ const ReactTable = ({
                             )}
                         </TableCell>
                     </TableRow>
+                {!row.isExpanded && (
+                    <TableRow>
+                        <TableCell colSpan={columns.length} sx={{ padding: 0, borderBottom: "none" }}>
+                            <Box
+                                sx={{
+                                    height: '8px',
+                                    width: '100%',
+                                    backgroundColor: showHeaders ? theme.palette.common.white : 'transparent',
+                                }}
+                            />
+                        </TableCell>
+                    </TableRow>
+                )}
                 </React.Fragment>
             );
         });
@@ -152,7 +169,7 @@ const ReactTable = ({
 
     return (
         <TableContainer sx={tableSx}>
-            <Table sx={{ marginTop: showHeaders ? 0 : '1rem', width: '99.8%', marginRight: '0.063rem', marginLeft: '0.063rem' }} {...getTableProps()}>
+            <Table sx={{ marginTop: showHeaders ? 0 : '1rem', width: '99.8%', marginRight: '0.063rem', marginLeft: '0.063rem', marginBottom: '0.063rem' }} {...getTableProps()}>
                 {!showHeaders && (
                     <TableHead sx={tHeadHeight ? { height: tHeadHeight } : {}}>
                         {headerGroups.map((headerGroup) => (

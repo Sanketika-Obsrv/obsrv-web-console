@@ -284,10 +284,11 @@ const DraftDatasetsList = (props: any) => {
                                 size="large"
                                 onClick={() => {
                                     const datasetId = row?.dataset_id;
-                                    const master = row?.type === DatasetType.MasterDataset;
-                                    const status = row?.status;
-                                    const url = `/home/ingestion/schema-details/${datasetId}`;
-                                    window.location.href = url;
+                                    // const master = row?.type === DatasetType.MasterDataset;
+                                    // const status = row?.status;
+                                    // const url = `/home/ingestion/schema-details/${datasetId}`;
+                                    // window.location.assign(url);
+                                    navigate(`/home/ingestion/schema-details/${datasetId}`);
                                 }}>
                                 <EditOutlined />
                             </IconButton>
