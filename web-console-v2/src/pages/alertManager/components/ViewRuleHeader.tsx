@@ -58,7 +58,7 @@ const RuleHeader = (props: any) => {
     const publishAlertHandler = (id: string) => async () => {
         setLoading(true);
         try {
-            await publishAlert({ id }).then((res) => navigate(`/alertRules/${pathToNavigate}`));
+            await publishAlert({ id }).then((res: any) => navigate(`/alertRules/${pathToNavigate}`));
             dispatch(success({ message: 'Alert Rule published successfully' }));
         } catch {
             dispatch(error({ message: 'Failed to publish alert rule' }));
@@ -290,7 +290,7 @@ const RuleHeader = (props: any) => {
                 <Grid>{renderRuleName()}</Grid>
                 <Grid>{renderButtons()}</Grid>
             </Stack>
-            {loading && <Loader />}
+            {loading && <Loader loading={true} />}
         </Box>
     );
 };

@@ -48,3 +48,37 @@ export const transformAlertDescription = (payload: Record<string, any>) => {
 export const searchAlert = ({ config }: any) => {
     return http.post(`${endpoints.searchAlerts}`, config).then((response) => _.get(response, 'data.result'));
 };
+
+
+export const addAlert = (payload: any) => {
+    return http.post(`${endpoints.addCustomAlerts}`, payload).then((response) => _.get(response, 'data.result'));
+};
+
+export const deleteAlert = ({ id }: any) => {
+    return http.delete(`${endpoints.retireAlert}/${id}`).then((response) => _.get(response, 'data.result'));
+};
+
+export const editAlert = ({ id, data }: any) => {
+    return http.patch(`${endpoints.updateAlert}/${id}`, data).then((response) => _.get(response, 'data.result'));
+}
+
+
+export const getAlertDetail = ({ id }: any) => {
+    return http.get(`${endpoints.getAlert}/${id}`).then((response: any) => _.get(response, 'data.result.alerts'));
+};
+
+export const publishAlert = ({ id }: any) => {
+    return http.get(`${endpoints.publishAlert}/${id}`).then((response: any) => _.get(response, "data.result"));
+};
+
+export const getMetricAlias = ({ config }: any) => {
+    return http.post(`${endpoints.listMetricsAlias}`, config).then((response) => _.get(response, 'data.result'));
+}
+
+export const addSilence = (payload: any) => {
+    return http.post(`${endpoints.addSilence}`, payload).then((response) => _.get(response, 'data.result'));
+}
+
+export const deleteSilence = (silenceId: string) => {
+    return http.delete(`${endpoints.deleteSilence}/${silenceId}`).then((response) => _.get(response, 'data.result'));
+}

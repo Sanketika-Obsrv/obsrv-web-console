@@ -1,8 +1,6 @@
 import React from "react";
 import _ from 'lodash';
 import { getMetricAlias } from "services/alerts";
-import { fetchDatasets } from "services/dataset";
-import { DatasetStatus } from "types/datasets";
 
 export const queryOperators = [
     {

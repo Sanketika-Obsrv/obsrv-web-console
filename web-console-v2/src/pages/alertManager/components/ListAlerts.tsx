@@ -5,7 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import { useMemo, useState } from 'react';
 import MainCard from 'components/MainCard';
 import ScrollX from 'components/ScrollX';
-import AlertDialog from 'components/AlertDialog';
+import AlertDialog from 'components/AlertDialog/AlertDialog';
 import { addSilence, deleteAlert, deleteSilence, publishAlert } from 'services/alerts';
 import {
     alertHealthStatus,
@@ -17,18 +17,15 @@ import {
 import { useNavigate } from 'react-router';
 import TableWithCustomHeader from 'components/TableWithCustomHeader';
 import AlertTableHeader from './tableHeader';
-import { useDispatch } from 'react-redux';
-import { error, success } from 'services/toaster';
 import { NotificationsActiveOutlined, NotificationsOff } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import { renderSkeleton } from 'services/skeleton';
 import { getConfigValue } from 'services/configData';
+import Loader from 'components/Loader';
 
 dayjs.extend(utc);
 const ListAlerts = (props: any) => {
     const { alerts, fetchAlerts, configuration } = props;
-    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [dialogContext, setDialogContext] = useState<any>(null);
     const [endDate, setEndDate] = useState<Date>(dayjs.utc().add(1, 'day').toDate());
@@ -53,10 +50,10 @@ const ListAlerts = (props: any) => {
             const response = await deleteAlert({ id });
             if (response) {
                 fetchAlerts();
-                dispatch(success({ message: 'Alert Rule retired successfully' }));
+                showAlert('Alert Rule retired successfully', 'success');
             }
         } catch {
-            dispatch(error({ message: 'Failed to retire alert rule' }));
+            showAlert('Failed to retire alert rule', 'error');
         } finally {
             setLoading(false);
             setDialogContext(null);
@@ -69,9 +66,9 @@ const ListAlerts = (props: any) => {
             await publishAlert({ id }).then((res) => {
                 fetchAlerts();
             });
-            dispatch(success({ message: 'Alert Rule published successfully' }));
+            showAlert('Alert Rule published successfully', 'success');
         } catch {
-            dispatch(error({ message: 'Failed to publish alert rule' }));
+            showAlert('Failed to publish alert rule', 'error');
         } finally {
             setDialogContext(null);
             setLoading(false)
@@ -105,9 +102,9 @@ const ListAlerts = (props: any) => {
             };
             await addSilence(payload);
             fetchAlerts();
-            dispatch(success({ message: 'Alert has been muted successfully' }));
+            showAlert('Alert has been muted successfully', 'success');
         } catch {
-            dispatch(error({ message: 'Failed to mute alert' }));
+            showAlert('Failed to mute alert', 'error');
         } finally {
             setCustomSilence(false)
             setDialogContext(null);
@@ -120,9 +117,9 @@ const ListAlerts = (props: any) => {
         try {
             await deleteSilence(silenceId);
             fetchAlerts();
-            dispatch(success({ message: 'Alert is now unmuted' }));
+            showAlert('Alert is now unmuted', 'success');
         } catch {
-            dispatch(error({ message: 'Failed to unmute alert' }));
+            showAlert('Failed to unmute alert', 'error');
         } finally {
             setCustomSilence(false)
             setLoading(false)
@@ -199,7 +196,7 @@ const ListAlerts = (props: any) => {
                                 return (
                                     <Grid key={Math.random()} marginRight="0.5rem">
                                         <Tooltip title={info.tooltip}>
-                                            <Chip label={info.label} color={info.color} size="small" variant="combined" />
+                                            <Chip label={info.label} color={info.color} size="small" variant="filled" />
                                         </Tooltip>
                                     </Grid>
                                 );
@@ -382,10 +379,14 @@ const ListAlerts = (props: any) => {
     return (
         <Grid>
             <MainCard content={false} boxShadow>
-                {loading ? renderSkeleton({ config: { type: 'table', width: "100%", totallines: 6 } }) : renderAlertList()}
+                {loading ? <Loader loading={true} /> : renderAlertList()}
             </MainCard>
         </Grid>
     );
 };
 
 export default ListAlerts;
+function showAlert(arg0: string, arg1: string) {
+    throw new Error('Function not implemented.');
+}
+
