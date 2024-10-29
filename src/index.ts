@@ -1,5 +1,5 @@
-// import * as dotenv from 'dotenv';
-// dotenv.config();
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 import helmet from 'helmet';
 import express from 'express';
@@ -20,14 +20,13 @@ app.set('logger', logger);
 app.disable('x-powered-by');
 // app.use(helmet());
 app.use(cors());
-app.use(express.static(path.join(__dirname, 'buildV2')));
 app.use(express.static(path.join(__dirname, 'build')));
 
 // mount routers
 mountRoutes(app);
 
 app.get(["/home", '/home/new-dataset', '/home/ingestion/schema-details/:datasetId', '/home/ingestion/schema-details/:datasetId', "/home/new-dataset/connector-list", "/home/new-dataset/connector-configuration", "/home/ingestion", "/home/processing", "/home/storage", "/home/preview"], function (req, res) {
-  res.sendFile(path.join(__dirname, 'buildV2', 'index.html'));
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 app.get('*', function (req, res) {

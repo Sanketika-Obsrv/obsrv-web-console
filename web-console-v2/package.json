@@ -2,7 +2,7 @@
   "name": "obsrv-management-console-ext",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:3000/console",
+  "proxy": "http://localhost:3005/console",
   "dependencies": {
     "@ant-design/colors": "^6.0.0",
     "@ant-design/icons": "^5.5.1",
