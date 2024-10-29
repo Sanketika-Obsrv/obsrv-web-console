@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Check, ContentCopy } from "@mui/icons-material";
 import { Box, Button, Grid, Stack, Tooltip, Typography } from "@mui/material";
 import _ from "lodash";
