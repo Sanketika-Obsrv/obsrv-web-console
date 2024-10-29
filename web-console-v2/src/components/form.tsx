@@ -1,3 +1,4 @@
+import React from 'react';
 import { makeStyles } from '@mui/styles';
 import * as _ from 'lodash';
 import { Autocomplete, Checkbox, FormControl, FormControlLabel, FormGroup, FormHelperText, FormLabel, Grid, IconButton, InputAdornment, InputLabel, MenuItem, Radio, Select, Slider, Stack, TextField, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
@@ -14,13 +15,13 @@ const useStyles = makeStyles((theme: any) => ({
     selectEmpty: { marginTop: theme.spacing(2) },
 }));
 
-const defaultFunc = (value: any) => { }
-
+// eslint-disable-next-line
 const MUIForm = forwardRef((props: any, ref: any) => {
     const { initialValues, validationSchema = null, onSubmit, fields, children, subscribe = null, subscribeErrors = null, size = {}, enableReinitialize = false, formComponent = null, customUpdate = null, customError = null, debounce } = props
     const classes: any = useStyles;
-    let { xs = 12, sm = 12, lg = 12 } = size;
+    const { xs = 12, sm = 12, lg = 12 } = size;
 
+    // eslint-disable-next-line
     const debouncedSubscribeValue = useCallback(_.debounce(subscribe || (() => { }), 1000), []);
     const form = useFormik({ initialValues, validationSchema, onSubmit, enableReinitialize });
     const formRef = useRef(form);
@@ -45,7 +46,7 @@ const MUIForm = forwardRef((props: any, ref: any) => {
     }, [form.errors]);
 
     const customUpdateValue = useCallback(() => (key: any, value: any) => form.setFieldValue(key, value), []);
-    const customUpdateErrors = useCallback(() => (key: any, value: any) => form.setErrors({[key]: value}), []);
+    const customUpdateErrors = useCallback(() => (key: any, value: any) => form.setErrors({ [key]: value }), []);
 
     useEffect(() => {
         customUpdate && customUpdate(customUpdateValue);
@@ -145,7 +146,7 @@ const MUIForm = forwardRef((props: any, ref: any) => {
                                                             onMouseDown={handleMouseDownPassword}
                                                             edge="end"
                                                         >
-                                                            {showPassword[name] ? <VisibilityOff fontSize='small'/> : <Visibility fontSize='small'/>}
+                                                            {showPassword[name] ? <VisibilityOff fontSize='small' /> : <Visibility fontSize='small' />}
                                                         </IconButton>
                                                     </InputAdornment>
                                             }}
@@ -201,7 +202,7 @@ const MUIForm = forwardRef((props: any, ref: any) => {
                                             <Select
                                                 defaultValue={_.get(form.values, name) || ''}
                                                 name={name} id={name} label={label} value={_.get(form.values, name)} onChange={form.handleChange} onBlur={form.handleBlur}>
-                                                {selectOptions.map((option: any) => (<MenuItem value={option.value}>{option.label}</MenuItem>))}
+                                                {selectOptions.map((option: any, i: any) => (<MenuItem value={option.value} key={i}>{option.label}</MenuItem>))}
                                             </Select>
                                         </FormControl>
                                     </Tooltip>
@@ -209,6 +210,7 @@ const MUIForm = forwardRef((props: any, ref: any) => {
                                 </Grid>
                             );
                         case 'autocomplete':
+                            // eslint-disable-next-line
                             const val = _.find(selectOptions, (item) => item.value === _.get(form.values, name)) || null
                             return (
                                 <Grid item xs={xs} sm={sm} lg={lg} key={name}>
@@ -273,7 +275,7 @@ const MUIForm = forwardRef((props: any, ref: any) => {
                                                     </Box>
                                                 )}
                                             >
-                                                {selectOptions.map((option: any) => (<MenuItem value={option.value}>{option.label}</MenuItem>))}
+                                                {selectOptions.map((option: any, i:any) => (<MenuItem value={option.value} key={i}>{option.label}</MenuItem>))}
                                             </Select>
                                         </FormControl>
                                     </Tooltip>

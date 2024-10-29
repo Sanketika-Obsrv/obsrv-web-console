@@ -9,7 +9,7 @@ import { Paper } from '@mui/material';
 import { ReloadOutlined } from '@ant-design/icons';
 import Loader from 'components/Loader';
 
-interface ReportCardProps extends GenericCardProps { }
+type ReportCardProps = GenericCardProps
 
 const ReportCard = ({ uuid, primary, suffix, secondary, iconPrimary, color, query, description = '', }: ReportCardProps) => {
     const theme = useTheme();

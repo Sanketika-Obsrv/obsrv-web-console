@@ -83,7 +83,7 @@ const Ingestion = () => {
     const ConnectorConfiguration = connectorConfigData ? JSON.parse(connectorConfigData) : null;
 
     const [fileErrors, setFileErrors] = useState<any>(null);
-     const maxFileSizeConfig = 5242880;
+    const maxFileSizeConfig = 5242880;
 
     const {
         data: uploadData,
@@ -445,10 +445,9 @@ const Ingestion = () => {
                         <>
                             <Box
                                 sx={{
-                                    flex: 1, 
+                                    flex: 1,
                                     overflowY: 'auto',
                                     paddingBottom: '80px',
-                                    paddingTop: '3.5rem'
                                 }}
                             >
                                 <Box mx={4}>
@@ -485,7 +484,7 @@ const Ingestion = () => {
                                                         variant="outlined"
                                                         fullWidth
                                                         error={Boolean(nameError)}
-                                                        helperText={nameError}
+                                                        helperText={nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100) ? 'Dataset name should be between 4 and 100 characters' : '')}
                                                     />
                                                 </Grid>
                                                 <Grid item xs={12} sm={6} lg={6}>
@@ -530,9 +529,9 @@ const Ingestion = () => {
                                                     />
                                                 </Box>
                                             )}
-                                            <Box sx={{marginTop: 30, mr: 1, ml: 1, mb:1}}>
-                                                 {fileErrors?.length > 0 && <RejectionFiles fileRejections={fileErrors} />}
-                                             </Box>
+                                            <Box sx={{ marginTop: 30, mr: 1, ml: 1, mb: 1 }}>
+                                                {fileErrors?.length > 0 && <RejectionFiles fileRejections={fileErrors} />}
+                                            </Box>
                                         </GenericCard>
                                     </Box>
                                 </Box>
@@ -541,7 +540,7 @@ const Ingestion = () => {
                                         defaultHighlight: "section1"
                                     }}
                                     helpText={<CreateDataset />}
-                                    highlightSection = {highlightedSection}
+                                    highlightSection={highlightedSection}
                                     onExpandToggle={() => setIsHelpSectionOpen((prev) => !prev)}
                                     expand={isHelpSectionOpen}
                                 />
@@ -566,7 +565,7 @@ const Ingestion = () => {
                                             label: datasetId !== '' ? 'Proceed' : 'Create Schema',
                                             variant: 'contained',
                                             color: 'primary',
-                                            disabled: !_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files)
+                                            disabled: !_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files) || (datasetName.length < 4 || datasetName.length > 100)
                                         }
                                     ]}
                                     onClick={onSubmit}
