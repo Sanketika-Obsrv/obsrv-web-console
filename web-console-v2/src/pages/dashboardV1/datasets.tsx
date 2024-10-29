@@ -131,7 +131,7 @@ const ClusterHealth = () => {
         return <Button key={id}
             startIcon={icon}
             size="medium" type="button" disabled={disabled} onClick={onClick}
-            sx={{ mx: 1 }} variant="contained"><Typography variant='body1'>{label}</Typography>
+            sx={{ mx: 1 }} variant="contained"><Typography variant="buttonText">{label}</Typography>
         </Button>
     }
 
@@ -174,13 +174,16 @@ const ClusterHealth = () => {
     }
 
     return (
-        <>
+        <Box p={2}>
             {renderDatasetTabs()}
+
             <ImportDataset 
                 open={openModal} 
                 onClose={handleClose}
             />
         </>
+        </Box>
+
     )
 };
 

@@ -1,5 +1,5 @@
 .main {
-  height: 100vh;
+  max-height: 100vh;
 }
 .mainGrid {
   padding-top: 5rem;
