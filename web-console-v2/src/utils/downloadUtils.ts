@@ -1,3 +1,4 @@
+/* eslint-disable */
 import _ from "lodash";
 
 export const downloadJsonFile = (jsonData: any, fileName: string) => {
