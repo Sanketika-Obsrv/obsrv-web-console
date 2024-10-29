@@ -233,7 +233,7 @@ const Storage = () => {
             required.push('primary');
         }
         requiredValues = required.every(
-            (field) => _.get(formData, `section0.section3.${field}`) !== undefined
+            (field) => _.get(formData, `section3.${field}`) !== undefined
         );
         setCanProceed(requiredValues);
     };
@@ -306,7 +306,7 @@ const Storage = () => {
 
             case storageTypeSelected?.includes(STORE_TYPE.CACHE):
                 required = ['primary'];
-                requiredValues = _.get(formData, 'section0.section3.primary') !== undefined;
+                requiredValues = _.get(formData, 'section3.primary') !== undefined;
                 setCanProceed(requiredValues);
                 break;
 
