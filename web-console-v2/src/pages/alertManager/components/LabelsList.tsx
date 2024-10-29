@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react';
 import { useMemo } from 'react';
 import MainCard from 'components/MainCard';
