@@ -31,11 +31,11 @@ const DataValidation = (props: any) => {
     useEffect(() => {
         if (_.get(data, ['mode'], '')) {
             const existingData = {
-                section0: {
-                    section1: {
-                        validation: _.get(data, ['mode'], '')
-                    }
+                
+                section1: {
+                    validation: _.get(data, ['mode'], '')
                 }
+                
             };
 
             setFormData(existingData);
@@ -51,7 +51,7 @@ const DataValidation = (props: any) => {
             setFormErrors([]);
         }
 
-        const value = _.get(formData, ['section0', 'section1', 'validation']);
+        const value = _.get(formData, ['section1', 'validation']);
 
         if (value) handleAddOrEdit(value);
     };

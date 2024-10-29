@@ -53,7 +53,7 @@ const AddTransformationExpression = (props: any) => {
     if (!_.isEmpty(transformationOptions))
         _.set(
             schema,
-            [0, 'schema', 'properties', 'section', 'properties', 'transformations', 'enum'],
+            ['schema', 'properties', 'section', 'properties', 'transformations', 'enum'],
             transformationOptions
         );
 
@@ -62,13 +62,11 @@ const AddTransformationExpression = (props: any) => {
             const type = _.get(data, ['transformationType']);
 
             const existingData = {
-                section0: {
-                    section: {
-                        transformations: _.get(data, ['column']),
-                        transformationType: _.isEqual(type, 'custom') ? 'jsonata' : type,
-                        transformationMode: _.get(data, ['transformationMode']),
-                        expression: _.get(data, ['transformation'])
-                    }
+                section: {
+                    transformations: _.get(data, ['column']),
+                    transformationType: _.isEqual(type, 'custom') ? 'jsonata' : type,
+                    transformationMode: _.get(data, ['transformationMode']),
+                    expression: _.get(data, ['transformation'])
                 }
             };
 
@@ -84,11 +82,8 @@ const AddTransformationExpression = (props: any) => {
     const handleClose = () => {
         if (!transformErrors) {
             const newData = _.cloneDeep(formData);
-
-            const keyPath = ['section0', 'section', 'expression'];
-
+            const keyPath = ['section', 'expression'];
             _.set(newData, keyPath, evaluationData);
-
             setFormData(newData);
         }
 
@@ -101,13 +96,13 @@ const AddTransformationExpression = (props: any) => {
 
     const isJsonata = _.isEqual(
         'jsonata',
-        _.get(formData, ['section0', 'section', 'transformationType'])
+        _.get(formData, ['section', 'transformationType'])
     );
 
-    const jsonataData = _.get(formData, ['section0', 'section', 'expression']);
+    const jsonataData = _.get(formData, ['section', 'expression']);
 
     const onHandleClick = async () => {
-        const newData = _.get(formData, ['section0', 'section']);
+        const newData = _.get(formData, ['section']);
 
         const array = [];
 
@@ -151,7 +146,7 @@ const AddTransformationExpression = (props: any) => {
     };
 
     const handleChange: TransformationFormProps['onChange'] = async (formData, errors) => {
-        const expression = _.get(formData, ['section0', 'section', 'expression']);
+        const expression = _.get(formData, ['section', 'expression']);
         const newExtraErrors = {
             section: {
                 expression: {
@@ -240,7 +235,7 @@ const AddTransformationExpression = (props: any) => {
                         onClick={onHandleClick}
                         disabled={
                             !_.isEmpty(formErrors) ||
-                            _.isEmpty(formData.section0) ||
+                            _.isEmpty(formData) ||
                             (isJsonata && !jsonataData)
                         }
                         size="large"

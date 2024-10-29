@@ -186,10 +186,11 @@ const evaluateDataType = async (jsonAtaExpression: string, sampleJsonData: any) 
         const ata: any = JSONata(jsonAtaExpression);
         const sampleData = !_.isEmpty(sampleJsonData)
             ? _.isObject(sampleJsonData)
-                ? sampleJsonData
-                : JSON.parse(sampleJsonData)
+                ? _.get(sampleJsonData, "mergedEvent")
+                : _.get(JSON.parse(sampleJsonData), "mergedEvent")
             : data;
         const evaluatedData = await ata.evaluate(sampleData);
+        
         const tsCheck = isValidTimestamp(evaluatedData);
         switch (true) {
             case !evaluatedData:
