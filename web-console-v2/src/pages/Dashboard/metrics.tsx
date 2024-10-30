@@ -76,7 +76,7 @@ export const metricsMetadata = [
                     query={[
                       _.get(chartMeta, 'cpu_percentage.query'),
                       _.get(chartMeta, 'total_running_nodes_count.query'),
-                      _.get(chartMeta, 'totalCpuCores.query'),
+                      _.get(chartMeta, 'totalCPU.query'),
                     ]}
                     transformer={cpuPercentageUsage}
                   />
@@ -169,23 +169,23 @@ export const metricsMetadata = [
           }
         ]
       },
-      large: {
-        size: {
-          xs: 12,
-          sm: 12,
-          md: 12,
-          lg: 12
-        },
-        metadata: [
-          {
-            id: 'infraAlerts',
-            description: "This table shows the currently active infrastructure alerts within the cluster",
-            chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsInfra">
-              {/* <AlertsMessages predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: ["infra", "Infrastructure", "infrastructure"] } })} /> */}
-            </ApexWithFilters>
-          }
-        ]
-      }
+      // large: {
+      //   size: {
+      //     xs: 12,
+      //     sm: 12,
+      //     md: 12,
+      //     lg: 12
+      //   },
+      //   metadata: [
+      //     {
+      //       id: 'infraAlerts',
+      //       description: "This table shows the currently active infrastructure alerts within the cluster",
+      //       chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsInfra">
+      //         {/* <AlertsMessages predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: ["infra", "Infrastructure", "infrastructure"] } })} /> */}
+      //       </ApexWithFilters>
+      //     }
+      //   ]
+      // }
     }
   },
   {
@@ -211,7 +211,7 @@ export const metricsMetadata = [
           xs: 12,
           sm: 6,
           md: 4,
-          lg: 3
+          lg: 4
         },
         groups: [
           {
@@ -240,22 +240,22 @@ export const metricsMetadata = [
               {
                 id: "apiFiftyPercentile",
                 description: "Shows the 50th percentile for API response time",
-                chart: <MetricsCard label="Api 50th percentile" query={_.get(chartMeta, 'fifty_percentile_query_response_time_data_in.query')} />
+                chart: <MetricsCard label="50th Percentile API Response Time" query={_.get(chartMeta, 'fifty_percentile_query_response_time_data_in.query')} />
               },
               {
                 id: "apiSixtyPercentile",
                 description: "Shows the 60th percentile for API response time",
-                chart: <MetricsCard label="Api 60th percentile" query={_.get(chartMeta, 'sixty_percentile_query_response_time_data_in.query')} />
+                chart: <MetricsCard label="60th Percentile API Response Time" query={_.get(chartMeta, 'sixty_percentile_query_response_time_data_in.query')} />
               },
               {
                 id: "apiSeventyPercentile",
                 description: "Shows the 70th percentile for API response time",
-                chart: <MetricsCard label="Api 70th percentile" query={_.get(chartMeta, 'seventy_percentile_query_response_time_data_in.query')} />
+                chart: <MetricsCard label="70th Percentile API Response Time" query={_.get(chartMeta, 'seventy_percentile_query_response_time_data_in.query')} />
               },
               {
                 id: "apiNintyPercentile",
                 description: "Shows the 90th percentile for API response time",
-                chart: <MetricsCard label="Api 90th percentile" query={_.get(chartMeta, 'ninty_percentile_query_response_time_data_in.query')} />
+                chart: <MetricsCard label="90th Percentile API Response Time" query={_.get(chartMeta, 'ninty_percentile_query_response_time_data_in.query')} />
               },
               {
                 id: "apiResponseTimeTimeseries",
@@ -324,22 +324,22 @@ export const metricsMetadata = [
               {
                 id: "apiFiftyPercentile",
                 description: "Shows the 50th percentile for API response time",
-                chart: <MetricsCard label="Api 50th percentile" query={_.get(chartMeta, 'fifty_percentile_query_response_time_data_out.query')} />
+                chart: <MetricsCard label="50th Percentile API Response Time" query={_.get(chartMeta, 'fifty_percentile_query_response_time_data_out.query')} />
               },
               {
                 id: "apiSixtyPercentile",
                 description: "Shows the 60th percentile for API response time",
-                chart: <MetricsCard label="Api 60th percentile" query={_.get(chartMeta, 'sixty_percentile_query_response_time_data_out.query')} />
+                chart: <MetricsCard label="60th Percentile API Response Time" query={_.get(chartMeta, 'sixty_percentile_query_response_time_data_out.query')} />
               },
               {
                 id: "apiSeventyPercentile",
                 description: "Shows the 70th percentile for API response time",
-                chart: <MetricsCard label="Api 70th percentile" query={_.get(chartMeta, 'seventy_percentile_query_response_time_data_out.query')} />
+                chart: <MetricsCard label="70th Percentile API Response Time" query={_.get(chartMeta, 'seventy_percentile_query_response_time_data_out.query')} />
               },
               {
                 id: "apiNintyPercentile",
                 description: "Shows the 90th percentile for API response time",
-                chart: <MetricsCard label="Api 90th percentile" query={_.get(chartMeta, 'ninty_percentile_query_response_time_data_out.query')} />
+                chart: <MetricsCard label="90th Percentile API Response Time" query={_.get(chartMeta, 'ninty_percentile_query_response_time_data_out.query')} />
               },
               {
                 id: "apiResponseTimeTimeseries",
@@ -384,22 +384,22 @@ export const metricsMetadata = [
           }
         ]
       },
-      large: {
-        size: {
-          xs: 12,
-          sm: 12,
-          md: 12,
-          lg: 12
-        },
-        metadata: [
-          {
-            id: "apiAlerts",
-            chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsApi">
-              {/* <AlertsMessages predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: "api" } })} /> */}
-            </ApexWithFilters>
-          }
-        ]
-      }
+      // large: {
+      //   size: {
+      //     xs: 12,
+      //     sm: 12,
+      //     md: 12,
+      //     lg: 12
+      //   },
+      //   metadata: [
+      //     {
+      //       id: "apiAlerts",
+      //       chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsApi">
+      //         {/* <AlertsMessages predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: "api" } })} /> */}
+      //       </ApexWithFilters>
+      //     }
+      //   ]
+      // }
     }
   },
   {
@@ -488,12 +488,12 @@ export const metricsMetadata = [
                       noItem: true,
                       chart: <IngestionCharts title="Total Data Received " chartName="totalEventsProcessedTimeSeriesPerMasterDataset" size={{ xs: 12, sm: 6, md: 6, lg: 6 }} master={true} />
                   },
-                  {
-                      id: "ingestionAlerts",
-                      chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsIngestion">
-                          {/* <AlertsMessages interval={1440} predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: "ingestion" } })} /> */}
-                      </ApexWithFilters>
-                  }
+                  // {
+                  //     id: "ingestionAlerts",
+                  //     chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsIngestion">
+                  //         {/* <AlertsMessages interval={1440} predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: "ingestion" } })} /> */}
+                  //     </ApexWithFilters>
+                  // }
               ]
           }
       }
@@ -603,12 +603,12 @@ export const metricsMetadata = [
                       noItem: true,
                       chart: <IngestionCharts title="Procesing Time" chartName="minProcessingTimeSeriesPerMasterDataset" size={{ xs: 12, sm: 6, md: 6, lg: 6 }} master={true} />
                   },
-                  {
-                      id: "processingAlerts",
-                      chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsProcessing">
-                          {/* <AlertsMessages predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: "processing" } })} /> */}
-                      </ApexWithFilters>
-                  }
+                  // {
+                  //     id: "processingAlerts",
+                  //     chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsProcessing">
+                  //         {/* <AlertsMessages predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: "processing" } })} /> */}
+                  //     </ApexWithFilters>
+                  // }
               ]
           }
       }
@@ -729,12 +729,12 @@ export const metricsMetadata = [
                           <HoursSinceLastBackup />
                       </ApexWithFilters>
                   },
-                  {
-                      id: "storageAlerts",
-                      chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsStorage">
-                          {/* <AlertsMessages predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: "storage" } })} /> */}
-                      </ApexWithFilters>
-                  }
+                  // {
+                  //     id: "storageAlerts",
+                  //     chart: <ApexWithFilters title="Incidents/Alerts" filters={[..._.get(filters, 'variant1')]} id="alertsStorage">
+                  //         {/* <AlertsMessages predicate={alertsFilterByLabels({ matchLabels: { component: "obsrv", type: "storage" } })} /> */}
+                  //     </ApexWithFilters>
+                  // }
               ]
           }
       }

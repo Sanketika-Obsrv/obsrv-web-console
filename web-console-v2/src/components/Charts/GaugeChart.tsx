@@ -9,6 +9,7 @@ import {
 } from '../../services/chartMetrics';
 
 interface GaugeChartProps {
+  isHeaderData?: boolean;
   uuid?: string;
   refresh?: boolean;
   query: any;
@@ -25,7 +26,7 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
   const [value, setValue] = useState<number>(0);
   const [nodesRunning, setNodesRunning] = useState<string>('NA');
   const [loading, setLoading] = useState<boolean>(true);
-
+  const [usage, setOverallUsage] = useState<number>(0);
   const {
     uuid,
     refresh,
@@ -36,15 +37,18 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
     suffix = '',
     prefix = '',
     query2,
+    isHeaderData,
     ...rest
   } = props;
 
   const fetchNodesRunning = async (query: any) => {
     try {
       const response = await fetchMultipleMetrics(query, { uuid });
+      const [runningNodes, totalNodes]: any = response;
       const transformedLabel =
         (transformer && transformer(response)) || response;
       setNodesRunning(transformedLabel as any);
+      setOverallUsage((runningNodes / totalNodes) * 100)
     } catch (error) {
       //
     }
@@ -94,12 +98,12 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
             top: caption ? '' : '-1rem',
           }}
         >
-          {`${prefix}${value}${suffix}`}
+           {isHeaderData ? `${usage}%` : value}
         </Typography>
       </Box>
 
       <Gauge
-        value={value}
+        value={isHeaderData ? usage : value}
         startAngle={-90}
         endAngle={90}
         sx={{

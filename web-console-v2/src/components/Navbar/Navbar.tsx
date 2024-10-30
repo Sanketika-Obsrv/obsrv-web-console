@@ -15,7 +15,7 @@ import { getBaseURL, getConfigValueV1 } from 'services/configData';
 import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
 
-const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/home/dashboards";
+const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/home/dashboard";
 
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();

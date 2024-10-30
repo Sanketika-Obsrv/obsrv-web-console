@@ -252,7 +252,7 @@ export default {
       },
       parse: (response: any) => {
         const value = _.get(response, 'data.result[0].value[1]') || 0;
-        return `${_.floor(value, 3)}%`;
+        return `${_.floor(value, 0)}%`;
       },
       error() {
         return ['0%'];
