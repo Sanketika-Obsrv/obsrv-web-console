@@ -1,0 +1,51 @@
+.container {
+    position: relative;
+    overflow: hidden;
+    left: -1rem;
+    margin: 1rem;
+}
+
+.sectionContainers {
+    background-color: var(--white-color);
+    border-radius: 0.5rem;
+}
+
+.connectorName {
+    text-align: left;
+    left: 2rem;
+    position: relative;
+    top: 1rem;
+}
+
+.customContainerClass {
+    padding: 20px;
+    background-color: #f9f9f9;
+}
+
+.customSectionContainerClass {
+    margin-bottom: 30px;
+}
+
+.customConnectorNameClass {
+    font-size: 24px;
+    color: #333;
+}
+
+.customSectionContainersClass {
+    margin-top: 16px;
+}
+
+.title {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.gridContainer {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+}
+
+.heading {
+    padding-bottom: 1rem;
+}
