@@ -66,8 +66,8 @@ const DatasetCreateEvents = () => {
     }
 
     const pushEvents = async () => {
-        const datasetConfigurations = await datasetRead({ datasetId })
-
+        const datasetConfigurations = datasetRead(datasetId)
+        
         if (!datasetConfigurations) {
             showAlert('Invalid Dataset', 'error');
             return
