@@ -211,7 +211,7 @@ const renderDataTypeCell = ({
                             <Typography variant="h6" fontWeight="bold">
                                 Resolved
                                 <Typography variant="body1" my={2}>
-                                    Data type of field <strong>{row?.column}</strong> is resolved to "{value}"
+                                    Data type of field <strong>{row?.column}</strong> is resolved to '{value}'
                                 </Typography>
                             </Typography>
                             <Box my={1}>
@@ -411,7 +411,7 @@ const renderArrivalFormatCell = ({
                             <Typography variant="h6" fontWeight="bold">
                                 Resolved
                                 <Typography variant="body1" my={2}>
-                                    Arrival Format of field <strong>{row?.column}</strong> is resolved to "{value}"
+                                    Arrival Format of field <strong>{row?.column}</strong> is resolved to '{value}'
                                 </Typography>
                             </Typography>
                             <Box my={1}>

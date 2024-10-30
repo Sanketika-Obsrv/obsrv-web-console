@@ -11,11 +11,12 @@ import en from 'utils/locales/en.json'
 import { hasSpecialCharacters, validateFormValues } from "services/utils";
 const { spacing } = config;
 
-const validator=asyncValidation();
+const validator = asyncValidation();
 
 const SelectChannelType = (props: any) => {
     const { setFormData, sectionLabel, existingState = {} } = props;
     const [value, subscribe] = useState<any>(existingState);
+    // eslint-disable-next-line
     const onSubmission = (value: any) => { };
     const validationConfigs = { notificationChannelNameMaxLen: 100 }
     const formikRef = useRef(null);

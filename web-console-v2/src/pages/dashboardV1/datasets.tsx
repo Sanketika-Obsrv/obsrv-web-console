@@ -176,12 +176,10 @@ const ClusterHealth = () => {
     return (
         <Box p={2}>
             {renderDatasetTabs()}
-
-            <ImportDataset 
-                open={openModal} 
+            <ImportDataset
+                open={openModal}
                 onClose={handleClose}
             />
-        </>
         </Box>
 
     )
