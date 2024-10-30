@@ -5,7 +5,7 @@ import SideBar from 'components/Sidebar/Sidebar';
 import Navbar from 'components/Navbar/Navbar';
 import _ from 'lodash';
 import { AlertContextProvider } from 'contexts/AlertContextProvider';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AlertComponent from 'components/@extended/CustomAlert';
 import AppRouter from 'router';
 import styles from 'App.module.css';
@@ -37,10 +37,13 @@ const useSidebarToggle = () => {
 
 const App: FC = () => {
     const { isSidebarExpanded, toggleSidebar } = useSidebarToggle();
+
     useEffect(() => {
         fetchSystemSettings();
     }, []);
 
+
+      
     return (
         <QueryClientProvider client={queryClient}>
             <Locales>
