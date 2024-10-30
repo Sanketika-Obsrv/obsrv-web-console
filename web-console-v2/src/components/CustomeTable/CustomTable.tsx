@@ -31,7 +31,7 @@ const CustomTable = ({ columns, data, striped, header = true, styles = {} }: any
                                     {...column.getHeaderProps([{ className: column.className }])}
                                     key={i}
                                 >
-                                    <Typography variant="h5">{column.render('Header')}</Typography>
+                                    <Typography variant="h4">{column.render('Header')}</Typography>
                                 </TableCell>
                             ))}
                         </TableRow>

@@ -93,3 +93,9 @@ div.HelpSection_expanded__vqSxk{
   color: orange;
   opacity: 1;
 }
+
+.MuiTableHead-root .MuiTableRow-root .MuiTableCell-head {
+  font-weight: bold;
+  resize: horizontal;
+  overflow-x: scroll;
+}
