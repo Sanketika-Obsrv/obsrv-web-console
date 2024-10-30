@@ -12,7 +12,8 @@ const CustomTable = ({ columns, data, striped, header = true, styles = {} }: any
         <Table
             {...getTableProps()}
             sx={{
-                border: '1px solid #D6D6D6'
+                border: '1px solid #D6D6D6',
+                tableLayout:"fixed"
             }}
         >
             {header && (

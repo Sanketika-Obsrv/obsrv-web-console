@@ -287,14 +287,14 @@ const ConnectorConfiguration: React.FC = () => {
             <Box
                 className={`${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
                 mt={8}
-                sx={{
-                    position: 'fixed',
-                    bottom: 0,
-                    right: 0,
-                    left: -50,
-                    backgroundColor: theme.palette.background.paper,
-                    zIndex: 100
-                }}
+                    sx={{
+                        position: 'fixed',
+                        bottom: 0,
+                        right: 0,
+                        left: -50,
+                        backgroundColor: theme.palette.background.paper,
+                        zIndex: 100
+                    }}
                 pr={5}
             >
                 <Actions
