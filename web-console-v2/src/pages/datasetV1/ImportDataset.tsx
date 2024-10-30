@@ -27,7 +27,7 @@ const ImportDataset = ({ open, onClose }: any) => {
     const [contents, setContents] = useState<string[]>([]);
     const navigate = useNavigate();
     const { showAlert } = useAlert();
-    
+
 
     const flattenContents = (content: Record<string, any> | any) => {
         return content.flat().filter((field: any) => field && Object.keys(field).length > 0);
@@ -35,11 +35,10 @@ const ImportDataset = ({ open, onClose }: any) => {
 
     const onDrop = useCallback(async (acceptedFiles: any[]) => {
         const contents = await Promise.all(acceptedFiles.map((file: File) => readJsonFileContents(file)));
-        console.log('contents', contents);
-         if (contents.length > 0) {
+        if (contents.length > 0) {
             setContents(contents as string[])
-            const firstContent: any = contents[0]; 
-            setDatasetId(firstContent.dataset_id || ''); 
+            const firstContent: any = contents[0];
+            setDatasetId(firstContent.dataset_id || '');
             setDatasetName(firstContent.name || '');
         }
 
@@ -97,10 +96,12 @@ const ImportDataset = ({ open, onClose }: any) => {
                     setIsLiveExists(true)
                     return
                 }
-                console.log('contents', contents[0])
                 await importDataset(contents[0], config, overwrite);
-                navigate(`/datasets?status=${DatasetStatus.Draft}`);
+                setDatasetName("")
+                setDatasetId("")
+                navigate(`/home/datasets?status=${DatasetStatus.Draft}`)
                 showAlert(`Dataset imported successfully`, "success");
+                window.location.reload()
             } catch (err) {
                 const errStatus = _.get(err, ["response", "status"]);
                 const errCode = _.get(err, ["response", "data", "error", "code"])
@@ -120,10 +121,14 @@ const ImportDataset = ({ open, onClose }: any) => {
         setLoading(false);
     };
 
+    const handleClose = () => {
+        setOpenImportDialog(false)
+    }
+
     return (
         <>
             <Dialog fullWidth={true} open={open} onClose={onClose}>
-                <Grid container spacing={3} justifyContent="center" alignItems="baseline" display="flex">
+                <Grid container spacing={3} justifyContent="center" alignItems="baseline" display="flex" padding={2}>
                     <Grid item xs={12} sm={6} lg={6}>
                         <HtmlTooltip title="Name of the dataset" arrow placement="top-start">
                             <TextField
@@ -158,7 +163,7 @@ const ImportDataset = ({ open, onClose }: any) => {
                         mainText="Upload Sample Data"
                         subText="JSON"
                         type="upload"
-                        
+
                     />
                 </Box>
                 <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ p: 2 }}>
@@ -171,7 +176,7 @@ const ImportDataset = ({ open, onClose }: any) => {
                             sx={{ my: 2, ml: 1 }}
                             disabled={!isProceedEnabled}
                             onClick={
-                                onSubmit
+                                () => onSubmit({ datasetId, datasetName })
                             }
                         >
                             Proceed
@@ -181,6 +186,8 @@ const ImportDataset = ({ open, onClose }: any) => {
             </Dialog>
             {openImportDialog && (
                 <ImportDialog
+                    openAlertDialog={openImportDialog}
+                    closeDialog={handleClose}
                     setOpenDailog={setOpenImportDialog}
                     setCheckValidation={setCheckValidation}
                     setDatasetName={setDatasetName}

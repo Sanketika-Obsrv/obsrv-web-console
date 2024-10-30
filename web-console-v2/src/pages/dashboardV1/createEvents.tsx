@@ -55,7 +55,7 @@ const DatasetCreateEvents = () => {
                 else errorCount++;
             }
             if (successCount !== 0 && errorCount !== 0) showAlert(`Successfully pushed ${successCount} events. Failed to push ${errorCount} events`, 'warning');
-            else if (successCount === 0) showAlert('Failed to push events','error');
+            else if (successCount === 0) showAlert('Failed to push events', 'error');
             else showAlert('Events pushed successfully.', 'success');
         } catch (err) {
             showAlert('Failed to push events. Please try again later', 'error')
@@ -67,7 +67,7 @@ const DatasetCreateEvents = () => {
 
     const pushEvents = async () => {
         const datasetConfigurations = datasetRead(datasetId)
-
+        
         if (!datasetConfigurations) {
             showAlert('Invalid Dataset', 'error');
             return
