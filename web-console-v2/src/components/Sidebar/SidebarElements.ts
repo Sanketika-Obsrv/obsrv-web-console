@@ -31,7 +31,7 @@ const SidebarElements = () => {
         {
           id: 'api',
           color: theme.palette.secondary.main,
-          title: 'Api',
+          title: 'API',
           route: '/home/dashboard/api'
         },
         {
