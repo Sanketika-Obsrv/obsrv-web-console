@@ -1,7 +1,7 @@
-import axios from 'axios';
 import endpoints from '../constants/Enpoints';
 
 import { IChartFetchRequest } from '../types/metadata';
+import { http } from './http';
 
 export const fetchMetricData = (
   config: Partial<IChartFetchRequest>,
@@ -12,7 +12,7 @@ export const fetchMetricData = (
   }
   const { parse = (response) => response, error } = config;
   const chartUUID = config.id || metadata.uuid;
-  return axios
+  return http
     .post(
       endpoints.infrastructureMetricsURL,
       { query: config },

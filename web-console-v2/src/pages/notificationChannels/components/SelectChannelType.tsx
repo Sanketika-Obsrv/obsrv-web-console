@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from "react";
 import { Grid } from "@mui/material";
 import MUIForm from "components/form";
@@ -16,8 +17,6 @@ const validator = asyncValidation();
 const SelectChannelType = (props: any) => {
     const { setFormData, sectionLabel, existingState = {} } = props;
     const [value, subscribe] = useState<any>(existingState);
-    // eslint-disable-next-line
-    const onSubmission = (value: any) => { };
     const validationConfigs = { notificationChannelNameMaxLen: 100 }
     const formikRef = useRef(null);
 
@@ -82,7 +81,6 @@ const SelectChannelType = (props: any) => {
                     initialValues={value}
                     enableReinitialize={true}
                     subscribe={subscribe}
-                    onSubmit={(value: any) => onSubmission(value)}
                     fields={fields}
                     size={{ sm: 6, xs: 6, lg: 6 }}
                     validationSchema={validationSchema}

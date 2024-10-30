@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Typography, Breadcrumbs, Grid, Box, Badge } from '@mui/material';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import styles from './Navbar.module.css';
 import Grafana from 'assets/icons/Grafana';
@@ -11,12 +11,15 @@ import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
 import logo from 'assets/images/obsrvLogo.svg';
-import { getBaseURL } from 'services/configData';
+import { getBaseURL, getConfigValueV1 } from 'services/configData';
+import { errorInterceptor, responseInterceptor } from 'services/http';
+import { addHttpRequestsInterceptor } from 'services/http';
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/datasets?status=Live";
 
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
+    const rnavigate = useNavigate();
     const pathname = location.pathname;
     
     const [openNotification, setOpenNotification] = useState(false);
@@ -38,6 +41,9 @@ function BasicBreadcrumbs(): JSX.Element {
         window.location.assign(OBSRV_WEB_CONSOLE);
     };
 
+    useEffect(() => {
+        addHttpRequestsInterceptor({ responseInterceptor, errorInterceptor: errorInterceptor({ navigate: rnavigate }) })
+      }, [])
     useEffect(() => {
         const fetchAlerts = async () => {
             try {
@@ -95,10 +101,10 @@ function BasicBreadcrumbs(): JSX.Element {
             </Grid>
             <Grid item xs={1} className={styles.navIcons}>
                 <div className={styles.icons}
-                    onClick={() => { navigate(getConfigValue("GRAFANA_URL")) }}>
+                    onClick={() => { navigate(getConfigValueV1("GRAFANA_URL")) }}>
                     <Grafana color="secondary" />
                 </div>
-                <div className={styles.icons} onClick={() => { navigate(getConfigValue("SUPERSET_URL")) }}>
+                <div className={styles.icons} onClick={() => { navigate(getConfigValueV1("SUPERSET_URL")) }}>
                     <Superset />
                 </div>
                 <div className={styles.icons} onClick={toggleNotification}>

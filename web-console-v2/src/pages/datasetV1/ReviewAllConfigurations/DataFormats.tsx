@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from "react";
 import {
     Box, Typography, Alert, Grid, Checkbox
@@ -22,10 +23,7 @@ const DataFormats = (props: any) => {
         <Grid container display={"flex"} flexDirection={"column"}>
             <Grid item xs={4}>
                 <Box display="flex" alignItems="center">
-                    <Checkbox checked={true} onChange={
-                        // eslint-disable-next-line
-                        () => { }
-                    } />
+                    <Checkbox checked={true} />
                     <Typography variant="h6" fontWeight={400}>
                         {"Individual Events"}
                     </Typography>
@@ -37,10 +35,7 @@ const DataFormats = (props: any) => {
                         <Grid container display={"flex"} flexDirection={"column"}>
                             <Grid item xs={3}>
                                 <Box display="flex" alignItems="center">
-                                    <Checkbox checked={true} onChange={
-                                        // eslint-disable-next-line
-                                        () => { }
-                                    } />
+                                    <Checkbox checked={true} />
                                     <Typography variant="h6" fontWeight={400}>
                                         {"Batch Mode"}
                                     </Typography>

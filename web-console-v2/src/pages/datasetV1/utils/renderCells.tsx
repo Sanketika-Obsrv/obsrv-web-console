@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from "react";
 import {
     Box, Typography, Button, Dialog, DialogTitle, Select, DialogContent, TextareaAutosize, FormControl, MenuItem, Popover, FormControlLabel, Stack, IconButton, Tooltip
@@ -211,7 +212,7 @@ const renderDataTypeCell = ({
                             <Typography variant="h6" fontWeight="bold">
                                 Resolved
                                 <Typography variant="body1" my={2}>
-                                    Data type of field <strong>{row?.column}</strong> is resolved to '{value}'
+                                    Data type of field <strong>{row?.column}</strong> is resolved to &quot;{value}&quot;
                                 </Typography>
                             </Typography>
                             <Box my={1}>
@@ -411,7 +412,7 @@ const renderArrivalFormatCell = ({
                             <Typography variant="h6" fontWeight="bold">
                                 Resolved
                                 <Typography variant="body1" my={2}>
-                                    Arrival Format of field <strong>{row?.column}</strong> is resolved to '{value}'
+                                    Arrival Format of field <strong>{row?.column}</strong> is resolved to &quot;{value}&quot;
                                 </Typography>
                             </Typography>
                             <Box my={1}>

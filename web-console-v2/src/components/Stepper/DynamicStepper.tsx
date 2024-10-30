@@ -58,17 +58,33 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
         queryParams: 'fields=status'
     });
 
+    const handleRouteNavigation = (route: string, datasetId: string) => {
+        const routeMapping: Record<string, string> = {
+            ingestion: `/home/ingestion/schema-details/${datasetId}`,
+            processing: `/home/processing/${datasetId}`,
+            storage: `/home/storage/${datasetId}`,
+            preview: `/home/preview/${datasetId}`
+        };
+
+        const targetRoute = routeMapping[route] || route;
+        navigate(targetRoute);
+    };
+
     return (
         <Box className={styles.stepper}>
             {steps.map((step, idx) => (
                 <Box
                     key={idx}
                     className={`${styles.step} ${step.completed ? styles.completed : ''} ${step.index === selectedStep || step.onProgress ? styles.selected : ''}`}
-                    onClick={() =>
-                        fetchLiveDataset?.data === undefined ? handleClick(step.route, step.index, step.completed, step.onProgress) : () => {
-                            // eslint-disable-next-line @typescript-eslint/no-empty-function
+                    onClick={() => {
+                        if (!fetchLiveDataset?.data) {
+                            if (['ingestion', 'processing', 'storage', 'preview'].includes(step.route)) {
+                                handleRouteNavigation(step.route, datasetId);
+                            } else {
+                                handleClick(step.route, step.index, step.completed, step.onProgress);
+                            }
                         }
-                    }
+                    }}
                 >
                     <Box
                         className={`${styles.circle} ${step.completed && !step.onProgress ? styles.completed : ''} ${step.index === selectedStep || step.onProgress ? styles.selected : ''}`}
