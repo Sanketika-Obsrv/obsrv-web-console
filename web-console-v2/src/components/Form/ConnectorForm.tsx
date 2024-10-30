@@ -70,8 +70,7 @@ const ConnectorForm = ({
     const validator = customizeValidator({}, customErrors);
 
     const handleFormDataChange = (data: FormData) => {
-
-        const valid = ajv.validate(schema, data);
+        const valid = ajv.validate(schema.schema, data);
 
         if (valid) {
             setFormData((prevData: FormData) => {

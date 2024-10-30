@@ -69,7 +69,6 @@ const ConnectorConfiguration: React.FC = () => {
     useEffect(() => {
 
         const connectorConfigDetails: any = fetchSessionStorageItem('connectorConfigDetails');
-        console.log("### connectorConfigDetails", connectorConfigDetails)
         if (connectorConfigDetails) {
             setFormData(connectorConfigDetails.connectors_config[0].value.connector_config);
             setOpFormData(connectorConfigDetails.connectors_config[0].value.operations_config);
@@ -157,7 +156,6 @@ const ConnectorConfiguration: React.FC = () => {
                 }
             ]
         };
-        console.log("#### connectionData", connectionData)
         storeSessionStorageItem('connectorConfigDetails', connectionData);
         navigate('/home/ingestion');
     };
@@ -193,7 +191,6 @@ const ConnectorConfiguration: React.FC = () => {
         newOpFormData.schedule = e.target.value;
         setOpFormData(newOpFormData);
     };
-
 
     return (
         <Box>
