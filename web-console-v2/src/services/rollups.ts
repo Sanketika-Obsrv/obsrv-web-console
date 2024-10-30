@@ -1,24 +1,24 @@
-import { aggregationFunctions, allowedSegmentGranurality } from "pages/Rollup/utils/commonUtils";
+import { aggregationFunctions, allowedSegmentGranurality } from "./commonUtils";
 import { formatNewFields } from "./dataset";
 import { http } from "./http";
 import { flattenSchemaV1, updateJSONSchema } from "./json-schema";
 import _ from "lodash";
 
-const ENDPOINTS = {
-    INGESTION_SPEC: "/console/configV1/dataset/v1/ingestionspec",
-    SAVE_DATASOURCE: "/console/configV1/datasources/v1/update",
-    DELETE_DATASOURCE: "/console/configV1/datasources/v1/delete",
-    LIST_DATASOURCE: "/console/configV1/datasources/v1/list",
-};
+// const ENDPOINTS = {
+//     INGESTION_SPEC: "/console/configV1/dataset/v1/ingestionspec",
+//     SAVE_DATASOURCE: "/console/configV1/datasources/v1/update",
+//     DELETE_DATASOURCE: "/console/configV1/datasources/v1/delete",
+//     LIST_DATASOURCE: "/console/configV1/datasources/v1/list",
+// };
 
 //USE THESE ROUTES FOR LOCAL TESTING
 
-// const ENDPOINTS = {
-//     INGESTION_SPEC: "/configV1/dataset/v1/ingestionspec",
-//     SAVE_DATASOURCE: "/configV1/datasources/v1/update",
-//     DELETE_DATASOURCE: "/configV1/datasources/v1/delete",
-//     LIST_DATASOURCE: "/configV1/datasources/v1/list",
-// };
+const ENDPOINTS = {
+    INGESTION_SPEC: "/configV1/dataset/v1/ingestionspec",
+    SAVE_DATASOURCE: "/configV1/datasources/v1/update",
+    DELETE_DATASOURCE: "/configV1/datasources/v1/delete",
+    LIST_DATASOURCE: "/configV1/datasources/v1/list",
+};
 
 
 export const DEFAULT_TIMESTAMP = {

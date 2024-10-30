@@ -3,7 +3,7 @@ import { Autocomplete, Button, Dialog, Grid, TextField } from '@mui/material';
 import { Box, DialogTitle } from '@mui/material';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
-import { granularityOptions } from '../utils/commonUtils';
+import { granularityOptions } from '../../../services/commonUtils';
 import * as _ from "lodash"
 import { PlusOutlined } from '@ant-design/icons';
 import CloseIcon from '@mui/icons-material/Close';

@@ -1,6 +1,5 @@
 import { Box, Button, Toolbar, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-// import SplitPane from 'react-split-pane';
 import { styled } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import Editor from '@monaco-editor/react';
@@ -8,7 +7,7 @@ import JSONata from 'jsonata';
 import * as _ from 'lodash';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const SplitPane = require('react-split-pane')
+const SplitPane = require('react-split-pane').default;
 
 const Pane = styled(Box)({
     width: '100%',
@@ -97,7 +96,7 @@ const JSONataPlayground = ({
 
     const jsonData: any = undefined;
 
-    const mergedEvent = sample_data || {};
+    const mergedEvent = sample_data?.mergedEvent || {};
 
     let data = {};
 

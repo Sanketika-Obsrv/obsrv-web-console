@@ -292,9 +292,9 @@ export const exportDataset = async (dataset_id: string, status: string) => {
 }
 
 export const importDataset = async (dataset: any, config: Record<string, any>, overwrite: boolean) => {
-    const { dataset_id, name } = config;
+    const { datasetId, datasetName } = config;
     const apiVersion = _.get(dataset, "api_version")
-    const payload = { id: dataset_id, dataset_id, name }
+    const payload = { id: datasetId, dataset_id: datasetId, name: datasetName }
     let updatedDataset: Record<string, any> = {}
     if (apiVersion === "v2") {
         updatedDataset = { ...dataset, ...payload }
@@ -326,7 +326,7 @@ export const createDraftversion = async ({ selection, navigateToPath, rollupRedi
         if (rollupRedirect) {
             const transitionRequest = generateRequestBody({ request: { dataset_id: datasetResponse?.data?.result?.dataset_id, status: "ReadyToPublish" }, apiId: "api.datasets.status-transition" })
             await http.post(`${apiEndpoints.statusTransition}`, transitionRequest);
-            navigateToPath(`/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
+            navigateToPath(`/home/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
             return;
         }
         navigateToPath(`/home/ingestion/schema-details/${datasetResponse?.data?.result?.dataset_id}`)

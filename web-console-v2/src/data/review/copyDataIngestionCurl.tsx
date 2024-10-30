@@ -1,3 +1,4 @@
+import React from "react";
 import { Check, ContentCopy } from "@mui/icons-material";
 import { Box, Button, Grid, Stack, Tooltip, Typography } from "@mui/material";
 import _ from "lodash";
@@ -7,10 +8,14 @@ import { v4 } from "uuid";
 const getCurlCommand = ({ datasetId,configuredBatchId, configuredBatchKey, isBatch = false }: Record<string, any>) => {
     const curlCommands: any = {
         true: [`curl --location '{{api-host}}/data/v1/in/${datasetId}'`,
+            // eslint-disable-next-line 
             `\ --header 'Content-Type: application/json'`,
+            // eslint-disable-next-line 
         `\ --data '{\"data\": {"${configuredBatchId}": "${v4()}" ,"${configuredBatchKey}": [{}]}}'`],
         false: [`curl --location '{{api-host}}/data/v1/in/${datasetId}'`,
+            // eslint-disable-next-line 
             `\ --header 'Content-Type: application/json'`,
+            // eslint-disable-next-line 
             `\ --data '{\"data\": {\"event\": {}}}'`]
     }
     return _.get(curlCommands, `${isBatch}`) || []

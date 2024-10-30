@@ -10,7 +10,7 @@ import { ToggleButtonGroup, ToggleButton } from "@mui/material";
 import Chip from '@mui/material/Chip';
 import InputLabel from '@mui/material/InputLabel';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
-import { aggregationFunctions } from "./commonUtils"
+import { aggregationFunctions } from "../../../services/commonUtils"
 
 const renderAggregateCell = ({
     setErrorMessage, aggregateFunctions, setAggregateFunctions, cell, value,

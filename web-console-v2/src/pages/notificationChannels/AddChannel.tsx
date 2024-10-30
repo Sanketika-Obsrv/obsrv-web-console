@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router';
 import { renderSections } from 'pages/alertManager/services/utils';
 import SendTestMessage from './components/SendTestMessage';
 import Loader from 'components/Loader';
-import { getConfigValue } from 'services/configData';
 import { useAlert } from 'contexts/AlertContextProvider';
 
 const isValid = (config: Record<string, any>) => {

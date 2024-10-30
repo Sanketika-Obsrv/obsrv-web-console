@@ -3,6 +3,7 @@ import styles from './NewDataset.module.css';
 import { Grid, Typography, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { t } from 'utils/i18n';
+import { getBaseURL } from 'services/configData';
 
 const NewDataset: React.FC = () => {
     const navigate = useNavigate();
@@ -47,7 +48,7 @@ const NewDataset: React.FC = () => {
                     <img
                         height="70%"
                         width="80%"
-                        src="/images/DatasetLaunch.svg"
+                        src={`${getBaseURL()}/images/DatasetLaunch.svg`}
                         alt="Please check your connection"
                         className={styles.image}
                     />

@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import { v4 } from 'uuid'
-import { getConfigValue } from './configData';
+import { getConfigValueV1 } from './configData';
 
 const getOptions = () => {
     return {
@@ -13,7 +13,7 @@ const getOptions = () => {
             type: 'User'
         },
         context: {
-            env: getConfigValue("ENV") || "local",
+            env: getConfigValueV1("ENV") || "local",
             sid: '42342',
             pdata: {
                 id: 'dev.obsrv.console',

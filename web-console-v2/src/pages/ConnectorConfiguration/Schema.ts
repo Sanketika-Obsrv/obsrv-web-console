@@ -4,85 +4,51 @@ interface FormSchema {
     schema: RJSFSchema;
     uiSchema: UiSchema;
 }
-const schemas: FormSchema[] = [
+const schema: FormSchema = 
     {
-        title: 'Configure Snowflake',
+        title: 'Configure Kafka Connector',
         schema: {
-            type: 'object',
-            properties: {
-                section1: {
-                    title: 'Configure Connector',
-                    type: 'object',
-                    properties: {
-                        ipAddress: {
-                            type: 'string',
-                            title: 'IP Address',
-                            pattern: '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$'
-                        },
-                        credentials: {
-                            type: 'string',
-                            title: 'Credentials'
-                        }
-                    },
-                    required: ['ipAddress', 'credentials']
+            "title": "Kafka Connector Setup Instructions",
+            "description": "",
+            "type": "object",
+            "properties": {
+                "source_kafka_broker_servers": {
+                    "title": "Kafka Brokers",
+                    "type": "string",
+                    "description": "Enter Kafka broker address in the format: <broker1-hostname>:<port>,<broker2-hostname>:<port>,<broker3-hostname>:<port>"
                 },
-                section2: {
-                    title: 'Connector Source Configuration',
-                    type: 'object',
-                    properties: {
-                        table: {
-                            type: 'string',
-                            title: 'Table',
-                            pattern: '^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$'
-                        },
-                        kafkaTopics: {
-                            type: 'string',
-                            title: 'Kafka Topics'
-                        },
-                        s3BucketName: {
-                            type: 'string',
-                            title: 'S3 Bucket Name'
-                        },
-                        field: {
-                            type: 'string',
-                            title: 'Field'
-                        }
-                    },
-                    required: ['table', 'kafkaTopics', 's3BucketName', 'field']
+                "source_kafka_topic": {
+                    "title": "Kafka Topic",
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9\\\\._\\\\-]+$",
+                    "description": "Enter Kafka topic name. Only alphanumeric characters, dots, dashes, and underscores are allowed."
+                },
+                "source_kafka_auto_offset_reset": {
+                    "title": "Kafka Auto Offset Reset",
+                    "type": "string",
+                    "description": "Select the suitable offset reset strategy.",
+                    "enum": [
+                        "earliest",
+                        "latest",
+                        "none"
+                    ],
+                    "default": "earliest"
+                },
+                "source_kafka_consumer_id": {
+                    "title": "Kafka Consumer Id",
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9\\\\._\\\\-]+$",
+                    "description": "Enter Kafka consumer group ID.",
+                    "default": "kafka-connector-group"
                 }
             },
-            required: ['section1', 'section2']
+            "required": [
+                "source_kafka_broker_servers",
+                "source_kafka_topic",
+                "source_kafka_consumer_id",
+                "source_kafka_auto_offset_reset"
+            ]
         },
-        uiSchema: {
-            'ui:submitButtonOptions': {
-                norender: true
-            },
-            section1: {
-                'ui:submitButtonOptions': {
-                    norender: true
-                },
-                ipAddress: {
-                    'ui:placeholder': 'Enter IP address'
-                },
-                credentials: {
-                    'ui:placeholder': 'Enter credentials'
-                }
-            },
-            section2: {
-                table: {
-                    'ui:placeholder': 'Lorem ipsum'
-                },
-                kafkaTopics: {
-                    'ui:placeholder': 'Lorem ipsum'
-                },
-                s3BucketName: {
-                    'ui:placeholder': 'Lorem ipsum'
-                },
-                field: {
-                    'ui:placeholder': 'Lorem ipsum'
-                }
-            }
-        }
-    }
-];
-export default schemas;
+        uiSchema: {}
+    };
+export default schema;

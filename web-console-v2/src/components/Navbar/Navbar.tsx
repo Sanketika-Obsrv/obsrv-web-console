@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Typography, Breadcrumbs, Grid, Box, Badge } from '@mui/material';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import styles from './Navbar.module.css';
 import Grafana from 'assets/icons/Grafana';
@@ -10,12 +10,18 @@ import { getConfigValue } from 'services/dataset';
 import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
+import logo from 'assets/images/obsrvLogo.svg';
+import { getBaseURL, getConfigValueV1 } from 'services/configData';
+import { errorInterceptor, responseInterceptor } from 'services/http';
+import { addHttpRequestsInterceptor } from 'services/http';
 
-const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/datasets?status=Live";
+const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/home/dashboards";
 
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
+    const rnavigate = useNavigate();
     const pathname = location.pathname;
+    
     const [openNotification, setOpenNotification] = useState(false);
     const [alerts, setAlerts] = useState<any>(null)
     const [read, setRead] = useState<any>(_.get(alerts, 'length') || 0);
@@ -32,9 +38,12 @@ function BasicBreadcrumbs(): JSX.Element {
     }
 
     const handleNavigate = () => {
-        window.location.assign(OBSRV_WEB_CONSOLE);
+        rnavigate(OBSRV_WEB_CONSOLE);
     };
 
+    useEffect(() => {
+        addHttpRequestsInterceptor({ responseInterceptor, errorInterceptor: errorInterceptor({ navigate: rnavigate }) })
+      }, [])
     useEffect(() => {
         const fetchAlerts = async () => {
             try {
@@ -48,11 +57,11 @@ function BasicBreadcrumbs(): JSX.Element {
         if(openNotification || _.isNull(alerts)) fetchAlerts();
     }, [openNotification]);
 
-    return (
+    return (pathname !== '/login' ? (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
             <Grid item xs={1.5} className={styles.logo}>
                 <Box onClick={handleNavigate}>
-                    <img src="/images/obsrvLogo.svg" alt="Logo" width={130} />
+                    <img src={`${getBaseURL()}/images/obsrvLogo.svg`} alt="Logo" width={130} />
                 </Box>
             </Grid>
             <Grid item xs={9.5} className={styles.breadcrumb}>
@@ -92,10 +101,10 @@ function BasicBreadcrumbs(): JSX.Element {
             </Grid>
             <Grid item xs={1} className={styles.navIcons}>
                 <div className={styles.icons}
-                    onClick={() => { navigate(getConfigValue("GRAFANA_URL")) }}>
+                    onClick={() => { navigate(getConfigValueV1("GRAFANA_URL")) }}>
                     <Grafana color="secondary" />
                 </div>
-                <div className={styles.icons} onClick={() => { navigate(getConfigValue("SUPERSET_URL")) }}>
+                <div className={styles.icons} onClick={() => { navigate(getConfigValueV1("SUPERSET_URL")) }}>
                     <Superset />
                 </div>
                 <div className={styles.icons} onClick={toggleNotification}>
@@ -108,7 +117,7 @@ function BasicBreadcrumbs(): JSX.Element {
                 {openNotification && <Notification open={openNotification} setOpen={setOpenNotification} alerts={alerts} />}
             </Grid>
         </Grid>
-    );
+    ) : <></>);
 }
 
 export default BasicBreadcrumbs;
