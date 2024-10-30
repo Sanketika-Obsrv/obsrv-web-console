@@ -26,7 +26,8 @@ const CustomTable = ({ columns, data, striped, header = true, styles = {} }: any
                                         border: '0.0625rem solid #D6D6D6',
                                         background: '#F9F9F9',
                                         ...styles,
-                                        textTransform: 'unset'
+                                        textTransform: 'unset',
+                                        overflowX:"scroll"
                                     }}
                                     {...column.getHeaderProps([{ className: column.className }])}
                                     key={i}

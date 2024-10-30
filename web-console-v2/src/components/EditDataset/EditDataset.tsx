@@ -75,7 +75,8 @@ export const inputFields = (
     );
 
     const arrivalTypeOptions = arrivalType.length <= 0 ? defaultDatatypeOptions : arrivalType;
-
+    const nameRegex = /^[^!@#$%^&()+{}[]:;<>,?~\|]$/;
+    
     return [
         {
             title: 'EditLiveDatasetInputs',
@@ -111,6 +112,10 @@ export const inputFields = (
                                 )
                                 .test('spaceInField', en.containsSpaces, (value) =>
                                     hasSpacesInField(value)
+                                ).max(100, en.maxLen)
+                                .min(4, en.minLen)
+                                .test('validCharacters', "The field should exclude any special characters, permitting only '.', '-', '_', alphabets, numbers", (value) =>
+                                    nameRegex.test(value)
                                 )
                         }
                     ]
