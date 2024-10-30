@@ -66,29 +66,33 @@ const DatasetCreateEvents = () => {
     }
 
     const pushEvents = async () => {
-        const datasetConfigurations = datasetRead(datasetId)
-        
-        if (!datasetConfigurations) {
-            showAlert('Invalid Dataset', 'error');
-            return
-        }
+        try {
+            const datasetConfigurations = await datasetRead(datasetId)
 
-        const configuredBatchKey = _.get(datasetConfigurations, ['extraction_config', 'extraction_key']) || null;
-        const configuredBatchId = _.get(datasetConfigurations, ['extraction_config', 'batch_id']) || 'id';
-        let payload: any = {};
-
-        if (configuredBatchKey) {
-            const batchData = Array.isArray(data) ? data : [data];
-            payload = { data: { [configuredBatchId]: v4(), [configuredBatchKey]: batchData } };
-            dispatchEvents(payload);
-        } else {
-            if (Array.isArray(data)) {
-                payload = _.map(data, event => ({ data: { id: v4(), event } }));
-                await dispatchEventsInParallel(payload);
-            } else {
-                payload = { data: { id: v4(), event: data } };
-                dispatchEvents(payload)
+            if (!datasetConfigurations) {
+                showAlert('Invalid Dataset', 'error');
+                return
             }
+
+            const configuredBatchKey = _.get(datasetConfigurations, ['extraction_config', 'extraction_key']) || null;
+            const configuredBatchId = _.get(datasetConfigurations, ['extraction_config', 'batch_id']) || 'id';
+            let payload: any = {};
+
+            if (configuredBatchKey) {
+                const batchData = Array.isArray(data) ? data : [data];
+                payload = { data: { [configuredBatchId]: v4(), [configuredBatchKey]: batchData } };
+                dispatchEvents(payload);
+            } else {
+                if (Array.isArray(data)) {
+                    payload = _.map(data, event => ({ data: { id: v4(), event } }));
+                    await dispatchEventsInParallel(payload);
+                } else {
+                    payload = { data: { id: v4(), event: data } };
+                    dispatchEvents(payload)
+                }
+            }
+        } catch (error) {
+            showAlert("Failed to push events", "error")
         }
     }
 
