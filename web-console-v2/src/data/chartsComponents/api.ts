@@ -495,13 +495,13 @@ export default {
             },
             parse: (response: any) => {
                 const value = _.get(response, 'data.result[0].value[1]') || 0;
-                if (value === 0) return ["HEALTHY", "primary"];
-                if (value > 1) return ["Unhealthy", "error"]
-                if (value > 0.1 && value <= 1) return ["HEALTHY", "warning"]
-                return ["HEALTHY", "primary"];
+                if (value === 0) return ["Healthy", "primary"];
+                if (value > 1) return ["UnHealthy", "error"]
+                if (value > 0.1 && value <= 1) return ["Healthy", "warning"]
+                return ["Healthy", "primary"];
             },
             error() {
-                return ["Unhealthy", "error"];
+                return ["UnHealthy", "error"];
             },
             context: (payload: any) => { return payloadStartOfDay(payload); }
         }
@@ -519,13 +519,13 @@ export default {
             },
             parse: (response: any) => {
                 const value = _.get(response, 'data.result[0].value[1]') || 0;
-                if (value === 0) return ["HEALTHY", "primary"];
-                if (value > 1) return ["Unhealthy", "error"]
-                if (value > 0.1 && value <= 1) return ["HEALTHY", "warning"]
-                return ["HEALTHY", "primary"];
+                if (value === 0) return ["Healthy", "primary"];
+                if (value > 1) return ["UnHealthy", "error"]
+                if (value > 0.1 && value <= 1) return ["Healthy", "warning"]
+                return ["Healthy", "primary"];
             },
             error() {
-                return ["Unhealthy", "error"];
+                return ["UnHealthy", "error"];
             },
             context: (payload: any) => { return payloadStartOfDay(payload); }
         }
@@ -543,7 +543,7 @@ export default {
             },
             parse: (response: any) => {
                 const value = _.get(response, 'data.result[0].value[1]') || 0;
-                return _.floor(value, 3);
+                return `${_.floor(value, 0)}%`;
             },
             error() {
                 return [0, "error"];
@@ -564,7 +564,7 @@ export default {
             },
             parse: (response: any) => {
                 const value = _.get(response, 'data.result[0].value[1]') || 0;
-                return _.floor(value, 3);
+                return `${_.floor(value, 0)}%`;
             },
             error() {
                 return [0, "error"];

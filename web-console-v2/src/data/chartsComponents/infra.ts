@@ -112,10 +112,12 @@ export default {
             },
             parse: (response: any) => {
                 const result = _.get(response, 'data.result');
-                return _.map(result, payload => ({
-                    name: _.get(payload, 'metric.instance') || "Memory Usage",
-                    data: _.get(payload, 'values')
-                }))
+                const sum = _.sumBy(result, (payload: any) => {
+                    const { value } = payload;
+                    const [_, percentage = 0] = value;
+                    return +percentage;
+                  });
+                  return _.floor(sum);
             },
             error() {
                 return []

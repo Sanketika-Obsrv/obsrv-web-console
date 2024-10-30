@@ -65,7 +65,7 @@ export default {
         return _.sumBy(payload, (value) => _.get(value, 'event.count') || 0);
       },
       error() {
-        return [0, 'error'];
+        return [0];
       },
       context: (query: any) => {
         const strPayload = JSON.stringify(query.body);
@@ -143,7 +143,7 @@ export default {
         );
       },
       error() {
-        return [0, 'error'];
+        return [0];
       },
       context: (query: any) => {
         const strPayload = JSON.stringify(query.body);
