@@ -2,26 +2,26 @@ import { http } from 'services/http';
 import _ from 'lodash';
 
 //For local
-// const ENDPOINTS = {
-//     GET_ALERT_CHANNELS: "/config/alerts/v1/notifications/get",
-//     SEARCH_CHANNELS: "/config/alerts/v1/notifications/search",
-//     ADD_ALERT_CHANNEL: "/config/alerts/v1/notifications/create",
-//     UPDATE_ALERT_CHANNEL: "/config/alerts/v1/notifications/update",
-//     DELETE_ALERT_CHANNEL: "/config/alerts/v1/notifications/delete",
-//     PUBLISH_ALERT: "/config/alerts/v1/notifications/publish",
-//     TEST_ALERT_CHANNEL: "/config/alerts/v1/notifications/test"
-// };
+const ENDPOINTS = {
+    GET_ALERT_CHANNELS: "/config/alerts/v1/notifications/get",
+    SEARCH_CHANNELS: "/config/alerts/v1/notifications/search",
+    ADD_ALERT_CHANNEL: "/config/alerts/v1/notifications/create",
+    UPDATE_ALERT_CHANNEL: "/config/alerts/v1/notifications/update",
+    DELETE_ALERT_CHANNEL: "/config/alerts/v1/notifications/delete",
+    PUBLISH_ALERT: "/config/alerts/v1/notifications/publish",
+    TEST_ALERT_CHANNEL: "/config/alerts/v1/notifications/test"
+};
 
 // For dev
-const ENDPOINTS = {
-    GET_ALERT_CHANNELS: "/console/config/alerts/v1/notifications/get",
-    SEARCH_CHANNELS: "/console/config/alerts/v1/notifications/search",
-    ADD_ALERT_CHANNEL: "/console/config/alerts/v1/notifications/create",
-    UPDATE_ALERT_CHANNEL: "/console/config/alerts/v1/notifications/update",
-    DELETE_ALERT_CHANNEL: "/console/config/alerts/v1/notifications/delete",
-    PUBLISH_ALERT: "/console/config/alerts/v1/notifications/publish",
-    TEST_ALERT_CHANNEL: "/console/config/alerts/v1/notifications/test"
-};
+// const ENDPOINTS = {
+//     GET_ALERT_CHANNELS: "/console/config/alerts/v1/notifications/get",
+//     SEARCH_CHANNELS: "/console/config/alerts/v1/notifications/search",
+//     ADD_ALERT_CHANNEL: "/console/config/alerts/v1/notifications/create",
+//     UPDATE_ALERT_CHANNEL: "/console/config/alerts/v1/notifications/update",
+//     DELETE_ALERT_CHANNEL: "/console/config/alerts/v1/notifications/delete",
+//     PUBLISH_ALERT: "/console/config/alerts/v1/notifications/publish",
+//     TEST_ALERT_CHANNEL: "/console/config/alerts/v1/notifications/test"
+// };
 
 export const fetchChannels = ({ data, config = {} }: any) => {
     return http.post(ENDPOINTS.SEARCH_CHANNELS, data, config)

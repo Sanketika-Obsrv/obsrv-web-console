@@ -11,7 +11,7 @@ import styles from "./MetricsCard.module.css"
 
 const MetricsCard: React.FC<any> = (props: any) => {
   const { label, icon, query, uuid, transformer, description, refresh, interval } = props;
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState<any>('');
   const [loading, setLoading] = useState(false);
   const change = '0%';
   const isPositive = change.startsWith('+');
@@ -25,9 +25,10 @@ const MetricsCard: React.FC<any> = (props: any) => {
     try {
       setLoading(true);
       const response = await fetchMetricData(query, { uuid });
+      console.log({ response })
       const transformedLabel =
         (await (transformer && transformer(response))) || response;
-      setValue(transformedLabel as any);
+      setValue(response);
       setLoading(false);
     } catch (error) {
       console.log('error occured', error);
@@ -50,7 +51,7 @@ const MetricsCard: React.FC<any> = (props: any) => {
           >
             <span>{icon}</span>
             <Typography variant="bodyBold" className={styles.loadingText}>
-              {loading ? 'Loading...' : value[0] || value}
+              {loading ? 'Loading...' : _.isArray(value) ? value[0] : value}
             </Typography>
 
             <Grid
