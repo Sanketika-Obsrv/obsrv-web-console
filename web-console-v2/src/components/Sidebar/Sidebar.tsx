@@ -77,7 +77,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     }, [location.pathname]);
 
     const redirectToConsole = () => {
-        window.location.assign(OBSRV_WEB_CONSOLE);
+        navigate(OBSRV_WEB_CONSOLE);
     };
 
     const handleParentClick = (route: string) => {
