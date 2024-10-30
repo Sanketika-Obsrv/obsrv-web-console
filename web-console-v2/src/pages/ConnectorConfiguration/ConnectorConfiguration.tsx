@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import ConfigureConnectorForm, { FormData, Schema } from 'components/Form/DynamicForm';
-import { Box, Button, Typography } from '@mui/material';
+import { withTheme } from '@rjsf/core';
+import { Theme as MuiTheme } from '@rjsf/mui';
+import ConfigureConnectorForm, { FormData, Schema } from 'components/Form/ConnectorForm';
+import { Box, Button, Card, Typography, Grid, TextField, styled, Select, MenuItem, SelectChangeEvent, InputLabel, FormControl } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './ConnectorConfiguration.module.css';
@@ -9,9 +11,19 @@ import HelpSection from 'components/HelpSection/HelpSection';
 import { useFetchDatasetsById, useReadConnectors } from 'services/dataset';
 import _ from 'lodash';
 import { theme } from 'theme';
-import { storeSessionStorageItem } from 'utils/sessionStorage';
+import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
 import { getConfigValue } from 'services/configData';
 import sampleSchema from './Schema';
+import operationConfigSchema from './OperationConfigSchema';
+import validator from '@rjsf/validator-ajv8';
+
+const OperationForm = withTheme(MuiTheme);
+
+const GenericCard = styled(Card)(({ theme }) => ({
+    outline: 'none',
+    boxShadow: 'none',
+    margin: theme.spacing(0, 6, 2, 2)
+}));
 
 interface ConfigureConnectorFormProps {
     schema: Schema;
@@ -21,9 +33,15 @@ interface ConfigureConnectorFormProps {
 }
 
 const ConnectorConfiguration: React.FC = () => {
+    
+    const [opFormData, setOpFormData] = useState<FormData>({
+        interval: 'Periodic',
+        schedule: 'Hourly'
+    });
     const [formData, setFormData] = useState<FormData>({});
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [connectorType, setConnectorType] = useState<string>("stream");
     const [selectedConnectorId, setSelectedConnectorId] = useState<string | null>(null);
     const [connectorHelpText, setConnectorHelpText] = useState<string | null>(null);
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
@@ -55,9 +73,20 @@ const ConnectorConfiguration: React.FC = () => {
     }, [connectionResponse]);
 
     useEffect(() => {
+
+        const connectorConfigDetails : any = fetchSessionStorageItem('connectorConfigDetails');
+        console.log("### connectorConfigDetails", connectorConfigDetails)
+        if (connectorConfigDetails) {
+            setFormData(connectorConfigDetails.connectors_config[0].value.connector_config);
+            setOpFormData(connectorConfigDetails.connectors_config[0].value.operations_config);
+        }
+    }, []);
+
+    useEffect(() => {
         if (selectedCardId && readConnector.data) {
             const selectedConnectorId = readConnector.data.connector_id;
             setSelectedConnectorId(selectedConnectorId);
+            setConnectorType(_.toLower(readConnector.data.category));
             const apiSchema = readConnector.data.ui_spec;
             if (apiSchema) {
                 setSchema(transformSchema(apiSchema));
@@ -75,7 +104,7 @@ const ConnectorConfiguration: React.FC = () => {
 
     const transformSchema = (apiSchema: any): Schema => {
         return {
-            title: '',
+            title: `Configure ${selectedCardName}`,
             schema: {
                 type: 'object',
                 ...apiSchema
@@ -120,15 +149,15 @@ const ConnectorConfiguration: React.FC = () => {
     };
 
     const handleButtonClick = () => {
-        const connectorConfig: any = formData || {};
+        
         const connectionData = {
             connectors_config: [
                 {
                     value: {
                         id: selectedConnectorId,
                         connector_id: selectedCardId,
-                        connector_config: connectorConfig || {},
-                        operations_config: {}
+                        connector_config: formData || {},
+                        operations_config: opFormData || {}
                     },
                     action: 'upsert'
                 }
@@ -155,6 +184,22 @@ const ConnectorConfiguration: React.FC = () => {
         navigate('/home/new-dataset/connector-list');
     };
 
+    const handleIntervalChange = (e: SelectChangeEvent) => {
+        
+        const newOpFormData = { ...opFormData};
+        newOpFormData.interval = e.target.value;
+        if(newOpFormData.interval === 'Once') {
+            newOpFormData.schedule = '';
+        }
+        setOpFormData(newOpFormData);
+    };
+
+    const handleScheduleChange = (e: SelectChangeEvent) => {
+        const newOpFormData = { ...opFormData};
+        newOpFormData.schedule = e.target.value;
+        setOpFormData(newOpFormData);
+    };
+
 
     return (
         <Box>
@@ -167,9 +212,6 @@ const ConnectorConfiguration: React.FC = () => {
                 >
                     Back
                 </Button>
-                <Typography variant="h1" mx={1} mt={1.9}>
-                    Configure {selectedCardName}
-                </Typography>
             </Box>
 
             <Box
@@ -183,14 +225,72 @@ const ConnectorConfiguration: React.FC = () => {
                         {errorMessage}
                     </Typography>
                 ) : (
-                    <ConfigureConnectorForm
-                        schema={schema!}
-                        formData={formData}
-                        setFormData={setFormData}
-                        onChange={handleChange}
-                        highlightedSection={highlightedSection}
-                        handleClick={(sectionId: string) => handleSectionClick(sectionId)}
-                    />
+                    <>
+                        <GenericCard className={styles.title}>
+                            <Box className={styles?.heading}>
+                                <Typography variant='h1'>{schema.title}</Typography>
+                            </Box>
+                            
+                            <ConfigureConnectorForm
+                                schema={schema!}
+                                formData={formData}
+                                setFormData={setFormData}
+                                onChange={handleChange}
+                                highlightedSection={highlightedSection}
+                                handleClick={(sectionId: string) => handleSectionClick(sectionId)}
+                                styles={styles}
+                            />
+                            
+                        </GenericCard>
+                        
+                        {connectorType === 'batch' && (
+                            <GenericCard className={styles.title}>
+                                <Box className={styles?.heading}>
+                                    <Typography variant='h1'>Configure Fetch Settings</Typography>
+                                </Box>
+
+                                <Grid container spacing={3} className={styles?.gridContainer}>
+                                    <Grid item xs={12} sm={6} lg={6}>
+                                        <FormControl fullWidth required>
+                                            <InputLabel id="interval-label">Polling Interval</InputLabel>
+                                            <Select
+                                                labelId="interval-label"
+                                                id="interval"
+                                                value={opFormData.interval as string}
+                                                label={'Polling Interval'}
+                                                variant="outlined"
+                                                onChange={handleIntervalChange}
+                                                required
+                                                fullWidth
+                                            >
+                                                <MenuItem value={'Periodic'}>Periodic</MenuItem>
+                                                <MenuItem value={'Once'}>Once</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6} lg={6}>
+                                        <FormControl fullWidth required={opFormData.interval === 'Periodic'} disabled={opFormData.interval !== 'Periodic'}>
+                                            <InputLabel id="schedule-label">Schedule</InputLabel>
+                                            <Select
+                                                labelId="schedule-label"
+                                                id="schedule"
+                                                value={opFormData.schedule as string}
+                                                label={'Schedule'}
+                                                variant="outlined"
+                                                fullWidth
+                                                onChange={handleScheduleChange}
+                                            >
+                                                <MenuItem value={'Hourly'}>Hourly</MenuItem>
+                                                <MenuItem value={'Daily'}>Daily</MenuItem>
+                                                <MenuItem value={'Weekly'}>Weekly</MenuItem>
+                                                <MenuItem value={'Monthly'}>Monthly</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                </Grid>
+                            </GenericCard>
+                        )}
+                    </>
                 )}
             </Box>
             <Box
