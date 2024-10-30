@@ -28,7 +28,7 @@ import ListChannels from 'pages/notificationChannels/ListChannels';
 import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
-import DatasetManagement from 'pages/DatasetManagement/components/DatasetManagement';
+import DatasetManagement from 'pages/DatasetManagement/DatasetManagement';
 import RollupConfig from 'pages/Rollup/components';
 // Type definition for the route configuration
 interface RouteConfig {
