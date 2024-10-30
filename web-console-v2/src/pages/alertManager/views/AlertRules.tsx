@@ -48,7 +48,7 @@ const AlertRules = () => {
     return (
       <Grid container spacing={3}>
         <Grid item xs={12} id="tabSectionStart">
-          <Box sx={{ width: '100%' }}>
+          <Box sx={{ width: '100%', margin: '1rem' }}>
             {renderTabs()}
             <Grid marginTop={1}>
               <Outlet />

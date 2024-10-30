@@ -194,7 +194,7 @@ const ConnectorConfiguration: React.FC = () => {
 
     return (
         <Box>
-            <Box mx={4}>
+            <Box mx={4} my={1}>
                 <Button
                     variant="text"
                     sx={{ color: theme.palette.common.black }}
@@ -209,7 +209,7 @@ const ConnectorConfiguration: React.FC = () => {
                 className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
                 pr={4}
                 pl={3}
-                sx={{ boxShadow: 'none', marginBottom: '30rem' }}
+                sx={{ boxShadow: 'none' }}
             >
                 {errorMessage ? (
                     <Typography variant="h6" color="error" textAlign="center" py={32}>
@@ -286,7 +286,15 @@ const ConnectorConfiguration: React.FC = () => {
             </Box>
             <Box
                 className={`${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
-                mt={4}
+                mt={8}
+                sx={{
+                    position: 'fixed',
+                    bottom: 0,
+                    right: 0,
+                    left: -50,
+                    backgroundColor: theme.palette.background.paper,
+                    zIndex: 100
+                }}
                 pr={5}
             >
                 <Actions
