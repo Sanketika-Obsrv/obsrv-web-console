@@ -409,7 +409,7 @@ const Processing: React.FC = () => {
                     flex: 1,
                     overflowY: 'auto',
                     paddingBottom: '80px',
-                    paddingTop: '3.5rem'
+                    paddingTop: '1rem'
                 }}
             >
                 <Box mx={3.5} mb={2}>
