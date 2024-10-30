@@ -166,8 +166,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
             const exportDatasetResponse = await exportDataset(dataset_id, DatasetStatus.Live);
             const jsonSchema: any = _.get(exportDatasetResponse, 'data.result')
             if (jsonSchema) {
-                const data = _.get(downloadJSONSchemaV1({ schema: jsonSchema }, { schema: flattenSchema(jsonSchema?.data_schema) }), 'schema');
-                downloadJsonFile(data, fileName);
+                downloadJsonFile(jsonSchema, fileName);
             }
         }
         catch (err) {
