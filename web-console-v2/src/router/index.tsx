@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+
 // Import pages for different routes
 import NewDatasetPage from 'pages/NewDataset/NewDataset';
 import IngestionPage from 'pages/StepsPages/Ingestion/Ingestion';
@@ -17,8 +18,6 @@ import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/
 import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
 import ClusterHealth from 'pages/dashboardV1/datasets';
-import RollupConfig from 'pages/Rollup/components';
-import DatasetManagement from 'pages/DatasetManagement/components/DatasetManagement';
 import StepperPage from 'pages/StepsPages/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
@@ -29,6 +28,8 @@ import ListChannels from 'pages/notificationChannels/ListChannels';
 import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
+import DatasetManagement from 'pages/DatasetManagement/DatasetManagement';
+import RollupConfig from 'pages/Rollup/components';
 // Type definition for the route configuration
 interface RouteConfig {
     path: string;

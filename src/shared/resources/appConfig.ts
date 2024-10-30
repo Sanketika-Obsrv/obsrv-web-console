@@ -17,7 +17,7 @@ export default {
         URL: env.CONFIG_API_URL || 'http://localhost:4000',
     },
     CONFIG_API_EXT: {
-        URL: env.CONFIG_API_EXT || 'http://localhost:4001',
+        URL: env.CONFIG_API_EXT_URL || 'http://localhost:4001',
     },
     SYSTEM_API: {
         URL: env.SYSTEM_API_URL || 'http://localhost:4002',

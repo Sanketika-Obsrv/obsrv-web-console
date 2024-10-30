@@ -1,11 +1,11 @@
 import { Paper } from "@mui/material"
 import MainCard from "components/MainCard"
 import globalConfig from 'data/initialConfig';
-import { getConfigValue } from "services/configData";
+import { getConfigValueV1 } from "services/configData";
 
 const GrafanaChart = (props: any) => {
     const { url, width, height } = props;
-    const graphanaUrl = getConfigValue("GRAFANA_URL");
+    const graphanaUrl = getConfigValueV1("GRAFANA_URL");
     return <>
         <Paper elevation={globalConfig.elevation}>
             <MainCard content={false} sx={{ mt: 1.5 }}>

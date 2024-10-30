@@ -1,3 +1,4 @@
+/* eslint-disable */
 import _ from 'lodash';
 import * as yup from 'yup';
 import en from 'utils/locales/en.json'

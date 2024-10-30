@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from "react";
 import { Alert, Grid, Typography } from "@mui/material";
 import MUIForm from "components/form";

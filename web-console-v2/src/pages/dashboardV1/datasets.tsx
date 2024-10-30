@@ -16,6 +16,8 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import ReadyToPublishDatasetsList from './ReadyToPublishDatasets';
 import { FormattedMessage } from 'react-intl';
 import { useSearchParams } from 'react-router-dom';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import ImportDataset from 'pages/datasetV1/ImportDataset';
 
 export const getLiveSourceConfig: any = (liveDataset: any, liveSourceConfigs: any) => {
     const condition = (config: any) => {
@@ -54,6 +56,9 @@ const ClusterHealth = () => {
     const navigate = useNavigate();
     useImpression({ type: "list", pageid: _.get(pageIds, 'dataset.list') });
     const [datasetType, setDatasetType] = useState(datasetStatus);
+    const [openModal, setOpenModal] = useState(false);
+    const handleOpen = () => setOpenModal(true);
+    const handleClose = () => setOpenModal(false);
 
     const handleTabChange = (event: any, newValue: any) => {
         setDatasetType(newValue);
@@ -95,7 +100,7 @@ const ClusterHealth = () => {
         id: "import",
         label: <FormattedMessage id="dataset-actions-import" />,
         icon: <ImportOutlined />,
-        onClick: () => { navigate("/datasets/import") },
+        onClick: handleOpen,
         disabled: false
     }, {
         id: "add-dataset",
@@ -171,7 +176,12 @@ const ClusterHealth = () => {
     return (
         <Box p={2}>
             {renderDatasetTabs()}
+            <ImportDataset
+                open={openModal}
+                onClose={handleClose}
+            />
         </Box>
+        
     )
 };
 

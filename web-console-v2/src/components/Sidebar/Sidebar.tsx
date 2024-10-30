@@ -17,6 +17,9 @@ import styles from './Sidebar.module.css';
 import SidebarElements from './SidebarElements';
 import { useTheme } from '@mui/material/styles';
 import _ from 'lodash';
+import apiEndpoints from 'data/apiEndpoints';
+import { http } from 'services/http';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 interface Props {
     onExpandToggle: () => void;
@@ -29,8 +32,10 @@ const redirectUrl: any = [""];
 const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     const theme = useTheme();
     const elements = SidebarElements();
+    const { showAlert } = useAlert();
     const navigate = useNavigate();
     const location = useLocation();
+    const pathname = location.pathname;
     const [openParent, setOpenParent] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<string | null>(null);
     const [selectedChildItem, setSelectedChildItem] = useState<string | null>(null);
@@ -46,6 +51,13 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
             pathSegments[1] === 'preview'
         ) {
             setSelectedItem('/home/new-dataset');
+        } else if (
+            pathSegments[1] === 'alertRules'
+        ) {
+            const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
+            const subRoute = location.pathname;
+            setSelectedItem(mainRoute);
+            (mainRoute.match(subRoute)?.index === 0) ? navigate(mainRoute+'/custom') : navigate(subRoute);
         } else if (pathSegments.length > 2) {
             const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
             const subRoute = location.pathname;
@@ -65,7 +77,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     }, [location.pathname]);
 
     const redirectToConsole = () => {
-        window.location.assign(OBSRV_WEB_CONSOLE);
+        navigate(OBSRV_WEB_CONSOLE);
     };
 
     const handleParentClick = (route: string) => {
@@ -99,7 +111,11 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     };
 
     const handleLogout = () => {
-        alert('logout');
+            http.get(apiEndpoints.logout).then(() => {
+                navigate(`/login`);
+            }).catch(() => {
+            showAlert('Failed to logout', 'error');
+        })
     };
 
     const DrawerList = (
@@ -246,8 +262,8 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                     })}
                 </List>
 
-                {/* <List sx={{ marginTop: 'auto' }}>
-                    <Tooltip title={!expand ? 'Settings' : ''} placement="right">
+                <List sx={{ marginTop: 'auto' }}>
+                    {/* <Tooltip title={!expand ? 'Settings' : ''} placement="right">
                         <ListItem
                             className={`${styles.listItem} ${
                                 selectedItem === '/home/settings'
@@ -293,7 +309,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                 )}
                             </ListItemButton>
                         </ListItem>
-                    </Tooltip>
+                    </Tooltip> */}
                     <Tooltip title={!expand ? 'Logout' : ''} placement="right">
                         <ListItemButton onClick={handleLogout}>
                             <Icon>
@@ -310,12 +326,12 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                             )}
                         </ListItemButton>
                     </Tooltip>
-                </List> */}
+                </List>
             </Box>
         </div>
     );
 
-    return <div>{DrawerList}</div>;
+    return pathname !== '/login' ? <div>{DrawerList}</div> : <></>;
 };
 
 export default Sidebar;

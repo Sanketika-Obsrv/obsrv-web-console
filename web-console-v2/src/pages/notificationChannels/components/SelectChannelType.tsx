@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from "react";
 import { Grid } from "@mui/material";
 import MUIForm from "components/form";
@@ -11,12 +12,11 @@ import en from 'utils/locales/en.json'
 import { hasSpecialCharacters, validateFormValues } from "services/utils";
 const { spacing } = config;
 
-const validator=asyncValidation();
+const validator = asyncValidation();
 
 const SelectChannelType = (props: any) => {
     const { setFormData, sectionLabel, existingState = {} } = props;
     const [value, subscribe] = useState<any>(existingState);
-    const onSubmission = (value: any) => { };
     const validationConfigs = { notificationChannelNameMaxLen: 100 }
     const formikRef = useRef(null);
 
@@ -81,7 +81,6 @@ const SelectChannelType = (props: any) => {
                     initialValues={value}
                     enableReinitialize={true}
                     subscribe={subscribe}
-                    onSubmit={(value: any) => onSubmission(value)}
                     fields={fields}
                     size={{ sm: 6, xs: 6, lg: 6 }}
                     validationSchema={validationSchema}

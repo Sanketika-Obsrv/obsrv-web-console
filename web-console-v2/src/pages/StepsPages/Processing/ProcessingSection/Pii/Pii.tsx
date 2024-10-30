@@ -28,7 +28,7 @@ interface Schema {
 }
 
 interface AddPiiFormProps {
-    schemas: Schema[];
+    schema: Schema;
     formData: FormData;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     onChange: (formData: FormData, errors?: unknown[] | null) => void;
@@ -50,7 +50,7 @@ const AddPIIDialog = (props: any) => {
     if (!_.isEmpty(transformationOptions))
         _.set(
             schema,
-            [0, 'schema', 'properties', 'section', 'properties', 'transformations', 'enum'],
+            ['schema', 'properties', 'section', 'properties', 'transformations', 'enum'],
             transformationOptions
         );
 
@@ -59,13 +59,11 @@ const AddPIIDialog = (props: any) => {
 
         if (!_.isEmpty(data)) {
             const existingData = {
-                section0: {
-                    section: {
-                        transformations,
-                        transformationType: _.get(data, ['transformationType']),
-                        transformationMode: _.get(data, ['transformationMode']),
-                        expression: _.get(data, ['transformation'])
-                    }
+                section: {
+                    transformations,
+                    transformationType: _.get(data, ['transformationType']),
+                    transformationMode: _.get(data, ['transformationMode']),
+                    expression: _.get(data, ['transformation'])
                 }
             };
 
@@ -74,14 +72,13 @@ const AddPIIDialog = (props: any) => {
 
         _.set(
             schema,
-            [0, 'uiSchema', 'section', 'transformations', 'ui:disabled'],
+            ['uiSchema', 'section', 'transformations', 'ui:disabled'],
             _.includes(_.map(addedSuggestions, 'column'), transformations)
         );
     }, [data, addedSuggestions]);
 
     const onHandleClick = async () => {
-        const newData = _.get(formData, ['section0', 'section']);
-
+        const newData = _.get(formData, ['section']);
         const array = [];
 
         if (!_.isEmpty(data) && edit) {
@@ -106,13 +103,11 @@ const AddPIIDialog = (props: any) => {
         });
 
         handleAddOrEdit(array);
-
         onClose();
     };
 
     const handleChange: AddPiiFormProps['onChange'] = (formData, errors) => {
         setFormData(formData);
-
         if (errors) {
             setFormErrors(errors);
         } else {
@@ -144,7 +139,7 @@ const AddPIIDialog = (props: any) => {
             <DialogContent>
                 <Stack mt={-4} width="auto">
                     <AddPii
-                        schemas={schema}
+                        schema={schema}
                         formData={formData}
                         setFormData={setFormData}
                         onChange={handleChange}
@@ -165,7 +160,7 @@ const AddPIIDialog = (props: any) => {
                     variant="contained"
                     autoFocus
                     onClick={onHandleClick}
-                    disabled={!_.isEmpty(formErrors) || _.isEmpty(formData.section0)}
+                    disabled={!_.isEmpty(formErrors) || _.isEmpty(formData.section)}
                     size="large"
                     sx={{ width: 'auto' }}
                 >

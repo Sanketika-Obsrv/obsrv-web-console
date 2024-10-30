@@ -21,7 +21,7 @@ import BackdropLoader from 'components/BackdropLoader';
 import en from 'utils/locales/en.json';
 import { DatasetStatus } from 'types/datasets';
 import TransformSpecEditor from './TransformSpecEditor';
-import { defaultMetric } from '../utils/commonUtils';
+import { defaultMetric } from '../../../services/commonUtils';
 
 const ReviewRollup = (props: any) => {
     const {

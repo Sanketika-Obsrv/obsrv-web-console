@@ -15,7 +15,7 @@ import {
 } from 'pages/Rollup/utils/renderCells';
 import { getFilteredMetricData, getNestingV1 } from 'services/json-schema';
 import en from 'utils/locales/en.json';
-import { defaultMetric } from '../utils/commonUtils';
+import { defaultMetric } from '../../../services/commonUtils';
 import { useAlert } from "contexts/AlertContextProvider";
 
 const ListMetrics = (props: any) => {

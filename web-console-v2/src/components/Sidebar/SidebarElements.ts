@@ -31,7 +31,7 @@ const SidebarElements = () => {
         {
           id: 'api',
           color: theme.palette.secondary.main,
-          title: 'Api',
+          title: 'API',
           route: '/home/dashboard/api'
         },
         {
@@ -118,7 +118,7 @@ const SidebarElements = () => {
       id: 'alertmanagement',
       icon: React.createElement(AlertOutlined),
       title: 'Alerts',
-      route: '/home/alertRules/custom'
+      route: '/home/alertRules'
     },
     {
       id: 'notifications',
