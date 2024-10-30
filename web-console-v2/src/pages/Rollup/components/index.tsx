@@ -8,7 +8,7 @@ import { useLocation, useParams } from 'react-router';
 import { datasetRead, formatNewFields, getDatasetState } from 'services/dataset';
 import { searchDatasources } from 'services/rollups';
 import { flattenSchemaV1 } from 'services/json-schema';
-import { steps } from '../utils/commonUtils';
+import { steps } from '../../../services/commonUtils';
 import Loader from 'components/Loader';
 import BackdropLoader from 'components/BackdropLoader';
 import ReviewRollup from './ReviewRollup';
@@ -123,7 +123,7 @@ const RollupConfig = () => {
   const getSchema = async () => {
     try {
       setLoading(true)
-      const response = await datasetRead({ datasetId: `${datasetId}?mode=edit&fields=data_schema,dataset_config,name,transformations_config,dataset_id`}).then(response => _.get(response, 'data.result'));
+      const response = await datasetRead({ datasetId: `${datasetId}?mode=edit&fields=data_schema,dataset_config,name,transformations_config,dataset_id` }).then(response => _.get(response, 'data.result'));
       const datasetState = _.get(response, 'dataset_config')
       let newFields = _.get(response, 'transformation_config') || [];
       newFields = _.filter(newFields, field => _.get(field, "metadata.section") === "derived")
@@ -270,7 +270,7 @@ const RollupConfig = () => {
 
   const stepper = () => (
     <Stepper activeStep={activeStep} sx={{ py: 2 }}>
-      {steps.map((label, index) => {
+      {steps.map((label, index: any) => {
         const labelProps: { error?: boolean; optional?: ReactNode } = {};
         if (index === errorIndex) {
           labelProps.optional = (

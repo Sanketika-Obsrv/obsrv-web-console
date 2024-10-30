@@ -5,7 +5,7 @@ import { Grid, Checkbox, Chip, Typography, Box } from '@mui/material';
 import CustomGranularity from './CustomGranularity';
 import { useLocation } from 'react-router';
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
-import { granularityOptions } from "../utils/commonUtils"
+import { granularityOptions } from '../../../services/commonUtils'
 
 const GranularityOptions = ({ selectedOptions, setSelectedOptions, setSelectedGranularityOptions, customGranularity, setCustomGranularity }: any) => {
     const [open, setOpen] = useState<boolean>(false);

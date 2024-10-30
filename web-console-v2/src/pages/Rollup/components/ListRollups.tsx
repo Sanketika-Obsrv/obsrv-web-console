@@ -13,7 +13,7 @@ import { deleteDraftRollupDatasources } from "services/rollups";
 import AlertDialog from "components/AlertDialog/AlertDialog";
 import Loader from "components/Loader";
 import BackdropLoader from "components/BackdropLoader";
-import { granularityOptions } from "../utils/commonUtils";
+import { granularityOptions } from "../../../services/commonUtils";
 import { DatasetStatus } from "types/datasets";
 import en from 'utils/locales/en.json';
 import { useAlert } from "contexts/AlertContextProvider";
