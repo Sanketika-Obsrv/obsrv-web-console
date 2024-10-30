@@ -1,23 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { withTheme } from '@rjsf/core';
-import { Theme as MuiTheme } from '@rjsf/mui';
-import ConfigureConnectorForm, { FormData, Schema } from 'components/Form/ConnectorForm';
-import { Box, Button, Card, Typography, Grid, TextField, styled, Select, MenuItem, SelectChangeEvent, InputLabel, FormControl } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
-import { useLocation, useNavigate } from 'react-router-dom';
-import styles from './ConnectorConfiguration.module.css';
+import { Box, Button, Card, FormControl, Grid, InputLabel, MenuItem, Select, SelectChangeEvent, Typography, styled } from '@mui/material';
 import Actions from 'components/ActionButtons/Actions';
+import ConfigureConnectorForm, { FormData, Schema } from 'components/Form/ConnectorForm';
 import HelpSection from 'components/HelpSection/HelpSection';
-import { useFetchDatasetsById, useReadConnectors } from 'services/dataset';
 import _ from 'lodash';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { getConfigValue } from 'services/configData';
+import { useFetchDatasetsById, useReadConnectors } from 'services/dataset';
 import { theme } from 'theme';
 import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
-import { getConfigValue } from 'services/configData';
+import styles from './ConnectorConfiguration.module.css';
 import sampleSchema from './Schema';
-import operationConfigSchema from './OperationConfigSchema';
-import validator from '@rjsf/validator-ajv8';
-
-const OperationForm = withTheme(MuiTheme);
 
 const GenericCard = styled(Card)(({ theme }) => ({
     outline: 'none',
@@ -33,7 +27,7 @@ interface ConfigureConnectorFormProps {
 }
 
 const ConnectorConfiguration: React.FC = () => {
-    
+
     const [opFormData, setOpFormData] = useState<FormData>({
         interval: 'Periodic',
         schedule: 'Hourly'
@@ -74,7 +68,7 @@ const ConnectorConfiguration: React.FC = () => {
 
     useEffect(() => {
 
-        const connectorConfigDetails : any = fetchSessionStorageItem('connectorConfigDetails');
+        const connectorConfigDetails: any = fetchSessionStorageItem('connectorConfigDetails');
         console.log("### connectorConfigDetails", connectorConfigDetails)
         if (connectorConfigDetails) {
             setFormData(connectorConfigDetails.connectors_config[0].value.connector_config);
@@ -149,7 +143,7 @@ const ConnectorConfiguration: React.FC = () => {
     };
 
     const handleButtonClick = () => {
-        
+
         const connectionData = {
             connectors_config: [
                 {
@@ -185,17 +179,17 @@ const ConnectorConfiguration: React.FC = () => {
     };
 
     const handleIntervalChange = (e: SelectChangeEvent) => {
-        
-        const newOpFormData = { ...opFormData};
+
+        const newOpFormData = { ...opFormData };
         newOpFormData.interval = e.target.value;
-        if(newOpFormData.interval === 'Once') {
+        if (newOpFormData.interval === 'Once') {
             newOpFormData.schedule = '';
         }
         setOpFormData(newOpFormData);
     };
 
     const handleScheduleChange = (e: SelectChangeEvent) => {
-        const newOpFormData = { ...opFormData};
+        const newOpFormData = { ...opFormData };
         newOpFormData.schedule = e.target.value;
         setOpFormData(newOpFormData);
     };
@@ -230,7 +224,7 @@ const ConnectorConfiguration: React.FC = () => {
                             <Box className={styles?.heading}>
                                 <Typography variant='h1'>{schema.title}</Typography>
                             </Box>
-                            
+
                             <ConfigureConnectorForm
                                 schema={schema!}
                                 formData={formData}
@@ -240,9 +234,9 @@ const ConnectorConfiguration: React.FC = () => {
                                 handleClick={(sectionId: string) => handleSectionClick(sectionId)}
                                 styles={styles}
                             />
-                            
+
                         </GenericCard>
-                        
+
                         {connectorType === 'batch' && (
                             <GenericCard className={styles.title}>
                                 <Box className={styles?.heading}>
