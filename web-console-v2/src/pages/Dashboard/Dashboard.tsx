@@ -65,15 +65,15 @@ const Dashboard = () => {
       label: 'Force refresh dashboard',
       onClick: () => handleRefresh(section),
     },
-    {
-      label: 'Set Auto-Refresh Interval',
-      onClick: () => {
-        setConfirmationDialogState({
-          isOpen: true,
-          section: section,
-        });
-      },
-    },
+    // {
+    //   label: 'Set Auto-Refresh Interval',
+    //   onClick: () => {
+    //     setConfirmationDialogState({
+    //       isOpen: true,
+    //       section: section,
+    //     });
+    //   },
+    // },
   ];
 
   // Call getMetaData with the current refresh state
@@ -154,7 +154,7 @@ const Dashboard = () => {
         <Metrics
           logoIcon={<Grafana color="secondary" />}
           title="API Metrics"
-          sync="(Synced 2 mins ago)"
+          // sync="(Synced 2 mins ago)"
           icon={<MoreVertIcon color="primary" />}
           menuItems={getMetricsMenuItems('api')}
         >

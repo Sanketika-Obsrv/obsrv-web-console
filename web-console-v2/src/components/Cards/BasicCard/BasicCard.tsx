@@ -15,6 +15,7 @@ const BasicCard = () => {
     >
       <Box>
         <GaugeChart
+          isHeaderData={true}
           caption={true}
           query={_.get(chartMeta, 'cpu_percentage').query}
           query2={[
