@@ -15,7 +15,7 @@ import { getBaseURL, getConfigValueV1 } from 'services/configData';
 import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
 
-const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/console/home/dashboards";
+const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/home/dashboards";
 
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
@@ -38,7 +38,7 @@ function BasicBreadcrumbs(): JSX.Element {
     }
 
     const handleNavigate = () => {
-        rnavigate("/home/dashboard");
+        rnavigate(OBSRV_WEB_CONSOLE);
     };
 
     useEffect(() => {
