@@ -12,6 +12,7 @@ import { readJsonFileContents } from 'services/utils';
 import interactIds from 'data/telemetry/interact.json';
 import Loader from 'components/Loader';
 import { useAlert } from 'contexts/AlertContextProvider';
+import PasteData from './utils/PasteData';
 
 const tabProps = (index: number) => ({ id: `tab-${index}`, 'aria-controls': `tabpanel-${index}` });
 
@@ -92,10 +93,10 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
     }
 
     const onDataPaste = (event: any) => {
-        const jsObject = _.isArray(event) ? event : [event] || {};
+        const jsObject = event ? (_.isArray(event) ? event : [event]) : {};
         const flattenedData = flattenContents(jsObject);
         if (jsObject && _.isEmpty(flattenedData)) {
-            showAlert("Paste valid JSON Data/Schema", "error");
+            showAlert('Paste valid JSON Data/Schema', "error");
             setData()
             return;
         }
@@ -108,7 +109,7 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
 
     return (
         <>
-            {loading && <Loader loading={loading}/>}
+            {loading && <Loader loading={loading} />}
             <Grid container spacing={1}>
                 <Grid item xs={12}>
                     <Box sx={{ width: '100%' }}>
@@ -144,6 +145,7 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
                             </form>
                         </TabPanel>
                         <TabPanel value={tabIndex} index={1}>
+                            <PasteData initialData={data} onChange={onDataPaste}></PasteData>
                             <Stack direction="row" justifyContent="center"
                                 alignItems="center" spacing={1.5} sx={{ mt: 1.5 }}>
                             </Stack>
