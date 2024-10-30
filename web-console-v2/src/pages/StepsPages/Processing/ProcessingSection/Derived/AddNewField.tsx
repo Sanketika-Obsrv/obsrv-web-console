@@ -29,7 +29,7 @@ interface Schema {
 }
 
 interface ConfigureConnectorFormProps {
-    schemas: Schema[];
+    schema: Schema;
     formData: FormData;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     onChange: (formData: FormData, errors?: unknown[] | null) => void;
@@ -41,17 +41,21 @@ const AddNewField = (props: any) => {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
-    const [extraErrors, setExtraErrors] = useState<any>({});
+    const [extraErrors, setExtraErrors] = useState<any>({
+        section: {
+            transformationType: {
+                __errors: []
+            }
+        }
+    });
 
     const open = Boolean(anchorEl);
 
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
     const [formData, setFormData] = useState<FormData>({
-        section0: {
-            section: {
-                transformations: '',
-                transformationType: ''
-            }
+        section: {
+            transformations: '',
+            transformationType: ''
         }
     });
 
@@ -80,7 +84,7 @@ const AddNewField = (props: any) => {
         if (!transformErrors) {
             const newData = _.cloneDeep(formData);
 
-            const keyPath = ['section0', 'section', 'transformationType'];
+            const keyPath = ['section', 'transformationType'];
 
             _.set(newData, keyPath, evaluationData);
 
@@ -95,7 +99,7 @@ const AddNewField = (props: any) => {
     };
 
     const onHandleClick = async () => {
-        const newData = _.get(formData, ['section0', 'section']);
+        const newData = _.get(formData, ['section']);
 
         const array = [];
 
@@ -131,16 +135,9 @@ const AddNewField = (props: any) => {
     };
 
     const handleChange: ConfigureConnectorFormProps['onChange'] = async (formData, errors) => {
-        const transformationType = _.get(formData, ['section0', 'section', 'transformationType']);
-
-        const newExtraErrors = {
-            section: {
-                transformationType: {
-                    __errors: []
-                }
-            }
-        };
-
+        setFormData(formData);
+        const transformationType = _.get(formData, ['section', 'transformationType']);
+        
         if (errors) {
             setFormErrors(errors);
         } else {
@@ -150,16 +147,14 @@ const AddNewField = (props: any) => {
         if (transformationType) {
             try {
                 await evaluateDataType(transformationType, jsonData);
+                _.set(extraErrors, ['section', 'transformationType', '__errors'], []);
             } catch (error) {
                 const message = _.get(error, 'message');
-
-                _.set(newExtraErrors, ['section', 'transformationType', '__errors', 0], message);
+                _.set(extraErrors, ['section', 'transformationType', '__errors'], [message]);
                 setFormErrors([message]);
             }
         }
-        setExtraErrors(newExtraErrors);
-
-        setFormData(formData);
+        setExtraErrors(extraErrors);
     };
 
     return (
@@ -189,7 +184,7 @@ const AddNewField = (props: any) => {
                 <DialogContent>
                     <Stack mt={-4} width="auto">
                         <AddNewFields
-                            schemas={schema}
+                            schema={schema}
                             formData={formData}
                             setFormData={setFormData}
                             onChange={handleChange}
@@ -213,7 +208,7 @@ const AddNewField = (props: any) => {
                         variant="contained"
                         autoFocus
                         onClick={onHandleClick}
-                        disabled={!_.isEmpty(formErrors) || _.isEmpty(formData.section0)}
+                        disabled={!_.isEmpty(formErrors) || _.isEmpty(_.get(formData, ["section", "transformations"])) || _.isEmpty(_.get(formData, ["section", "transformationType"]))}
                         size="large"
                         sx={{ width: 'auto' }}
                     >

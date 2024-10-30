@@ -3,7 +3,7 @@ import { QuestionCircleFilled } from '@ant-design/icons';
 import { Alert, Grid, Button, Box, Typography, } from '@mui/material';
 import MainCard from 'components/MainCard';
 import interactIds from 'data/telemetry/interact.json';
-import UploadFiles from 'pages/datasetV1/wizard/UploadFiles';
+import UploadFiles from 'pages/datasetV1/UploadFiles';
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { datasetRead, sendEvents } from 'services/datasetV1';
@@ -55,7 +55,7 @@ const DatasetCreateEvents = () => {
                 else errorCount++;
             }
             if (successCount !== 0 && errorCount !== 0) showAlert(`Successfully pushed ${successCount} events. Failed to push ${errorCount} events`, 'warning');
-            else if (successCount === 0) showAlert('Failed to push events','error');
+            else if (successCount === 0) showAlert('Failed to push events', 'error');
             else showAlert('Events pushed successfully.', 'success');
         } catch (err) {
             showAlert('Failed to push events. Please try again later', 'error')
@@ -67,7 +67,7 @@ const DatasetCreateEvents = () => {
 
     const pushEvents = async () => {
         const datasetConfigurations = datasetRead(datasetId)
-
+        
         if (!datasetConfigurations) {
             showAlert('Invalid Dataset', 'error');
             return

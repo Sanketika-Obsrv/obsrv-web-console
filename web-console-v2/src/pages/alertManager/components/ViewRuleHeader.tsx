@@ -11,7 +11,6 @@ import { NotificationsActiveOutlined, NotificationsOff, RefreshOutlined } from '
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import Loader from 'components/Loader';
-import { getConfigValue } from 'services/configData';
 import { useAlert } from 'contexts/AlertContextProvider';
 
 dayjs.extend(utc);

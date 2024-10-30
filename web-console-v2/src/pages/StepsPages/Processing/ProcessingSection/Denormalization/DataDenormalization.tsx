@@ -121,7 +121,7 @@ const DataDenorm = (props: any) => {
 
             _.set(
                 schema,
-                [0, 'schema', 'properties', 'section', 'properties', 'dataset', 'enum'],
+                ['schema', 'properties', 'section', 'properties', 'dataset', 'enum'],
                 filterData
             );
         }
@@ -139,7 +139,7 @@ const DataDenorm = (props: any) => {
 
         _.set(
             schema,
-            [0, 'schema', 'properties', 'section', 'properties', 'masterDataset', 'oneOf'],
+            ['schema', 'properties', 'section', 'properties', 'masterDataset', 'oneOf'],
             selectOptions
         );
 
