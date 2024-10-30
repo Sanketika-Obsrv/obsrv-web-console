@@ -34,3 +34,18 @@
     width: 1.5rem;
     height: 1.5rem;
 }
+
+.title {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.gridContainer {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+}
+
+.heading {
+    padding-bottom: 1rem;
+}

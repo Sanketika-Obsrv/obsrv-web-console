@@ -75,7 +75,7 @@ const Transformations = (props: any) => {
             <>
                 {customTypes.length > 0 &&
                     <Grid container columnSpacing={1} rowSpacing={1}>
-                        {customTypes.map(({ title, data, id }) => {
+                        {customTypes.map(({ title, data, id }, i: any) => {
                             if (_.size(data) > 0)
                                 return (
                                     <Grid item xs={12} sm={12} md={12} lg={12} key={id}>

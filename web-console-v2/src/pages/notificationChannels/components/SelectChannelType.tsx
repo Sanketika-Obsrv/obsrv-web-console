@@ -12,7 +12,7 @@ import en from 'utils/locales/en.json'
 import { hasSpecialCharacters, validateFormValues } from "services/utils";
 const { spacing } = config;
 
-const validator=asyncValidation();
+const validator = asyncValidation();
 
 const SelectChannelType = (props: any) => {
     const { setFormData, sectionLabel, existingState = {} } = props;

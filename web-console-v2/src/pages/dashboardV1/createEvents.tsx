@@ -55,7 +55,7 @@ const DatasetCreateEvents = () => {
                 else errorCount++;
             }
             if (successCount !== 0 && errorCount !== 0) showAlert(`Successfully pushed ${successCount} events. Failed to push ${errorCount} events`, 'warning');
-            else if (successCount === 0) showAlert('Failed to push events','error');
+            else if (successCount === 0) showAlert('Failed to push events', 'error');
             else showAlert('Events pushed successfully.', 'success');
         } catch (err) {
             showAlert('Failed to push events. Please try again later', 'error')
@@ -66,29 +66,33 @@ const DatasetCreateEvents = () => {
     }
 
     const pushEvents = async () => {
-        const datasetConfigurations = datasetRead(datasetId)
+        try {
+            const datasetConfigurations = await datasetRead({ datasetId })
 
-        if (!datasetConfigurations) {
-            showAlert('Invalid Dataset', 'error');
-            return
-        }
-
-        const configuredBatchKey = _.get(datasetConfigurations, ['extraction_config', 'extraction_key']) || null;
-        const configuredBatchId = _.get(datasetConfigurations, ['extraction_config', 'batch_id']) || 'id';
-        let payload: any = {};
-
-        if (configuredBatchKey) {
-            const batchData = Array.isArray(data) ? data : [data];
-            payload = { data: { [configuredBatchId]: v4(), [configuredBatchKey]: batchData } };
-            dispatchEvents(payload);
-        } else {
-            if (Array.isArray(data)) {
-                payload = _.map(data, event => ({ data: { id: v4(), event } }));
-                await dispatchEventsInParallel(payload);
-            } else {
-                payload = { data: { id: v4(), event: data } };
-                dispatchEvents(payload)
+            if (!datasetConfigurations) {
+                showAlert('Invalid Dataset', 'error');
+                return
             }
+
+            const configuredBatchKey = _.get(datasetConfigurations, ['extraction_config', 'extraction_key']) || null;
+            const configuredBatchId = _.get(datasetConfigurations, ['extraction_config', 'batch_id']) || 'id';
+            let payload: any = {};
+
+            if (configuredBatchKey) {
+                const batchData = Array.isArray(data) ? data : [data];
+                payload = { data: { [configuredBatchId]: v4(), [configuredBatchKey]: batchData } };
+                dispatchEvents(payload);
+            } else {
+                if (Array.isArray(data)) {
+                    payload = _.map(data, event => ({ data: { id: v4(), event } }));
+                    await dispatchEventsInParallel(payload);
+                } else {
+                    payload = { data: { id: v4(), event: data } };
+                    dispatchEvents(payload)
+                }
+            }
+        } catch (error) {
+            showAlert("Failed to push events", "error")
         }
     }
 

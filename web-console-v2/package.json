@@ -47,6 +47,8 @@
     "react-apexcharts": "^1.4.1",
     "react-device-detect": "^2.2.2",
     "@mui/x-date-pickers": "^5.0.4",
+    "jsoneditor": "^9.10.4",
+    "jsoneditor-react": "^3.1.2",
     "react-dom": "^18.3.1",
     "react-dropzone": "14.2.3",
     "react-gauge-chart": "^0.5.1",
@@ -91,6 +93,7 @@
     ]
   },
   "devDependencies": {
+    "@types/react-json-editor-ajrm": "^2.5.3",
     "@eslint/js": "^9.2.0",
     "@tanstack/eslint-plugin-query": "5.51.15",
     "@tanstack/react-query-devtools": "5.51.15",
