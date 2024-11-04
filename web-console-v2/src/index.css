@@ -1,5 +1,3 @@
-
-
 :root {
   --drop-shadow-small: 4px 4px 44px 0px rgba(0, 0, 0, 0.1);
   --drop-shadow-medium: 4px 4px 16px 0px rgba(0, 0, 0, 0.1);
@@ -25,7 +23,7 @@
   --assessment-icon: #B8EAE6;
   --assessment-icon-2: #FAC280;
   --dashboard-card-box-shadow: 0.6rem 0.6rem 5.15rem 0rem rgba(0, 0, 0, 0.05);
-} 
+}
 
 :root {
   --white-color: #ffffff;
@@ -80,7 +78,7 @@ code {
   box-shadow: none;
 }
 
-div.HelpSection_expanded__vqSxk{
+div.HelpSection_expanded__vqSxk {
   z-index: 1301;
 }
 
@@ -92,4 +90,14 @@ div.HelpSection_expanded__vqSxk{
 .section.highlighted {
   color: orange;
   opacity: 1;
+}
+
+.MuiTableHead-root .MuiTableRow-root .MuiTableCell-head {
+  font-weight: bold;
+  resize: none;
+  overflow-x: scroll;
+}
+
+.MuiTableCell-root {
+  overflow-x: scroll;
 }

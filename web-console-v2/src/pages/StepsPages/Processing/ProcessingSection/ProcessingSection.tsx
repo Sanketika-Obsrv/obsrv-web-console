@@ -54,7 +54,7 @@ const ProcessingSection = (props: any) => {
             accessor: 'column',
             Cell: ({ value, cell }: any) => (
                 <Box minWidth="20vw" maxWidth="35vw">
-                    <Typography variant="h5">{value}</Typography>
+                    <Typography variant="h4">{value}</Typography>
                 </Box>
             )
         },
@@ -105,21 +105,9 @@ const ProcessingSection = (props: any) => {
                         aria-label="outlined button group"
                         sx={{ minWidth: '20vw', maxWidth: '30vw' }}
                     >
-                        {_.map(actions, (action: any) => (
-                            <Button
-                                size="large"
-                                key="one"
-                                sx={{ py: 1, px: 2 }}
-                                variant={
-                                    _.isEqual(transformationType, _.get(action, 'value', ''))
-                                        ? 'contained'
-                                        : 'outlined'
-                                }
-                                onClick={() => handleEditValues(_.get(cell, 'row.original'))}
-                            >
-                                {_.get(action, 'label', '')}
-                            </Button>
-                        ))}
+                        <Box>
+                            {transformationType === 'custom' ? 'JSONata' : transformationType}
+                        </Box>
                     </ButtonGroup>
                 );
             }

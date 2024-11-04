@@ -412,7 +412,7 @@ const Processing: React.FC = () => {
                     paddingTop: '1rem'
                 }}
             >
-                <Box mx={3.5} mb={2}>
+                <Box mx={3.5} my={2}>
                     <Button
                         variant="text"
                         sx={{ color: theme.palette.text.primary }}
