@@ -12,7 +12,8 @@ const CustomTable = ({ columns, data, striped, header = true, styles = {} }: any
         <Table
             {...getTableProps()}
             sx={{
-                border: '1px solid #D6D6D6'
+                border: '1px solid #D6D6D6',
+                tableLayout:"fixed"
             }}
         >
             {header && (
@@ -25,12 +26,13 @@ const CustomTable = ({ columns, data, striped, header = true, styles = {} }: any
                                         border: '0.0625rem solid #D6D6D6',
                                         background: '#F9F9F9',
                                         ...styles,
-                                        textTransform: 'unset'
+                                        textTransform: 'unset',
+                                        overflowX:"scroll"
                                     }}
                                     {...column.getHeaderProps([{ className: column.className }])}
                                     key={i}
                                 >
-                                    <Typography variant="h5">{column.render('Header')}</Typography>
+                                    <Typography variant="h4">{column.render('Header')}</Typography>
                                 </TableCell>
                             ))}
                         </TableRow>
