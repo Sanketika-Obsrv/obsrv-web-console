@@ -209,7 +209,7 @@ const ConnectorConfiguration: React.FC = () => {
                 className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
                 pr={4}
                 pl={3}
-                sx={{ boxShadow: 'none' }}
+                sx={{ boxShadow: 'none', pb: '5rem' }}
             >
                 {errorMessage ? (
                     <Typography variant="h6" color="error" textAlign="center" py={32}>
@@ -292,8 +292,7 @@ const ConnectorConfiguration: React.FC = () => {
                         bottom: 0,
                         right: 0,
                         left: -50,
-                        zIndex: 100,
-                        paddingRight: '5rem'
+                        zIndex: 100
                     }}
                 pr={5}
             >
