@@ -34,54 +34,56 @@ import DatasetManagement from 'pages/datasetManagement/components/DatasetManagem
 interface RouteConfig {
     path: string;
     element: React.ReactElement;
+    label?: string;
     children?: RouteConfig[];
 }
 const CustomAlerts = lazy(() => import('pages/alertManager/views/CustomRules'));
 // Base path for all routes
 const BASE_PATH = '/home';
 
-const routeConfigurations: RouteConfig[] = [
-    { path: '/', element: <Navigate to={`${BASE_PATH}/dashboard`} replace /> },
-    { path: `${BASE_PATH}`, element: <Navigate to={`${BASE_PATH}`} replace /> },
-    { path: `${BASE_PATH}/new-dataset`, element: <NewDatasetPage /> },
+export const routeConfigurations: RouteConfig[] = [
+    { path: '/', label: "Dashboard", element: <Navigate to={`${BASE_PATH}/dashboard`} replace /> },
+    { path: `${BASE_PATH}`, label: "Home", element: <Navigate to={`${BASE_PATH}`} replace /> },
+    { path: `${BASE_PATH}/new-dataset`, label: "New Dataset", element: <NewDatasetPage /> },
     {
         path: `${BASE_PATH}`,
         element: <StepperPage />,
         children: [
-            { path: 'ingestion', element: <IngestionPage /> },
+            { path: 'ingestion', label: "Ingestion", element: <IngestionPage /> },
             { path: 'ingestion/schema-details/:datasetId', element: <SchemaDetailsPage /> },
             { path: 'processing/:datasetId', element: <ProcessingPage /> },
             { path: 'storage/:datasetId', element: <StoragePage /> },
             { path: 'preview/:datasetId', element: <PreviewPage /> }
         ],
     },
-    { path: `${BASE_PATH}/new-dataset/connector-configuration`, element: <ConnectorConfigurationPage /> },
-    { path: `${BASE_PATH}/new-dataset/connector-list`, element: <SelectConnectorPage /> },
-    { path: `${BASE_PATH}/dashboard`, element: <Dashboard /> },
-    { path: `${BASE_PATH}/dashboard/infrastructure`, element: <IndividualMetricDashboards id="overallInfra" /> },
-    { path: `${BASE_PATH}/dashboard/ingestion`, element: <IndividualMetricDashboards id="ingestion" /> },
-    { path: `${BASE_PATH}/dashboard/api`, element: <IndividualMetricDashboards id="api" /> },
-    { path: `${BASE_PATH}/dashboard/processing`, element: <IndividualMetricDashboards id="processing" /> },
-    { path: `${BASE_PATH}/dashboard/storage`, element: <IndividualMetricDashboards id="storage" /> },
-    { path: `${BASE_PATH}/connector-management`, element: <ConnectorConfigurationPage /> },
-    { path: `${BASE_PATH}/connector-management/manage`, element: <ManageConnectorsPage /> },
-    { path: `${BASE_PATH}/settings`, element: <SettingsPage /> },
+    { path: `${BASE_PATH}/new-dataset/connector-configuration`, label: `Connector Configuration`, element: <ConnectorConfigurationPage /> },
+    { path: `${BASE_PATH}/new-dataset/connector-list`, label: "Connector List", element: <SelectConnectorPage /> },
+    { path: `${BASE_PATH}/dashboard`, label: "Dashboard" ,element: <Dashboard /> },
+    { path: `${BASE_PATH}/dashboard/infrastructure`, label: "Infrastructure", element: <IndividualMetricDashboards id="overallInfra" /> },
+    { path: `${BASE_PATH}/dashboard/ingestion`, label: "Ingestion", element: <IndividualMetricDashboards id="ingestion" /> },
+    { path: `${BASE_PATH}/dashboard/api`, label: "API", element: <IndividualMetricDashboards id="api" /> },
+    { path: `${BASE_PATH}/dashboard/processing`, label: "Processing", element: <IndividualMetricDashboards id="processing" /> },
+    { path: `${BASE_PATH}/dashboard/storage`, label: "Storage", element: <IndividualMetricDashboards id="storage" /> },
+    { path: `${BASE_PATH}/connector-management`, label: "Connector Management", element: <ConnectorConfigurationPage /> },
+    { path: `${BASE_PATH}/connector-management/manage`, label: "Manage", element: <ManageConnectorsPage /> },
+    { path: `${BASE_PATH}/settings`, label: "Settings", element: <SettingsPage /> },
     {
         path: `${BASE_PATH}/alertRules`,
+        label: "Alert Rules", 
         element: <AlertRules />,
         children: [
-            { path: 'custom', element: <CustomAlerts /> },
-            { path: 'system', element: <SystemAlerts /> }
+            { path: 'custom', label: "Custom", element: <CustomAlerts /> },
+            { path: 'system', label: "System", element: <SystemAlerts /> }
         ],
     },
-    { path: `${BASE_PATH}/alertRules/add`, element: <AddAlert /> },
+    { path: `${BASE_PATH}/alertRules/add`, label: "Add", element: <AddAlert /> },
     { path: `${BASE_PATH}/alertRules/view/:id`, element: <ViewAlert /> },
     { path: `${BASE_PATH}/alertRules/edit/:id`, element: <EditAlert /> },
-    { path: `${BASE_PATH}/alertChannels`, element: <ListChannels /> },
-    { path: `${BASE_PATH}/alertChannels/new`, element: <AddChannel /> },
+    { path: `${BASE_PATH}/alertChannels`, label: "Alert Channels", element: <ListChannels /> },
+    { path: `${BASE_PATH}/alertChannels/new`, label: "New", element: <AddChannel /> },
     { path: `${BASE_PATH}/alertChannels/edit/:id`, element: <UpdateChannel /> },
     { path: `${BASE_PATH}/alertChannels/view/:id`, element: <ViewChannel /> },
-    { path: `${BASE_PATH}/datasets`, element: <ClusterHealth /> },
+    { path: `${BASE_PATH}/datasets`, label: "Datasets", element: <ClusterHealth /> },
     { path: `${BASE_PATH}/datasets/:datasetId`, element: <DatasetMetrics /> },
     { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> },
     { path: `${BASE_PATH}/datasets/management/:datasetId`, element: <DatasetManagement /> }
