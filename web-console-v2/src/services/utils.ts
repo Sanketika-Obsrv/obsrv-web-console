@@ -15,12 +15,22 @@ export const spaceValidationRegEx = /(\s)/;
 
 export const invalidNewFieldRegex = /^(?![!@#$%^&*()_ +=\-[\]{};':"\\|,.<>/?`~]+$).*/;
 
+export const nameRegex = /^[a-zA-Z0-9._-]+$/;
+
 export const hasSpacesInField = (
     value: string | undefined,
     regex: RegExp = spaceValidationRegEx
 ) => {
     if (!value || !regex) return false;
     return !regex.test(value);
+};
+
+export const validFieldName = (
+    value: string | undefined,
+    regex: RegExp = nameRegex
+) => {
+    if (!value || !regex) return false;
+    return regex.test(value);
 };
 
 export const validateFormValues = async (form: React.MutableRefObject<any>, value: Record<string, any>) => {

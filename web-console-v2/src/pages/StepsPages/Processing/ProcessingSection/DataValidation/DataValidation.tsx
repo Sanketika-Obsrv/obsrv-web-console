@@ -4,6 +4,9 @@ import DataValidationForm from 'components/Form/DynamicForm';
 import schema from './Schema';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import _ from 'lodash';
+import { setAdditionalProperties } from 'services/json-schema';
+import { useUpdateDataset } from 'services/dataset';
+import { keyMapping } from '../../Processing';
 
 interface FormData {
     [key: string]: unknown;
@@ -23,7 +26,7 @@ interface ConfigureConnectorFormProps {
 }
 
 const DataValidation = (props: any) => {
-    const { data, handleAddOrEdit } = props;
+    const { data, handleAddOrEdit, datasetData } = props;
 
     const [, setFormErrors] = useState<any>(null);
     const [formData, setFormData] = useState<{ [key: string]: unknown }>({});
@@ -38,9 +41,11 @@ const DataValidation = (props: any) => {
                 
             };
 
+            setAdditionalProperties(_.get(datasetData, ['data_schema']), data?.mode);
+            handleAddOrEdit(data?.mode, 'validation');
             setFormData(existingData);
         }
-    }, [data]);
+    }, [data.mode]);
 
     const handleChange: ConfigureConnectorFormProps['onChange'] = (formData, errors) => {
         setFormData(formData);

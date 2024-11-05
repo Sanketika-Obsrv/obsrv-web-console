@@ -108,12 +108,6 @@ const ClusterHealth = () => {
         onClick: () => navigate(`/home/new-dataset`),
         icon: <PlusOutlined />,
         disabled: false
-    }, {
-        id: "add-master-dataset",
-        label: <FormattedMessage id="dataset-actions-add-master-dataset" />,
-        onClick: () => navigate(`/home/new-dataset`),
-        icon: <PlusOutlined />,
-        disabled: false
     }]
 
     const renderDatasetTables = () => {
@@ -148,7 +142,8 @@ const ClusterHealth = () => {
             label={<Tooltip title={tooltip}>
                 <Box alignItems={"center"} display={"flex"}>
                     <FiberManualRecordIcon color={color as any} sx={{ fontSize: '1.25rem', mr: 1 }} />
-                    <Typography variant='body1' fontWeight={500}>{label}</Typography>
+                    <Typography variant={datasetType === id ? 'button' : 'body1'}
+                        fontWeight={500}>{label}</Typography>
                 </Box>
             </Tooltip>} value={id} />
     }
@@ -181,7 +176,7 @@ const ClusterHealth = () => {
                 onClose={handleClose}
             />
         </Box>
-        
+
     )
 };
 
