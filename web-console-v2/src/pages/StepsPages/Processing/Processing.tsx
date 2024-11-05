@@ -112,7 +112,7 @@ const mapDatasetToProcessingData = (dataset: any) => {
     return processingData;
 };
 
-const keyMapping: any = {
+export const keyMapping: any = {
     validation: 'validation_config',
     transformations: 'transformations_config',
     dedup: 'dedup_config',
@@ -255,6 +255,7 @@ const Processing: React.FC = () => {
             component: (
                 <div onClick={() => handleDatasetNameClick('section1')}>
                     <DataValidation
+                        datasetData={datasetData}
                         data={_.get(processingData, 'validation')}
                         handleAddOrEdit={(data: any) => {
                             const validation = {

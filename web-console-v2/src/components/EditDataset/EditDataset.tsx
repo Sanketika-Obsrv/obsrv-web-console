@@ -1,7 +1,7 @@
 import * as yup from 'yup';
 import en from '../../utils/locales/en.json';
 import * as _ from 'lodash';
-import { hasSpacesInField, hasSpecialCharacters, invalidNewFieldRegex } from '../../services/utils';
+import { hasSpacesInField, hasSpecialCharacters, invalidNewFieldRegex, validFieldName, nameRegex } from '../../services/utils';
 import { validFormatTypes } from 'pages/StepsPages/Ingestion/SchemaDetails/SchemaDetails';
 export const filterForObjectArrivalFormat = (data: any[]) => {
     const result: any[] = [];
@@ -75,8 +75,7 @@ export const inputFields = (
     );
 
     const arrivalTypeOptions = arrivalType.length <= 0 ? defaultDatatypeOptions : arrivalType;
-    const nameRegex = /^[^!@#$%^&()+{}[]:;<>,?~\|]$/;
-    
+
     return [
         {
             title: 'EditLiveDatasetInputs',
@@ -112,10 +111,11 @@ export const inputFields = (
                                 )
                                 .test('spaceInField', en.containsSpaces, (value) =>
                                     hasSpacesInField(value)
-                                ).max(100, en.maxLen)
+                                )
+                                .max(100, en.maxLen)
                                 .min(4, en.minLen)
-                                .test('validCharacters', "The field should exclude any special characters, permitting only '.', '-', '_', alphabets, numbers", (value) =>
-                                    nameRegex.test(value)
+                                .test('validCharacters', "The field should exclude any special characters, permitting only alphabets, numbers, '.', '-', '_'", (value: any) =>
+                                    validFieldName(value, nameRegex)
                                 )
                         }
                     ]
