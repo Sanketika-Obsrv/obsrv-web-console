@@ -13,6 +13,10 @@
   z-index: 51;
 }
 
+.helpSectionContainer p {
+  word-wrap: break-word;
+}
+
 .expanded {
   width: 25rem;
 }

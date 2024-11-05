@@ -58,9 +58,7 @@ const ConnectorConfiguration: React.FC = () => {
     useEffect(() => {
         if (connectionResponse) {
             const existingData = {
-                section0: {
-                    ...connectionResponse.connectors_config[0]
-                }
+                ...connectionResponse.connectors_config[0]
             };
             setFormData(existingData);
         }
@@ -114,7 +112,7 @@ const ConnectorConfiguration: React.FC = () => {
             combinedHelp.push(`
                 <div class="displayContent">
                     <h1 class="contentsHeader">${schema.title}</h1>
-                    <p class="contentBody">${schema.helptext || schema.description}</p>
+                    <div class="contentBody">${schema.helptext || schema.description}</div>
             `);
 
             let firstProperty: string | undefined = undefined;
@@ -122,16 +120,18 @@ const ConnectorConfiguration: React.FC = () => {
                 if (!firstProperty) {
                     firstProperty = key;
                 }
-                combinedHelp.push(`
-                    <section id="${key}" class="section">
-                        <header class="displayContent">
-                            <h3 class="contentsHeader">${value.title}</h3>
-                        </header>
-                        <p class="contentBody">
-                            ${value.helptext || value.description}
-                        </p>
-                    </section>
-                `);
+                if(value.format !== "hidden") {
+                    combinedHelp.push(`
+                        <section id="${key}" class="section">
+                            <header class="displayContent">
+                                <h3 class="contentsHeader">${value.title}</h3>
+                            </header>
+                            <div class="contentBody">
+                                ${value.helptext || value.description}
+                            </div>
+                        </section>
+                    `);
+                }
             });
             combinedHelp.push(`</div>`);
             setConnectorHelpText(combinedHelp.join(''));
@@ -236,7 +236,7 @@ const ConnectorConfiguration: React.FC = () => {
 
                         {connectorType === 'batch' && (
                             <GenericCard className={styles.title}>
-                                <Box className={styles?.heading}>
+                                <Box className={styles?.heading} sx={{ mb: 2 }}>
                                     <Typography variant='h1'>Configure Fetch Settings</Typography>
                                 </Box>
 
