@@ -30,7 +30,7 @@ const SidebarElements = () => {
         },
         {
           id: 'api',
-          color: '#F68250',
+          color: theme.palette.error.main,
           title: 'API',
           route: '/home/dashboard/api'
         },
