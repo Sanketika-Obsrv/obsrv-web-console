@@ -14,6 +14,7 @@ import logoIcon from 'assets/images/obsrv-logo.svg';
 import { getBaseURL, getConfigValueV1 } from 'services/configData';
 import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
+import { routeConfigurations } from 'router';
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/home/dashboard";
 
@@ -56,6 +57,17 @@ function BasicBreadcrumbs(): JSX.Element {
         };
         if(openNotification || _.isNull(alerts)) fetchAlerts();
     }, [openNotification]);
+    
+    const findRoute = (routes: any, path: string) => {
+        for (const route of routes) {
+            if (route.path === path) return route;
+            if (route.children) {
+                const childRoute = route.children.find((childData: { path: any; }) => `${route.path}/${childData.path}` === path);
+                if (childRoute) return { ...childRoute, path };
+            }
+        }
+        return null;
+    }
 
     return (pathname !== '/login' ? (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
@@ -66,11 +78,14 @@ function BasicBreadcrumbs(): JSX.Element {
             </Grid>
             <Grid item xs={9.5} className={styles.breadcrumb}>
                 <Breadcrumbs aria-label="breadcrumb">
-                    {pathnames.map((name, index) => {
+                    {
+                    pathnames.map((name, index) => {
                         const routeTo = `/${pathnames.slice(0, index + 1).join('/')}`;
+                        const matchedRoute = findRoute(routeConfigurations, routeTo);
                         const isLast = index === pathnames.length - 1;
                         // Capitalize first letter apart from datasetId
-                        const displayName = isLast ? name : _.capitalize(name);
+                        // const displayName = isLast ? name : _.capitalize(name);
+                        const displayName = matchedRoute?.label !== undefined ? matchedRoute.label : name;
                         return isLast ? (
                             <Typography
                                 variant="body1"
