@@ -292,8 +292,8 @@ const ConnectorConfiguration: React.FC = () => {
                         bottom: 0,
                         right: 0,
                         left: -50,
-                        backgroundColor: theme.palette.background.paper,
-                        zIndex: 100
+                        zIndex: 100,
+                        paddingRight: '5rem'
                     }}
                 pr={5}
             >
