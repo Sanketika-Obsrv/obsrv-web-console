@@ -108,12 +108,6 @@ const ClusterHealth = () => {
         onClick: () => navigate(`/home/new-dataset`),
         icon: <PlusOutlined />,
         disabled: false
-    }, {
-        id: "add-master-dataset",
-        label: <FormattedMessage id="dataset-actions-add-master-dataset" />,
-        onClick: () => navigate(`/home/new-dataset`),
-        icon: <PlusOutlined />,
-        disabled: false
     }]
 
     const renderDatasetTables = () => {
