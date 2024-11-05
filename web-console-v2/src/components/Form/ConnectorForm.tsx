@@ -96,9 +96,33 @@ const ConnectorForm = ({
         return fieldSchema;
     }
 
+    const getUISchema = (sectionKey: string) => {
+        if (schema.uiSchema[sectionKey]) {
+            return {
+                [sectionKey]: schema.uiSchema[sectionKey]
+            }
+        } else {
+            const sectionValue:any = schema.schema.properties?.[sectionKey];
+            if (typeof sectionValue === 'object' && 'format' in sectionValue && sectionValue.format === 'password') {
+                return {
+                    [sectionKey]: {
+                        'ui:widget': 'password'
+                    }
+                };
+            }
+            if (typeof sectionValue === 'object' && 'format' in sectionValue && sectionValue.format === 'hidden') {
+                return {
+                    [sectionKey]: {
+                        'ui:widget': 'hidden'
+                    }
+                };
+            }
+        }
+    }
+
     return (
 
-        <Grid container spacing={3} className={customStyles?.gridContainer}>
+        <Grid container spacing={3} className={customStyles?.gridContainer} justifyContent={'flex-start'}>
             {schema.schema.properties && _.entries(schema.schema.properties).map(([sectionKey, sectionValue]) => {
                 return (
                     <Grid item xs={12} sm={6} lg={6}
@@ -107,11 +131,7 @@ const ConnectorForm = ({
                     >
                         <CustomForm
                             schema={getSchema(sectionKey, sectionValue) as RJSFSchema}
-                            uiSchema={{
-                                [sectionKey]: {
-                                    ...schema.uiSchema[sectionKey]
-                                }
-                            }}
+                            uiSchema={getUISchema(sectionKey)}
                             formData={formData as FormData}
                             validator={validator}
                             showErrorList={false}
@@ -127,6 +147,7 @@ const ConnectorForm = ({
                             }}
                             extraErrors={extraErrors}
                             onBlur={() => handleClick?.(sectionKey)}
+                            onFocus={() => handleClick?.(sectionKey)}
                         />
                     </Grid>
                 );

@@ -10,7 +10,7 @@ import { getConfigValue } from 'services/dataset';
 import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
-import logo from 'assets/images/obsrvLogo.svg';
+import logoIcon from 'assets/images/obsrv-logo.svg';
 import { getBaseURL, getConfigValueV1 } from 'services/configData';
 import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
@@ -61,7 +61,7 @@ function BasicBreadcrumbs(): JSX.Element {
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
             <Grid item xs={1.5} className={styles.logo}>
                 <Box onClick={handleNavigate}>
-                    <img src={`${getBaseURL()}/images/obsrvLogo.svg`} alt="Logo" width={130} />
+                    <img src={logoIcon} alt="Logo" width={130} />
                 </Box>
             </Grid>
             <Grid item xs={9.5} className={styles.breadcrumb}>
