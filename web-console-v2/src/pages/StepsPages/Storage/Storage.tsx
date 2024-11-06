@@ -53,8 +53,6 @@ const Storage = () => {
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
 
-    const [datasetType, setDatasetType] = useState<string>('');
-
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [uiSchema, setUiSchema] = useState<Schema>(schemas);
     const updateDatasetMutate = useUpdateDataset();
@@ -64,7 +62,6 @@ const Storage = () => {
 
     const navigate = useNavigate();
     const { showAlert } = useAlert();
-
     const {
         data: fetchData,
         isPending: fetchPending,
@@ -75,7 +72,7 @@ const Storage = () => {
     });
     const [canProceed, setCanProceed] = useState(false);
 
-    const type = _.get(fetchData, 'type');
+    const datasetType = _.get(fetchData, 'type');
     const schema = _.get(fetchData, 'data_schema.properties', {});
     const schemaProperties = _.omit(schema, ['configurations', 'dataMappings']);
     const datasetConfig = _.get(fetchData, 'dataset_config', {});
@@ -112,11 +109,7 @@ const Storage = () => {
     }, [schemaProperties]);
 
     useEffect(() => {
-        if (type !== '' || type !== 'undefined') {
-            const typeValue = getDatasetType(type);
-            setDatasetType(typeValue);
-        }
-
+        
         const { data_key, partition_key, timestamp_key } = datasetConfig_keys;
         const { olap_store_enabled, lakehouse_enabled, cache_enabled } = datasetConfig_indexing;
 
@@ -126,7 +119,6 @@ const Storage = () => {
         ) {
             const existingData = {
                 section1: {
-                    datasetType: getDatasetType(type),
                     lakehouse: lakehouse_enabled,
                     realTimeStore: olap_store_enabled
                 },
@@ -148,9 +140,6 @@ const Storage = () => {
             setFormData(existingData);
         } else {
             const existingData = {
-                section1: {
-                    datasetType: getDatasetType(type)
-                },
                 section2: {
                     storageType: [
                         lakehouse_enabled && STORE_TYPE.LAKEHOUSE,
@@ -161,7 +150,7 @@ const Storage = () => {
             };
             setFormData(existingData);
         }
-    }, [datasetConfig_indexing, datasetConfig_keys, type]);
+    }, [datasetConfig_indexing, datasetConfig_keys]);
 
     const handleButtonClick = (id: string) => {
         const storageTypeSelected = _.get(formData, 'section2.storageType') as
@@ -176,12 +165,6 @@ const Storage = () => {
             showAlert('Failed to update storage', 'error');
         } else {
             const dataset_config = {
-                type:
-                    datasetType === 'Events'
-                        ? 'event'
-                        : datasetType === 'Master'
-                            ? 'master'
-                            : 'transaction',
                 dataset_config: {
                     file_upload_path: datasetConfig.file_upload_path,
                     indexing_config: {
@@ -238,9 +221,7 @@ const Storage = () => {
     };
 
     useEffect(() => {
-        const selectedDatasetType = _.get(formData, 'section1.datasetType') as string;
-        if (selectedDatasetType) setDatasetType(selectedDatasetType);
-
+        
         const storageTypeSelected = _.get(formData, 'section2.storageType') as string[];
 
         if (storageTypeSelected?.length <= 0) setCanProceed(false);
@@ -264,7 +245,7 @@ const Storage = () => {
         let required: string[] = [];
         let requiredValues = false;
         switch (true) {
-            case selectedDatasetType === 'Master':
+            case datasetType === 'master':
                 if (storageTypeSelected?.includes(STORE_TYPE.LAKEHOUSE)) {
                     if (storageTypeSelected?.includes(STORE_TYPE.REAL_TIME_STORE)) {
                         required = ['primary', 'partition', 'timestamp'];
@@ -327,7 +308,7 @@ const Storage = () => {
         };
 
         setUiSchema({ title: '', schema: updatedSchema, uiSchema: updatedUiSchema });
-    }, [formData, datasetType]);
+    }, [formData]);
 
     const handleDatasetNameClicks = (id: any) => {
         setHighlightedSection(id);
@@ -347,8 +328,8 @@ const Storage = () => {
                 sx={{
                     flex: 1,
                     overflowY: 'auto',
-                    paddingBottom: '80px',
-                    paddingTop: '4rem'
+                    paddingBottom: '1rem',
+                    paddingTop: '1rem'
                 }}
             >
                 <Button

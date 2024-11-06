@@ -79,7 +79,6 @@ const ConnectorConfiguration: React.FC = () => {
     const validator = customizeValidator({}, customErrors);
 
     const handleFormDataChange = (data: FormData) => {
-        console.log(`data`, data)
 
         const valid = ajv.validate(schema.schema, data);
         if (valid) {
@@ -338,7 +337,7 @@ const ConnectorConfiguration: React.FC = () => {
                             </Box>
 
                             <Grid container spacing={3} className={styles?.gridContainer} justifyContent={'flex-start'}>
-                                {schema.schema.properties && _.entries(schema.schema.properties).map(([sectionKey, sectionValue]) => {
+                                {schema.schema.properties && _.sortBy(_.entries(schema.schema.properties), [([, value]) => (value as any).uiIndex]).map(([sectionKey, sectionValue]) => {
                                     return (
                                         <Grid item xs={12} sm={6} lg={6}
                                             key={sectionKey}
