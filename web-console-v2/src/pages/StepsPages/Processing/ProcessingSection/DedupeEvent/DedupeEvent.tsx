@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Stack } from '@mui/material';
+import React, { SyntheticEvent, useEffect, useMemo, useState } from 'react';
+import { Checkbox, FormControl, FormControlLabel, FormGroup, InputLabel, MenuItem, Select, Stack } from '@mui/material';
 import DedupeEvents from 'components/Form/DynamicForm';
 import schema from './Schema';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
@@ -26,9 +26,9 @@ const DedupeEvent = (props: any) => {
     const { data, handleAddOrEdit, transformationOptions, isSuccess, isProceed } = props;
     const dropDuplicates = _.get(data, ['drop_duplicates']);
     const dedupKey = _.get(data, ['dedup_key']);
-    const existingData = { 
+    const existingData = {
         section1: {
-            dropDuplicates: dropDuplicates ? 'Enable Deduplication' : '',
+            dropDuplicates: dropDuplicates ? ['Enable Deduplication'] : [],
             dedupeKey: dropDuplicates ? dedupKey : ''
         }
     };
@@ -59,7 +59,7 @@ const DedupeEvent = (props: any) => {
     const handleChange: ConfigureConnectorFormProps['onChange'] = (formInfo) => {
         isProceed(false);
         setFormData(formInfo);
-        const value : any = _.get(formInfo, ['section1']);
+        const value: any = _.get(formInfo, ['section1']);
         const dedupeKey = _.get(formInfo, ['section1']);
         const dropDuplicates = _.get(value, 'dropDuplicates');
         if (!_.isUndefined(dropDuplicates)) {
@@ -91,20 +91,56 @@ const DedupeEvent = (props: any) => {
         }
     };
 
+    const [isChecked, setIsChecked] = useState(false);
+    const [dedupValue, setDedupValue] = useState("");
+    const handleCheckBox = (event: any) => {
+        setIsChecked(event.target.checked);
+        console.log('Checkbox is checked:', event.target.checked);
+        if(!event.target.checked){
+            const dedupeEvent = {
+                drop_duplicates: event.target.checked,
+                dedup_key: ""
+            };
+            handleAddOrEdit(dedupeEvent);
+        }
+    };
+    const handleSelection = (event: any) => {
+        setDedupValue(event.target.value)
+        console.log('selection:', event.target.value);
+        const dedupeEvent = {
+            drop_duplicates: isChecked,
+            dedup_key: event.target.value
+        };
+        const shouldAddOrEdit =
+                (isChecked && dedupValue !== '') || (!isChecked && dedupValue === '');
+                if (shouldAddOrEdit) {
+                    handleAddOrEdit(dedupeEvent);
+                    isProceed(true);
+                }
+    }
+
     return (
-        <Stack mt={-8} ml={-0.5}>
-            <DedupeEvents
-                schema={schema}
-                formData={formData}
-                setFormData={setFormData}
-                onChange={handleChange}
-                customClassNames={{
-                    container: 'customContainerClass',
-                    sectionContainer: 'customSectionContainerClass',
-                    connectorName: 'customConnectorNameClass',
-                    sectionContainers: 'customSectionContainersClass'
-                }}
-            />
+        <Stack >
+            <FormGroup>
+                <FormControlLabel control={<Checkbox checked={isChecked} 
+                        onChange={handleCheckBox} />} label="Enable Deduplication" />
+            </FormGroup>
+            <FormControl fullWidth >
+                <InputLabel id="dedupKey-select-label">dedupKey</InputLabel>
+                <Select
+                    labelId="dedupKey-select-label"
+                    id="dedupKey-select"
+                    label="dedupKey"
+                    onChange={handleSelection}
+                    disabled={!isChecked}
+                >
+                    {transformationOptions.map((option: string) => (
+                        <MenuItem key={option} value={option}>
+                            {option}
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
         </Stack>
     );
 };
