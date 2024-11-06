@@ -5,9 +5,9 @@ import _ from 'lodash';
 const DedupeEvent = (props: any) => {
     const { data, handleAddOrEdit, transformationOptions, isSuccess, isProceed } = props;
     const [isChecked, setIsChecked] = useState(false);
-    const [dedupValue, setDedupValue] = useState("");
+    const [dedupKey, setDedupKey] = useState("");
     useEffect(() => {
-        if(isChecked && !_.isEmpty(dedupValue)){
+        if(isChecked && !_.isEmpty(dedupKey)){
             isProceed(true);
         }
     }, [isChecked])
@@ -15,7 +15,7 @@ const DedupeEvent = (props: any) => {
         setIsChecked(event.target.checked);
         console.log('Checkbox is checked:', event.target.checked);
         if(!event.target.checked){
-            setDedupValue(""); 
+            setDedupKey(""); 
             const dedupeEvent = {
                 drop_duplicates: event.target.checked,
                 dedup_key: ""
@@ -25,7 +25,7 @@ const DedupeEvent = (props: any) => {
         }
     };
     const handleSelection = (event: any) => {
-        setDedupValue(event.target.value)
+        setDedupKey(event.target.value)
         console.log('selection:', event.target.value);
         const dedupeEvent = {
             drop_duplicates: isChecked,
@@ -47,7 +47,7 @@ const DedupeEvent = (props: any) => {
                     labelId="dedupKey-select-label"
                     id="dedupKey-select"
                     label="dedupKey"
-                    value={isChecked ? dedupValue : ""}
+                    value={isChecked ? dedupKey : ""}
                     onChange={handleSelection}
                     disabled={!isChecked}
                 >
