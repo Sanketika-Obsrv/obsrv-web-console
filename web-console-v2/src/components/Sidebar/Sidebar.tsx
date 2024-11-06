@@ -42,32 +42,28 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
 
     useEffect(() => {
         const pathSegments = location.pathname.split('/').filter(Boolean);
-        if (
+        const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
+        const subRoute = location.pathname;
 
-            pathSegments[1] === 'new-dataset' ||
-            pathSegments[1] === 'ingestion' ||
-            pathSegments[1] === 'processing' ||
-            pathSegments[1] === 'storage' ||
-            pathSegments[1] === 'preview'
-        ) {
+        if (['new-dataset', 'ingestion', 'processing', 'storage', 'preview'].includes(pathSegments[1])) {
             setSelectedItem('/home/new-dataset');
-        } else if (
-            pathSegments[1] === 'alertRules'
-        ) {
-            const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
-            const subRoute = location.pathname;
+            setOpenParent(null);
+            setSelectedChildItem(null);
+        } else if (pathSegments[1] === 'alertRules') {
             setSelectedItem(mainRoute);
-            (mainRoute.match(subRoute)?.index === 0) ? navigate(mainRoute+'/custom') : navigate(subRoute);
-        } else if (pathSegments.length > 2) {
-            const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
-            const subRoute = location.pathname;
             setOpenParent(mainRoute);
+            if (mainRoute.match(subRoute)?.index === 0) {
+                navigate(`${mainRoute}/custom`);
+            } else {
+                navigate(subRoute);
+            }
+        } else if (pathSegments.length > 2) {
             setSelectedItem(mainRoute);
+            setOpenParent(mainRoute);
             setSelectedChildItem(subRoute);
         } else if (pathSegments.length > 1) {
-            const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
-            setOpenParent(mainRoute);
             setSelectedItem(mainRoute);
+            setOpenParent(mainRoute);
             setSelectedChildItem(null);
         } else {
             setOpenParent(null);
@@ -80,11 +76,10 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
         navigate(OBSRV_WEB_CONSOLE);
     };
 
-    const handleParentClick = (route: string) => {
+    const handleParentClick = (route: any) => {
         if (openParent === route) {
             setOpenParent(null);
             setSelectedChildItem(null);
-            navigate('/');
         } else {
             setOpenParent(route);
             setSelectedItem(route);
@@ -93,17 +88,15 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
         }
     };
 
-    const handleChildClick = (event: React.MouseEvent, parentRoute: string, childRoute: string) => {
+    const handleChildClick = (event: any, parentRoute: any, childRoute: any) => {
         event.stopPropagation();
-        setSelectedChildItem(childRoute);
         setSelectedItem(parentRoute);
         setOpenParent(parentRoute);
-        setSelectedItem(parentRoute);
         setSelectedChildItem(childRoute);
         _.includes(redirectUrl, parentRoute) ? redirectToConsole() : navigate(childRoute);
     };
 
-    const handleNavigation = (route: string, mainRoute: string) => {
+    const handleNavigation = (route: any, mainRoute: any) => {
         setOpenParent(mainRoute);
         setSelectedItem(mainRoute);
         setSelectedChildItem(null);
@@ -117,6 +110,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
             showAlert('Failed to logout', 'error');
         })
     };
+
 
     const DrawerList = (
         <div
@@ -148,8 +142,8 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                             <div key={item.id}>
                                 <ListItem
                                     className={`${styles.listItem} ${isSelected && !hasSelectedChild
-                                            ? styles.selected
-                                            : styles.unselected
+                                        ? styles.selected
+                                        : styles.unselected
                                         }`}
                                     disablePadding
                                     sx={{
@@ -165,7 +159,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                 >
                                     <Tooltip title={!expand ? item.title : ''} placement="right">
                                         <ListItemButton
-                                            onClick={() => handleParentClick(item.route)}
+                                            onClick={(e: any) => handleParentClick(item.route)}
                                         >
                                             <Icon>{item.icon}</Icon>
                                             {expand && (
@@ -215,8 +209,8 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                                 >
                                                     <ListItem
                                                         className={`${styles.childItem} ${isChildSelected
-                                                                ? styles.selected
-                                                                : styles.unselected
+                                                            ? styles.selected
+                                                            : styles.unselected
                                                             } ${expand ? styles.expand : styles.collapsed}`}
                                                         sx={{
                                                             borderLeft: isChildSelected

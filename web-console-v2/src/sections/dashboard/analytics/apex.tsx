@@ -97,7 +97,7 @@ const ApexChart = (props: any) => {
     const renderChart = () => {
         return <>
             {loading && <Loader loading={loading}/>}
-            <ReactApexChart key={Math.random()} options={options} series={series} type={type} {...rest} />
+            {!loading && <ReactApexChart key={Math.random()} options={options} series={series} type={type} {...rest} />}
         </>
     }
 

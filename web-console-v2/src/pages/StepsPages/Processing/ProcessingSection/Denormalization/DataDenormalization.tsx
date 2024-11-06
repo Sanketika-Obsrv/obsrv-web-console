@@ -374,6 +374,7 @@ const DataDenorm = (props: any) => {
                             vertical: 'top',
                             horizontal: 'left'
                         }}
+                        className='jsonata'
                         PaperProps={{
                             sx: { height: '100%', width: '100%', overflow: 'hidden' }
                         }}
