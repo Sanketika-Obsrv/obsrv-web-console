@@ -64,7 +64,6 @@ const Storage = () => {
 
     const navigate = useNavigate();
     const { showAlert } = useAlert();
-
     const {
         data: fetchData,
         isPending: fetchPending,
@@ -347,8 +346,8 @@ const Storage = () => {
                 sx={{
                     flex: 1,
                     overflowY: 'auto',
-                    paddingBottom: '80px',
-                    paddingTop: '4rem'
+                    paddingBottom: '1rem',
+                    paddingTop: '1rem'
                 }}
             >
                 <Button

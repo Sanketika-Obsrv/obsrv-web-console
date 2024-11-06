@@ -79,7 +79,6 @@ const ConnectorConfiguration: React.FC = () => {
     const validator = customizeValidator({}, customErrors);
 
     const handleFormDataChange = (data: FormData) => {
-        console.log(`data`, data)
 
         const valid = ajv.validate(schema.schema, data);
         if (valid) {

@@ -40,6 +40,7 @@ const AllConfigurations = () => {
     const denormData = _.get(response, 'denorm_config.denorm_fields', []);
     const transformationData = _.get(response, 'transformations_config', []);
     const connectorData = _.get(response, ['connectors_config'], []);
+    console.log("### response", response);
 
     const storageKeys = _.get(response, ['dataset_config', 'keys_config'], []);
     const storageType = _.get(response, ['dataset_config', 'indexing_config'], []);
@@ -62,27 +63,32 @@ const AllConfigurations = () => {
 
     const ProcessingColumns = [
         {
-            Header: 'Dataset Field',
+            header: 'Dataset Field',
+            id: 'Dataset Field',
             accessor: 'denorm_key'
         },
         {
-            Header: 'Master Dataset',
+            header: 'Master Dataset',
+            id: 'Master Dataset',
             accessor: 'dataset_id'
         },
         {
-            Header: 'Master Dataset Field',
+            header: 'Master Dataset Field',
+            id: 'Master Dataset Field',
             accessor: 'denorm_out_field'
         }
     ];
 
     const storageColumns = [
         {
-            Header: 'Indexing Config',
+            header: 'Indexing Config',
+            id: 'Indexing Config',
             accessor: 'key',
             Cell: ({ value }: any) => (value ? value : '-')
         },
         {
-            Header: 'Value',
+            header: 'Value',
+            id: 'Value',
             accessor: 'value',
             Cell: ({ value }: any) => (value ? value : '-')
         }
@@ -90,15 +96,18 @@ const AllConfigurations = () => {
 
     const columnsTransformations = [
         {
-            Header: 'Field',
+            header: 'Field',
+            id: "Field",
             accessor: 'field_key'
         },
         {
-            Header: 'Transformation',
+            header: 'Transformation',
+            id: 'Transformation',
             accessor: (row: TransformationRow) => row.transformation_function.type
         },
         {
-            Header: 'Target field / Expression',
+            header: 'Target field / Expression',
+            id: 'Target field / Expression',
             accessor: (row: TransformationRow) => row.transformation_function.expr
         }
     ];
@@ -115,7 +124,7 @@ const AllConfigurations = () => {
             />
 
             <Stack className={styles.scrollable}>
-                {!_.isEmpty(connectorData) && (
+            {!_.isEmpty(connectorData) && (
                     <Stack
                         my={2}
                         mx={2.5}
@@ -273,6 +282,8 @@ const AllConfigurations = () => {
                             )}
                         </Stack>
                     </Stack>
+
+                    
                 </Stack>
             </Stack>
         </Box>

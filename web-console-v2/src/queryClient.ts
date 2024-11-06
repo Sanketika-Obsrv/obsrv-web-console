@@ -6,6 +6,7 @@ export const queryClient = new QueryClient({
         queries: {
             refetchOnWindowFocus: false,
             refetchOnMount: 'always',
+            gcTime: 0,
             retry: (failureCount, error) => {
                 if (error instanceof AxiosError && error.code !== 'ERR_NETWORK') {
                     // Retrying network errors only
