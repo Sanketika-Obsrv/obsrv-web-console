@@ -1,7 +1,6 @@
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import { Box, Button, Card, FormControl, Grid, InputLabel, MenuItem, Select, SelectChangeEvent, Typography, styled } from '@mui/material';
 import Actions from 'components/ActionButtons/Actions';
-import { FormData, Schema } from 'components/Form/ConnectorForm';
 import { withTheme } from '@rjsf/core';
 import { Theme as MuiTheme } from '@rjsf/mui';
 import Ajv, { ErrorObject } from 'ajv';
@@ -16,7 +15,17 @@ import { deleteSessionStorageItem, fetchSessionStorageItem, storeSessionStorageI
 import styles from './ConnectorConfiguration.module.css';
 import sampleSchema from './Schema';
 import { customizeValidator } from '@rjsf/validator-ajv8';
-import { RJSFSchema } from '@rjsf/utils';
+import { RJSFSchema, UiSchema } from '@rjsf/utils';
+
+interface FormData {
+    [key: string]: unknown;
+}
+
+interface Schema {
+    title: string;
+    schema: RJSFSchema;
+    uiSchema: UiSchema;
+}
 
 const CustomForm = withTheme(MuiTheme);
 const ajv = new Ajv({ strict: false });
@@ -137,10 +146,10 @@ const ConnectorConfiguration: React.FC = () => {
     useEffect(() => {
 
         const connectorConfigDetails: any = fetchSessionStorageItem('connectorConfigDetails');
-        
+
         if (connectorConfigDetails) {
             const connectorId = _.get(connectorConfigDetails, 'connectors_config[0].value.connector_id')
-            if(selectedCardId != connectorId) {
+            if (selectedCardId != connectorId) {
                 deleteSessionStorageItem('connectorConfigDetails')
                 return
             }
@@ -149,7 +158,7 @@ const ConnectorConfiguration: React.FC = () => {
                 setFormData(connectorConfig);
                 handleFormDataChange(connectorConfig);
             }, 100)
-            
+
             setOpFormData(connectorConfigDetails.connectors_config[0].value.operations_config);
         }
     }, []);
