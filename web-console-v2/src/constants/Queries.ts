@@ -20,7 +20,7 @@ export default {
       '((sum_over_time(sum by (job) (node_failed_api_calls)[$interval:30s]) / sum_over_time(sum by (job) (node_total_api_calls{entity="data-out"})[$interval:30s]))*100)',
   },
   node_query_response_time_max: {
-    query: 'po(max by (job) (node_query_response_time)[1134m:5m])',
+    query: 'max_over_time(max by (job) (node_query_response_time)[1134m:5m])',
   },
   node_query_response_time_avg: {
     query: 'avg_over_time(avg by (job) (node_query_response_time)[1134m:5m])',
