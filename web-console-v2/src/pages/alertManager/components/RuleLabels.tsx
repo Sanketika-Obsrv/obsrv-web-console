@@ -57,7 +57,7 @@ const LabelComponent = (props: any) => {
         .object()
         .shape({
             label: yup.string().required(en.isRequired)
-                .max(_.get(validationConfigs, ['alertRuleLabelsMaxLen']))
+                .max(_.get(validationConfigs, 'alertRuleNameMaxLen'))
                 .trim(en.whiteSpaceConflict).strict(true)
                 .test('specialChars', en.hasSpecialCharacters, value => !hasSpecialCharacters(value))
                 .test('duplicateKey', similarKey, (value) => {
@@ -66,7 +66,7 @@ const LabelComponent = (props: any) => {
             value: yup.string().required(en.isRequired)
                 .trim(en.whiteSpaceConflict).strict(true)
                 .test('specialChars', en.hasSpecialCharacters, value => !hasSpecialCharacters(value))
-                .max(_.get(validationConfigs, ['alertRuleLabelsMaxLen']))
+                .max(_.get(validationConfigs, 'alertRuleNameMaxLen'))
         });
 
     const validateForm = async () => {
