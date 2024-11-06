@@ -114,3 +114,7 @@ div.HelpSection_expanded__vqSxk {
 .MuiTableCell-root {
   overflow-x: scroll;
 }
+
+.MuiPopover-root.jsonata {
+  z-index: 1303;
+}

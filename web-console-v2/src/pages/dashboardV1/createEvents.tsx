@@ -152,7 +152,7 @@ const DatasetCreateEvents = () => {
                     data-objecttype="dataset"
                     disabled={_.isEmpty(data) ? true : loading}
                     variant="contained"
-                    sx={{ my: 2, ml: 1 }}
+                    sx={{ my: 2, ml: 1, mr: 2.5 }}
                     onClick={(e: any) => pushEvents()}
                 >
                     Send Events
