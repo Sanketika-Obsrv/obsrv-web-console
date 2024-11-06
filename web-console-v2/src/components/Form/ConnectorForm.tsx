@@ -121,9 +121,8 @@ const ConnectorForm = ({
     }
 
     return (
-
         <Grid container spacing={3} className={customStyles?.gridContainer} justifyContent={'flex-start'}>
-            {schema.schema.properties && _.entries(schema.schema.properties).map(([sectionKey, sectionValue]) => {
+            {schema.schema.properties && _.sortBy(_.entries(schema.schema.properties), [([, value]) => (value as any).uiIndex]).map(([sectionKey, sectionValue]) => {
                 return (
                     <Grid item xs={12} sm={6} lg={6}
                         key={sectionKey}
