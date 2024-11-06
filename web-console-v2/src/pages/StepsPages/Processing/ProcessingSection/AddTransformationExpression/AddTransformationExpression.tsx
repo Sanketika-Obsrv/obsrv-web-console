@@ -9,6 +9,7 @@ import {
     Popover
 } from '@mui/material';
 import TransformationForm from 'components/Form/DynamicForm';
+import {v4 as uuidv4} from 'uuid';
 import schema from './Schema';
 import React, { useEffect, useState } from 'react';
 import * as _ from 'lodash';
@@ -42,13 +43,14 @@ const AddTransformationExpression = (props: any) => {
 
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
+    const [stateId, setStateId] = useState<string>(uuidv4())
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
     const [extraErrors, setExtraErrors] = useState<any>({});
 
     const open = Boolean(anchorEl);
 
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
-    const [formData, setFormData] = useState<{ [key: string]: unknown }>({});
+    const [formData, setFormData] = useState<{ [key: string]: any }>({});
 
     if (!_.isEmpty(transformationOptions))
         _.set(
@@ -80,13 +82,15 @@ const AddTransformationExpression = (props: any) => {
     };
 
     const handleClose = () => {
-        if (!transformErrors) {
-            const newData = _.cloneDeep(formData);
-            const keyPath = ['section', 'expression'];
-            _.set(newData, keyPath, evaluationData);
-            setFormData(newData);
-        }
-
+        
+        const newData = {
+            ...formData
+        };
+        const keyPath = ['section', 'expression'];
+        _.set(newData, keyPath, evaluationData);
+        setStateId(uuidv4())
+        setFormData(newData);
+        setFormErrors([])
         setAnchorEl(null);
     };
 
@@ -94,15 +98,13 @@ const AddTransformationExpression = (props: any) => {
         setAnchorEl(null);
     };
 
-    const isJsonata = _.isEqual(
-        'jsonata',
-        _.get(formData, ['section', 'transformationType'])
-    );
+    const isJsonata = true;
 
     const jsonataData = _.get(formData, ['section', 'expression']);
 
     const onHandleClick = async () => {
         const newData = _.get(formData, ['section']);
+        console.log("#### newData", newData)
 
         const array = [];
 
@@ -117,10 +119,8 @@ const AddTransformationExpression = (props: any) => {
             value: {
                 field_key: _.get(newData, ['transformations'], ''),
                 transformation_function: {
-                    type: _.get(newData, ['transformationType'], ''),
-                    expr: isJsonata
-                        ? _.get(newData, ['expression'], '')
-                        : _.get(newData, ['transformations'], ''),
+                    type: 'jsonata',
+                    expr: _.get(newData, ['expression'], ''),
                     category: 'transform'
                 },
                 mode: _.get(newData, ['transformationMode'], '')
@@ -128,20 +128,15 @@ const AddTransformationExpression = (props: any) => {
             action: 'upsert'
         };
 
-        if (isJsonata) {
-            const datatype = await evaluateDataType(_.get(newData, ['expression'], ''), jsonData);
-
-            _.set(
-                obj,
-                ['value', 'transformation_function', 'datatype'],
-                _.get(datatype, 'data_type')
-            );
-        }
+        const datatype = await evaluateDataType(_.get(newData, ['expression'], ''), jsonData);
+        _.set(
+            obj,
+            ['value', 'transformation_function', 'datatype'],
+            _.get(datatype, 'data_type')
+        );        
 
         array.push(obj);
-
         handleAddOrEdit(array);
-
         onClose();
     };
 
@@ -164,7 +159,10 @@ const AddTransformationExpression = (props: any) => {
         if (expression) {
             try {
                 await evaluateDataType(expression, jsonData);
+                setExtraErrors(newExtraErrors);
+                setStateId(uuidv4())
             } catch (error) {
+                console.log("#### error", error)
                 const message = _.get(error, 'message');
 
                 _.set(newExtraErrors, ['section', 'expression', '__errors', 0], message);
@@ -172,7 +170,6 @@ const AddTransformationExpression = (props: any) => {
             }
         }
         setExtraErrors(newExtraErrors);
-
         setFormData(formData);
     };
 
@@ -214,6 +211,7 @@ const AddTransformationExpression = (props: any) => {
                                 connectorName: 'customConnectorNameClass',
                                 sectionContainers: 'customSectionContainersClass'
                             }}
+                            key={stateId}
                         />
                     </Stack>
 
@@ -222,20 +220,19 @@ const AddTransformationExpression = (props: any) => {
                     </Alert>
                 </DialogContent>
                 <DialogActions sx={{ px: 4 }}>
-                    {isJsonata && (
-                        <Box mx={2}>
-                            <Button onClick={handleClick} sx={{ width: 'auto' }}>
-                                Try Out
-                            </Button>
-                        </Box>
-                    )}
+                    
+                    <Box mx={2}>
+                        <Button onClick={handleClick} sx={{ width: 'auto' }}>
+                            Try Out
+                        </Button>
+                    </Box>
                     <Button
                         variant="contained"
                         autoFocus
                         onClick={onHandleClick}
                         disabled={
                             !_.isEmpty(formErrors) ||
-                            _.isEmpty(formData) ||
+                            _.isEmpty(formData) || _.isEmpty(formData.section['transformations']) ||
                             (isJsonata && !jsonataData)
                         }
                         size="large"

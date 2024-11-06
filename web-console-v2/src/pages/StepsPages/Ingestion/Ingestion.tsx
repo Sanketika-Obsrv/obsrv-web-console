@@ -484,7 +484,7 @@ const Ingestion = () => {
                                                         variant="outlined"
                                                         fullWidth
                                                         error={Boolean(nameError)}
-                                                        helperText={nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100) ? 'Dataset name should be between 4 and 100 characters' : '')}
+                                                        helperText={nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100) ? 'Dataset name should be between 4 and 100 characters' : 'Enter a unique, descriptive dataset name (use only alphabets)')}
                                                     />
                                                 </Grid>
                                                 <Grid item xs={12} sm={6} lg={6}>
@@ -496,6 +496,7 @@ const Ingestion = () => {
                                                         variant="outlined"
                                                         fullWidth
                                                         disabled
+                                                        helperText="This field is auto-generated using the Dataset name"
                                                     />
                                                 </Grid>
                                             </Grid>

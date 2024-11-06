@@ -133,6 +133,39 @@ const ConnectorConfiguration: React.FC = () => {
                     `);
                 }
             });
+            // Add operations help text
+            if(connectorType === 'batch') {
+                combinedHelp.push(`
+                    <section id="op_interval" class="section">
+                        <header class="displayContent">
+                            <h3 class="contentsHeader">Polling Interval</h3>
+                        </header>
+                        <div class="contentBody">
+                            <p>Select how often the connector should poll for new data:</p>
+                            <ul>
+                                <li><strong>Periodic:</strong> Runs the connector at regular intervals, based on the specified polling frequency. Use this option if you need the connector to fetch data repeatedly.</li>
+                                <li><strong>Once:</strong> Runs the connector a single time. Use this option for a one-time data fetch.</li>
+                            </ul>
+                            <p>Select the appropriate option based on your data requirements.</p>
+                        </div>
+                    </section>
+                    <section id="op_schedule" class="section">
+                        <header class="displayContent">
+                            <h3 class="contentsHeader">Polling Schedule</h3>
+                        </header>
+                        <div class="contentBody">
+                            <p>Select the frequency at which the connector should poll for data. This setting is available only when the polling interval is set to "Periodic."</p>
+                            <ul>
+                                <li><strong>Hourly:</strong> The connector polls once every hour.</li>
+                                <li><strong>Daily:</strong> The connector polls once a day.</li>
+                                <li><strong>Weekly:</strong> The connector polls once a week.</li>
+                                <li><strong>Monthly:</strong> The connector polls once a month.</li>
+                            </ul>
+                            <p>Choose the frequency that aligns with your data update requirements.</p>
+                        </div>
+                    </section>
+                `);
+            }
             combinedHelp.push(`</div>`);
             setConnectorHelpText(combinedHelp.join(''));
             setHighlightedSection(firstProperty || '');
@@ -251,6 +284,8 @@ const ConnectorConfiguration: React.FC = () => {
                                                 label={'Polling Interval'}
                                                 variant="outlined"
                                                 onChange={handleIntervalChange}
+                                                onFocus={(event) => handleSectionClick("op_interval")}
+                                                onBlur={(event) => handleSectionClick("op_interval")}
                                                 required
                                                 fullWidth
                                             >
@@ -270,6 +305,8 @@ const ConnectorConfiguration: React.FC = () => {
                                                 variant="outlined"
                                                 fullWidth
                                                 onChange={handleScheduleChange}
+                                                onFocus={(event) => handleSectionClick("op_schedule")}
+                                                onBlur={(event) => handleSectionClick("op_schedule")}
                                             >
                                                 <MenuItem value={'Hourly'}>Hourly</MenuItem>
                                                 <MenuItem value={'Daily'}>Daily</MenuItem>

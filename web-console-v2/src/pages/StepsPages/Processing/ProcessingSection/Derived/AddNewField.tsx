@@ -8,6 +8,7 @@ import {
     DialogTitle,
     Popover
 } from '@mui/material';
+import {v4 as uuidv4} from 'uuid';
 import AddNewFields from 'components/Form/DynamicForm';
 import schema from './Schema';
 import React, { useEffect, useState } from 'react';
@@ -37,7 +38,7 @@ interface ConfigureConnectorFormProps {
 
 const AddNewField = (props: any) => {
     const { data, handleAddOrEdit, onClose, edit = false, jsonData } = props;
-
+    const [stateId, setStateId] = useState<string>(uuidv4())
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
@@ -62,12 +63,10 @@ const AddNewField = (props: any) => {
     useEffect(() => {
         if (!_.isEmpty(data)) {
             const existingData = {
-                section0: {
-                    section: {
-                        transformations: _.get(data, ['column']),
-                        transformationType: _.get(data, ['transformation']),
-                        transformationMode: _.get(data, ['transformationMode'])
-                    }
+                section: {
+                    transformations: _.get(data, ['column']),
+                    transformationType: _.get(data, ['transformation']),
+                    transformationMode: _.get(data, ['transformationMode'])
                 }
             };
 
@@ -148,6 +147,7 @@ const AddNewField = (props: any) => {
             try {
                 await evaluateDataType(transformationType, jsonData);
                 _.set(extraErrors, ['section', 'transformationType', '__errors'], []);
+                setStateId(uuidv4())
             } catch (error) {
                 const message = _.get(error, 'message');
                 _.set(extraErrors, ['section', 'transformationType', '__errors'], [message]);
@@ -195,6 +195,7 @@ const AddNewField = (props: any) => {
                                 connectorName: 'customConnectorNameClass',
                                 sectionContainers: 'customSectionContainersClass'
                             }}
+                            key={stateId}
                         />
                     </Stack>
                 </DialogContent>

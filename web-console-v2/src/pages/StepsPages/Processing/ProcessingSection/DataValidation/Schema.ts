@@ -21,11 +21,11 @@ const schema: FormSchema =
                         type: 'string',
                         oneOf: [
                             {
-                                title: 'Strict',
+                                title: 'No',
                                 enum: ['Strict']
                             },
                             {
-                                title: 'Discard New Fields',
+                                title: 'Yes',
                                 enum: ['IgnoreNewFields']
                             }
                         ]
@@ -46,7 +46,7 @@ const schema: FormSchema =
                     label: false
                 },
                 'ui:help':
-                    'Strict data validation of all fields data will be marked as invalid if not adhering to schema,Validate only known fields, skip unknown fields'
+                    'Processing will fail if any fields outside the schema are detected,Additional fields will be ignored and processing will continue'
             }
         }
     }
