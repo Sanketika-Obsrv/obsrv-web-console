@@ -27,6 +27,7 @@ const schema: FormSchema =
                     },
                     dedupeKey: {
                         type: 'string',
+                        title: 'Select Dedupe Key',
                         enum: [''],
                         uniqueItems: true
                     }
@@ -50,7 +51,7 @@ const schema: FormSchema =
             },
             dedupeKey: {
                 'ui:widget': 'select',
-                'ui:help': 'Ex: $sum(Product.(Price * Quantity)) \n FirstName & " " & Surname'
+                'ui:help': 'Select a unique event id from the list of fields'
             }
         }
     }

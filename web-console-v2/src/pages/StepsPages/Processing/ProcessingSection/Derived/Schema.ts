@@ -27,9 +27,18 @@ const schema: FormSchema =
                     },
                     transformationMode: {
                         type: 'string',
-                        title: processData.section3Properties.selectMasterDataset,
-                        enum: ['Strict', 'Lenient'],
-                        default: 'Strict'
+                        title: processData.section3Properties.mode,
+                        default: 'Strict',
+                        oneOf: [
+                            {
+                                title: 'Yes',
+                                enum: ['Strict']
+                            },
+                            {
+                                title: 'No',
+                                enum: ['Lenient']
+                            }
+                        ]
                     }
                 },
                 required: ['transformations', 'transformationType']

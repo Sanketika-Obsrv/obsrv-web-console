@@ -2,16 +2,16 @@ export const processData = {
     // Pii Fields
     section1: 'Add PII Fields',
     section1Properties: {
-        selectFiled: 'Select Field',
-        selectTransform: 'Select Transformation',
-        mode: 'Transformation Mode'
+        selectFiled: 'Select Sensitive Field',
+        selectTransform: 'Select Action',
+        mode: 'Skip On Action Failure?'
     },
     // Transformation
     section2: 'Transformation',
     section2Properties: {
         selectFiled: 'Select Field',
-        selectTransform: 'Select Transformation',
-        mode: 'Transformation Mode'
+        selectTransform: 'Add JSONAta Expression',
+        mode: 'Skip On Transformation Failure?'
     },
 
     // Derived Fields
@@ -19,7 +19,7 @@ export const processData = {
     section3Properties: {
         newField: 'Field Name',
         selectDatasetField: 'Transformation Expression',
-        selectMasterDataset: 'Transformation Mode'
+        mode: 'Skip On Transformation Failure?'
     },
     section4: 'Dedupe Event',
 
