@@ -25,73 +25,27 @@ const schema: FormSchema =
                         type: 'string',
                         uniqueItems: true
                     },
+                    expression: {
+                        type: 'string',
+                        title: processData.section2Properties.selectTransform
+                    },
                     transformationMode: {
                         type: 'string',
                         title: processData.section2Properties.mode,
-                        enum: ['Strict', 'Lenient']
-                    },
-                    transformationType: {
-                        type: 'string',
-                        title: processData.section2Properties.selectTransform,
+                        default: "Strict",
                         oneOf: [
                             {
-                                title: 'Mask',
-                                enum: ['mask']
+                                title: 'Yes',
+                                enum: ['Strict']
                             },
                             {
-                                title: 'Encrypt',
-                                enum: ['encrypt']
-                            },
-                            {
-                                title: 'Jsonata',
-                                enum: ['jsonata']
+                                title: 'No',
+                                enum: ['Lenient']
                             }
                         ]
                     }
                 },
-                dependencies: {
-                    transformationType: {
-                        oneOf: [
-                            {
-                                properties: {
-                                    transformationType: {
-                                        oneOf: [
-                                            {
-                                                title: 'Jsonata',
-                                                enum: ['jsonata']
-                                            }
-                                        ]
-                                    },
-                                    expression: {
-                                        type: 'string',
-                                        title: 'Add Custom Expression'
-                                    }
-                                }
-                            },
-                            {
-                                properties: {
-                                    transformationType: {
-                                        oneOf: [
-                                            {
-                                                title: 'Mask',
-                                                enum: ['mask']
-                                            },
-                                            {
-                                                title: 'Encrypt',
-                                                enum: ['encrypt']
-                                            },
-                                            {
-                                                title: 'SQL expression',
-                                                enum: ['sqlExpression']
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                },
-                required: ['transformations', 'transformationType', 'transformationMode']
+                required: ['transformations', 'expression', 'transformationMode']
             }
         }
     },
@@ -102,13 +56,6 @@ const schema: FormSchema =
         section: {
             transformations: {
                 'ui:widget': 'select'
-            },
-            transformationType: {
-                'ui:widget': 'radio',
-                'ui:options': {
-                    inline: true,
-                    label: true
-                }
             },
             expression: {
                 'ui:widget': 'text',

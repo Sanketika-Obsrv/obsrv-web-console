@@ -45,7 +45,7 @@ const AddPIIDialog = (props: any) => {
     } = props;
 
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
-    const [formData, setFormData] = useState<{ [key: string]: unknown }>({});
+    const [formData, setFormData] = useState<{ [key: string]: any }>({});
 
     if (!_.isEmpty(transformationOptions))
         _.set(
@@ -123,7 +123,7 @@ const AddPIIDialog = (props: any) => {
                 alignItems="center"
                 justifyContent="space-between"
             >
-                <Typography variant="h5">{edit ? 'Update PII Field' : 'Add PII Field'}</Typography>
+                <Typography variant="h5">{edit ? 'Update Sensitive Field' : 'Add Sensitive Field'}</Typography>
                 {onClose ? (
                     <IconButton
                         aria-label="close"
@@ -160,7 +160,7 @@ const AddPIIDialog = (props: any) => {
                     variant="contained"
                     autoFocus
                     onClick={onHandleClick}
-                    disabled={!_.isEmpty(formErrors) || _.isEmpty(formData.section)}
+                    disabled={!_.isEmpty(formErrors) || _.isEmpty(formData.section['transformation'])}
                     size="large"
                     sx={{ width: 'auto' }}
                 >

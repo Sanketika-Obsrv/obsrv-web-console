@@ -27,7 +27,8 @@ const schema: FormSchema =
                     },
                     transformationType: {
                         type: 'string',
-                        title: processData.section2Properties.selectTransform,
+                        title: processData.section1Properties.selectTransform,
+                        default: "mask",
                         oneOf: [
                             {
                                 title: 'Mask',
@@ -41,8 +42,18 @@ const schema: FormSchema =
                     },
                     transformationMode: {
                         type: 'string',
-                        title: processData.section2Properties.mode,
-                        enum: ['Strict', 'Lenient']
+                        title: processData.section1Properties.mode,
+                        default: "Strict",
+                        oneOf: [
+                            {
+                                title: 'Yes',
+                                enum: ['Strict']
+                            },
+                            {
+                                title: 'No',
+                                enum: ['Lenient']
+                            }
+                        ]
                     }
                 },
                 required: ['transformations', 'transformationType', 'transformationMode']
