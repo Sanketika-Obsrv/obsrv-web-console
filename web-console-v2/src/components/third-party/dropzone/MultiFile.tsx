@@ -112,15 +112,6 @@ const MultiFileUpload = ({ error, showList = false, files, type, setFieldValue, 
                 </Stack>
             </Box>
 
-            {type !== DropzopType.standard && files && files.length > 0 && (
-                <Stack direction="row" justifyContent="flex-end" spacing={1.5} sx={{ mt: 1.5 }}>
-                    <Button
-                        data-edataid={interactIds.file_remove_multiple}
-                        color="inherit" size="small" onClick={onRemoveAll}>
-                        Remove all
-                    </Button>
-                </Stack>
-            )}
         </>
     );
 };
