@@ -160,7 +160,7 @@ const AddPIIDialog = (props: any) => {
                     variant="contained"
                     autoFocus
                     onClick={onHandleClick}
-                    disabled={!_.isEmpty(formErrors) || _.isEmpty(formData.section['transformation'])}
+                    disabled={!_.isEmpty(formErrors) || _.isEmpty(_.get(formData, ['section', 'transformations']))}
                     size="large"
                     sx={{ width: 'auto' }}
                 >
