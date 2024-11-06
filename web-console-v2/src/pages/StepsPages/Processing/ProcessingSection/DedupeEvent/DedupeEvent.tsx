@@ -97,11 +97,13 @@ const DedupeEvent = (props: any) => {
         setIsChecked(event.target.checked);
         console.log('Checkbox is checked:', event.target.checked);
         if(!event.target.checked){
+            setDedupValue(""); 
             const dedupeEvent = {
                 drop_duplicates: event.target.checked,
                 dedup_key: ""
             };
             handleAddOrEdit(dedupeEvent);
+            isProceed(true);
         }
     };
     const handleSelection = (event: any) => {
@@ -111,12 +113,8 @@ const DedupeEvent = (props: any) => {
             drop_duplicates: isChecked,
             dedup_key: event.target.value
         };
-        const shouldAddOrEdit =
-                (isChecked && dedupValue !== '') || (!isChecked && dedupValue === '');
-                if (shouldAddOrEdit) {
-                    handleAddOrEdit(dedupeEvent);
-                    isProceed(true);
-                }
+        handleAddOrEdit(dedupeEvent);
+        isProceed(true);
     }
 
     return (
@@ -131,6 +129,7 @@ const DedupeEvent = (props: any) => {
                     labelId="dedupKey-select-label"
                     id="dedupKey-select"
                     label="dedupKey"
+                    value={isChecked ? dedupValue : ""}
                     onChange={handleSelection}
                     disabled={!isChecked}
                 >
