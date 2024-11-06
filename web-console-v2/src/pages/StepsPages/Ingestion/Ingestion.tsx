@@ -483,7 +483,7 @@ const Ingestion = () => {
                                                         required
                                                         variant="outlined"
                                                         fullWidth
-                                                        error={Boolean(nameError)}
+                                                        error={Boolean(nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100)))}
                                                         helperText={nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100) ? 'Dataset name should be between 4 and 100 characters' : 'Enter a unique, descriptive dataset name (use only alphabets)')}
                                                     />
                                                 </Grid>
