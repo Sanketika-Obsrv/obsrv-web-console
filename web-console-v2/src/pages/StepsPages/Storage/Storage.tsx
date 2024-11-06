@@ -195,7 +195,7 @@ const Storage = () => {
                     keys_config: {
                         data_key: primaryOption,
                         partition_key: partitionOption,
-                        timestamp_key: timestampOption
+                        timestamp_key: timestampOption === 'Event Arrival Time' ? 'obsrv_meta.syncts' : timestampOption
                     }
                 }
             };

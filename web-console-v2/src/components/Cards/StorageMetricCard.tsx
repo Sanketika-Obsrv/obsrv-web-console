@@ -62,12 +62,12 @@ const StorageMetricsCard: React.FC<any> = (props: any) => {
                                 {label}
                             </Typography>
 
-                            <Typography
+                            {/* <Typography
                                 color={isPositive ? 'success.main' : 'error.main'}
                                 className={styles.symbol}
                             >
                                 {symbol} {_.trimStart(change, '+-')}
-                            </Typography>
+                            </Typography> */}
                         </Grid>
                     </CardContent>
                 </Card>
