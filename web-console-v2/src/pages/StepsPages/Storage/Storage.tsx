@@ -122,8 +122,7 @@ const Storage = () => {
 
         if (
             (data_key !== '' || data_key !== 'undefined') &&
-            (partition_key !== '' || partition_key !== 'undefined') &&
-            timestamp_key !== 'obsrv_meta.syncts'
+            (partition_key !== '' || partition_key !== 'undefined')
         ) {
             const existingData = {
                 section1: {
@@ -141,7 +140,7 @@ const Storage = () => {
                 section3: {
                     ...(data_key !== '' && { primary: data_key }),
                     ...(timestamp_key !== '' && {
-                        timestamp: timestamp_key
+                        timestamp: timestamp_key === 'obsrv_meta.syncts' ? 'Event Arrival Time' : timestamp_key
                     }),
                     ...(partition_key !== '' && { partition: partition_key })
                 }
