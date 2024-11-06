@@ -24,16 +24,6 @@ const schema: FormSchema =
     schema: {
         type: 'object',
         properties: {
-            section1: {
-                title: 'Dataset Type',
-                type: 'object',
-                properties: {
-                    datasetType: {
-                        type: 'string',
-                        enum: ['Events', 'Transactional', 'Master']
-                    }
-                }
-            },
             section2: {
                 title: 'Storage Type',
                 type: 'object',
