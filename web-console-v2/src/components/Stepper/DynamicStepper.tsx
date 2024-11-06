@@ -53,10 +53,6 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
 
     const params = useParams();
     const { datasetId }: any = params;
-    const fetchLiveDataset: any = useFetchDatasetsById({
-        datasetId,
-        queryParams: 'fields=status'
-    });
 
     const handleRouteNavigation = (route: string, datasetId: string) => {
         const routeMapping: Record<string, string> = {
@@ -77,13 +73,11 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
                     key={idx}
                     className={`${styles.step} ${step.completed ? styles.completed : ''} ${step.index === selectedStep || step.onProgress ? styles.selected : ''}`}
                     onClick={() => {
-                        if (!fetchLiveDataset?.data) {
                             if (['ingestion', 'processing', 'storage', 'preview'].includes(step.route)) {
                                 handleRouteNavigation(step.route, datasetId);
                             } else {
                                 handleClick(step.route, step.index, step.completed, step.onProgress);
                             }
-                        }
                     }}
                 >
                     <Box

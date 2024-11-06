@@ -27,12 +27,14 @@ const CustomTable = ({ columns, data, striped, header = true, styles = {} }: any
                                         background: '#F9F9F9',
                                         ...styles,
                                         textTransform: 'unset',
-                                        overflowX:"scroll"
+                                        overflowX: "scroll",
+                                        width: column.minWidth,
+                                        textAlign: column.textAlign
                                     }}
                                     {...column.getHeaderProps([{ className: column.className }])}
                                     key={i}
                                 >
-                                    <Typography variant="h4">{column.render('Header')}</Typography>
+                                    <Typography variant="h4">{column.render('header')}</Typography>
                                 </TableCell>
                             ))}
                         </TableRow>

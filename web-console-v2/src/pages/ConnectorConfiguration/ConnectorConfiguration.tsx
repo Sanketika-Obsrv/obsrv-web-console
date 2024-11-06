@@ -1,7 +1,9 @@
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import { Box, Button, Card, FormControl, Grid, InputLabel, MenuItem, Select, SelectChangeEvent, Typography, styled } from '@mui/material';
 import Actions from 'components/ActionButtons/Actions';
-import ConfigureConnectorForm, { FormData, Schema } from 'components/Form/ConnectorForm';
+import { withTheme } from '@rjsf/core';
+import { Theme as MuiTheme } from '@rjsf/mui';
+import Ajv, { ErrorObject } from 'ajv';
 import HelpSection from 'components/HelpSection/HelpSection';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
@@ -9,22 +11,29 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getConfigValue } from 'services/configData';
 import { useFetchDatasetsById, useReadConnectors } from 'services/dataset';
 import { theme } from 'theme';
-import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
+import { deleteSessionStorageItem, fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
 import styles from './ConnectorConfiguration.module.css';
 import sampleSchema from './Schema';
+import { customizeValidator } from '@rjsf/validator-ajv8';
+import { RJSFSchema, UiSchema } from '@rjsf/utils';
 
+interface FormData {
+    [key: string]: unknown;
+}
+
+interface Schema {
+    title: string;
+    schema: RJSFSchema;
+    uiSchema: UiSchema;
+}
+
+const CustomForm = withTheme(MuiTheme);
+const ajv = new Ajv({ strict: false });
 const GenericCard = styled(Card)(({ theme }) => ({
     outline: 'none',
     boxShadow: 'none',
     margin: theme.spacing(0, 6, 2, 2)
 }));
-
-interface ConfigureConnectorFormProps {
-    schema: Schema;
-    formData: FormData;
-    setFormData: React.Dispatch<React.SetStateAction<FormData>>;
-    onChange: (formData: FormData, errors?: unknown[] | null) => void;
-}
 
 const ConnectorConfiguration: React.FC = () => {
 
@@ -49,6 +58,76 @@ const ConnectorConfiguration: React.FC = () => {
     const navigate = useNavigate();
     const datasetId = getConfigValue('dataset_id');
 
+    const customErrors = (errors: null | ErrorObject[] = []) => {
+        if (_.isEmpty(errors)) return;
+
+        _.forEach(errors, (error) => {
+            const errorKey = _.get(error, ['params', 'missingProperty']);
+
+            const errorMessage = {
+                pattern: 'Invalid pattern',
+                required: `Required ${errorKey}`
+            };
+
+            const keyword = _.get(error, 'keyword', '');
+            const customMessage = _.get(errorMessage, [keyword], '');
+            const defaultMessage = _.get(error, 'message', '');
+            error.message = customMessage || defaultMessage;
+        });
+    };
+
+    const validator = customizeValidator({}, customErrors);
+
+    const handleFormDataChange = (data: FormData) => {
+        console.log(`data`, data)
+
+        const valid = ajv.validate(schema.schema, data);
+        if (valid) {
+            setFormData(data)
+            setFormErrors([]);
+        } else {
+            const errors = ajv.errors?.map((error) => error.message) || [];
+            const updatedData = { ...formData, ...data };
+            setFormErrors(errors);
+            setFormData(updatedData);
+        }
+    };
+
+    const getSchema = (sectionKey: string, sectionValue: any) => {
+        const fieldSchema = {
+            type: "object",
+            properties: {
+                [sectionKey]: sectionValue as RJSFSchema
+            },
+            required: schema.schema.required && schema.schema.required.includes(sectionKey) ? [sectionKey] : []
+        }
+        return fieldSchema;
+    }
+
+    const getUISchema = (sectionKey: string) => {
+        if (schema.uiSchema[sectionKey]) {
+            return {
+                [sectionKey]: schema.uiSchema[sectionKey]
+            }
+        } else {
+            const sectionValue: any = schema.schema.properties?.[sectionKey];
+            if (typeof sectionValue === 'object' && 'format' in sectionValue && sectionValue.format === 'password') {
+                return {
+                    [sectionKey]: {
+                        'ui:widget': 'password'
+                    }
+                };
+            }
+            if (typeof sectionValue === 'object' && 'format' in sectionValue && sectionValue.format === 'hidden') {
+                return {
+                    [sectionKey]: {
+                        'ui:widget': 'hidden'
+                    }
+                };
+            }
+        }
+    }
+
     const fetchDatasetById = useFetchDatasetsById({
         datasetId,
         queryParams: 'status=Draft&mode=edit&fields=connectors_config'
@@ -67,8 +146,19 @@ const ConnectorConfiguration: React.FC = () => {
     useEffect(() => {
 
         const connectorConfigDetails: any = fetchSessionStorageItem('connectorConfigDetails');
+
         if (connectorConfigDetails) {
-            setFormData(connectorConfigDetails.connectors_config[0].value.connector_config);
+            const connectorId = _.get(connectorConfigDetails, 'connectors_config[0].value.connector_id')
+            if (selectedCardId != connectorId) {
+                deleteSessionStorageItem('connectorConfigDetails')
+                return
+            }
+            setTimeout(() => {
+                const connectorConfig = connectorConfigDetails.connectors_config[0].value.connector_config;
+                setFormData(connectorConfig);
+                handleFormDataChange(connectorConfig);
+            }, 100)
+
             setOpFormData(connectorConfigDetails.connectors_config[0].value.operations_config);
         }
     }, []);
@@ -120,7 +210,7 @@ const ConnectorConfiguration: React.FC = () => {
                 if (!firstProperty) {
                     firstProperty = key;
                 }
-                if(value.format !== "hidden") {
+                if (value.format !== "hidden") {
                     combinedHelp.push(`
                         <section id="${key}" class="section">
                             <header class="displayContent">
@@ -133,6 +223,39 @@ const ConnectorConfiguration: React.FC = () => {
                     `);
                 }
             });
+            // Add operations help text
+            if(connectorType === 'batch') {
+                combinedHelp.push(`
+                    <section id="op_interval" class="section">
+                        <header class="displayContent">
+                            <h3 class="contentsHeader">Polling Interval</h3>
+                        </header>
+                        <div class="contentBody">
+                            <p>Select how often the connector should poll for new data:</p>
+                            <ul>
+                                <li><strong>Periodic:</strong> Runs the connector at regular intervals, based on the specified polling frequency. Use this option if you need the connector to fetch data repeatedly.</li>
+                                <li><strong>Once:</strong> Runs the connector a single time. Use this option for a one-time data fetch.</li>
+                            </ul>
+                            <p>Select the appropriate option based on your data requirements.</p>
+                        </div>
+                    </section>
+                    <section id="op_schedule" class="section">
+                        <header class="displayContent">
+                            <h3 class="contentsHeader">Polling Schedule</h3>
+                        </header>
+                        <div class="contentBody">
+                            <p>Select the frequency at which the connector should poll for data. This setting is available only when the polling interval is set to "Periodic."</p>
+                            <ul>
+                                <li><strong>Hourly:</strong> The connector polls once every hour.</li>
+                                <li><strong>Daily:</strong> The connector polls once a day.</li>
+                                <li><strong>Weekly:</strong> The connector polls once a week.</li>
+                                <li><strong>Monthly:</strong> The connector polls once a month.</li>
+                            </ul>
+                            <p>Choose the frequency that aligns with your data update requirements.</p>
+                        </div>
+                    </section>
+                `);
+            }
             combinedHelp.push(`</div>`);
             setConnectorHelpText(combinedHelp.join(''));
             setHighlightedSection(firstProperty || '');
@@ -158,14 +281,6 @@ const ConnectorConfiguration: React.FC = () => {
         };
         storeSessionStorageItem('connectorConfigDetails', connectionData);
         navigate('/home/ingestion');
-    };
-    const handleChange: ConfigureConnectorFormProps['onChange'] = (formData, errors) => {
-        setFormData(formData);
-        if (errors) {
-            setFormErrors(errors);
-        } else {
-            setFormErrors([]);
-        }
     };
 
     const handleHelpSectionToggle = () => {
@@ -222,15 +337,36 @@ const ConnectorConfiguration: React.FC = () => {
                                 <Typography variant='h1'>{schema.title}</Typography>
                             </Box>
 
-                            <ConfigureConnectorForm
-                                schema={schema!}
-                                formData={formData}
-                                setFormData={setFormData}
-                                onChange={handleChange}
-                                highlightedSection={highlightedSection}
-                                handleClick={(sectionId: string) => handleSectionClick(sectionId)}
-                                styles={styles}
-                            />
+                            <Grid container spacing={3} className={styles?.gridContainer} justifyContent={'flex-start'}>
+                                {schema.schema.properties && _.entries(schema.schema.properties).map(([sectionKey, sectionValue]) => {
+                                    return (
+                                        <Grid item xs={12} sm={6} lg={6}
+                                            key={sectionKey}
+                                            onClick={() => handleSectionClick(sectionKey)}
+                                        >
+                                            <CustomForm
+                                                schema={getSchema(sectionKey, sectionValue) as RJSFSchema}
+                                                uiSchema={getUISchema(sectionKey)}
+                                                formData={formData as FormData}
+                                                validator={validator}
+                                                showErrorList={false}
+                                                onChange={(e) => {
+                                                    handleSectionClick(sectionKey)
+                                                    handleFormDataChange(e.formData);
+                                                }}
+                                                liveValidate={true}
+                                                templates={{
+                                                    ButtonTemplates: {
+                                                        SubmitButton: () => null
+                                                    }
+                                                }}
+                                                onBlur={() => handleSectionClick(sectionKey)}
+                                                onFocus={() => handleSectionClick(sectionKey)}
+                                            />
+                                        </Grid>
+                                    );
+                                })}
+                            </Grid>
 
                         </GenericCard>
 
@@ -251,6 +387,8 @@ const ConnectorConfiguration: React.FC = () => {
                                                 label={'Polling Interval'}
                                                 variant="outlined"
                                                 onChange={handleIntervalChange}
+                                                onFocus={(event) => handleSectionClick("op_interval")}
+                                                onBlur={(event) => handleSectionClick("op_interval")}
                                                 required
                                                 fullWidth
                                             >
@@ -270,6 +408,8 @@ const ConnectorConfiguration: React.FC = () => {
                                                 variant="outlined"
                                                 fullWidth
                                                 onChange={handleScheduleChange}
+                                                onFocus={(event) => handleSectionClick("op_schedule")}
+                                                onBlur={(event) => handleSectionClick("op_schedule")}
                                             >
                                                 <MenuItem value={'Hourly'}>Hourly</MenuItem>
                                                 <MenuItem value={'Daily'}>Daily</MenuItem>
@@ -287,13 +427,13 @@ const ConnectorConfiguration: React.FC = () => {
             <Box
                 className={`${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
                 mt={8}
-                    sx={{
-                        position: 'fixed',
-                        bottom: 0,
-                        right: 0,
-                        left: -50,
-                        zIndex: 100
-                    }}
+                sx={{
+                    position: 'fixed',
+                    bottom: 0,
+                    right: 0,
+                    left: -50,
+                    zIndex: 100
+                }}
                 pr={5}
             >
                 <Actions

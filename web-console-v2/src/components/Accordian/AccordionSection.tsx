@@ -46,9 +46,7 @@ const FieldSection = (props: any) => {
                             {title}
                         </Typography>
                         <Typography
-                            variant="caption"
-                            fontSize="0.875rem"
-                            sx={{ color: 'text.secondary', width: '100%' }}
+                            variant="body1"
                         >
                             {description}
                         </Typography>

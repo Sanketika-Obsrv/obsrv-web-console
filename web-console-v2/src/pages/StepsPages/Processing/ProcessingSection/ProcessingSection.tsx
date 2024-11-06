@@ -1,10 +1,11 @@
-import { ButtonGroup, Box, Button, Dialog, Grid, Typography, Chip } from '@mui/material';
+import { ButtonGroup, Box, Button, Dialog, Grid, Typography, Chip, Tooltip } from '@mui/material';
 import React, { useState } from 'react';
 import _ from 'lodash';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import { ReactComponent as DeleteIcon } from 'assets/upload/Trash.svg';
 import { ReactComponent as EditIcon } from 'assets/upload/Edit.svg';
 import CustomTable from 'components/CustomeTable/CustomTable';
+import { minWidth, textAlign } from '@mui/system';
 
 const ProcessingSection = (props: any) => {
     const {
@@ -50,84 +51,97 @@ const ProcessingSection = (props: any) => {
 
     const columns = [
         {
-            Header: 'Field',
+            header: 'Field',
             accessor: 'column',
+            minWidth: '2rem',
             Cell: ({ value, cell }: any) => (
-                <Box minWidth="20vw" maxWidth="35vw">
-                    <Typography variant="h4">{value}</Typography>
-                </Box>
+                <Tooltip title={value}>
+                    <Box>
+                        <Typography variant="h4">{value}</Typography>
+                    </Box>
+                </Tooltip>
             )
         },
         {
-            Header: 'Data type',
+            header: 'Data Type',
             accessor: 'transformationType',
             Cell: ({ value, cell }: any) => {
-                const datatype = _.get(cell, 'row.original.datatype');
+                const datatype = _.capitalize(_.get(cell, 'row.original.datatype'));
 
                 return (
-                    <Box minWidth="10vw" maxWidth="35vw">
-                        <Typography variant="body2">{datatype || value}</Typography>
-                    </Box>
+                    <Tooltip title={datatype || value}>
+                        <Box>
+                            <Typography variant="body2">{datatype || value}</Typography>
+                        </Box>
+                    </Tooltip>
                 );
             }
         },
         {
-            Header: 'Mode',
-            accessor: 'transformationMode',
-            Cell: ({ value, cell }: any) => (
-                <Box minWidth="10vw" maxWidth="35vw">
-                    <Typography variant="body2">{value}</Typography>
-                </Box>
-            )
-        },
-        {
-            Header: 'Transformation',
+            header: (id === 'pii') ? 'Action':'Transformation',
             id: 'transformation',
+            minWidth: '0.5rem',
             className: 'cell-center',
             accessor: 'transformation',
             Cell: ({ value, cell }: any) => {
                 const row = cell?.row?.original || {};
-
                 const transformationType = row?.transformationType;
 
-                if (_.size(actions) < 2 && _.isEqual(transformationType, 'custom'))
+                if (id === 'transform' || id === 'derived')
                     return (
-                        <Typography
-                            variant="body2"
-                            onClick={() => handleEditValues(_.get(cell, 'row.original'))}
-                        >
-                            {renderExpression(row)}
-                        </Typography>
+                        <Tooltip title={row?.transformation}>
+                            <Typography
+                                variant="body2"
+                                onClick={() => handleEditValues(_.get(cell, 'row.original'))}
+                            >
+                                {renderExpression(row)}
+                            </Typography>
+                        </Tooltip>
                     );
                 return (
-                    <ButtonGroup
-                        variant="outlined"
-                        aria-label="outlined button group"
-                        sx={{ minWidth: '20vw', maxWidth: '30vw' }}
-                    >
-                        <Box>
-                            {transformationType === 'custom' ? 'JSONata' : transformationType}
-                        </Box>
-                    </ButtonGroup>
+                    
+                    <Tooltip title={transformationType === 'custom' ? 'JSONata' : _.capitalize(transformationType)}>
+                        <ButtonGroup
+                            variant="outlined"
+                            aria-label="outlined button group"
+                            sx={{ minWidth: '20vw', maxWidth: '30vw' }}
+                        >
+                            <Box>
+                                {transformationType === 'custom' ? 'JSONata' : _.capitalize(transformationType)}
+                            </Box>
+                        </ButtonGroup>
+                    </Tooltip>
                 );
             }
         },
         {
-            Header: 'Edit',
-            id: 'actions',
+            header: 'Skip Record on Failure?',
+            accessor: 'transformationMode',
             Cell: ({ value, cell }: any) => (
-                <Button onClick={() => handleEditValues(_.get(cell, 'row.original'))}>
-                    <EditIcon />
-                </Button>
+                <Tooltip title={value === 'Strict' ? 'Skip the event' : 'Process the event'}>
+                    <Box >    
+                        <Typography variant="body2">{value === 'Strict' ? 'Yes' : 'No'}</Typography>
+                    </Box>
+                </Tooltip>
             )
         },
         {
-            Header: 'Delete',
-            id: 'actions1',
+            header: 'Actions',
+            id: 'actions',
+            textAlign: 'center',
             Cell: ({ value, cell }: any) => (
-                <Button onClick={() => handleDelete(_.get(cell, 'row.original.column'))}>
-                    <DeleteIcon />
-                </Button>
+                <Box sx={{textAlign: 'center'}}>
+                    <Button onClick={() => handleEditValues(_.get(cell, 'row.original'))} sx={{minWidth: '40px'}}>
+                        <Tooltip title="Edit">
+                            <EditIcon/>
+                        </Tooltip>
+                    </Button>
+                    <Button onClick={() => handleDelete(_.get(cell, 'row.original.column'))} sx={{minWidth: '40px'}}>
+                        <Tooltip title="Delete">
+                            <DeleteIcon />
+                        </Tooltip>
+                    </Button>
+                </Box>
             )
         }
     ];

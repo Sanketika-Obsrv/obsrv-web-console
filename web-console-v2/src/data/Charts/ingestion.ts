@@ -33,28 +33,28 @@ export default {
           ],
           filter: {
             type: 'and',
-            fields: [
-              {
-                type: 'selector',
-                dimension: 'ctx_module',
-                value: 'processing',
-              },
-              {
-                type: 'selector',
-                dimension: 'ctx_pdata_id',
-                value: 'DruidRouterJob',
-              },
-              {
-                type: 'selector',
-                dimension: 'ctx_dataset_type',
-                value: 'dataset',
-              },
-              {
-                type: 'selector',
-                dimension: 'error_code',
-                value: null,
-              },
-            ],
+            "fields": [
+                    {
+                        "type": "selector",
+                        "dimension": "ctx_module",
+                        "value": "processing"
+                    },
+                    {
+                        "type": "selector",
+                        "dimension": "ctx_pdata_pid",
+                        "value": "router"
+                    },
+                    {
+                        "type": "selector",
+                        "dimension": "ctx_dataset_type",
+                        "value": "event"
+                    },
+                    {
+                        "type": "selector",
+                        "dimension": "error_code",
+                        "value": null
+                    }
+                ]
           },
         },
       },
@@ -88,51 +88,53 @@ export default {
       headers: {},
       noParams: true,
       body: {
-        context: {
-          dataSource: 'system-events',
+        "context": {
+            "dataSource": "system-events"
         },
-        query: {
-          queryType: 'groupBy',
-          dataSource: 'system-events',
-          granularity: {
-            type: 'all',
-            timeZone: 'Asia/Kolkata',
-          },
-          intervals: ['$interval'],
-          aggregations: [
-            {
-              type: 'longSum',
-              name: 'totalCount',
-              fieldName: 'count',
+        "query": {
+            "queryType": "groupBy",
+            "dataSource": "system-events",
+            "granularity": {
+                "type": "all",
+                "timeZone": "Asia/Kolkata",
             },
-          ],
-          filter: {
-            type: 'and',
-            fields: [
-              {
-                type: 'selector',
-                dimension: 'ctx_module',
-                value: 'processing',
-              },
-              {
-                type: 'selector',
-                dimension: 'ctx_dataset_type',
-                value: 'master-dataset',
-              },
-              {
-                type: 'selector',
-                dimension: 'ctx_pdata_id',
-                value: 'MasterDataProcessorJob',
-              },
-              {
-                type: 'selector',
-                dimension: 'error_code',
-                value: null,
-              },
+            "intervals": [
+                "$interval",
             ],
-          },
+            "aggregations": [
+                {
+                    "type": "longSum",
+                    "name": "totalCount",
+                    "fieldName": "count",
+                },
+            ],
+            "filter": {
+                "type": "and",
+                "fields": [
+                    {
+                        "type": "selector",
+                        "dimension": "ctx_module",
+                        "value": "processing"
+                    },
+                    {
+                        "type": "selector",
+                        "dimension": "ctx_dataset_type",
+                        "value": "master"
+                    },
+                    {
+                        "type": "selector",
+                        "dimension": "ctx_pdata_pid",
+                        "value": "router"
+                    },
+                    {
+                        "type": "selector",
+                        "dimension": "error_code",
+                        "value": null
+                    }
+                ]
+            }
         },
-      },
+    },
       params: {},
       parse: (response: any) => {
         const payload = _.get(response, 'result') || [];

@@ -89,7 +89,11 @@ const mapDatasetToProcessingData = (dataset: any) => {
         };
 
         if (category) {
-            _.set(processingData, [category], [..._.get(processingData, [category]), metadata]);
+            if(type === 'mask' || type === 'encrypt') {
+                _.set(processingData, ['pii'], [..._.get(processingData, ['pii']), metadata]);
+            } else {
+                _.set(processingData, [category], [..._.get(processingData, [category]), metadata]);
+            }
         } else {
             const isPartOfSchema = getColumnMetadata(field_key);
 
@@ -251,7 +255,8 @@ const Processing: React.FC = () => {
     const processingSections = [
         {
             id: 'dataValidation',
-            title: 'Data Validation',
+            title: 'Allow Additional Fields',
+            description: 'Data is by default validated against schema requirements, including data types, enumerated values, numeric ranges, min/max constraints, and required fields. Any validation failure will fail the data record. Do you want to allow additional fields?:',
             component: (
                 <div onClick={() => handleDatasetNameClick('section1')}>
                     <DataValidation
@@ -273,7 +278,7 @@ const Processing: React.FC = () => {
             id: 'denorm',
             title: 'Data Denormalization',
             description:
-                'Data denormalization is a technique used in database design where the data in a database is intentionally made less normalized. In other words, instead of having data organized into many separate tables that are related to each other by keys, the data is combined into fewer tables.',
+                'Real-time denormalization allows you to enrich data as it flows through the pipeline by joining it with master data. This helps maintain data completeness and context in downstream processes.',
             component: (
                 <div onClick={() => handleDatasetNameClick('section2')}>
                     <DataDenorm
@@ -290,9 +295,9 @@ const Processing: React.FC = () => {
         },
         {
             id: 'pii',
-            title: 'PII Fields',
+            title: 'Data Privacy',
             description:
-                'PII is sensitive information that needs to be protected and kept secure to prevent identity theft, fraud, or other types of harm.  PII fields are often identified and tagged to ensure that appropriate controls are in place to protect the data',
+                'Identify fields containing sensitive information such as PII, passwords, keys, or company identifiers. This enables masking or encryption to ensure data privacy and protect both individual and business data.',
             component: (
                 <div onClick={() => handleDatasetNameClick('section3')}>
                     <ProcessingSection
@@ -300,7 +305,7 @@ const Processing: React.FC = () => {
                         id="pii"
                         actions={actions}
                         transformation_mode={transformation_mode}
-                        label={'Add PII Field'}
+                        label={'Add Sensitive Field'}
                         dialog={<AddPIIDialog />}
                         transformationOptions={_.union(
                             transformationOptions,
@@ -328,9 +333,9 @@ const Processing: React.FC = () => {
         },
         {
             id: 'transform',
-            title: 'Fields Transformation',
+            title: 'Data Transformations',
             description:
-                'Field transformations allows users to manipulate and transform data during ingestion or query time. Custom Expressions specify a set of column transformations to be performed on input data',
+                'Use JSONata to apply instant transformations on your data, such as filtering, restructuring, or calculations. Customize the flow of your data to meet specific requirements in real-time, ensuring it’s processed as needed.',
             component: (
                 <div onClick={() => handleDatasetNameClick('section4')}>
                     <ProcessingSection
@@ -356,7 +361,7 @@ const Processing: React.FC = () => {
         {
             id: 'derived',
             title: 'Derived Fields',
-            description: 'Create New Columns by applying custom transformation expressions',
+            description: 'Create new fields in real-time using JSONata transformations on existing event data. These fields are added back to the event, allowing for enhanced data processing and analysis.',
             component: (
                 <div onClick={() => handleDatasetNameClick('section5')}>
                     <ProcessingSection
@@ -377,7 +382,8 @@ const Processing: React.FC = () => {
         },
         {
             id: 'dedupe',
-            title: 'Dedupe Events',
+            title: 'Data Deduplication',
+            description: 'Select a unique key for deduplication to prevent duplicate records from flowing into the system, ensuring data integrity and accuracy.',
             component: (
                 <div onClick={() => handleDatasetNameClick('section6')}>
                     <DedupeEvent
@@ -405,12 +411,10 @@ const Processing: React.FC = () => {
         >
             <Loader loading={datasetList.isPending} descriptionText="Loading the page" />
             <Box
-                my={2.4}
                 sx={{
                     flex: 1,
                     overflowY: 'auto',
-                    paddingBottom: '80px',
-                    paddingTop: '1rem'
+                    paddingBottom: '80px'
                 }}
             >
                 <Box mx={3.5} my={2}>
