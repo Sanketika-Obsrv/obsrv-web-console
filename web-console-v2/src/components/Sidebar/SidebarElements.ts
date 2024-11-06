@@ -123,7 +123,7 @@ const SidebarElements = () => {
     {
       id: 'notifications',
       icon: React.createElement(MailOutlined),
-      title: 'Notifications',
+      title: 'Notification Channels',
       route: '/home/alertChannels',
     },
   ];
