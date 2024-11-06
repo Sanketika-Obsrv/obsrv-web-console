@@ -148,7 +148,7 @@ const ImportDataset = ({ open, onClose }: any) => {
                         </IconButton>
                     </DialogTitle>
                     <DialogContent>
-                        <Grid container spacing={3} justifyContent="center" alignItems="baseline" display="flex" pb={2}>
+                        <Grid container spacing={3} justifyContent="center" alignItems="baseline" display="flex" pb={2} mt={0.5}>
                             <Grid item xs={12} sm={6} lg={6}>
                                 <HtmlTooltip title="Name of the dataset" arrow placement="top-start">
                                     <TextField
