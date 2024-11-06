@@ -14,6 +14,9 @@ const DedupeEvent = (props: any) => {
     const handleCheckBox = (event: any) => {
         setIsChecked(event.target.checked);
         console.log('Checkbox is checked:', event.target.checked);
+        if(event.target.checked && _.isEmpty(dedupKey)){
+            isProceed(false)
+        }
         if(!event.target.checked){
             setDedupKey(""); 
             const dedupeEvent = {
