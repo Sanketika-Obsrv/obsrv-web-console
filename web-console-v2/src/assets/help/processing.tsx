@@ -7,24 +7,21 @@ const ProcessingHelpText = () =>{
             <section className="section" id="section1">
                 <h1 className="contentsHeader">Data Validation</h1>
                 <p className="contentBody">
-                    <ul className="customList">
                     <p><strong>Data Validation:</strong> All data is automatically validated to ensure accuracy and compliance with the schema. This includes:</p>
-                        <ul>
+                    <ul>
                         <li>Data type checks</li>
                         <li>Enum validations</li>
                         <li>Range validations</li>
                         <li>Minimum and maximum value checks</li>
                         <li>Required field enforcement</li>
-                        </ul>
-                        <p>Any mismatches or missing required fields will cause the data to fail validation.</p>
-                        <p><strong>Additional Fields:</strong> Select how to handle fields not defined in the schema:</p>
-                        <ul>
+                    </ul>
+                    <p>Any mismatches or missing required fields will cause the data to fail validation.</p>
+                    <p><strong>Additional Fields:</strong> Select how to handle fields not defined in the schema:</p>
+                    <ul>
                         <li><strong>Fail for New Fields (No):</strong> Processing will fail if any fields outside the schema are detected.</li>
                         <li><strong>Ignore New Fields (Yes):</strong> Additional fields will be ignored, and processing will continue.</li>
-                        </ul>
-                        <p>Choose the option that best fits your data requirements.</p>
-
                     </ul>
+                    <p>Choose the option that best fits your data requirements.</p>
                 </p>
             </section>
 
