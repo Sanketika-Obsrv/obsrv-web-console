@@ -25,7 +25,7 @@ const AdditionSummary = (props: any) => {
 
     const columns = [
         {
-            Header: 'Type',
+            header: 'Type',
             accessor: 'type',
             Cell(value: any) {
                 const row = value?.cell?.row?.original || {};
@@ -34,7 +34,7 @@ const AdditionSummary = (props: any) => {
             }
         },
         {
-            Header: 'Name',
+            header: 'Name',
             accessor: 'name',
             Cell(value: any) {
                 const row = value?.cell?.row?.original || {};
@@ -42,7 +42,7 @@ const AdditionSummary = (props: any) => {
             }
         },
         {
-            Header: 'Config',
+            header: 'Config',
             Cell(payload: any) {
                 const row = payload?.cell?.row?.original || {};
                 const config = row?.value || {};
