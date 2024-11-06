@@ -74,10 +74,6 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
     fetchNodesRunning(query2);
   }, [query, uuid, refresh]);
 
-  // if (loading) {
-  //   return <Typography>Loading...</Typography>;
-  // }
-
   const unit = nodesRunning ? ' B' : '%';
 
   return (
