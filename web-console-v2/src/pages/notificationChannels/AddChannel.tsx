@@ -65,7 +65,7 @@ const AddChannel = () => {
                 showAlert('Notification channel created successfully', "success")
             }
         } catch (err) {
-            showAlert( "Failed to create channel", "error")
+            showAlert("Failed to create channel", "error")
         } finally {
             setLoading(false)
         }
@@ -99,13 +99,19 @@ const AddChannel = () => {
     };
 
     return <>
-        {loading && <Loader loading={loading}/>}
-        <Grid>
-            {renderSections(renderSectionProps)}
-        </Grid>
-        <Grid>
-            {renderTestChannelDialog()}
-        </Grid>
+        {loading
+            ?
+            <Loader loading={loading} />
+            :
+            <>
+                <Grid>
+                    {renderSections(renderSectionProps)}
+                </Grid>
+                <Grid>
+                    {renderTestChannelDialog()}
+                </Grid>
+            </>
+        }
     </>
 };
 
