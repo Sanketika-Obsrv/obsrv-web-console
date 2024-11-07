@@ -18,7 +18,6 @@ import StyleIcon from '@mui/icons-material/Style';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { v4 } from 'uuid';
-import BackdropLoader from 'components/BackdropLoader';
 import Loader from 'components/Loader';
 import { renderSkeleton } from 'services/skeleton';
 import PostAddIcon from '@mui/icons-material/PostAdd';
@@ -410,8 +409,6 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
 
     return (
         <MainCard content={false}>
-            {isLoading && <Loader loading={isLoading} />}
-            <BackdropLoader open={isLoading} />
             {isLoading ? renderSkeleton({ config: { type: "table", width: "100%" } }) :
                 <>
                     {_.isEmpty(data) ? renderNoDatasetsMessage(en['datasets-not-found']) : <>

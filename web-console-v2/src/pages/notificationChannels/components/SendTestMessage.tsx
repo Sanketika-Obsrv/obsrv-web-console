@@ -13,7 +13,7 @@ import en from 'utils/locales/en.json'
 import { useAlert } from "contexts/AlertContextProvider";
 
 const SendTestMessage = (props: any) => {
-    const { channel = {}, onClose , setTestChannel} = props;
+    const { channel = {}, onClose, setTestChannel } = props;
     const { type } = channel;
     const [loading, setLoading] = useState(false);
     const [value, subscribe] = useState<any>({ message: `Testing ${_.capitalize(type)} integration. If you can read this, it's working!` });
@@ -31,7 +31,7 @@ const SendTestMessage = (props: any) => {
 
     const validationSchema = yup
         .object()
-        .shape({ message: yup.string().required(en.isRequired)});
+        .shape({ message: yup.string().required(en.isRequired) });
 
     const sendMessage = async () => {
         const message = _.get(value, 'message');
@@ -57,8 +57,7 @@ const SendTestMessage = (props: any) => {
     }
 
     return <>
-        {loading && <Loader loading={loading}/>}
-        <Box sx={{ p: 1, py: 1.5 }}>
+        {loading ? <Loader loading={loading} /> : <Box sx={{ p: 1, py: 1.5 }}>
             <DialogTitle>Test Notification Channel</DialogTitle>
             <DialogContent>
                 <Grid container>
@@ -83,7 +82,7 @@ const SendTestMessage = (props: any) => {
                     Send Message
                 </Button>
             </DialogActions>
-        </Box>
+        </Box>}
     </>
 }
 

@@ -184,17 +184,17 @@ const QueryBuilder = (props: any) => {
         category: yup.string().required(en.isRequired),
         metric: yup.string().required(en.isRequired),
         operator: yup.string().required(en.isRequired),
-        threshold: yup.number().when('operator', (operator:any, schema) => {
+        threshold: yup.number().when('operator', (operator: any, schema) => {
             return !_.includes(["within_range", "outside_range"], operator)
                 ? schema.required(en.isRequired)
                 : schema;
         }),
-        threshold_from: yup.number().when('operator', (operator:any, schema) => {
+        threshold_from: yup.number().when('operator', (operator: any, schema) => {
             return _.includes(["within_range", "outside_range"], operator)
                 ? schema.required(en.isRequired).min(0)
                 : schema;
         }),
-        threshold_to: yup.number().when('operator', (operator:any, schema) => {
+        threshold_to: yup.number().when('operator', (operator: any, schema) => {
             return _.includes(["within_range", "outside_range"], operator)
                 ? schema.required(en.isRequired)
                     .min(0)
@@ -290,11 +290,14 @@ const QueryBuilder = (props: any) => {
     };
 
     return <>
-        {loading && <Loader loading={true} />}
-        <Grid container direction={'column'} spacing={2}>
-            {renderQueryBuilderForm()}
-            {renderQueryChart()}
-        </Grid >
+        {loading
+            ?
+            <Loader loading={true} />
+            :
+            <Grid container direction={'column'} spacing={2}>
+                {renderQueryBuilderForm()}
+                {renderQueryChart()}
+            </Grid >}
     </>
 }
 

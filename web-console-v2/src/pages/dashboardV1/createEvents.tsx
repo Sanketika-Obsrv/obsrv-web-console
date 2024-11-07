@@ -121,19 +121,23 @@ const DatasetCreateEvents = () => {
     };
 
     return <>
-        {loading && <Loader loading={loading} />}
-        <MainCard title={`Add Events to Dataset (${_.capitalize(datasetName)})`}>
-            <Grid container spacing={1}>
-                <Grid item xs={12} sm={12}>
-                    <Alert color="info" icon={<QuestionCircleFilled />}>
-                        Submit your events to the Datasource by uploading a JSON file or editing JSON data.
-                    </Alert>
+        {loading
+            ?
+            <Loader loading={loading} />
+            :
+            <MainCard title={`Add Events to Dataset (${_.capitalize(datasetName)})`}>
+                <Grid container spacing={1}>
+                    <Grid item xs={12} sm={12}>
+                        <Alert color="info" icon={<QuestionCircleFilled />}>
+                            Submit your events to the Datasource by uploading a JSON file or editing JSON data.
+                        </Alert>
+                    </Grid>
+                    <Grid item xs={12} sm={12}>
+                        <UploadFiles data={data} setData={setData} files={files} setFiles={setFiles} subscribeErrors={setFormErrors} />
+                    </Grid>
                 </Grid>
-                <Grid item xs={12} sm={12}>
-                    <UploadFiles data={data} setData={setData} files={files} setFiles={setFiles} subscribeErrors={setFormErrors} />
-                </Grid>
-            </Grid>
-        </MainCard >
+            </MainCard >
+        }
         {files && _.size(files) > 0 &&
             <GenericCard elevation={1}>
                 <Box display="flex" justifyContent="space-between">

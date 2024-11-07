@@ -96,107 +96,110 @@ const Preview: FC = (): ReactElement => {
                 flexDirection: 'column',
             }}
         >
-            <Loader loading={publishDataset.isPending} descriptionText="Loading the page" />
-
-            {publishDataset.isError ? (
-                <Retry
-                    buttonLabel="Retry"
-                    onButtonClick={() => navigate(0)}
-                    description="Something went wrong."
-                />
-            ) : (
-                <>
-                    <Stack
-                        flex={1}
-                        mx={3.5}
-                        overflow="auto"
-                        paddingBottom= "8rem"
-                    >
-                        <Box mb={2} mt={2}>
-                            <Button
-                                variant="text"
-                                className={styles.button}
-                                onClick={() => {
-                                    navigate(-1);
-                                }}
-                                startIcon={
-                                    <KeyboardBackspaceIcon
-                                        sx={{ color: 'black', width: '24px', height: '24px' }}
-                                    />
-                                }
+            {
+                publishDataset.isPending ? (
+                    <Loader loading={publishDataset.isPending} descriptionText="Loading the page" />
+                ) : (
+                    publishDataset.isError ? (
+                        <Retry
+                            buttonLabel="Retry"
+                            onButtonClick={() => navigate(0)}
+                            description="Something went wrong."
+                        />
+                    ) : (
+                        <>
+                            <Stack
+                                flex={1}
+                                mx={3.5}
+                                overflow="auto"
+                                paddingBottom="8rem"
                             >
-                                Back
-                            </Button>
-                        </Box>
-                        <Box>
-                            <Tabs
-                                value={selectedTab}
-                                onChange={handleTabChange}
-                                sx={{
-                                    borderBottom: '1px solid #eee',
-                                    backgroundColor: 'white',
-                                    borderRadius: '1.25rem 1.25rem 0rem 0rem',
-                                    '& .MuiTabs-indicator': {
-                                        top: 0,
-                                        height: '0.1875rem',
-                                        width: '2.75rem !important',
-                                        color: '#056ECE',
-                                        marginLeft: '5.2rem'
-                                    }
-                                }}
-                            >
-                                {map(tabData, (item, index) => (
-                                    <Tab
-                                        key={index}
+                                <Box mb={2} mt={2}>
+                                    <Button
+                                        variant="text"
+                                        className={styles.button}
+                                        onClick={() => navigate(-1)}
+                                        startIcon={
+                                            <KeyboardBackspaceIcon
+                                                sx={{ color: 'black', width: '24px', height: '24px' }}
+                                            />
+                                        }
+                                    >
+                                        Back
+                                    </Button>
+                                </Box>
+                                <Box>
+                                    <Tabs
+                                        value={selectedTab}
+                                        onChange={handleTabChange}
                                         sx={{
-                                            backgroundColor: 'transparent',
-                                            width: 'auto',
-                                            color: '#111111',
-                                            padding: '20px',
-                                            fontSize: '16px',
-                                            '&.Mui-selected': { color: '#056ECE' }
+                                            borderBottom: '1px solid #eee',
+                                            backgroundColor: 'white',
+                                            borderRadius: '1.25rem 1.25rem 0rem 0rem',
+                                            '& .MuiTabs-indicator': {
+                                                top: 0,
+                                                height: '0.1875rem',
+                                                width: '2.75rem !important',
+                                                color: '#056ECE',
+                                                marginLeft: '5.2rem'
+                                            }
                                         }}
-                                        label={item}
-                                    />
-                                ))}
-                            </Tabs>
+                                    >
+                                        {map(tabData, (item, index) => (
+                                            <Tab
+                                                key={index}
+                                                sx={{
+                                                    backgroundColor: 'transparent',
+                                                    width: 'auto',
+                                                    color: '#111111',
+                                                    padding: '20px',
+                                                    fontSize: '16px',
+                                                    '&.Mui-selected': { color: '#056ECE' }
+                                                }}
+                                                label={item}
+                                            />
+                                        ))}
+                                    </Tabs>
 
-                            <Stack sx={{ background: 'white' }} height="90%" pb={3}>
-                                {renderContent(selectedTab)}
+                                    <Stack sx={{ background: 'white' }} height="90%" pb={3}>
+                                        {renderContent(selectedTab)}
+                                    </Stack>
+                                </Box>
+                                <AlertDialog
+                                    open={open}
+                                    handleClose={handleClose}
+                                    action={handleAction}
+                                    context={dialogContext}
+                                />
                             </Stack>
-                        </Box>
-                        <AlertDialog
-                            open={open}
-                            handleClose={handleClose}
-                            action={handleAction}
-                            context={dialogContext}
-                        />
-                    </Stack>
 
-                    <Box
-                        className={`${styles.actionContainer}`}
-                        sx={{
-                            position: 'fixed',
-                            bottom: 0,
-                            right: 0,
-                            left: 0,
-                            width: '100%'
-                        }}
-                    >
-                        <Actions
-                            buttons={[
-                                {
-                                    id: 'btn1',
-                                    label: 'Save Dataset',
-                                    variant: 'contained',
-                                    color: 'primary'
-                                }
-                            ]}
-                            onClick={handleButtonClick}
-                        />
-                    </Box>
-                </>
-            )}
+                            <Box
+                                className={`${styles.actionContainer}`}
+                                sx={{
+                                    position: 'fixed',
+                                    bottom: 0,
+                                    right: 0,
+                                    left: 0,
+                                    width: '100%'
+                                }}
+                            >
+                                <Actions
+                                    buttons={[
+                                        {
+                                            id: 'btn1',
+                                            label: 'Save Dataset',
+                                            variant: 'contained',
+                                            color: 'primary'
+                                        }
+                                    ]}
+                                    onClick={handleButtonClick}
+                                />
+                            </Box>
+                        </>
+                    )
+                )
+            }
+
         </Box>
     );
 };
