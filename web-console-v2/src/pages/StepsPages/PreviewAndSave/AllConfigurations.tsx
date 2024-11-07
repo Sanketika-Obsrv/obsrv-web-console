@@ -112,10 +112,6 @@ const AllConfigurations = () => {
         }
     ];
 
-    const handleClick = () => {
-        navigate('/home/processing');
-    };
-
     return (
         <Box>
             {(datasetList.isPending || fetchDatasetById.isPending)
@@ -230,17 +226,6 @@ const AllConfigurations = () => {
                                         No records
                                     </Typography>
                                 )}
-                            </Stack>
-                            <Stack direction="row" justifyContent="flex-end" mx={3} pb={2}>
-                                <Button
-                                    variant="text"
-                                    color="primary"
-                                    startIcon={<AddIcon />}
-                                    className={styles.addButton}
-                                    onClick={handleClick}
-                                >
-                                    Add Transformations
-                                </Button>
                             </Stack>
                         </Stack>
                         <Stack my={2} mx={2.5} className={styles.stackStyle}>
