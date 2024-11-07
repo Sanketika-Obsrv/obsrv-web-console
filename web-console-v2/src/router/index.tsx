@@ -86,7 +86,9 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `${BASE_PATH}/datasets`, label: "Datasets", element: <ClusterHealth /> },
     { path: `${BASE_PATH}/datasets/metrics/:datasetId`, label: "Metrics", element: <DatasetMetrics /> },
     { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
-    { path: `${BASE_PATH}/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> }
+    { path: `${BASE_PATH}/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
+    { path: `${BASE_PATH}/datasets/management/:datasetId`, label:"Management", element: <DatasetManagement />},
+    { path: `${BASE_PATH}/datasets/rollups/:datasetId`, label:"Rollups", element: <RollupConfig />},
 ];
 
 const AppRouter = () => (
