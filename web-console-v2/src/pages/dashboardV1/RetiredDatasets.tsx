@@ -9,7 +9,6 @@ import dayjs from 'dayjs';
 import * as _ from 'lodash';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import BackdropLoader from 'components/BackdropLoader';
 import Loader from 'components/Loader';
 import { renderSkeleton } from 'services/skeleton';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -175,7 +174,6 @@ const RetiredDatasets = (props: any) => {
 
     return (
         <MainCard content={false}>
-            <BackdropLoader open={isLoading} />
             {isLoading ? renderSkeleton({ config: { type: "table", width: "100%" } }) :
                 <>
                     {_.isEmpty(data) ? renderNoDatasetsMessage(en['datasets-not-found']) : <>
