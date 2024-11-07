@@ -58,16 +58,36 @@ function BasicBreadcrumbs(): JSX.Element {
         if(openNotification || _.isNull(alerts)) fetchAlerts();
     }, [openNotification]);
     
+
+    // Helper function to generate a regex for dynamic paths (supports parameters like :id)
+    const getDynamicRegex = (path: string) => {
+        return new RegExp(
+            '^' +
+            path
+                .split('/')
+                .map(segment => (segment.startsWith(':') ? '[^/]+' : segment))
+                .join('/') +
+            '$'
+        );
+    };
+
+    // Recursive function to find a matching route, including support for nested routes and dynamic segments
     const findRoute = (routes: any, path: string) => {
         for (const route of routes) {
-            if (route.path === path) return route;
+            // Check for an exact match or a dynamic match
+            const dynamicRegex = getDynamicRegex(route.path);
+            if (dynamicRegex.test(path)) return { ...route, path: path };
+
+            // Check nested routes if available
             if (route.children) {
-                const childRoute = route.children.find((childData: { path: any; }) => `${route.path}/${childData.path}` === path);
-                if (childRoute) return { ...childRoute, path };
+                for (const childData of route.children) {
+                    const dynamicRegex = getDynamicRegex(`${route.path}/${childData.path}`);
+                    if (dynamicRegex.test(path)) return { ...childData, path: path };
+                }
             }
         }
         return null;
-    }
+    };
 
     return (pathname !== '/login' ? (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
@@ -85,32 +105,34 @@ function BasicBreadcrumbs(): JSX.Element {
                         const isLast = index === pathnames.length - 1;
                         // Capitalize first letter apart from datasetId
                         // const displayName = isLast ? name : _.capitalize(name);
-                        const displayName = matchedRoute?.label !== undefined ? matchedRoute.label : name;
-                        return isLast ? (
-                            <Typography
-                                variant="body1"
-                                color="text.primary"
-                                key={name}
-                                sx={{ fontWeight: 700 }}
-                            >
-                                {displayName}
-                            </Typography>
-                        ) : _.isEqual(routeTo, '/home') ? (
-                            <Typography
-                                variant="body1"
-                                key={name}
-                                onClick={handleNavigate}
-                                sx={{ cursor: 'pointer', fontWeight: 600 }}
-                            >
-                                {displayName}
-                            </Typography>
-                        ) : (
-                            <NavLink className={styles.noUnderline} key={name} to={routeTo}>
-                                <Typography variant="body1" fontWeight={600}>
+                        if(matchedRoute){
+                            const displayName = matchedRoute?.label !== undefined ? matchedRoute.label : name;
+                            return isLast ? (
+                                <Typography
+                                    variant="body1"
+                                    color="text.primary"
+                                    key={name}
+                                    sx={{ fontWeight: 700 }}
+                                >
                                     {displayName}
                                 </Typography>
-                            </NavLink>
-                        );
+                            ) : _.isEqual(routeTo, '/home') ? (
+                                <Typography
+                                    variant="body1"
+                                    key={name}
+                                    onClick={handleNavigate}
+                                    sx={{ cursor: 'pointer', fontWeight: 600 }}
+                                >
+                                    {displayName}
+                                </Typography>
+                            ) : (
+                                <NavLink className={styles.noUnderline} key={name} to={routeTo}>
+                                    <Typography variant="body1" fontWeight={600}>
+                                        {displayName}
+                                    </Typography>
+                                </NavLink>
+                            );
+                        }
                     })}
                 </Breadcrumbs>
             </Grid>

@@ -1,11 +1,10 @@
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
-import { Box, Button } from '@mui/material';
-import { UiSchema } from '@rjsf/utils';
+import { Box, Button, Checkbox, FormControl, FormControlLabel, FormGroup, Grid, InputLabel, MenuItem, Select, Typography } from '@mui/material';
 import StorageHelpText from 'assets/help/storage';
 import Action from 'components/ActionButtons/Actions';
-import ConfigureConnectorForm from 'components/Form/DynamicForm';
 import HelpSection from 'components/HelpSection/HelpSection';
 import Loader from 'components/Loader';
+import { GenericCard } from 'components/Styled/Cards';
 import { useAlert } from 'contexts/AlertContextProvider';
 import _ from 'lodash';
 import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
@@ -13,50 +12,34 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
 import { extractTransformationOptions } from '../Processing/Processing';
-import schemas, { CustomSchema, STORE_TYPE } from './Schema';
-
-interface FormData {
-    [key: string]: unknown;
-}
-
-interface Schema {
-    title: string;
-    schema: CustomSchema;
-    uiSchema: UiSchema;
-}
-
-interface ConfigureConnectorFormProps {
-    schema: Schema;
-    formData: FormData;
-    setFormData: React.Dispatch<React.SetStateAction<FormData>>;
-    onChange: (formData: FormData, errors?: unknown[] | null) => void;
-}
 
 export const getDatasetType = (type: string) => {
     if (type === 'event') {
-        return 'Events';
+        return 'Event/Telemetry Data';
     }
     if (type === 'master') {
-        return 'Master';
+        return 'Master Data';
     }
     if (type === 'transaction') {
-        return 'Transactional';
+        return 'Data Changes (Updates or Transactions)';
     } else {
-        return 'Events';
+        return 'Event/Telemetry Data';
     }
 };
 
 const Storage = () => {
 
-    const [formErrors, setFormErrors] = useState<unknown[]>([]);
-    const [formData, setFormData] = useState<{ [key: string]: unknown }>({});
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
+    const [timestampFields, setTimestampFields] = useState<string[]>([]);
+    const [nonTimestampFields, setNonTimestampFields] = useState<string[]>([]);
+    const [lakehouseEnabled, setLakehouseEnabled] = useState<boolean>(false);
+    const [realtimeStoreEnabled, setRealtimeStoreEnabled] = useState<boolean>(false);
+    const [cacheStoreEnabled, setCacheStoreEnabled] = useState<boolean>(false);
+    const [primaryKey, setPrimaryKey] = useState<string>('');
+    const [timestampKey, setTimestampKey] = useState<string>('');
+    const [partitionKey, setPartitionKey] = useState<string>('');
 
-    const [datasetType, setDatasetType] = useState<string>('');
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [uiSchema, setUiSchema] = useState<Schema>(schemas);
     const updateDatasetMutate = useUpdateDataset();
     const sessionData = sessionStorage.getItem('configDetails');
     const configData = sessionData ? JSON.parse(sessionData) : null;
@@ -74,263 +57,98 @@ const Storage = () => {
     });
     const [canProceed, setCanProceed] = useState(false);
 
-    const type = _.get(fetchData, 'type');
-    const schema = _.get(fetchData, 'data_schema.properties', {});
-    const schemaProperties = _.omit(schema, ['configurations', 'dataMappings']);
+    const datasetType = _.get(fetchData, 'type');
     const datasetConfig = _.get(fetchData, 'dataset_config', {});
     const datasetConfig_indexing = _.get(fetchData, 'dataset_config.indexing_config', {});
     const datasetConfig_keys = _.get(fetchData, 'dataset_config.keys_config', {});
-
     const timeStampTypes = ['date', 'timestamp', 'datetime'];
 
     useEffect(() => {
         const getColumns = extractTransformationOptions(fetchData?.data_schema || {});
-
         const timestampKeys = getColumns.filter((option) =>
             timeStampTypes.some((keyword) => option.toLowerCase().includes(keyword))
         );
 
         const nonTimestampKeys = getColumns.filter((key) => !timestampKeys.includes(key));
-        _.set(
-            schemas,
-            ['schema', 'properties', 'section3', 'properties', 'timestamp', 'enum'],
-            [...timestampKeys, 'Event Arrival Time']
-        );
-
-        _.set(
-            schemas,
-            ['schema', 'properties', 'section3', 'properties', 'partition', 'enum'],
-            nonTimestampKeys
-        );
-
-        _.set(
-            schemas,
-            ['schema', 'properties', 'section3', 'properties', 'primary', 'enum'],
-            nonTimestampKeys
-        );
-    }, [schemaProperties]);
-
-    useEffect(() => {
-        if (type !== '' || type !== 'undefined') {
-            const typeValue = getDatasetType(type);
-            setDatasetType(typeValue);
-        }
+        setTimestampFields([...timestampKeys, 'Event Arrival Time']);
+        setNonTimestampFields(nonTimestampKeys)
 
         const { data_key, partition_key, timestamp_key } = datasetConfig_keys;
         const { olap_store_enabled, lakehouse_enabled, cache_enabled } = datasetConfig_indexing;
+        setRealtimeStoreEnabled(olap_store_enabled);
+        setLakehouseEnabled(lakehouse_enabled);
+        setCacheStoreEnabled(cache_enabled);
+        setPrimaryKey(data_key);
+        setTimestampKey('obsrv_meta.syncts' === timestamp_key ? 'Event Arrival Time' : timestamp_key);
+        setPartitionKey(partition_key)
+    }, [datasetType]);
 
-        if (
-            (data_key !== '' || data_key !== 'undefined') &&
-            (partition_key !== '' || partition_key !== 'undefined')
-        ) {
-            const existingData = {
-                section1: {
-                    datasetType: getDatasetType(type),
-                    lakehouse: lakehouse_enabled,
-                    realTimeStore: olap_store_enabled
+    const handleButtonClick = () => {
+        
+        const dataset_config = {
+            dataset_config: {
+                file_upload_path: datasetConfig.file_upload_path,
+                indexing_config: {
+                    olap_store_enabled: realtimeStoreEnabled,
+                    lakehouse_enabled: lakehouseEnabled,
+                    cache_enabled: cacheStoreEnabled
                 },
-                section2: {
-                    storageType: [
-                        lakehouse_enabled && STORE_TYPE.LAKEHOUSE,
-                        olap_store_enabled && STORE_TYPE.REAL_TIME_STORE,
-                        cache_enabled && STORE_TYPE.CACHE
-                    ]
-                },
-                section3: {
-                    ...(data_key !== '' && { primary: data_key }),
-                    ...(timestamp_key !== '' && {
-                        timestamp: timestamp_key === 'obsrv_meta.syncts' ? 'Event Arrival Time' : timestamp_key
-                    }),
-                    ...(partition_key !== '' && { partition: partition_key })
+                keys_config: {
+                    data_key: primaryKey,
+                    partition_key: partitionKey,
+                    timestamp_key: timestampKey === 'Event Arrival Time' ? 'obsrv_meta.syncts' : timestampKey
                 }
-            };
-            setFormData(existingData);
-        } else {
-            const existingData = {
-                section1: {
-                    datasetType: getDatasetType(type)
-                },
-                section2: {
-                    storageType: [
-                        lakehouse_enabled && STORE_TYPE.LAKEHOUSE,
-                        olap_store_enabled && STORE_TYPE.REAL_TIME_STORE,
-                        cache_enabled && STORE_TYPE.CACHE
-                    ]
+            }
+        };
+
+        updateDatasetMutate.mutate(
+            {
+                data: dataset_config
+            },
+            {
+                onSuccess: () => {
+                    showAlert('Storage details updated', 'success');
+                    navigate(`/home/preview/${datasetId}`);
                 }
-            };
-            setFormData(existingData);
-        }
-    }, [datasetConfig_indexing, datasetConfig_keys, type]);
-
-    const handleButtonClick = (id: string) => {
-        const storageTypeSelected = _.get(formData, 'section2.storageType') as
-            | string[]
-            | undefined;
-
-        const primaryOption = _.get(formData, 'section3.primary');
-        const timestampOption = _.get(formData, 'section3.timestamp');
-        const partitionOption = _.get(formData, 'section3.partition');
-
-        if (formErrors.length > 0) {
-            showAlert('Failed to update storage', 'error');
-        } else {
-            const dataset_config = {
-                type:
-                    datasetType === 'Events'
-                        ? 'event'
-                        : datasetType === 'Master'
-                            ? 'master'
-                            : 'transaction',
-                dataset_config: {
-                    file_upload_path: datasetConfig.file_upload_path,
-                    indexing_config: {
-                        olap_store_enabled: storageTypeSelected?.includes(
-                            STORE_TYPE.REAL_TIME_STORE
-                        ),
-                        lakehouse_enabled: storageTypeSelected?.includes(STORE_TYPE.LAKEHOUSE),
-                        cache_enabled: storageTypeSelected?.includes(STORE_TYPE.CACHE)
-                    },
-                    keys_config: {
-                        data_key: primaryOption,
-                        partition_key: partitionOption,
-                        timestamp_key: timestampOption === 'Event Arrival Time' ? 'obsrv_meta.syncts' : timestampOption
-                    }
-                }
-            };
-
-            updateDatasetMutate.mutate(
-                {
-                    data: dataset_config
-                },
-                {
-                    onSuccess: () => {
-                        showAlert('Storage details updated', 'success');
-                        navigate(`/home/preview/${datasetId}`);
-                    }
-                }
-            );
-            setFormData(formData);
-        }
-    };
-
-    const handleChange: ConfigureConnectorFormProps['onChange'] = (formData, errors) => {
-        setFormData(formData);
-        setFormErrors([]);
+            }
+        );
     };
 
     const handleHelpSectionToggle = () => {
         setIsHelpSectionOpen(!isHelpSectionOpen);
     };
 
-    const updateRequiredCacheKeys = (
-        storageTypeSelected: string | string[],
-        required: string[],
-        requiredValues: boolean
-    ) => {
-        if (storageTypeSelected?.includes(STORE_TYPE.CACHE) && !required.includes('primary')) {
-            required.push('primary');
+    const handleIndexingConfigChange = (event: any, id: string) => {
+        if(id === 'lakehouse') {
+            setLakehouseEnabled(event.target.checked)
         }
-        requiredValues = required.every(
-            (field) => _.get(formData, `section3.${field}`) !== undefined
-        );
-        setCanProceed(requiredValues);
-    };
+        if(id === 'realtimeStore') {
+            setRealtimeStoreEnabled(event.target.checked)
+        }
+        if(id === 'cacheStore') {
+            setCacheStoreEnabled(event.target.checked)
+        }
+    }
+
+    const handleStorageKeyChange = (event: any, id: string) => {
+        if(id === 'primaryKey') {
+            setPrimaryKey(event.target.value)
+        }
+        if(id === 'partitionKey') {
+            setPartitionKey(event.target.value)
+        }
+        if(id === 'timestampKey') {
+            setTimestampKey(event.target.value)
+        }
+    }
 
     useEffect(() => {
-        const selectedDatasetType = _.get(formData, 'section1.datasetType') as string;
-        if (selectedDatasetType) setDatasetType(selectedDatasetType);
-
-        const storageTypeSelected = _.get(formData, 'section2.storageType') as string[];
-
-        if (storageTypeSelected?.length <= 0) setCanProceed(false);
-        const updatedUiSchema: UiSchema = {
-            ...schemas.uiSchema,
-
-            section3: {
-                ...schemas.uiSchema.section3,
-                primary: {
-                    ...schemas.uiSchema.section3.primary
-                },
-                partition: {
-                    ...schemas.uiSchema.section3.partition
-                },
-                timestamp: {
-                    ...schemas.uiSchema.section3.timestamp
-                }
-            }
-        };
-
-        let required: string[] = [];
-        let requiredValues = false;
-        switch (true) {
-            case selectedDatasetType === 'Master':
-                if (storageTypeSelected?.includes(STORE_TYPE.LAKEHOUSE)) {
-                    if (storageTypeSelected?.includes(STORE_TYPE.REAL_TIME_STORE)) {
-                        required = ['primary', 'partition', 'timestamp'];
-                    } else {
-                        required = ['primary', 'partition'];
-                    }
-                } else if (storageTypeSelected?.includes(STORE_TYPE.REAL_TIME_STORE)) {
-                    required = ['primary', 'timestamp'];
-                } else {
-                    required = ['primary'];
-                }
-
-                updateRequiredCacheKeys(storageTypeSelected, required, requiredValues);
-
-                break;
-
-            case storageTypeSelected?.includes(STORE_TYPE.LAKEHOUSE) &&
-                storageTypeSelected?.includes(STORE_TYPE.REAL_TIME_STORE):
-                required = ['primary', 'partition', 'timestamp'];
-
-                updateRequiredCacheKeys(storageTypeSelected, required, requiredValues);
-
-                break;
-
-            case storageTypeSelected?.includes(STORE_TYPE.LAKEHOUSE):
-                required = ['primary', 'partition'];
-
-                updateRequiredCacheKeys(storageTypeSelected, required, requiredValues);
-
-                break;
-
-            case storageTypeSelected?.includes(STORE_TYPE.REAL_TIME_STORE):
-                required = ['timestamp'];
-
-                updateRequiredCacheKeys(storageTypeSelected, required, requiredValues);
-
-                break;
-
-            case storageTypeSelected?.includes(STORE_TYPE.CACHE):
-                required = ['primary'];
-                requiredValues = _.get(formData, 'section3.primary') !== undefined;
-                setCanProceed(requiredValues);
-                break;
-
-            default:
-                required = [];
-                setCanProceed(false);
-                break;
-        }
-
-        const updatedSchema: CustomSchema = {
-            ...schemas.schema,
-            properties: {
-                ...schemas.schema.properties,
-                section3: {
-                    ...(schemas.schema.properties?.section3 as any),
-                    required: required
-                }
-            }
-        };
-
-        setUiSchema({ title: '', schema: updatedSchema, uiSchema: updatedUiSchema });
-    }, [formData, datasetType]);
-
-    const handleDatasetNameClicks = (id: any) => {
-        setHighlightedSection(id);
-    };
+        if(!lakehouseEnabled && !realtimeStoreEnabled && !cacheStoreEnabled) return setCanProceed(false);
+        if(lakehouseEnabled && (_.isEmpty(primaryKey) || _.isEmpty(partitionKey))) return setCanProceed(false);
+        if(realtimeStoreEnabled && _.isEmpty(timestampKey)) return setCanProceed(false);
+        if(cacheStoreEnabled && _.isEmpty(primaryKey)) return setCanProceed(false);
+        setCanProceed(true)
+    }, [lakehouseEnabled, realtimeStoreEnabled, cacheStoreEnabled, primaryKey, partitionKey, timestampKey])
 
     return (
         <Box
@@ -342,55 +160,130 @@ const Storage = () => {
         >
             <Loader loading={fetchPending || fetchLoading} descriptionText="Loading the page" />
             <Box
-                mx={2.2}
+                mx={1}
                 sx={{
                     flex: 1,
                     overflowY: 'auto',
                     paddingBottom: '1rem',
-                    paddingTop: '1rem'
+                    paddingTop: '2rem'
                 }}
+                mr={4}
             >
-                <Button
-                    variant="text"
-                    className={styles.button}
-                    startIcon={
-                        <KeyboardBackspaceIcon
-                            sx={{ color: 'black', width: '1.5rem', height: '1.5rem' }}
-                        />
-                    }
-                    sx={{ fontSize: '1rem', ml: 2 }}
-                    onClick={() => {
-                        navigate(-1);
-                    }}
-                >
-                    Back
-                </Button>
+                <Box mx={1} my={1}>
+                    <Button
+                        variant="text"
+                        className={styles.button}
+                        startIcon={
+                            <KeyboardBackspaceIcon
+                                sx={{ color: 'black', width: '1.5rem', height: '1.5rem' }}
+                            />
+                        }
+                        sx={{ fontSize: '1rem', ml: 2 }}
+                        onClick={() => {
+                            navigate(-1);
+                        }}
+                    >
+                        Back
+                    </Button>
+                </Box>
                 <Box overflow="auto" display="flex" flexDirection="column">
                     <Box
                         className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
-                        sx={{
-                            '& .MuiFormHelperText-root': {
-                                display: 'none'
-                            },
-                            '& .MuiFormControlLabel-root .MuiFormControlLabel-label': {
-                                fontSize: '16px',
-                                color: '#111111'
-                            },
-                        }}
+                        pr={4}
+                        pl={3}
+                        sx={{ boxShadow: 'none', pb: '5rem' }}
                     >
-                        <ConfigureConnectorForm
-                            schema={uiSchema!}
-                            formData={formData}
-                            setFormData={setFormData}
-                            onChange={handleChange}
-                            highlightedSection={highlightedSection}
-                            handleClick={(sectionId) => handleDatasetNameClicks(sectionId)}
-                            styles={{
-                                sectionContainer: { marginTop: '-0.9375rem' },
-                                connectorName: { marginTop: '6.5625rem' },
-                                sectionContainers: { marginTop: '-4.6875rem' }
-                            }}
-                        />
+                        
+                        <GenericCard className={styles.title}>
+                            <Box className={styles?.heading} >
+                                <Typography variant='h1'>Configure Storage Type</Typography>
+                                <Box className='contentBody' sx={{ mt: 1}}>
+                                    Select one or more storage options that match your dataset requirements: Lakehouse for data science and analytics, Real-time Store for fast, real-time queries, or Cache for rapid lookups in data denormalization
+                                </Box>
+                            </Box>
+                            
+                            <Grid container spacing={3} className={styles?.gridContainer}>
+                                <Grid item xs={24} sm={12} lg={12}>
+                                    <FormGroup row >
+                                        <FormControlLabel control={<Checkbox checked={lakehouseEnabled} onChange={(event) => handleIndexingConfigChange(event, 'lakehouse')}/>} label="Data Lakehouse (Hudi)" />
+                                        <FormControlLabel control={<Checkbox checked={realtimeStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'realtimeStore')}/>} label="Real-time Store (Druid)" />
+                                        <FormControlLabel control={<Checkbox checked={cacheStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'cacheStore')}/>} label="Cache Store (Redis)" hidden={datasetType === 'master'}/>
+                                    </FormGroup>
+                                </Grid>
+                            </Grid>
+                        </GenericCard>
+                        <GenericCard className={styles.title} sx={{mt: '2rem'}}>
+                            <Box className={styles?.heading} sx={{ mb: 2 }}>
+                                <Typography variant='h1'>Configure Storage Keys</Typography>
+                                <Box className='contentBody' sx={{ mt: 1}}>
+                                    Specify key fields for indexing and data management: Primary Key for unique records, Timestamp Key for time-based indexing, and Partition Key for storage optimization.
+                                </Box>
+                            </Box>
+
+                            <Grid container spacing={3} className={styles?.gridContainer}>
+                                <Grid item xs={8} sm={4} lg={4}>
+                                    <FormControl fullWidth required={lakehouseEnabled || cacheStoreEnabled}>
+                                        <InputLabel id="primary_key">Primary Key</InputLabel>
+                                        <Select
+                                            labelId="primary_key"
+                                            id="primaryKey"
+                                            label={'Primary Key'}
+                                            variant="outlined"
+                                            fullWidth
+                                            value={primaryKey}
+                                            onChange={(event) => handleStorageKeyChange(event, 'primaryKey')}
+                                        >
+                                            {nonTimestampFields && nonTimestampFields.map( (item, index) => {
+                                                return (
+                                                    <MenuItem value={item} key={item}>{item}</MenuItem>
+                                                );
+                                            })}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={8} sm={4} lg={4}>
+                                    <FormControl fullWidth required={realtimeStoreEnabled}>
+                                        <InputLabel id="timestamp_key">Timestamp Key</InputLabel>
+                                        <Select
+                                            labelId="timestamp_key"
+                                            id="timestampKey"
+                                            label={'Timestamp Key'}
+                                            variant="outlined"
+                                            fullWidth
+                                            value={timestampKey}
+                                            onChange={(event) => handleStorageKeyChange(event, 'timestampKey')}
+                                        >
+                                            {timestampFields && timestampFields.map( (item, index) => {
+                                                return (
+                                                    <MenuItem value={item} key={item}>{item}</MenuItem>
+                                                );
+                                            })}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={8} sm={4} lg={4}>
+                                    <FormControl fullWidth required={lakehouseEnabled}>
+                                        <InputLabel id="partition_key">Partition Key</InputLabel>
+                                        <Select
+                                            labelId="partition_key"
+                                            id="partitionKey"
+                                            label={'Partition Key'}
+                                            variant="outlined"
+                                            fullWidth
+                                            value={partitionKey}
+                                            onChange={(event) => handleStorageKeyChange(event, 'partitionKey')}
+                                        >
+                                            {nonTimestampFields && nonTimestampFields.map( (item, index) => {
+                                                return (
+                                                    <MenuItem value={item} key={item}>{item}</MenuItem>
+                                                );
+                                            })}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
+                        </GenericCard>
+                        
                     </Box>
                     <HelpSection
                         helpSection={{
