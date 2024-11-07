@@ -1,35 +1,33 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Button, Card, Grid, Paper, TextField, Typography } from '@mui/material';
-import { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { styled } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
-import { useFormik } from 'formik';
-import _, { isEmpty } from 'lodash';
-import { useNavigate } from 'react-router-dom';
-import { theme } from 'theme';
-import { useAlert } from 'contexts/AlertContextProvider';
+import { Box, Button, Card, FormControl, FormControlLabel, FormLabel, Grid, Radio, RadioGroup, styled, TextField, Typography } from '@mui/material';
+import { RJSFSchema, UiSchema } from '@rjsf/utils';
+import CreateDataset from 'assets/help/createDataset';
+import axios from 'axios';
 import Actions from 'components/ActionButtons/Actions';
 import FilesPreview from 'components/Dropzone/FilesPreview';
+import RejectionFiles from 'components/Dropzone/RejectionFiles';
 import HelpSection from 'components/HelpSection/HelpSection';
 import Loader from 'components/Loader';
 import Retry from 'components/Retry/Retry';
+import { useAlert } from 'contexts/AlertContextProvider';
+import { useFormik } from 'formik';
+import _, { isEmpty } from 'lodash';
 import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
 import UploadFiles from 'pages/Dataset/wizard/UploadFiles';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-    useFetchDatasetsById,
-    useUploadUrls,
-    useUploadToUrl,
     useCreateDataset,
+    useFetchDatasetsById,
     useGenerateJsonSchema,
+    useReadUploadedFiles,
     useUpdateDataset,
-    useReadUploadedFiles
+    useUploadToUrl,
+    useUploadUrls
 } from 'services/dataset';
 import { readJsonFileContents } from 'services/utils';
-import ingestionStyle from './Ingestion.module.css';
-import axios from 'axios';
-import localStyles from "./Ingestion.module.css";
-import RejectionFiles from 'components/Dropzone/RejectionFiles';
-import CreateDataset from 'assets/help/createDataset';
+import { theme } from 'theme';
+import { default as ingestionStyle, default as localStyles } from './Ingestion.module.css';
 
 interface FormData {
     [key: string]: unknown;
@@ -61,7 +59,7 @@ const Ingestion = () => {
 
     const navigate = useNavigate();
     const initialConfigDetails = JSON.parse(sessionStorage.getItem('configDetails') || '{}');
-
+    const [datasetType, setDatasetType] = useState<string>('event');
     const [datasetName, setDatasetName] = useState('');
     const [datasetId, setDatasetId] = useState('');
     const [nameError, setNameError] = useState('');
@@ -289,7 +287,7 @@ const Ingestion = () => {
                         file_upload_path: filePaths
                     },
                     data_schema: schema,
-                    type: 'event'
+                    type: datasetType
                 };
                 createDatasetMutate({ payload: config });
             } else {
@@ -302,7 +300,8 @@ const Ingestion = () => {
                             file_upload_path: filePaths
                         },
                         data_schema: schema,
-                        dataset_id: datasetId
+                        dataset_id: datasetId,
+                        type: datasetType
                     }
                 });
             }
@@ -483,8 +482,8 @@ const Ingestion = () => {
                                                         required
                                                         variant="outlined"
                                                         fullWidth
-                                                        error={Boolean(nameError)}
-                                                        helperText={nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100) ? 'Dataset name should be between 4 and 100 characters' : '')}
+                                                        error={Boolean(nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100)))}
+                                                        helperText={nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100) ? 'Dataset name should be between 4 and 100 characters' : 'Enter a unique, descriptive dataset name (use only alphabets)')}
                                                     />
                                                 </Grid>
                                                 <Grid item xs={12} sm={6} lg={6}>
@@ -496,7 +495,26 @@ const Ingestion = () => {
                                                         variant="outlined"
                                                         fullWidth
                                                         disabled
+                                                        helperText="This field is auto-generated using the Dataset name"
                                                     />
+                                                </Grid>
+                                                <Grid item xs={24} sm={12} lg={12}>
+                                                    <FormControl sx={{paddingLeft: '5px'}}>
+                                                        <FormLabel id="demo-row-radio-buttons-group-label">
+                                                        <p><strong>Dataset Type:</strong> Choose the type of data you&apos;re working with: <strong>Event Data</strong> for ongoing records, <strong>Data Changes</strong> for updates like transactions, or <strong>Master Data</strong> for data used in denormalization of other datasets.</p>
+                                                        </FormLabel>
+                                                        <RadioGroup
+                                                            row
+                                                            aria-labelledby="demo-row-radio-buttons-group-label"
+                                                            name="row-radio-buttons-group"
+                                                            value={datasetType}
+                                                            onChange={(event) => {setDatasetType(event.target.value)}}
+                                                        >
+                                                            <FormControlLabel value="event" control={<Radio />} label="Event/Telemetry Data" title='Is this data a time-series of ongoing records or measurements that are only added (append-only), like sensor data or usage events?'/>
+                                                            <FormControlLabel value="transaction" control={<Radio />} label="Data Changes (Updates or Transactions)" title="Does this data capture updates, transactions, or changes over time (like transactions or change data capture)?" />
+                                                            <FormControlLabel value="master" control={<Radio />} label="Master Data" title='Is this reference data that doesn’t change frequently, like customer or product details?'/>
+                                                        </RadioGroup>
+                                                    </FormControl>
                                                 </Grid>
                                             </Grid>
                                         </GenericCard>

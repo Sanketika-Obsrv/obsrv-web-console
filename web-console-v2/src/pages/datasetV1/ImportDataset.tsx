@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Box, Button, Dialog, Grid, TextField, Typography } from '@mui/material';
+import { Box, Button, Dialog, DialogTitle, DialogContent, Grid, TextField, Typography, DialogActions, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { readJsonFileContents } from 'services/utils';
 import AnimateButton from 'components/@extended/AnimateButton';
 import PlaceholderContent from 'components/Dropzone/PlaceholderContent';
@@ -128,60 +129,84 @@ const ImportDataset = ({ open, onClose }: any) => {
     return (
         <>
             <Dialog fullWidth={true} open={open} onClose={onClose}>
-                <Grid container spacing={3} justifyContent="center" alignItems="baseline" display="flex" padding={2}>
-                    <Grid item xs={12} sm={6} lg={6}>
-                        <HtmlTooltip title="Name of the dataset" arrow placement="top-start">
-                            <TextField
-                                name={'name'}
-                                label={'Dataset Name'}
-                                required
-                                variant="outlined"
-                                fullWidth
-                                value={datasetName}
-                                onChange={(e) => setDatasetName(e.target.value)}
-                            />
-                        </HtmlTooltip>
-                    </Grid>
-                    <Grid item xs={12} sm={6} lg={6}>
-                        <HtmlTooltip title="ID for the dataset - for querying" arrow placement="top-start">
-                            <TextField
-                                name={'dataset_id'}
-                                label={'Dataset ID'}
-                                required
-                                variant="outlined"
-                                fullWidth
-                                value={datasetId}
-                                onChange={(e) => setDatasetId(e.target.value)}
-                            />
-                        </HtmlTooltip>
-                    </Grid>
-                </Grid>
-                <Box {...getRootProps()} sx={{ p: 2, border: '2px dashed #ccc' }}>
-                    <input {...getInputProps()} />
-                    <PlaceholderContent
-                        imageUrl={uploadIcon}
-                        mainText="Upload Sample Data"
-                        subText="JSON"
-                        type="upload"
-
-                    />
-                </Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ p: 2 }}>
-                    <Typography variant="body2" color={isProceedEnabled ? 'green' : 'red'}>
-                        {message}
-                    </Typography>
-                    <AnimateButton>
-                        <Button
-                            variant="contained"
-                            sx={{ my: 2, ml: 1 }}
-                            disabled={!isProceedEnabled}
-                            onClick={
-                                () => onSubmit({ datasetId, datasetName })
-                            }
-                        >
-                            Proceed
-                        </Button>
-                    </AnimateButton>
+                <Box>
+                    <DialogTitle sx={{ m: 0, p: 2 }} id="customized-dialog-title">
+                        <Typography variant="h5" component="span">
+                            Import Dataset
+                        </Typography>
+                        <IconButton
+                            aria-label="close"
+                            onClick={onClose}
+                            sx={(theme) => ({
+                                position: 'absolute',
+                                right: 8,
+                                top: 12,
+                                color: theme.palette.grey[500],
+                            })}
+                            >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent>
+                        <Grid container spacing={3} justifyContent="center" alignItems="baseline" display="flex" pb={2} mt={0.5}>
+                            <Grid item xs={12} sm={6} lg={6}>
+                                <HtmlTooltip title="Name of the dataset" arrow placement="top-start">
+                                    <TextField
+                                        name={'name'}
+                                        label={'Dataset Name'}
+                                        required
+                                        variant="outlined"
+                                        fullWidth
+                                        value={datasetName}
+                                        onChange={(e) => setDatasetName(e.target.value)}
+                                    />
+                                </HtmlTooltip>
+                            </Grid>
+                            <Grid item xs={12} sm={6} lg={6}>
+                                <HtmlTooltip title="ID for the dataset - for querying" arrow placement="top-start">
+                                    <TextField
+                                        name={'dataset_id'}
+                                        label={'Dataset ID'}
+                                        required
+                                        variant="outlined"
+                                        fullWidth
+                                        value={datasetId}
+                                        onChange={(e) => setDatasetId(e.target.value)}
+                                    />
+                                </HtmlTooltip>
+                            </Grid>
+                        </Grid>
+                        <Box {...getRootProps()} sx={{ p: 2, border: '2px dashed #ccc' }}>
+                            <input {...getInputProps()} />
+                            <Grid ml={6}> 
+                                <PlaceholderContent
+                                    imageUrl={uploadIcon}
+                                    mainText="Upload Sample Data"
+                                    subText="JSON"
+                                    type="upload"
+                                />
+                            </Grid>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Box>
+                            <Typography variant="body2" color={isProceedEnabled ? 'green' : 'red'}>
+                                {message}
+                            </Typography>
+                            <AnimateButton>
+                                <Button
+                                    variant="contained"
+                                    sx={{ my: 1, ml: 1 }}
+                                    disabled={!isProceedEnabled}
+                                    onClick={
+                                        () => onSubmit({ datasetId, datasetName })
+                                    }
+                                >
+                                    Proceed
+                                </Button>
+                            </AnimateButton>
+                        </Box>
+                    </DialogActions>
                 </Box>
             </Dialog>
             {openImportDialog && (

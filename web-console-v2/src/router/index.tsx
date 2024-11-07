@@ -50,10 +50,10 @@ export const routeConfigurations: RouteConfig[] = [
         element: <StepperPage />,
         children: [
             { path: 'ingestion', label: "Ingestion", element: <IngestionPage /> },
-            { path: 'ingestion/schema-details/:datasetId', element: <SchemaDetailsPage /> },
-            { path: 'processing/:datasetId', element: <ProcessingPage /> },
-            { path: 'storage/:datasetId', element: <StoragePage /> },
-            { path: 'preview/:datasetId', element: <PreviewPage /> }
+            { path: 'ingestion/schema-details/:datasetId', label: "Schema Details", element: <SchemaDetailsPage /> },
+            { path: 'processing/:datasetId', label: "Processing", element: <ProcessingPage /> },
+            { path: 'storage/:datasetId', label: "Storage", element: <StoragePage /> },
+            { path: 'preview/:datasetId', label: "Preview", element: <PreviewPage /> }
         ],
     },
     { path: `${BASE_PATH}/new-dataset/connector-configuration`, label: `Connector Configuration`, element: <ConnectorConfigurationPage /> },
@@ -77,18 +77,16 @@ export const routeConfigurations: RouteConfig[] = [
         ],
     },
     { path: `${BASE_PATH}/alertRules/add`, label: "Add", element: <AddAlert /> },
-    { path: `${BASE_PATH}/alertRules/view/:id`, element: <ViewAlert /> },
-    { path: `${BASE_PATH}/alertRules/edit/:id`, element: <EditAlert /> },
-    { path: `${BASE_PATH}/alertChannels`, label: "Alert Channels", element: <ListChannels /> },
+    { path: `${BASE_PATH}/alertRules/view/:id`, label: "View", element: <ViewAlert /> },
+    { path: `${BASE_PATH}/alertRules/edit/:id`, label: "Edit", element: <EditAlert /> },
+    { path: `${BASE_PATH}/alertChannels`, label: "Notification Channels", element: <ListChannels /> },
     { path: `${BASE_PATH}/alertChannels/new`, label: "New", element: <AddChannel /> },
-    { path: `${BASE_PATH}/alertChannels/edit/:id`, element: <UpdateChannel /> },
-    { path: `${BASE_PATH}/alertChannels/view/:id`, element: <ViewChannel /> },
+    { path: `${BASE_PATH}/alertChannels/edit/:id`, label: "Edit", element: <UpdateChannel /> },
+    { path: `${BASE_PATH}/alertChannels/view/:id`, label: "View", element: <ViewChannel /> },
     { path: `${BASE_PATH}/datasets`, label: "Datasets", element: <ClusterHealth /> },
-    { path: `${BASE_PATH}/datasets/:datasetId`, element: <DatasetMetrics /> },
-    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> },
-    { path: `${BASE_PATH}/datasets/rollups/:datasetId`, element: <RollupConfig />},
-    { path:`${BASE_PATH}/datasets/management/:datasetId`, element: <DatasetManagement />},
-    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, element: <DatasetCreateEvents /> }
+    { path: `${BASE_PATH}/datasets/metrics/:datasetId`, label: "Metrics", element: <DatasetMetrics /> },
+    { path: `${BASE_PATH}/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
+    { path: `${BASE_PATH}/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> }
 ];
 
 const AppRouter = () => (

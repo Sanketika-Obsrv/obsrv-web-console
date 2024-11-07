@@ -7,6 +7,7 @@ import {
   fetchMetricData,
   fetchMultipleMetrics,
 } from '../../services/chartMetrics';
+import Loader from 'components/Loader';
 
 interface GaugeChartProps {
   isHeaderData?: boolean;
@@ -73,14 +74,12 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
     fetchNodesRunning(query2);
   }, [query, uuid, refresh]);
 
-  if (loading) {
-    return <Typography>Loading...</Typography>;
-  }
-
   const unit = nodesRunning ? ' B' : '%';
 
   return (
-    <Box className={styles.container}>
+    <>
+    {loading && <Loader loading={loading}/>}
+    {!loading && <Box className={styles.container}>
       <Box
         className={styles.centeredBox}
         sx={{
@@ -129,7 +128,8 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
           {`${nodesRunning} Nodes Running`}
         </Typography>
       )}
-    </Box>
+    </Box>}
+    </>
   );
 };
 

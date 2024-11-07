@@ -161,7 +161,8 @@ const DataDenorm = (props: any) => {
 
         const columns = [
             {
-                Header: 'Dataset Field',
+                header: 'Dataset Field',
+                id: 'Dataset Field',
                 accessor: 'denorm_key',
                 Cell: ({ value }: any) => {
                     const showChip = value.startsWith('$');
@@ -174,7 +175,8 @@ const DataDenorm = (props: any) => {
                 }
             },
             {
-                Header: 'Master Dataset',
+                header: 'Master Dataset',
+                id: 'Master Dataset',
                 accessor: 'dataset_id'
                 // Cell: ({ value, cell }: any) => {
                 //     const dataset = _.find(masterDatasets, ['dataset_config.redis_db', value]);
@@ -187,11 +189,13 @@ const DataDenorm = (props: any) => {
                 // }
             },
             {
-                Header: 'Input Field (to store the data)',
+                header: 'Input Field (to store the data)',
+                id: 'Input Field (to store the data)',
                 accessor: 'denorm_out_field'
             },
             {
-                Header: 'Delete',
+                header: 'Delete',
+                id: 'Delete',
                 Cell: ({ value, cell }: any) => (
                     <Button onClick={() => onHandleDelete(_.get(cell, 'row.original'))}>
                         <DeleteIcon />
@@ -370,6 +374,7 @@ const DataDenorm = (props: any) => {
                             vertical: 'top',
                             horizontal: 'left'
                         }}
+                        className='jsonata'
                         PaperProps={{
                             sx: { height: '100%', width: '100%', overflow: 'hidden' }
                         }}

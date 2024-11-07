@@ -11,7 +11,7 @@ const UpdateSummary = (props: any) => {
 
     const columns = [
         {
-            Header: 'Type',
+            header: 'Type',
             accessor: 'type',
             Cell(value: any) {
                 const row = value?.cell?.row?.original || {};
@@ -20,7 +20,7 @@ const UpdateSummary = (props: any) => {
             }
         },
         {
-            Header: 'Field',
+            header: 'Field',
             accessor: 'field',
             Cell(value: any) {
                 const row = value?.cell?.row?.original || {};
@@ -29,14 +29,14 @@ const UpdateSummary = (props: any) => {
             }
         },
         {
-            Header: 'Property',
+            header: 'Property',
             accessor: 'name',
             Cell({ value }: any) {
                 return getKeyAlias(value) || '-';
             }
         },
         {
-            Header: 'Current Live Value',
+            header: 'Current Live Value',
             accessor: 'from',
             Cell(value: any) {
                 const row = value?.cell?.row?.original || {};
@@ -45,7 +45,7 @@ const UpdateSummary = (props: any) => {
             }
         },
         {
-            Header: 'Updated Value',
+            header: 'Updated Value',
             accessor: 'to',
             Cell(value: any) {
                 const row = value?.cell?.row?.original || {};

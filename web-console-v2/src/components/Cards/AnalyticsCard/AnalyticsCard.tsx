@@ -7,6 +7,7 @@ import _ from 'lodash';
 import { generateDatesBetweenInterval } from '../../../services/utils';
 import { fetchMetricData } from 'services/chartMetrics';
 import styles from "./AnalyticsCard.module.css"
+import Loader from 'components/Loader';
 
 const parseResult = (interval: number, result: any = []) => {
   const resultData = _.map(result, 'data');
@@ -40,12 +41,14 @@ const AnalyticsCard = (props: any) => {
       data: [],
     },
   ]);
+  const [loading, setLoading] = useState(true);
 
   const fetchMetric = async () => {
     const interval = rest.interval || globalConfig.clusterMenu.interval;
     const step = rest.step || '5m';
     const { params = {}, noParams = false } = query;
     try {
+      setLoading(true);
       if (!noParams) {
         params.start = dayjs().subtract(interval, 'minutes').unix();
         params.end = dayjs().unix();
@@ -60,6 +63,9 @@ const AnalyticsCard = (props: any) => {
       setSeries(chartData);
     } catch (error) {
       setSeries([]);
+    }
+    finally{
+      setLoading(false)
     }
   };
 
@@ -100,7 +106,7 @@ const AnalyticsCard = (props: any) => {
 
   return (
     <Paper elevation={0} className={styles.mainCard}>
-      <Box >
+     {loading ? <Loader loading ={loading}/> :  <Box >
         <Typography
           variant="bodyBold"
           className={styles.title}
@@ -121,7 +127,7 @@ const AnalyticsCard = (props: any) => {
           {rest.interval ? rest.interval : globalConfig.clusterMenu.interval}min
           / Frequency: {globalConfig.clusterMenu.frequency} sec
         </Typography>
-      </Box>
+      </Box>}
     </Paper>
   );
 };
