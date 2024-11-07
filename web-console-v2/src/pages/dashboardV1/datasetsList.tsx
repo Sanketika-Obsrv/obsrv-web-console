@@ -86,11 +86,17 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
         getDatasets();
     }, [])
 
-    const AsyncColumnData = (query: Record<string, any>) => {
-        const [asyncData, setAsyncData] = useState(null);
+    const AsyncColumnData = (query: Record<string, any>, datasetId: any, cellKey: string) => {
+        const [asyncData, setAsyncData] = useState(() => {
+            // Initialize state by reading from localStorage based on datasetId and cellKey
+            const storedData = localStorage.getItem(datasetId);
+            if (storedData) {
+                const parsedData = JSON.parse(storedData);
+                return parsedData[cellKey] || null;
+            }
+            return null;
+        });
         const [isLoading, setIsLoading] = useState(false);
-
-        const memoizedAsyncData = useMemo(() => asyncData, [asyncData]);
 
         useEffect(() => {
             const fetchData = async (value: any) => {
@@ -99,28 +105,51 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     let data = await fetchChartData(value);
                     const responseData = Array.isArray(data) ? _.first(data) : data;
                     setAsyncData(responseData as any);
-                }
-                catch (error) { }
-                finally {
-                    setIsLoading(false)
+
+                    // Always store the successful response in localStorage under datasetId and cellKey
+                    const storedData = localStorage.getItem(datasetId);
+                    const parsedData = storedData ? JSON.parse(storedData) : {};
+                    parsedData[cellKey] = responseData;
+                    localStorage.setItem(datasetId, JSON.stringify(parsedData));
+                } catch (error) {
+                    // Check if localStorage already has a value for cellKey, and only store the error if no value exists
+                    const storedData = localStorage.getItem(datasetId);
+                    const parsedData = storedData ? JSON.parse(storedData) : {};
+                    if (!parsedData[cellKey]) {
+                        // If localStorage doesn't contain a value for this cellKey, store 0 as value
+                        parsedData[cellKey] = 0;
+                        localStorage.setItem(datasetId, JSON.stringify(parsedData));
+                    }
+                } finally {
+                    setIsLoading(false);
                 }
             };
-            if (!memoizedAsyncData) {
-                fetchData(query);
-            }
-
+            fetchData(query);
         }, []);
 
         if (isLoading) {
             return <CircularProgress size={20} color="success" />;
         }
 
-        if ([null, undefined].includes(asyncData)) return "N/A";
-        const hoverValue = _.get(asyncData, "hoverValue") || ""
-        const value: any = _.get(asyncData, "value") || asyncData;
+        // Always read from localStorage on render, specific to the current cellKey
+        const storedData = localStorage.getItem(datasetId);
+        const parsedData = storedData ? JSON.parse(storedData) : null;
+        const cellData = parsedData ? parsedData[cellKey] : null;
 
-        return <div><Tooltip title={hoverValue}>{value}</Tooltip></div>;
-    }
+        // Check if the stored data is an error
+        if (cellData?.error) return cellData.error;
+
+        if ([null, undefined].includes(cellData)) return "N/A";
+
+        const hoverValue = _.get(cellData, "hoverValue") || "";
+        const value: any = _.get(cellData, "value") || cellData;
+
+        return (
+            <div>
+                <Tooltip title={hoverValue}>{value}</Tooltip>
+            </div>
+        );
+    };
 
     const updateDatasetProps = ({ dataset_id, status, id, name, tags }: any) => {
         setData((prevState: any) => {
@@ -309,7 +338,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const body = druidQueries.total_events_processed({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
                     const query = _.get(chartMeta, 'total_events_processed.query');
                     if (row?.onlyTag) return null;
-                    return AsyncColumnData({ ...query, body });
+                    return AsyncColumnData({ ...query, body }, datasetId, "total_events");
                 }
             },
             {
@@ -324,7 +353,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const body = druidQueries.total_events_processed({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
                     const query = _.get(chartMeta, 'total_events_processed.query');
                     if (row?.onlyTag) return null;
-                    return AsyncColumnData({ ...query, body });
+                    return AsyncColumnData({ ...query, body }, datasetId, "total_events_yesterday");
                 }
             },
             {
@@ -339,7 +368,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const body = druidQueries.druid_avg_processing_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
                     const query = _.get(chartMeta, 'druid_avg_processing_time.query');
                     if (row?.onlyTag) return null;
-                    return AsyncColumnData({ ...query, body });
+                    return AsyncColumnData({ ...query, body }, datasetId, "average_processing_time");
                 }
             },
             {
@@ -354,7 +383,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const body = druidQueries.druid_avg_processing_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
                     const query = _.get(chartMeta, 'druid_avg_processing_time.query');
                     if (row?.onlyTag) return null;
-                    return AsyncColumnData({ ...query, body });
+                    return AsyncColumnData({ ...query, body }, datasetId, "average_processing_time_yesterday");
                 }
             },
             {
@@ -369,7 +398,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const body = druidQueries.last_synced_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
                     const query = _.get(chartMeta, 'last_synced_relative_time.query');
                     if (row?.onlyTag) return null;
-                    return AsyncColumnData({ ...query, body });
+                    return AsyncColumnData({ ...query, body }, datasetId, "last_synced_time");
                 }
             },
             {
@@ -384,7 +413,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                         _.get(chartMeta, 'failed_events_summary_master_datasets.query') :
                         _.get(chartMeta, 'failed_events_summary.query');
                     if (row?.onlyTag) return null;
-                    return AsyncColumnData({ ...query, time: endDate, dataset: datasetId, master: isMasterDataset, });
+                    return AsyncColumnData({ ...query, time: endDate, dataset: datasetId, master: isMasterDataset, }, datasetId, "events_failed");
                 }
             },
             {

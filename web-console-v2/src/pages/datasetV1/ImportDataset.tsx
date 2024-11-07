@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Box, Button, Dialog, DialogTitle, DialogContent, Grid, TextField, Typography, DialogActions, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -57,7 +57,7 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
     );
 
     const onDrop = useCallback(async (acceptedFiles: any[]) => {
-        setAcceptedFiles(prevFiles => [...prevFiles, ...acceptedFiles]);
+        setAcceptedFiles(acceptedFiles);
         const contents = await Promise.all(acceptedFiles.map((file: File) => readJsonFileContents(file)));
         if (contents.length > 0) {
             setContents(contents as string[])
@@ -148,6 +148,12 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
         setOpenImportDialog(false)
     }
 
+    useEffect(() => {
+        setDatasetId('')
+        setDatasetName('')
+        setAcceptedFiles([])
+    }, [open])
+
     return (
         <>
             <Dialog fullWidth={true} open={open} onClose={onClose}>
@@ -200,10 +206,10 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
                         </Grid>
                         <Box {...getRootProps()} sx={{ p: 2, border: '2px dashed #ccc' }}>
                             <input {...getInputProps()} />
-                            <Grid ml={6}>
+                            <Grid>
                                 <PlaceholderContent
                                     imageUrl={uploadIcon}
-                                    mainText="Upload Sample Data"
+                                    mainText="Select dataset file"
                                     subText="JSON"
                                     type="upload"
                                 />

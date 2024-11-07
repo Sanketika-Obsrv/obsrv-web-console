@@ -4,6 +4,8 @@ import MUIForm from "components/form";
 import HtmlTooltip from "components/HtmlTooltip";
 import _ from "lodash";
 import { useEffect, useState } from "react";
+import { datasetRead } from "services/datasetV1";
+import { DatasetStatus } from "types/datasets";
 
 const onSubmission = (value: any) => { };
 
@@ -13,6 +15,7 @@ const ImportDailog = (props: any) => {
     const [nameError, setNameError] = useState('');
     const [validImport, setValid] = useState(true)
     const [name, setName] = useState<any>("")
+    const [datasetExists, setDatasetExists] = useState<boolean>(true);
 
     const options = [
         { label: 'Import as new dataset', component: '', value: 'new' },
@@ -66,6 +69,25 @@ const ImportDailog = (props: any) => {
         }
     };
 
+    const fetchDataset = async () => {
+        return datasetRead({ datasetId: `${datasetId}?mode=edit` }).then((response: any) => {
+            return response?.data?.result
+        }).catch((err: any) => { console.log(err) })
+    }
+
+    useEffect(() => {
+        const checkDatasetExists = async () => {
+            const isDatasetExists = await fetchDataset();
+            if (isDatasetExists) {
+                setDatasetExists(true);
+            }
+            else {
+                setDatasetExists(false);
+            }
+        };
+        checkDatasetExists();
+    }, [datasetId])
+
     useEffect(() => {
         const { importType } = value
         const isValid = !_.isEmpty(nameError) || (name.length < 4 || name.length > 100)
@@ -104,8 +126,14 @@ const ImportDailog = (props: any) => {
                                         value={datasetName}
                                         variant="outlined"
                                         fullWidth
-                                        error={Boolean(nameError)}
-                                        helperText={nameError || (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100) ? 'Dataset name should be between 4 and 100 characters' : '')}
+                                        error={Boolean(nameError) || datasetExists}
+                                            helperText={
+                                                nameError ||
+                                                (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100)
+                                                    ? 'Dataset name should be between 4 and 100 characters'
+                                                    : '') ||
+                                                (datasetExists ? 'Dataset already exists' : '')
+                                            }
                                     />
                                 </HtmlTooltip>
                             </Grid>
@@ -128,7 +156,7 @@ const ImportDailog = (props: any) => {
                     <Grid item xs={12} margin={1}>
                         <Grid container>
                             <Grid item marginRight={2}>
-                                <Button variant="contained" onClick={selectImportOption} disabled={validImport}>
+                                <Button variant="contained" onClick={selectImportOption} disabled={validImport || datasetExists}>
                                     Import
                                 </Button>
                             </Grid>
