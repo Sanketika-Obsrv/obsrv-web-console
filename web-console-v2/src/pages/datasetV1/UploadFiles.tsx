@@ -109,50 +109,54 @@ const UploadFiles = ({ data, setData, files, setFiles, maxFileSize, allowSchema 
 
     return (
         <>
-            {loading && <Loader loading={loading} />}
-            <Grid container spacing={1}>
-                <Grid item xs={12}>
-                    <Box sx={{ width: '100%' }}>
-                        {!datasetImport &&
-                            <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
-                                <Tab
-                                    label={allowSchema ? "Upload JSON Data/Schema" : "Upload JSON Data"}
-                                    {...tabProps(0)} />
-                                <Tab
-                                    label={allowSchema ? "Paste/Edit JSON Data/Schema" : "Paste/Edit JSON Data"}
-                                    {...tabProps(1)} />
-                            </Tabs>
-                        }
-                        <TabPanel value={tabIndex} index={0}>
-                            <form onSubmit={form.handleSubmit}>
-                                <Grid container spacing={3}>
-                                    <Grid item xs={12}>
-                                        <Stack spacing={1.5} alignItems="center">
-                                            <UploadMultiFile
-                                                showList={false}
-                                                setFieldValue={form.setFieldValue}
-                                                files={form.values.files}
-                                                error={form.touched.files && !!form.errors.files}
-                                                onUpload={onUpload}
-                                                onFileRemove={onFileRemove}
-                                                maxFileSize={maxFileSize}
-                                                subscribeErrors={subscribeErrors}
-                                                isMultiple={isMultiple}
-                                            />
-                                        </Stack>
+            {loading
+                ?
+                <Loader loading={loading} />
+                :
+                <Grid container spacing={1}>
+                    <Grid item xs={12}>
+                        <Box sx={{ width: '100%' }}>
+                            {!datasetImport &&
+                                <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
+                                    <Tab
+                                        label={allowSchema ? "Upload JSON Data/Schema" : "Upload JSON Data"}
+                                        {...tabProps(0)} />
+                                    <Tab
+                                        label={allowSchema ? "Paste/Edit JSON Data/Schema" : "Paste/Edit JSON Data"}
+                                        {...tabProps(1)} />
+                                </Tabs>
+                            }
+                            <TabPanel value={tabIndex} index={0}>
+                                <form onSubmit={form.handleSubmit}>
+                                    <Grid container spacing={3}>
+                                        <Grid item xs={12}>
+                                            <Stack spacing={1.5} alignItems="center">
+                                                <UploadMultiFile
+                                                    showList={false}
+                                                    setFieldValue={form.setFieldValue}
+                                                    files={form.values.files}
+                                                    error={form.touched.files && !!form.errors.files}
+                                                    onUpload={onUpload}
+                                                    onFileRemove={onFileRemove}
+                                                    maxFileSize={maxFileSize}
+                                                    subscribeErrors={subscribeErrors}
+                                                    isMultiple={isMultiple}
+                                                />
+                                            </Stack>
+                                        </Grid>
                                     </Grid>
-                                </Grid>
-                            </form>
-                        </TabPanel>
-                        <TabPanel value={tabIndex} index={1}>
-                            <PasteData initialData={data} onChange={onDataPaste}></PasteData>
-                            <Stack direction="row" justifyContent="center"
-                                alignItems="center" spacing={1.5} sx={{ mt: 1.5 }}>
-                            </Stack>
-                        </TabPanel>
-                    </Box>
+                                </form>
+                            </TabPanel>
+                            <TabPanel value={tabIndex} index={1}>
+                                <PasteData initialData={data} onChange={onDataPaste}></PasteData>
+                                <Stack direction="row" justifyContent="center"
+                                    alignItems="center" spacing={1.5} sx={{ mt: 1.5 }}>
+                                </Stack>
+                            </TabPanel>
+                        </Box>
+                    </Grid>
                 </Grid>
-            </Grid>
+            }
         </>
     );
 };

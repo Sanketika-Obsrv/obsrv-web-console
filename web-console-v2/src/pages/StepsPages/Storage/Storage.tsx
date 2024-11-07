@@ -88,7 +88,7 @@ const Storage = () => {
     }, [fetchDatasetType]);
 
     const handleButtonClick = () => {
-        
+
         const dataset_config = {
             dataset_config: {
                 file_upload_path: datasetConfig.file_upload_path,
@@ -123,34 +123,34 @@ const Storage = () => {
     };
 
     const handleIndexingConfigChange = (event: any, id: string) => {
-        if(id === 'lakehouse') {
+        if (id === 'lakehouse') {
             setLakehouseEnabled(event.target.checked)
         }
-        if(id === 'realtimeStore') {
+        if (id === 'realtimeStore') {
             setRealtimeStoreEnabled(event.target.checked)
         }
-        if(id === 'cacheStore') {
+        if (id === 'cacheStore') {
             setCacheStoreEnabled(event.target.checked)
         }
     }
 
     const handleStorageKeyChange = (event: any, id: string) => {
-        if(id === 'primaryKey') {
+        if (id === 'primaryKey') {
             setPrimaryKey(event.target.value)
         }
-        if(id === 'partitionKey') {
+        if (id === 'partitionKey') {
             setPartitionKey(event.target.value)
         }
-        if(id === 'timestampKey') {
+        if (id === 'timestampKey') {
             setTimestampKey(event.target.value)
         }
     }
 
     useEffect(() => {
-        if(!lakehouseEnabled && !realtimeStoreEnabled && !cacheStoreEnabled) return setCanProceed(false);
-        if(lakehouseEnabled && (_.isEmpty(primaryKey) || _.isEmpty(partitionKey))) return setCanProceed(false);
-        if(realtimeStoreEnabled && _.isEmpty(timestampKey)) return setCanProceed(false);
-        if(cacheStoreEnabled && _.isEmpty(primaryKey)) return setCanProceed(false);
+        if (!lakehouseEnabled && !realtimeStoreEnabled && !cacheStoreEnabled) return setCanProceed(false);
+        if (lakehouseEnabled && (_.isEmpty(primaryKey) || _.isEmpty(partitionKey))) return setCanProceed(false);
+        if (realtimeStoreEnabled && _.isEmpty(timestampKey)) return setCanProceed(false);
+        if (cacheStoreEnabled && _.isEmpty(primaryKey)) return setCanProceed(false);
         setCanProceed(true)
     }, [lakehouseEnabled, realtimeStoreEnabled, cacheStoreEnabled, primaryKey, partitionKey, timestampKey])
 
@@ -162,7 +162,6 @@ const Storage = () => {
                 zIndex: -1000
             }}
         >
-            <Loader loading={fetchPending || fetchLoading} descriptionText="Loading the page" />
             <Box
                 mx={1}
                 sx={{
@@ -191,107 +190,111 @@ const Storage = () => {
                     </Button>
                 </Box>
                 <Box overflow="auto" display="flex" flexDirection="column">
-                    <Box
-                        className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
-                        pr={4}
-                        pl={3}
-                        sx={{ boxShadow: 'none', pb: '5rem' }}
-                    >
-                        
-                        <GenericCard className={styles.title}>
-                            <Box className={styles?.heading} >
-                                <Typography variant='h1'>Configure Storage Type</Typography>
-                                <Box className='contentBody' sx={{ mt: 1}}>
-                                    Select one or more storage options that match your dataset requirements: Lakehouse for data science and analytics, Real-time Store for fast, real-time queries, or Cache for rapid lookups in data denormalization
-                                </Box>
-                            </Box>
-                            
-                            <Grid container spacing={3} className={styles?.gridContainer}>
-                                <Grid item xs={24} sm={12} lg={12}>
-                                    <FormGroup row >
-                                        <FormControlLabel control={<Checkbox checked={lakehouseEnabled} onChange={(event) => handleIndexingConfigChange(event, 'lakehouse')}/>} label="Data Lakehouse (Hudi)" />
-                                        <FormControlLabel control={<Checkbox checked={realtimeStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'realtimeStore')}/>} label="Real-time Store (Druid)" />
-                                        {datasetType === 'master' && (
-                                            <FormControlLabel control={<Checkbox checked={cacheStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'cacheStore')}/>} label="Cache Store (Redis)"/>
-                                        )}
-                                        
-                                    </FormGroup>
-                                </Grid>
-                            </Grid>
-                        </GenericCard>
-                        <GenericCard className={styles.title} sx={{mt: '2rem'}}>
-                            <Box className={styles?.heading} sx={{ mb: 2 }}>
-                                <Typography variant='h1'>Configure Storage Keys</Typography>
-                                <Box className='contentBody' sx={{ mt: 1}}>
-                                    Specify key fields for indexing and data management: Primary Key for unique records, Timestamp Key for time-based indexing, and Partition Key for storage optimization.
-                                </Box>
-                            </Box>
+                    {
+                        (fetchPending || fetchLoading)
+                            ?
+                            <Loader loading={fetchPending || fetchLoading} descriptionText="Loading the page" />
+                            :
+                            <Box
+                                className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
+                                pr={4}
+                                pl={3}
+                                sx={{ boxShadow: 'none', pb: '5rem' }}
+                            >
 
-                            <Grid container spacing={3} className={styles?.gridContainer}>
-                                <Grid item xs={8} sm={4} lg={4}>
-                                    <FormControl fullWidth required={lakehouseEnabled || cacheStoreEnabled}>
-                                        <InputLabel id="primary_key">Primary Key</InputLabel>
-                                        <Select
-                                            labelId="primary_key"
-                                            id="primaryKey"
-                                            label={'Primary Key'}
-                                            variant="outlined"
-                                            fullWidth
-                                            value={primaryKey}
-                                            onChange={(event) => handleStorageKeyChange(event, 'primaryKey')}
-                                        >
-                                            {nonTimestampFields && nonTimestampFields.map( (item, index) => {
-                                                return (
-                                                    <MenuItem value={item} key={item}>{item}</MenuItem>
-                                                );
-                                            })}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid item xs={8} sm={4} lg={4}>
-                                    <FormControl fullWidth required={realtimeStoreEnabled}>
-                                        <InputLabel id="timestamp_key">Timestamp Key</InputLabel>
-                                        <Select
-                                            labelId="timestamp_key"
-                                            id="timestampKey"
-                                            label={'Timestamp Key'}
-                                            variant="outlined"
-                                            fullWidth
-                                            value={timestampKey}
-                                            onChange={(event) => handleStorageKeyChange(event, 'timestampKey')}
-                                        >
-                                            {timestampFields && timestampFields.map( (item, index) => {
-                                                return (
-                                                    <MenuItem value={item} key={item}>{item}</MenuItem>
-                                                );
-                                            })}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid item xs={8} sm={4} lg={4}>
-                                    <FormControl fullWidth required={lakehouseEnabled}>
-                                        <InputLabel id="partition_key">Partition Key</InputLabel>
-                                        <Select
-                                            labelId="partition_key"
-                                            id="partitionKey"
-                                            label={'Partition Key'}
-                                            variant="outlined"
-                                            fullWidth
-                                            value={partitionKey}
-                                            onChange={(event) => handleStorageKeyChange(event, 'partitionKey')}
-                                        >
-                                            {nonTimestampFields && nonTimestampFields.map( (item, index) => {
-                                                return (
-                                                    <MenuItem value={item} key={item}>{item}</MenuItem>
-                                                );
-                                            })}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                            </Grid>
-                        </GenericCard>
-                        
-                    </Box>
+                                <GenericCard className={styles.title}>
+                                    <Box className={styles?.heading} >
+                                        <Typography variant='h1'>Configure Storage Type</Typography>
+                                        <Box className='contentBody' sx={{ mt: 1 }}>
+                                            Select one or more storage options that match your dataset requirements: Lakehouse for data science and analytics, Real-time Store for fast, real-time queries, or Cache for rapid lookups in data denormalization
+                                        </Box>
+                                    </Box>
+
+                                    <Grid container spacing={3} className={styles?.gridContainer}>
+                                        <Grid item xs={24} sm={12} lg={12}>
+                                            <FormGroup row >
+                                                <FormControlLabel control={<Checkbox checked={lakehouseEnabled} onChange={(event) => handleIndexingConfigChange(event, 'lakehouse')} />} label="Data Lakehouse (Hudi)" />
+                                                <FormControlLabel control={<Checkbox checked={realtimeStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'realtimeStore')} />} label="Real-time Store (Druid)" />
+                                                {datasetType === 'master' && (
+                                                    <FormControlLabel control={<Checkbox checked={cacheStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'cacheStore')}/>} label="Cache Store (Redis)"/>
+                                                )}
+                                            </FormGroup>
+                                        </Grid>
+                                    </Grid>
+                                </GenericCard>
+                                <GenericCard className={styles.title} sx={{ mt: '2rem' }}>
+                                    <Box className={styles?.heading} sx={{ mb: 2 }}>
+                                        <Typography variant='h1'>Configure Storage Keys</Typography>
+                                        <Box className='contentBody' sx={{ mt: 1 }}>
+                                            Specify key fields for indexing and data management: Primary Key for unique records, Timestamp Key for time-based indexing, and Partition Key for storage optimization.
+                                        </Box>
+                                    </Box>
+
+                                    <Grid container spacing={3} className={styles?.gridContainer}>
+                                        <Grid item xs={8} sm={4} lg={4}>
+                                            <FormControl fullWidth required={lakehouseEnabled || cacheStoreEnabled}>
+                                                <InputLabel id="primary_key">Primary Key</InputLabel>
+                                                <Select
+                                                    labelId="primary_key"
+                                                    id="primaryKey"
+                                                    label={'Primary Key'}
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    value={primaryKey}
+                                                    onChange={(event) => handleStorageKeyChange(event, 'primaryKey')}
+                                                >
+                                                    {nonTimestampFields && nonTimestampFields.map((item, index) => {
+                                                        return (
+                                                            <MenuItem value={item} key={item}>{item}</MenuItem>
+                                                        );
+                                                    })}
+                                                </Select>
+                                            </FormControl>
+                                        </Grid>
+                                        <Grid item xs={8} sm={4} lg={4}>
+                                            <FormControl fullWidth required={realtimeStoreEnabled}>
+                                                <InputLabel id="timestamp_key">Timestamp Key</InputLabel>
+                                                <Select
+                                                    labelId="timestamp_key"
+                                                    id="timestampKey"
+                                                    label={'Timestamp Key'}
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    value={timestampKey}
+                                                    onChange={(event) => handleStorageKeyChange(event, 'timestampKey')}
+                                                >
+                                                    {timestampFields && timestampFields.map((item, index) => {
+                                                        return (
+                                                            <MenuItem value={item} key={item}>{item}</MenuItem>
+                                                        );
+                                                    })}
+                                                </Select>
+                                            </FormControl>
+                                        </Grid>
+                                        <Grid item xs={8} sm={4} lg={4}>
+                                            <FormControl fullWidth required={lakehouseEnabled}>
+                                                <InputLabel id="partition_key">Partition Key</InputLabel>
+                                                <Select
+                                                    labelId="partition_key"
+                                                    id="partitionKey"
+                                                    label={'Partition Key'}
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    value={partitionKey}
+                                                    onChange={(event) => handleStorageKeyChange(event, 'partitionKey')}
+                                                >
+                                                    {nonTimestampFields && nonTimestampFields.map((item, index) => {
+                                                        return (
+                                                            <MenuItem value={item} key={item}>{item}</MenuItem>
+                                                        );
+                                                    })}
+                                                </Select>
+                                            </FormControl>
+                                        </Grid>
+                                    </Grid>
+                                </GenericCard>
+                            </Box>
+                    }
                     <HelpSection
                         helpSection={{
                             defaultHighlight: "section1"
@@ -310,11 +313,10 @@ const Storage = () => {
                 sx={{
                     position: 'fixed',
                     bottom: 0,
-                    right: 0,
-                    left: -30,
-                    width: isHelpSectionOpen ? 'calc(100% - 400px)' : '102%',
+                    left: 0,
+                    width: isHelpSectionOpen ? 'calc(100% - 23rem)' : '100%',
                     transition: 'width 0.3s ease',
-                    zIndex:100
+                    zIndex: 100
                 }}
             >
                 <Action

@@ -85,8 +85,12 @@ const AddAlertrules = () => {
     };
 
     return <>
-        {loading && <Loader loading={loading} />}
-        <Grid>{renderSections({ sections: sections, formData: formData, actionHandler: createAlertRule, actionLabel: "Create Rule" })}</Grid>
+        {loading
+            ?
+            <Loader loading={loading} />
+            :
+            <Grid>{renderSections({ sections: sections, formData: formData, actionHandler: createAlertRule, actionLabel: "Create Rule" })}</Grid>
+        }
     </>
 };
 
