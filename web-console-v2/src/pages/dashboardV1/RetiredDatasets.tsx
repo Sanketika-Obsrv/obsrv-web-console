@@ -175,7 +175,6 @@ const RetiredDatasets = (props: any) => {
 
     return (
         <MainCard content={false}>
-            {isLoading && <Loader loading={isLoading} />}
             <BackdropLoader open={isLoading} />
             {isLoading ? renderSkeleton({ config: { type: "table", width: "100%" } }) :
                 <>

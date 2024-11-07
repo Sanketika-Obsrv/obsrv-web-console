@@ -30,7 +30,7 @@ export const extractTransformationOptions = (schema: any, path: string[] = []): 
         for (const key in schema.properties) {
             const currentPath = [...path, key].join('.');
 
-            if(!schema.properties[key].properties){
+            if (!schema.properties[key].properties) {
                 options.push(currentPath);
             }
 
@@ -89,7 +89,7 @@ const mapDatasetToProcessingData = (dataset: any) => {
         };
 
         if (category) {
-            if(type === 'mask' || type === 'encrypt') {
+            if (type === 'mask' || type === 'encrypt') {
                 _.set(processingData, ['pii'], [..._.get(processingData, ['pii']), metadata]);
             } else {
                 _.set(processingData, [category], [..._.get(processingData, [category]), metadata]);
@@ -207,12 +207,12 @@ const Processing: React.FC = () => {
     const handleAddOrEdit = (data: any, mapKey: string) => {
         const keyName = keyMapping[mapKey];
         if (mapKey === 'validation') {
-            
-            updateDataset({ 
-                data: { 
+
+            updateDataset({
+                data: {
                     [keyName]: data,
                     data_schema: updatedSchema
-                } 
+                }
             });
         } else {
             updateDataset({ data: { [keyName]: data } });
@@ -409,7 +409,6 @@ const Processing: React.FC = () => {
                 flexDirection: 'column',
             }}
         >
-            <Loader loading={datasetList.isPending} descriptionText="Loading the page" />
             <Box
                 sx={{
                     flex: 1,
@@ -430,25 +429,32 @@ const Processing: React.FC = () => {
                     </Button>
                 </Box>
                 <Box overflow="auto" display="flex" flexDirection="column">
-                    <Box
-                        className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
-                        pr={9}
-                        pl={3.5}
-                        sx={{
-                            '& .MuiFormHelperText-root': {
-                                display: 'none'
-                            },
-                            '& .MuiFormControlLabel-root .MuiFormControlLabel-label': {
-                                fontSize: '1rem',
-                                color: theme.palette.text.primary
-                            },
-                            height: 'auto',
-                            scrollbarWidth: 'none',
-                            overflowY: 'auto'
-                        }}
-                    >
-                        <AccordionSection sections={processingSections} />
-                    </Box>
+                    {
+                        (datasetList.isPending)
+                            ?
+                            <Loader loading={datasetList.isPending} descriptionText="Loading the page" />
+                            :
+                            <Box
+                                className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
+                                pr={9}
+                                pl={3.5}
+                                sx={{
+                                    '& .MuiFormHelperText-root': {
+                                        display: 'none'
+                                    },
+                                    '& .MuiFormControlLabel-root .MuiFormControlLabel-label': {
+                                        fontSize: '1rem',
+                                        color: theme.palette.text.primary
+                                    },
+                                    height: 'auto',
+                                    scrollbarWidth: 'none',
+                                    overflowY: 'auto'
+                                }}
+                            >
+                                <AccordionSection sections={processingSections} />
+                            </Box>
+                    }
+
 
                     <HelpSection
                         helpSection={{
@@ -470,7 +476,7 @@ const Processing: React.FC = () => {
                     left: 0,
                     width: isHelpSectionOpen ? 'calc(100% - 23rem)' : '100%',
                     transition: 'width 0.3s ease',
-                    zIndex:50
+                    zIndex: 50
                 }}
             >
                 <Action

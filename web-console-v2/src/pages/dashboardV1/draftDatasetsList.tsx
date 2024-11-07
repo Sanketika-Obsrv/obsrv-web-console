@@ -320,7 +320,6 @@ const DraftDatasetsList = (props: any) => {
 
     return (
         <MainCard content={false}>
-            {isLoading && <Loader loading={isLoading} />}
             <BackdropLoader open={isLoading} />
             {isLoading ? renderSkeleton({ config: { type: "table", width: "100%" } }) :
                 <>{_.isEmpty(data) ? renderNoDatasetsMessage(en['datasets-not-found']) : <>

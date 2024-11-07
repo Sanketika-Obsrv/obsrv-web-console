@@ -118,174 +118,176 @@ const AllConfigurations = () => {
 
     return (
         <Box>
-            <Loader
-                loading={datasetList.isPending || fetchDatasetById.isPending}
-                descriptionText="Loading the page"
-            />
-
-            <Stack className={styles.scrollable}>
-            {!_.isEmpty(connectorData) && (
-                    <Stack
-                        my={2}
-                        mx={2.5}
-                        sx={{ backgroundColor: 'white' }}
-                        className={styles.stackStyle}
-                    >
-                        <Stack m={2.5} spacing={2}>
-                            <Typography variant="h1Secondary">Ingestion</Typography>
-
-                            <ListItem disablePadding>
-                                <span className={styles.dotCircle} />
-                                <ListItemText>
-                                    <Typography variant="h2Secondary">
-                                        Connector Type : {connectorData[0].connector_id}
-                                    </Typography>
-                                </ListItemText>
-                            </ListItem>
-                        </Stack>
-                    </Stack>
-                )}
-
-                <Stack>
-                    <Stack my={2} mx={2.5} className={styles.stackStyle}>
-                        <Stack m={2} spacing={1}>
-                            <Typography variant="h1Secondary">Schema</Typography>
-                        </Stack>
-                        <Box
-                            sx={{
-                                height: isExpanded ? 'auto' : '400px',
-                                overflow: 'hidden',
-                                transition: 'height 0.3s ease'
-                            }}
+            {(datasetList.isPending || fetchDatasetById.isPending)
+                ?
+                <Loader
+                    loading={datasetList.isPending || fetchDatasetById.isPending}
+                    descriptionText="Loading the page"
+                />
+                :
+                <Stack className={styles.scrollable}>
+                    {!_.isEmpty(connectorData) && (
+                        <Stack
+                            my={2}
+                            mx={2.5}
+                            sx={{ backgroundColor: 'white' }}
+                            className={styles.stackStyle}
                         >
-                            <SchemaDetails showTableOnly />
-                        </Box>
-                        <Button
-                            onClick={toggleViewMore}
-                            endIcon={
-                                isExpanded ? (
-                                    <KeyboardArrowUpIcon sx={{ color: 'blue' }} />
-                                ) : (
-                                    <ExpandMoreIcon sx={{ color: 'blue' }} />
-                                )
-                            }
-                            sx={{ display: 'flex', alignItems: 'center' }}
-                        >
-                            <Typography color="primary" p={1} fontSize="18px">
-                                {isExpanded ? 'View Less' : 'View More'}
-                            </Typography>
-                        </Button>
-                    </Stack>
+                            <Stack m={2.5} spacing={2}>
+                                <Typography variant="h1Secondary">Ingestion</Typography>
 
-                    <Stack my={2} mx={2.5} className={styles.stackStyle}>
-                        <Stack m={2.5} spacing={2}>
-                            <Typography variant="h1Secondary">Processing</Typography>
-
-                            <ListItem disablePadding>
-                                <span className={styles.dotCircle} />
-                                <ListItemText>
-                                    <Typography variant="h2Secondary">
-                                        Data Validation : {validationConfig.mode}
-                                    </Typography>
-                                </ListItemText>
-                            </ListItem>
-                            <ListItem disablePadding style={{ marginBottom: '0.75rem' }}>
-                                <span className={styles.dotCircle} />
-                                <ListItemText>
-                                    <Typography variant="h2Secondary">
-                                        Data Denormalization
-                                    </Typography>
-                                </ListItemText>
-                            </ListItem>
-                            {denormData.length > 0 ? (
-                                <CustomTable
-                                    header={true}
-                                    columns={ProcessingColumns}
-                                    data={denormData}
-                                    striped={true}
-                                />
-                            ) : (
-                                <Typography variant="h6" textAlign="center">
-                                    No records
-                                </Typography>
-                            )}
+                                <ListItem disablePadding>
+                                    <span className={styles.dotCircle} />
+                                    <ListItemText>
+                                        <Typography variant="h2Secondary">
+                                            Connector Type : {connectorData[0].connector_id}
+                                        </Typography>
+                                    </ListItemText>
+                                </ListItem>
+                            </Stack>
                         </Stack>
-                    </Stack>
+                    )}
 
-                    <Stack my={2} mx={2.5} className={styles.stackStyle}>
-                        <Stack m={2.5} spacing={1} gap={3}>
-                            <Typography variant="h1Secondary">Transformations</Typography>
-
-                            {transformationData.length > 0 ? (
-                                <CustomTable
-                                    header={true}
-                                    columns={columnsTransformations}
-                                    data={transformationData}
-                                    striped={true}
-                                />
-                            ) : (
-                                <Typography variant="h6" textAlign="center">
-                                    No records
-                                </Typography>
-                            )}
-                        </Stack>
-                        <Stack direction="row" justifyContent="flex-end" mx={3} pb={2}>
-                            <Button
-                                variant="text"
-                                color="primary"
-                                startIcon={<AddIcon />}
-                                className={styles.addButton}
-                                onClick={handleClick}
+                    <Stack>
+                        <Stack my={2} mx={2.5} className={styles.stackStyle}>
+                            <Stack m={2} spacing={1}>
+                                <Typography variant="h1Secondary">Schema</Typography>
+                            </Stack>
+                            <Box
+                                sx={{
+                                    height: isExpanded ? 'auto' : '400px',
+                                    overflow: 'hidden',
+                                    transition: 'height 0.3s ease'
+                                }}
                             >
-                                Add Transformations
+                                <SchemaDetails showTableOnly />
+                            </Box>
+                            <Button
+                                onClick={toggleViewMore}
+                                endIcon={
+                                    isExpanded ? (
+                                        <KeyboardArrowUpIcon sx={{ color: 'blue' }} />
+                                    ) : (
+                                        <ExpandMoreIcon sx={{ color: 'blue' }} />
+                                    )
+                                }
+                                sx={{ display: 'flex', alignItems: 'center' }}
+                            >
+                                <Typography color="primary" p={1} fontSize="18px">
+                                    {isExpanded ? 'View Less' : 'View More'}
+                                </Typography>
                             </Button>
                         </Stack>
-                    </Stack>
-                    <Stack my={2} mx={2.5} className={styles.stackStyle}>
-                        <Stack m={2.5} spacing={2}>
-                            <Typography variant="h1Secondary">Storage</Typography>
 
-                            <ListItem disablePadding>
-                                <span className={styles.dotCircle} />
-                                <ListItemText>
-                                    <Typography variant="h2Secondary">
-                                        Dataset Type : {getDatasetType(datasetType)}
+                        <Stack my={2} mx={2.5} className={styles.stackStyle}>
+                            <Stack m={2.5} spacing={2}>
+                                <Typography variant="h1Secondary">Processing</Typography>
+
+                                <ListItem disablePadding>
+                                    <span className={styles.dotCircle} />
+                                    <ListItemText>
+                                        <Typography variant="h2Secondary">
+                                            Data Validation : {validationConfig.mode}
+                                        </Typography>
+                                    </ListItemText>
+                                </ListItem>
+                                <ListItem disablePadding style={{ marginBottom: '0.75rem' }}>
+                                    <span className={styles.dotCircle} />
+                                    <ListItemText>
+                                        <Typography variant="h2Secondary">
+                                            Data Denormalization
+                                        </Typography>
+                                    </ListItemText>
+                                </ListItem>
+                                {denormData.length > 0 ? (
+                                    <CustomTable
+                                        header={true}
+                                        columns={ProcessingColumns}
+                                        data={denormData}
+                                        striped={true}
+                                    />
+                                ) : (
+                                    <Typography variant="h6" textAlign="center">
+                                        No records
                                     </Typography>
-                                </ListItemText>
-                            </ListItem>
-                            <ListItem disablePadding style={{ marginBottom: '0.75rem' }}>
-                                <span className={styles.dotCircle} />
-                                <ListItemText>
-                                    <Typography variant="h2Secondary">
-                                        Storage Type:
-                                        {olap_store_enabled && (
-                                            <Chip label="Real-time Store" sx={{ mx: 1 }} />
-                                        )}
-                                        {lakehouse_enabled && (
-                                            <Chip label="Lakehouse" sx={{ mx: 1 }} />
-                                        )}
-                                        {cache_enabled && <Chip label="Cache" sx={{ mx: 1 }} />}
-                                    </Typography>
-                                </ListItemText>
-                            </ListItem>
-                            {storageKeysList.length > 0 ? (
-                                <CustomTable
-                                    header={true}
-                                    columns={storageColumns}
-                                    data={storageKeysList}
-                                    striped={true}
-                                />
-                            ) : (
-                                <Typography variant="h6" textAlign="center">
-                                    No records
-                                </Typography>
-                            )}
+                                )}
+                            </Stack>
                         </Stack>
-                    </Stack>
 
-                    
-                </Stack>
-            </Stack>
+                        <Stack my={2} mx={2.5} className={styles.stackStyle}>
+                            <Stack m={2.5} spacing={1} gap={3}>
+                                <Typography variant="h1Secondary">Transformations</Typography>
+
+                                {transformationData.length > 0 ? (
+                                    <CustomTable
+                                        header={true}
+                                        columns={columnsTransformations}
+                                        data={transformationData}
+                                        striped={true}
+                                    />
+                                ) : (
+                                    <Typography variant="h6" textAlign="center">
+                                        No records
+                                    </Typography>
+                                )}
+                            </Stack>
+                            <Stack direction="row" justifyContent="flex-end" mx={3} pb={2}>
+                                <Button
+                                    variant="text"
+                                    color="primary"
+                                    startIcon={<AddIcon />}
+                                    className={styles.addButton}
+                                    onClick={handleClick}
+                                >
+                                    Add Transformations
+                                </Button>
+                            </Stack>
+                        </Stack>
+                        <Stack my={2} mx={2.5} className={styles.stackStyle}>
+                            <Stack m={2.5} spacing={2}>
+                                <Typography variant="h1Secondary">Storage</Typography>
+
+                                <ListItem disablePadding>
+                                    <span className={styles.dotCircle} />
+                                    <ListItemText>
+                                        <Typography variant="h2Secondary">
+                                            Dataset Type : {getDatasetType(datasetType)}
+                                        </Typography>
+                                    </ListItemText>
+                                </ListItem>
+                                <ListItem disablePadding style={{ marginBottom: '0.75rem' }}>
+                                    <span className={styles.dotCircle} />
+                                    <ListItemText>
+                                        <Typography variant="h2Secondary">
+                                            Storage Type:
+                                            {olap_store_enabled && (
+                                                <Chip label="Real-time Store" sx={{ mx: 1 }} />
+                                            )}
+                                            {lakehouse_enabled && (
+                                                <Chip label="Lakehouse" sx={{ mx: 1 }} />
+                                            )}
+                                            {cache_enabled && <Chip label="Cache" sx={{ mx: 1 }} />}
+                                        </Typography>
+                                    </ListItemText>
+                                </ListItem>
+                                {storageKeysList.length > 0 ? (
+                                    <CustomTable
+                                        header={true}
+                                        columns={storageColumns}
+                                        data={storageKeysList}
+                                        striped={true}
+                                    />
+                                ) : (
+                                    <Typography variant="h6" textAlign="center">
+                                        No records
+                                    </Typography>
+                                )}
+                            </Stack>
+                        </Stack>
+
+
+                    </Stack>
+                </Stack>}
         </Box>
     );
 };
