@@ -174,6 +174,7 @@ const ClusterHealth = () => {
             <ImportDataset
                 open={openModal}
                 onClose={handleClose}
+                setOpen={setOpenModal}
             />
         </Box>
 
