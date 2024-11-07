@@ -39,6 +39,7 @@ const Storage = () => {
     const [primaryKey, setPrimaryKey] = useState<string>('');
     const [timestampKey, setTimestampKey] = useState<string>('');
     const [partitionKey, setPartitionKey] = useState<string>('');
+    const [datasetType, setDatasetType] = useState<string>('event');
 
     const updateDatasetMutate = useUpdateDataset();
     const sessionData = sessionStorage.getItem('configDetails');
@@ -57,31 +58,34 @@ const Storage = () => {
     });
     const [canProceed, setCanProceed] = useState(false);
 
-    const datasetType = _.get(fetchData, 'type');
+    const fetchDatasetType = _.get(fetchData, 'type');
     const datasetConfig = _.get(fetchData, 'dataset_config', {});
     const datasetConfig_indexing = _.get(fetchData, 'dataset_config.indexing_config', {});
     const datasetConfig_keys = _.get(fetchData, 'dataset_config.keys_config', {});
     const timeStampTypes = ['date', 'timestamp', 'datetime'];
 
     useEffect(() => {
-        const getColumns = extractTransformationOptions(fetchData?.data_schema || {});
-        const timestampKeys = getColumns.filter((option) =>
-            timeStampTypes.some((keyword) => option.toLowerCase().includes(keyword))
-        );
+        if(fetchDatasetType) {
+            setDatasetType(fetchDatasetType)
+            const getColumns = extractTransformationOptions(fetchData?.data_schema || {});
+            const timestampKeys = getColumns.filter((option) =>
+                timeStampTypes.some((keyword) => option.toLowerCase().includes(keyword))
+            );
 
-        const nonTimestampKeys = getColumns.filter((key) => !timestampKeys.includes(key));
-        setTimestampFields([...timestampKeys, 'Event Arrival Time']);
-        setNonTimestampFields(nonTimestampKeys)
+            const nonTimestampKeys = getColumns.filter((key) => !timestampKeys.includes(key));
+            setTimestampFields([...timestampKeys, 'Event Arrival Time']);
+            setNonTimestampFields(nonTimestampKeys)
 
-        const { data_key, partition_key, timestamp_key } = datasetConfig_keys;
-        const { olap_store_enabled, lakehouse_enabled, cache_enabled } = datasetConfig_indexing;
-        setRealtimeStoreEnabled(olap_store_enabled);
-        setLakehouseEnabled(lakehouse_enabled);
-        setCacheStoreEnabled(cache_enabled);
-        setPrimaryKey(data_key);
-        setTimestampKey('obsrv_meta.syncts' === timestamp_key ? 'Event Arrival Time' : timestamp_key);
-        setPartitionKey(partition_key)
-    }, [datasetType]);
+            const { data_key, partition_key, timestamp_key } = datasetConfig_keys;
+            const { olap_store_enabled, lakehouse_enabled, cache_enabled } = datasetConfig_indexing;
+            setRealtimeStoreEnabled(olap_store_enabled);
+            setLakehouseEnabled(lakehouse_enabled);
+            setCacheStoreEnabled(cache_enabled);
+            setPrimaryKey(data_key);
+            setTimestampKey('obsrv_meta.syncts' === timestamp_key ? 'Event Arrival Time' : timestamp_key);
+            setPartitionKey(partition_key)
+        }
+    }, [fetchDatasetType]);
 
     const handleButtonClick = () => {
         
@@ -207,7 +211,10 @@ const Storage = () => {
                                     <FormGroup row >
                                         <FormControlLabel control={<Checkbox checked={lakehouseEnabled} onChange={(event) => handleIndexingConfigChange(event, 'lakehouse')}/>} label="Data Lakehouse (Hudi)" />
                                         <FormControlLabel control={<Checkbox checked={realtimeStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'realtimeStore')}/>} label="Real-time Store (Druid)" />
-                                        <FormControlLabel control={<Checkbox checked={cacheStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'cacheStore')}/>} label="Cache Store (Redis)" hidden={datasetType === 'master'}/>
+                                        {datasetType === 'master' && (
+                                            <FormControlLabel control={<Checkbox checked={cacheStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'cacheStore')}/>} label="Cache Store (Redis)"/>
+                                        )}
+                                        
                                     </FormGroup>
                                 </Grid>
                             </Grid>
