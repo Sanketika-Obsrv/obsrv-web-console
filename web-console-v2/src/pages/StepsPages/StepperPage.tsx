@@ -6,31 +6,43 @@ import { Box } from '@mui/material';
 const stepData = {
     steps: [
         {
-            name: 'Ingestion',
+            name: 'Connector',
             index: 1,
             completed: false,
-            onProgress: true,
-            route: 'ingestion'
+            skipped: false,
+            active: false,
+            route: 'connector'
+        },
+        {
+            name: 'Ingestion',
+            index: 2,
+            completed: false,
+            skipped: false,
+            active: true,
+            route: 'schema-details'
         },
         {
             name: 'Processing',
-            index: 2,
+            index: 3,
             completed: false,
-            onProgress: false,
+            skipped: false,
+            active: false,
             route: 'processing'
         },
         {
             name: 'Storage',
-            index: 3,
+            index: 4,
             completed: false,
-            onProgress: false,
+            skipped: false,
+            active: false,
             route: 'storage'
         },
         {
             name: 'Preview & Save',
-            index: 4,
+            index: 5,
             completed: false,
-            onProgress: false,
+            skipped: false,
+            active: false,
             route: 'preview'
         }
     ],

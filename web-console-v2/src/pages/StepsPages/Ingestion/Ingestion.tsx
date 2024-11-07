@@ -343,7 +343,7 @@ const Ingestion = () => {
     }, [createData, data, updateDatasetMutate]);
 
     const handleNavigate = () => {
-        navigate(-1);
+        navigate(`/home//new-dataset/connector-configuration/${datasetId}`);
     };
 
     useEffect(() => {
