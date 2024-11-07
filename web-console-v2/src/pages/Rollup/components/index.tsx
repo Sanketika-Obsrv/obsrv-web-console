@@ -10,7 +10,6 @@ import { searchDatasources } from 'services/rollups';
 import { flattenSchemaV1 } from 'services/json-schema';
 import { steps } from '../../../services/commonUtils';
 import Loader from 'components/Loader';
-import BackdropLoader from 'components/BackdropLoader';
 import ReviewRollup from './ReviewRollup';
 import { DatasetStatus } from 'types/datasets';
 import en from 'utils/locales/en.json';
@@ -293,7 +292,6 @@ const RollupConfig = () => {
     <>
       <Box>
         {loading && <Loader loading={loading} />}
-        <BackdropLoader open={loading} />
         {stepper()}
         {showWizard && getStepContent(activeStep, handleNext, handleBack, setErrorIndex, false, false, setActiveStep)}
       </Box>

@@ -12,7 +12,6 @@ import { fetchDatasources } from "services/rollups";
 import { deleteDraftRollupDatasources } from "services/rollups";
 import AlertDialog from "components/AlertDialog/AlertDialog";
 import Loader from "components/Loader";
-import BackdropLoader from "components/BackdropLoader";
 import { granularityOptions } from "../../../services/commonUtils";
 import { DatasetStatus } from "types/datasets";
 import en from 'utils/locales/en.json';
@@ -143,7 +142,6 @@ const ListRollups = () => {
 
     return <>
         {loading && <Loader loading={loading}/>}
-        <BackdropLoader open={loading} />
         <Grid container>
             {_.isEmpty(rollupTableData) ? <>
                 <Alert sx={{ display: "flex", alignItems: "center" }} severity="error">{en.clickToCreateRollup}</Alert>

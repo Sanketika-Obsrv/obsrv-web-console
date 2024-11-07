@@ -17,7 +17,6 @@ import { GenericCard } from 'components/Styled/Cards';
 import GranuralityInfo from './GranuralityInfo';
 import AccordionSection from 'components/Accordian/AccordionSection';
 import Loader from 'components/Loader';
-import BackdropLoader from 'components/BackdropLoader';
 import en from 'utils/locales/en.json';
 import { DatasetStatus } from 'types/datasets';
 import TransformSpecEditor from './TransformSpecEditor';
@@ -210,7 +209,6 @@ const ReviewRollup = (props: any) => {
     return (
         <div>
             {loading && <Loader loading={loading}/>}
-            <BackdropLoader open={loading} />
             <Grid item xs={12}>
                 <AccordionSection sections={sections} />
                 <GenericCard elevation={1}>
