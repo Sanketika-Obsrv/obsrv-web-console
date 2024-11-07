@@ -29,7 +29,6 @@ import { downloadJsonFile } from 'utils/downloadUtils';
 import MoreOptions from './MoreOptions';
 import StyleIcon from '@mui/icons-material/Style';
 import { getLiveSourceConfig, renderNoDatasetsMessage } from './datasets';
-import BackdropLoader from 'components/BackdropLoader';
 import { useAlert } from 'contexts/AlertContextProvider';
 
 const dateFormat = 'YYYY-MM-DDT00:00:00+05:30'
@@ -502,7 +501,6 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
 
     return (
         <MainCard content={false} border={false}>
-            <BackdropLoader open={loading} />
             {loading ? renderSkeleton({ config: { type: "table", width: "100%" } }) :
                 <>
                     {_.isEmpty(data) ? renderNoDatasetsMessage(en['datasets-not-found']) : <>

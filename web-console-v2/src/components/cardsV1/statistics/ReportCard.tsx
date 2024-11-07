@@ -34,7 +34,7 @@ const ReportCard = ({ uuid, primary, suffix, secondary, iconPrimary, color, quer
                     const [data, color] = seriesData;
                     setPrimaryLabel(data);
                     color && setColorType(color);
-                } else if(typeof seriesData === 'object') {
+                } else if (typeof seriesData === 'object') {
                     const value = _.get(seriesData, 'value')
                     const hoverValue = _.get(seriesData, 'hoverValue')
                     setPrimaryLabel(value)
@@ -64,8 +64,7 @@ const ReportCard = ({ uuid, primary, suffix, secondary, iconPrimary, color, quer
 
     return (
         <>
-            {loading && <Loader loading={false} />}
-            <Paper elevation={globalConfig.elevation} sx={fullHeightWidth}>
+            {loading ? <Loader loading={false} /> : <Paper elevation={globalConfig.elevation} sx={fullHeightWidth}>
                 <Tooltip title={description}>
                     <MainCard sx={fullHeightWidth} contentSX={contentSx}>
                         <Grid container justifyContent="center" alignItems="center" color={_.get(theme, ['palette', colorType, 'main'])}>
@@ -78,11 +77,11 @@ const ReportCard = ({ uuid, primary, suffix, secondary, iconPrimary, color, quer
                             </Grid>
                             <Grid item xs={10}>
                                 <Stack spacing={1}>
-                                <Tooltip title={fullValue}>
-                                    <Typography variant="h4">
-                                        {primaryLabel} {suffix}
-                                    </Typography>
-                                </Tooltip>
+                                    <Tooltip title={fullValue}>
+                                        <Typography variant="h4">
+                                            {primaryLabel} {suffix}
+                                        </Typography>
+                                    </Tooltip>
                                     <Tooltip title={secondary}>
                                         <OverflowTypography sx={{ maxWidth: '90%' }} variant="body2" color="secondary">
                                             {secondary}
@@ -98,7 +97,7 @@ const ReportCard = ({ uuid, primary, suffix, secondary, iconPrimary, color, quer
                         </Grid>
                     </MainCard>
                 </Tooltip>
-            </Paper>
+            </Paper>}
         </>
     );
 };

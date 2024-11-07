@@ -42,7 +42,6 @@ const DataDenorm = (props: any) => {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
     const [evaluationData, setEvaluationData] = useState<string>('');
-    const [transformationExpressionError, setTransformationExpressionError] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false)
     const [formErrors, setFormErrors] = useState<any>("");
 
@@ -65,22 +64,6 @@ const DataDenorm = (props: any) => {
         setTimeout(() => { setLoading(false) }, 200)
     }
 
-    useEffect(() => {
-        const fetchTransformation = async () => {
-            const transformation = _.get(inputs, "transformation");
-            if (transformation) {
-                try {
-                    await evaluateDataType(transformation, jsonData);
-                    setTransformationExpressionError(false);
-                } catch (error) {
-                    const message = _.get(error, 'message');
-                    setFormErrors(message)
-                    setTransformationExpressionError(true);
-                }
-            }
-        };
-        fetchTransformation();
-    }, [inputs?.transformation]);
 
     const masterDatasetNotFound = () => (
         <Grid item xs={12}>
@@ -325,24 +308,6 @@ const DataDenorm = (props: any) => {
                                     label="Input Field (to store the data)"
                                     variant="outlined"
                                     onChange={(event) => { handleOnChange(event) }} />
-                            </FormControl>
-                        </Grid>
-                        <Grid item lg={6}>
-                            <FormControl fullWidth >
-                                <TextField
-                                    value={inputs?.transformation || ''}
-                                    error={transformationExpressionError}
-                                    name='transformation'
-                                    label="Transformation"
-                                    variant="outlined"
-                                    helperText={transformationExpressionError ? formErrors : 'Ex: $sum(Product.(Price * Quantity)) \n FirstName & " " & Surname'}
-                                    onChange={(event) => { handleOnChange(event) }}
-                                    sx={{
-                                        '& .MuiFormHelperText-root': {
-                                            display: 'block'
-                                        },
-                                    }}
-                                />
                             </FormControl>
                         </Grid>
                     </Grid>
