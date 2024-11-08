@@ -11,7 +11,7 @@ export default {
     handler() {
         return createProxyMiddleware({
             headers: {
-                Authorization: appConfig.GRAFANA.TOKEN,
+                Authorization: appConfig.GRAFANA.ADMIN_URL,
             },
             target: appConfig.GRAFANA.URL,
             changeOrigin: true,
