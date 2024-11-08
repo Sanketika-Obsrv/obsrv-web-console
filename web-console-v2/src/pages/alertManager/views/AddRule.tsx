@@ -63,7 +63,7 @@ const AddAlertrules = () => {
     }, []);
 
     const addAlertRule: any = async () => {
-        const rulePayload = transformRulePayload({ ...formData, context: { alertType: 'CUSTOM' } });
+        const rulePayload = await transformRulePayload({ ...formData, context: { alertType: 'CUSTOM' } });
         return addAlert(rulePayload);
     };
 
