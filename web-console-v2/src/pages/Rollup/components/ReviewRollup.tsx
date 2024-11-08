@@ -208,49 +208,53 @@ const ReviewRollup = (props: any) => {
 
     return (
         <div>
-            {loading && <Loader loading={loading}/>}
-            <Grid item xs={12}>
-                <AccordionSection sections={sections} />
-                <GenericCard elevation={1}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} sm={12}>
-                            <ExpandingTable
-                                type={"metrics"}
-                                columns={columns}
-                                data={getNestingV1(flattenedDataWithDefaultMetric, jsonSchema) as []}
-                                limitHeight
-                                tHeadHeight={52}
-                                showSearchBar={false}
-                                styles={{ '&.MuiTableCell-root': { border: '1px solid #D9D9D9' } }}
-                                context={{ disableRowColor: true }}
-                            />
+            {loading
+                ?
+                <Loader loading={loading} />
+                :
+                <Grid item xs={12}>
+                    <AccordionSection sections={sections} />
+                    <GenericCard elevation={1}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={12}>
+                                <ExpandingTable
+                                    type={"metrics"}
+                                    columns={columns}
+                                    data={getNestingV1(flattenedDataWithDefaultMetric, jsonSchema) as []}
+                                    limitHeight
+                                    tHeadHeight={52}
+                                    showSearchBar={false}
+                                    styles={{ '&.MuiTableCell-root': { border: '1px solid #D9D9D9' } }}
+                                    context={{ disableRowColor: true }}
+                                />
+                            </Grid>
                         </Grid>
-                    </Grid>
-                </GenericCard>
-                {!_.isEmpty(filteredRollup) &&
-                    <AccordionSection sections={filterRollupSection} />
-                }
-                <Stack direction="row" justifyContent="space-between">
-                    <AnimateButton>
-                        <StandardWidthButton
-                            variant="outlined"
-                            type="button"
-                            onClick={gotoPreviousSection}
-                        >
-                            <Typography variant="h5">Previous</Typography>
-                        </StandardWidthButton>
-                    </AnimateButton>
-                    <AnimateButton>
-                        <StandardWidthButton
-                            variant="contained"
-                            type="button"
-                            onClick={gotoNextSection}
-                        >
-                            <Typography variant="h5">Save rollup</Typography>
-                        </StandardWidthButton>
-                    </AnimateButton>
-                </Stack>
-            </Grid>
+                    </GenericCard>
+                    {!_.isEmpty(filteredRollup) &&
+                        <AccordionSection sections={filterRollupSection} />
+                    }
+                    <Stack direction="row" justifyContent="space-between">
+                        <AnimateButton>
+                            <StandardWidthButton
+                                variant="outlined"
+                                type="button"
+                                onClick={gotoPreviousSection}
+                            >
+                                <Typography variant="h5">Previous</Typography>
+                            </StandardWidthButton>
+                        </AnimateButton>
+                        <AnimateButton>
+                            <StandardWidthButton
+                                variant="contained"
+                                type="button"
+                                onClick={gotoNextSection}
+                            >
+                                <Typography variant="h5">Save rollup</Typography>
+                            </StandardWidthButton>
+                        </AnimateButton>
+                    </Stack>
+                </Grid>
+            }
         </div>
     )
 }

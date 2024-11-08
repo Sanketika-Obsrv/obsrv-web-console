@@ -291,9 +291,9 @@ const RollupConfig = () => {
   return (
     <>
       <Box>
-        {loading && <Loader loading={loading} />}
-        {stepper()}
-        {showWizard && getStepContent(activeStep, handleNext, handleBack, setErrorIndex, false, false, setActiveStep)}
+        {loading && <Loader loading={loading} /> }
+        {!loading && stepper()}
+        {!loading && showWizard && getStepContent(activeStep, handleNext, handleBack, setErrorIndex, false, false, setActiveStep)}
       </Box>
     </>
   );

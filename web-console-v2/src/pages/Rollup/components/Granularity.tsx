@@ -39,7 +39,7 @@ const Granularity = (props: any) => {
     return (
         <>
             {loading && <Loader loading={loading} />}
-            <AccordionSection sections={sections} />
+            {!loading && <AccordionSection sections={sections} />}
         </>
     );
 };
