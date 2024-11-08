@@ -11,9 +11,9 @@ export default {
     handler() {
         return createProxyMiddleware({
             headers: {
-                Authorization: appConfig.GRAFANA.ADMIN_URL,
+                Authorization: appConfig.GRAFANA.TOKEN,
             },
-            target: appConfig.GRAFANA.URL,
+            target: appConfig.GRAFANA.ADMIN_URL,
             changeOrigin: true,
             pathRewrite: function (path: string, req: any) {
                 return path.replace(`${appConfig.BASE_URL}/alertmanager`, '');
