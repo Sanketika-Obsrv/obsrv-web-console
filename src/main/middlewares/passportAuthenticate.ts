@@ -25,7 +25,7 @@ export default {
     handler: () => (req: Request, res: Response, next: NextFunction) => {
         passport.authenticate('local', (err: Error, user: User) => {
             if (err) {
-                logger.error({err})
+                logger.error("err:", err)
                 return next(err);
             }
             if (!user) {
@@ -33,7 +33,7 @@ export default {
             }
             return req.login(user, (loginErr) => {
                 if (loginErr) {
-                    logger.error({loginErr})
+                    logger.error("loginErr: ", loginErr)
                     return next(loginErr);
                 }
                 return generateToken(user)
@@ -44,7 +44,7 @@ export default {
                         return res.redirect(baseURL || '/');
                     })
                     .catch((tokenError) => {
-                        logger.error({tokenError})
+                        logger.error("tokenError: ", tokenError)
                         return next(tokenError);
                     });
             });
