@@ -1,9 +1,11 @@
 import { useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { http } from './http';
+import { AxiosResponse } from 'axios';
 import _ from 'lodash';
 import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
 import { generateRequestBody, setVersionKey, transformResponse } from './utils';
 import { queryClient } from 'queryClient';
+import apiEndpoints from 'data/apiEndpoints';
 
 // const ENDPOINTS = {
 //     DATASETS_READ: '/console/config/v2/datasets/read',
@@ -33,23 +35,26 @@ const ENDPOINTS = {
     READ_CONNECTORS: '/config/v2/connectors/read'
 };
 
+export const endpoints = ENDPOINTS
+
 const configDetailKey = 'configDetails';
 
 export const useFetchDatasetsById = ({
-    datasetId,
-    queryParams
-}: {
-    datasetId: string;
-    queryParams: string;
-}) => {
+        datasetId,
+        queryParams
+    }: {
+        datasetId: string;
+        queryParams: string;
+    }) => {
     return useQuery({
         queryKey: ['fetchDatasetsById', 'datasetId', 'status', queryParams],
-        queryFn: () =>
-            http
-                .get(`${ENDPOINTS.DATASETS_READ}/${datasetId}?${queryParams}`)
-                .then(transformResponse),
+        queryFn: () => http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}?${queryParams}`).then((response: AxiosResponse) => {
+            console.log("response", response)
+            setVersionKey(_.get(response, ['data', 'result', 'version_key']));
+            return _.get(response, ['data', 'result'])
+        }),
         enabled: !!datasetId
-    });
+    } as UseQueryOptions<any, Error>);
 };
 
 export const useReadUploadedFiles = ({ filenames }: { filenames: string[] }) => {
@@ -123,8 +128,6 @@ export const useCreateDataset = () =>
         },
         onSuccess: (response, variables) => {
             const configDetail = {
-                name: _.get(variables, ['payload', 'name']),
-                dataset_id: _.get(variables, ['payload', 'dataset_id']),
                 version_key: _.get(response, 'version_key')
             };
 
@@ -155,7 +158,7 @@ export const useUpdateDataset = () =>
             const request = generateRequestBody({
                 request: {
                     ..._.omit(updatedRequestPayload, ['configurations', 'dataMappings']),
-                    ...configDetail
+                    ..._.omit(configDetail, ['name'])
                 },
                 apiId: 'api.datasets.update'
             });

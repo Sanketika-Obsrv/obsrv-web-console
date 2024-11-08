@@ -32,5 +32,6 @@
 
 .circle.completed {
   color: var(--white-color);
-  border: 0;
+  width: 1.25rem;
+  height: 1.25rem;
 }

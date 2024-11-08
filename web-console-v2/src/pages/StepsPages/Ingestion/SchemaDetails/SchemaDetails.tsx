@@ -120,13 +120,17 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     const theme = useTheme();
     const navigate = useNavigate();
     const { showAlert } = useAlert();
-    const datasetId:any = useParams();
+    const { datasetId }:any = useParams();
     const [selection, setSelection] = useState<Record<string, any>>({});
     const [flattenedData, setFlattenedData] = useState<Array<Record<string, any>>>([]);
     const [openAlertDialog, setOpenAlertDialog] = useState(false);
     const [filterByChip, setFilterByChip] = useState<columnFilter | null>(null);
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
     const [requiredFieldFilters, setRequiredFieldFilters] = useState<string>('');
+    const [datasetName, setDatasetName] = useState<string>('');
+    const [datasetType, setDatasetType] = useState<string>('');
+    const [selectedConnectorId, setSelectedConnectorId] = useState<string>('');
+    const [versionKey, setVersionKey] = useState<string>('');
     const [allConflictsResolved, setAllConflictsResolved] = useState(false);
     const [uploadLoading, setUploadLoading] = useState(false);
     const [isErrorUpload, setIsErrorUpload] = useState(false);
@@ -139,7 +143,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
 
     const fetchDatasetById = useFetchDatasetsById({
         datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,dataset_config'
+        queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,type,dataset_config,connectors_config'
     });
 
     const fetchLiveDataset: any = useFetchDatasetsById({
@@ -150,13 +154,10 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     useEffect(() => {
         if (fetchDatasetById.data) {
             if (datasetId) {
-                const configDetail = {
-                    name: _.get(fetchDatasetById, ['data', 'name']),
-                    dataset_id: datasetId,
-                    version_key: _.get(fetchDatasetById, ['data', 'version_key'])
-                };
-
-                storeSessionStorageItem(configDetailKey, configDetail);
+                setDatasetName(_.get(fetchDatasetById, ['data', 'name']));
+                setDatasetType(_.get(fetchDatasetById, ['data', 'type']));
+                setVersionKey(_.get(fetchDatasetById, ['data', 'version_key']));
+                setSelectedConnectorId(_.get(_.get(fetchDatasetById, ['data', 'connectors_config'])[0], 'connector_id'));
             }
 
             const { properties } = fetchDatasetById.data.data_schema || {};
@@ -388,7 +389,9 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     };
 
     const handleNavigate = () => {
-        navigate('/home/datasets?status=Draft')
+        navigate(`/dataset/edit/ingestion/meta/${datasetId}`, {
+            state: {datasetName, datasetType, selectedConnectorId}
+        })
     };
 
     const markRowAsDeleted = (cellValue: Record<string, any>) => {
@@ -552,7 +555,8 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                     type: 'object',
                     properties: propertiesObject,
                     additionalProperties: true
-                }
+                },
+                dataset_id: datasetId
             };
 
             updateDataset.mutate(
@@ -562,7 +566,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                 {
                     onSuccess: () => {
                         showAlert('Schema updated successfully', 'success');
-                        navigate(`/home/data/edit/processing/${datasetId}`);
+                        navigate(`/dataset/edit/processing/${datasetId}`);
                     }
                 }
             );
@@ -699,8 +703,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                 <>
                                     {fetchLiveDataset?.data !== undefined ? <></> : <Box marginBlock={2}>
                                         <Button
-                                            variant="text"
-                                            sx={{ color: theme.palette.common.black, mt: 0.5 }}
+                                            variant="back"
                                             startIcon={
                                                 <KeyboardBackspaceIcon
                                                     className={ingestionStyle.iconStyle}

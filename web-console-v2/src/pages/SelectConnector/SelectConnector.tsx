@@ -97,10 +97,10 @@ const SelectConnector = () => {
         const selectedCardData = getSelectedCardData();
 
         if (selectedCardData) {
-            const { id: selectedCardId, name: selectedCardName } = selectedCardData;
+            const { id: selectedConnectorId } = selectedCardData;
 
             navigate(`/dataset/edit/connector/configure/${datasetId}`, {
-                state: { selectedCardId, selectedCardName }
+                state: { selectedConnectorId }
             });
         }
     };

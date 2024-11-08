@@ -37,11 +37,9 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
         
         const route = location.pathname.split('/')[3];
         const activeStep = steps.find((step) => step.route === route);
-        console.log("### activeStep", activeStep, "### steps", steps, route)
         if (activeStep) {
             setSelectedStep(activeStep.index);
             setSteps((prevSteps) => {
-                console.log("### prevSteps", prevSteps)
                 return prevSteps.map((step) => {
                     if (step.index < activeStep.index) {
                         return { ...step, completed: true, active: false };
@@ -57,20 +55,22 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
 
     const handleRouteNavigation = (route: string, datasetId: string) => {
         const routeMapping: Record<string, string> = {
-            connector: `/dataset/edit/connector/${datasetId}`,
-            ingestion: `/dataset/edit/ingestion/${datasetId}`,
+            connector: `/dataset/edit/connector/configure/${datasetId}`,
+            ingestion: `/dataset/edit/ingestion/schema/${datasetId}`,
             processing: `/dataset/edit/processing/${datasetId}`,
             storage: `/dataset/edit/storage/${datasetId}`,
             preview: `/dataset/edit/preview/${datasetId}`
         };
         const targetRoute = routeMapping[route] || route;
-        console.log("route", route, "datasetId", datasetId)
         switch(route) {
-            case 'schema-details':
+            case 'connector':
+                navigate(targetRoute);
+                break;
+            case 'ingestion':
                 navigate(targetRoute);
                 break;
             case 'processing': {
-                const prevStep = steps.find((step) => step.route === 'schema-details');
+                const prevStep = steps.find((step) => step.route === 'ingestion');
                 if(prevStep?.completed) navigate(targetRoute);
                 break;
             }
@@ -96,7 +96,7 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
                     key={idx}
                     className={`${styles.step} ${step.completed ? styles.completed : ''} ${step.active ? styles.selected : ''}`}
                     onClick={() => {
-                        if (['connector', 'schema-details', 'processing', 'storage', 'preview'].includes(step.route)) {
+                        if (['connector', 'ingestion', 'processing', 'storage', 'preview'].includes(step.route)) {
                             handleRouteNavigation(step.route, datasetId);
                         } else {
                             handleClick(step.route, step.index, step.completed, step.active);
@@ -107,7 +107,7 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
                         className={`${styles.circle} ${step.completed ? styles.completed : ''} ${step.active ? styles.selected : ''}`}
                         sx={{
                             backgroundColor: step.completed ? 'secondary.main' : step.active ? 'secondary.light' : 'var(--body-secondary-background)',
-                            border: step.active ? `0.125rem solid ${theme.palette.secondary.main}` : ' 0.125rem solid var(--body-secondary)'
+                            border: step.active || step.completed ? `0.125rem solid ${theme.palette.secondary.main}` : ' 0.125rem solid var(--body-secondary)'
                         }}
                     >
                         {step.completed ? (
