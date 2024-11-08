@@ -141,8 +141,7 @@ const ListRollups = () => {
     }
 
     return <>
-        {loading && <Loader loading={loading}/>}
-        <Grid container>
+        {loading ? <Loader loading={loading}/>:<Grid container>
             {_.isEmpty(rollupTableData) ? <>
                 <Alert sx={{ display: "flex", alignItems: "center" }} severity="error">{en.clickToCreateRollup}</Alert>
             </> : renderRollups()}
@@ -157,7 +156,8 @@ const ListRollups = () => {
                 </Stack>}
                 <AlertDialog open={open} handleClose={handleClose} action={handleAction} context={dialogContext} />
             </Grid>
-        </Grid>
+        </Grid>}
+        
     </>
 }
 
