@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Grid, Stack, Typography } from "@mui/material";
+import { Box, Button, Grid, Popper, Stack, Typography } from "@mui/material";
 import MUIForm from "components/form";
 import { StandardWidthButton } from "components/Styled/Buttons";
 import { useEffect, useRef, useState } from "react";
@@ -18,7 +18,6 @@ const NotificationComponent = (props: any) => {
     const [notificationFieldOptions, setNotificationFieldOptions] = useState<Record<string, any>[]>([]);
     const formikRef = useRef(null);
     const navigate = useNavigate();
-    const isNoneSelected = value?.notificationChannel === null;
 
     const getChannels = () => {
         return fetchChannels({ data: { "request": { "filters": { "status": "live" } } } })
@@ -46,9 +45,9 @@ const NotificationComponent = (props: any) => {
         {
             name: "notificationChannel",
             label: "Notification Channels",
-            type: "select",
+            type: "autocomplete",
             required: true,
-            selectOptions: _.concat([{ label: 'none', value: null }], notificationFieldOptions),
+            selectOptions: notificationFieldOptions,
             tooltip: "Select the channel for notification delivery"
         },
     ];
@@ -90,7 +89,7 @@ const NotificationComponent = (props: any) => {
                 />
             </Grid>
             <Grid item xs={6}>
-                <Button variant="contained" onClick={() => navigate("/home/alertChannels")} disabled={!isNoneSelected}>Add Notification Channel</Button>
+                <Button variant="contained" onClick={() => navigate("/home/alertChannels/new")}>Create Notification Channel</Button>
             </Grid>
         </Grid>
     }
