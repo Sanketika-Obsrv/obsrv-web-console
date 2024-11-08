@@ -10,8 +10,9 @@ import { useEffect, useState } from "react";
 import Loader from "components/Loader";
 
 const RunQuery = (props: any) => {
-    const { handleClose, queryBuilderContext } = props;
+    const { handleClose, queryBuilderContext, component } = props;
     const { metric, threshold, threshold_from, threshold_to, operator } = queryBuilderContext
+    const metricValue = _.filter(component, field => _.get(field, "id") == metric)
     const [metadata, setMetadata] = useState<Record<string, any> | null>(null);
     const [loading, setLoading] = useState(false)
 
@@ -139,7 +140,7 @@ const RunQuery = (props: any) => {
                 headers: {},
                 body: {},
                 params: {
-                    query: metric,
+                    query: _.get(metricValue, [0, "metric"]) || metric,
                     step: '5m',
                     start: dayjs().unix(),
                     end: dayjs().subtract(1, 'day').unix()

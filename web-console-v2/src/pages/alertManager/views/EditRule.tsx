@@ -79,8 +79,8 @@ const EditRule = () => {
         }
     ], [ruleMetadata]);
 
-    const editAlertRule = () => {
-        const rulePayload = transformRulePayload({ ...formData, context: { alertType: alertType } });
+    const editAlertRule = async () => {
+        const rulePayload = await transformRulePayload({ ...formData, context: { alertType: alertType } });
         return editAlert({ id: id, data: rulePayload });
     };
 
