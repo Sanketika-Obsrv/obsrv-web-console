@@ -9,7 +9,7 @@ import { useAlert } from 'contexts/AlertContextProvider';
 import _ from 'lodash';
 import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
 import { extractTransformationOptions } from '../Processing/Processing';
 
@@ -43,8 +43,7 @@ const Storage = () => {
 
     const updateDatasetMutate = useUpdateDataset();
     const sessionData = sessionStorage.getItem('configDetails');
-    const configData = sessionData ? JSON.parse(sessionData) : null;
-    const { dataset_id: datasetId } = configData || {};
+    const { datasetId } : any = useParams();
 
     const navigate = useNavigate();
     const { showAlert } = useAlert();
@@ -54,7 +53,7 @@ const Storage = () => {
         isLoading: fetchLoading
     } = useFetchDatasetsById({
         datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=data_schema,dataset_config,type'
+        queryParams: 'status=Draft&mode=edit&fields=data_schema,dataset_config,type,version_key'
     });
     const [canProceed, setCanProceed] = useState(false);
 
@@ -102,7 +101,8 @@ const Storage = () => {
                     partition_key: partitionKey,
                     timestamp_key: timestampKey === 'Event Arrival Time' ? 'obsrv_meta.syncts' : timestampKey
                 }
-            }
+            },
+            dataset_id: datasetId
         };
 
         updateDatasetMutate.mutate(
@@ -112,7 +112,7 @@ const Storage = () => {
             {
                 onSuccess: () => {
                     showAlert('Storage details updated', 'success');
-                    navigate(`/home/preview/${datasetId}`);
+                    navigate(`/dataset/edit/preview/${datasetId}`);
                 }
             }
         );

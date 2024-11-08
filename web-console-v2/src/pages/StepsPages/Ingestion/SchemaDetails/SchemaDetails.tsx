@@ -16,8 +16,6 @@ import * as _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import ingestionStyle from '../Ingestion.module.css';
 
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import { Button, MenuItem } from '@mui/material';
 import CollapsibleSuggestions from 'components/CollapsibleSuggestions/CollapsibleSuggestions';
@@ -29,10 +27,8 @@ import IconButtonWithTips from 'components/ToolTip/IconButtonWithTips';
 import { useAlert } from 'contexts/AlertContextProvider';
 import ReUploadFiles from 'pages/Dataset/wizard/ReUploadFiles';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getConfigValue } from 'services/configData';
 import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
 import { dataMappings } from 'utils/dataMappings';
-import { storeSessionStorageItem } from 'utils/sessionStorage';
 import Actions from '../../../../components/ActionButtons/Actions';
 import AlertDialog from '../../../../components/AlertDialog/AlertDialog';
 import {
@@ -56,6 +52,7 @@ import {
     renderRequiredCell
 } from '../../../../utils/renderCells';
 import { EditLiveDataset } from './EditLiveDataset';
+import { KeyboardArrowDownOutlined, KeyboardArrowRightOutlined } from '@mui/icons-material';
 
 export const validFormatTypes = [
     'text',
@@ -183,7 +180,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
         const baseColumns = [
             {
                 Header: () => (
-                    <Typography variant="h1Secondary" component="span" fontWeight={500} ml={-2}>
+                    <Typography variant="h6" component="span" ml={-2}>
                         Fields
                     </Typography>
                 ),
@@ -192,9 +189,10 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                 editable: false,
                 Cell: ({ row, value, cell }: any) => {
                     const collapseIcon = row.isExpanded ? (
-                        <KeyboardArrowUpIcon sx={{ color: 'white' }} />
+                        <KeyboardArrowDownOutlined />
                     ) : (
-                        <ExpandMoreIcon sx={{ color: 'white' }} />
+                        
+                        <KeyboardArrowRightOutlined />
                     );
                     const isSubRow = cell?.row?.depth > 0;
                     const isObjectType = row.original.arrival_format === 'object';
@@ -214,20 +212,22 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                 <IconButton
                                     {...row.getToggleRowExpandedProps()}
                                     sx={{
-                                        backgroundColor: '#056ECE',
-                                        color: 'white',
+                                        backgroundColor: '#ffffff',
+                                        color: '#056ECE',
                                         borderRadius: '4px',
                                         height: 22,
                                         width: 22,
                                         mr: 1,
                                         '&:hover': {
-                                            backgroundColor: 'blue'
+                                            backgroundColor: '#056ECE',
+                                            color: '#ffffff'
                                         }
                                     }}
                                 >
                                     {collapseIcon}
                                 </IconButton>
                             )}
+                            
                             {renderColumnCell({
                                 cell,
                                 value,
@@ -241,8 +241,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
             {
                 Header: () => (
                     <Typography
-                        variant="h1Secondary"
-                        fontWeight={500}
+                        variant="h6"
                         component="span"
                         display="flex"
                         alignItems="center"
@@ -278,8 +277,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
             {
                 Header: () => (
                     <Typography
-                        variant="h1Secondary"
-                        fontWeight={500}
+                        variant="h6"
                         component="span"
                         display="flex"
                         width={'full-width'}
@@ -325,9 +323,8 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                     Header: () => (
                         <Box display="flex" alignItems="center">
                             <Typography
-                                variant="h1Secondary"
+                                variant="h6"
                                 component="span"
-                                fontWeight={500}
                                 display="flex"
                                 alignItems="center"
                             >
