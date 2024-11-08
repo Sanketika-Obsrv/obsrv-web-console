@@ -87,15 +87,6 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
     }, [])
 
     const AsyncColumnData = (query: Record<string, any>, datasetId: any, cellKey: string) => {
-        const [asyncData, setAsyncData] = useState(() => {
-            // Initialize state by reading from localStorage based on datasetId and cellKey
-            const storedData = localStorage.getItem(datasetId);
-            if (storedData) {
-                const parsedData = JSON.parse(storedData);
-                return parsedData[cellKey] || null;
-            }
-            return null;
-        });
         const [isLoading, setIsLoading] = useState(false);
 
         useEffect(() => {
@@ -103,18 +94,17 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                 setIsLoading(true);
                 try {
                     let data = await fetchChartData(value);
-                    const responseData = Array.isArray(data) ? _.first(data) : data;
-                    setAsyncData(responseData as any);
+                    const responseData = _.isArray(data) ? _.first(data) : data;
 
                     // Always store the successful response in localStorage under datasetId and cellKey
-                    const storedData = localStorage.getItem(datasetId);
-                    const parsedData = storedData ? JSON.parse(storedData) : {};
+                    const storedData: any = localStorage.getItem(datasetId);
+                    const parsedData = !_.isEmpty(storedData) ? JSON.parse(storedData) : {};
                     parsedData[cellKey] = responseData;
                     localStorage.setItem(datasetId, JSON.stringify(parsedData));
                 } catch (error) {
                     // Check if localStorage already has a value for cellKey, and only store the error if no value exists
-                    const storedData = localStorage.getItem(datasetId);
-                    const parsedData = storedData ? JSON.parse(storedData) : {};
+                    const storedData: any = localStorage.getItem(datasetId);
+                    const parsedData = !_.isEmpty(storedData) ? JSON.parse(storedData) : {};
                     if (!parsedData[cellKey]) {
                         // If localStorage doesn't contain a value for this cellKey, store 0 as value
                         parsedData[cellKey] = 0;
@@ -133,7 +123,13 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
 
         // Always read from localStorage on render, specific to the current cellKey
         const storedData = localStorage.getItem(datasetId);
-        const parsedData = storedData ? JSON.parse(storedData) : null;
+        let parsedData = null;
+        try {
+            parsedData = storedData ? JSON.parse(storedData) : null;
+        } catch (error) {
+            console.error("Failed to parse stored data:", error);
+            parsedData = null;
+        }
         const cellData = parsedData ? parsedData[cellKey] : null;
 
         // Check if the stored data is an error

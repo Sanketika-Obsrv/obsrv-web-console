@@ -16,6 +16,8 @@ const ImportDailog = (props: any) => {
     const [validImport, setValid] = useState(true)
     const [name, setName] = useState<any>("")
     const [datasetExists, setDatasetExists] = useState<boolean>(true);
+    const [localDatasetId, setLocalDatasetId] = useState(datasetId);
+    const [localDatasetName, setLocalDatasetName] = useState(datasetName);
 
     const options = [
         { label: 'Import as new dataset', component: '', value: 'new' },
@@ -35,13 +37,13 @@ const ImportDailog = (props: any) => {
 
     const selectImportOption = async () => {
         const { importType } = value
-        await onSubmit({ datasetName, datasetId, importType })
+        await onSubmit({ datasetName: localDatasetName, datasetId: localDatasetId, importType })
         setOpenDailog(false)
     }
 
     const onClose = () => {
-        setDatasetName("")
-        setDatasetId("")
+        setLocalDatasetName("")
+        setLocalDatasetId("")
         setCheckValidation(true)
         setOpenDailog(false);
     }
@@ -49,8 +51,6 @@ const ImportDailog = (props: any) => {
     useEffect(() => {
         const { importType } = value
         if (importType === "new") {
-            setDatasetName("")
-            setDatasetId("")
             setCheckValidation(true)
         }
     }, [value])
@@ -58,11 +58,11 @@ const ImportDailog = (props: any) => {
     const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
-        setDatasetName(newValue);
+        setLocalDatasetName(newValue);
         setName(newValue)
         if (nameRegex.test(newValue)) {
             const generatedId = newValue.toLowerCase().replace(/\s+/g, '-');
-            setDatasetId(generatedId)
+            setLocalDatasetId(generatedId)
             setNameError('');
         } else {
             setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
@@ -70,29 +70,27 @@ const ImportDailog = (props: any) => {
     };
 
     const fetchDataset = async () => {
-        return datasetRead({ datasetId: `${datasetId}?mode=edit` }).then((response: any) => {
+        return datasetRead({ datasetId: `${localDatasetId}?mode=edit` }).then((response: any) => {
             return response?.data?.result
         }).catch((err: any) => { console.log(err) })
     }
 
-    useEffect(() => {
-        const checkDatasetExists = async () => {
-            const isDatasetExists = await fetchDataset();
-            if (isDatasetExists) {
-                setDatasetExists(true);
-            }
-            else {
-                setDatasetExists(false);
-            }
-        };
-        checkDatasetExists();
-    }, [datasetId])
+    const checkDatasetExists = async () => {
+        const isDatasetExists = await fetchDataset();
+        if (isDatasetExists) {
+            setDatasetExists(true);
+        }
+        else {
+            setDatasetExists(false);
+        }
+    };
 
     useEffect(() => {
+        checkDatasetExists()
         const { importType } = value
-        const isValid = !_.isEmpty(nameError) || (name.length < 4 || name.length > 100)
+        const isValid = datasetExists || !_.isEmpty(nameError) || (localDatasetName.length < 4 || localDatasetName.length > 100)
         importType === "overwrite" ? setValid(false) : setValid(isValid)
-    }, [datasetName, value, nameError])
+    }, [localDatasetName, value?.importType, nameError,datasetExists])
 
     return <Dialog fullWidth={true} open={openAlertDialog} onClose={closeDialog}>
         <Box sx={{ p: 1, py: 1.5 }}>
@@ -123,17 +121,17 @@ const ImportDailog = (props: any) => {
                                         label={'Dataset Name'}
                                         onChange={handleNameChange}
                                         required
-                                        value={datasetName}
+                                        value={localDatasetName}
                                         variant="outlined"
                                         fullWidth
                                         error={Boolean(nameError) || datasetExists}
-                                            helperText={
-                                                nameError ||
-                                                (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100)
-                                                    ? 'Dataset name should be between 4 and 100 characters'
-                                                    : '') ||
-                                                (datasetExists ? 'Dataset already exists' : '')
-                                            }
+                                        helperText={
+                                            nameError ||
+                                            (localDatasetName.length > 0 && (localDatasetName.length < 4 || localDatasetName.length > 100)
+                                                ? 'Dataset name should be between 4 and 100 characters'
+                                                : '') ||
+                                            (datasetExists ? 'Dataset already exists' : '')
+                                        }
                                     />
                                 </HtmlTooltip>
                             </Grid>
@@ -142,9 +140,9 @@ const ImportDailog = (props: any) => {
                                     <TextField
                                         name={'dataset_id'}
                                         label={'Dataset ID'}
-                                        onChange={(e) => setDatasetId(e.target.value)}
+                                        onChange={(e) => setLocalDatasetId(e.target.value)}
                                         required
-                                        value={datasetId}
+                                        value={localDatasetId}
                                         variant="outlined"
                                         fullWidth
                                         disabled
@@ -156,7 +154,7 @@ const ImportDailog = (props: any) => {
                     <Grid item xs={12} margin={1}>
                         <Grid container>
                             <Grid item marginRight={2}>
-                                <Button variant="contained" onClick={selectImportOption} disabled={validImport || datasetExists}>
+                                <Button variant="contained" onClick={selectImportOption} disabled={validImport}>
                                     Import
                                 </Button>
                             </Grid>

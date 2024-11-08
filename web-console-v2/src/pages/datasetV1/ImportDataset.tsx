@@ -30,6 +30,7 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
     const navigate = useNavigate();
     const { showAlert } = useAlert();
     const [acceptedFiles, setAcceptedFiles] = useState<any[]>([]);
+    const [nameError, setNameError] = useState('');
 
     const flattenContents = (content: Record<string, any> | any) => {
         return content.flat().filter((field: any) => field && Object.keys(field).length > 0);
@@ -154,6 +155,22 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
         setAcceptedFiles([])
     }, [open])
 
+    const [name ,setName] = useState<any>('');
+    const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        setDatasetName(newValue);
+        setName(newValue)
+        if (nameRegex.test(newValue)) {
+            const generatedId = newValue.toLowerCase().replace(/\s+/g, '-');
+            setDatasetId(generatedId)
+            setNameError('');
+        } else {
+            setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
+        }
+    };
+
     return (
         <>
             <Dialog fullWidth={true} open={open} onClose={onClose}>
@@ -186,7 +203,14 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
                                         variant="outlined"
                                         fullWidth
                                         value={datasetName}
-                                        onChange={(e) => setDatasetName(e.target.value)}
+                                        onChange={handleNameChange}
+                                        error={Boolean(nameError)}
+                                        helperText={
+                                            nameError ||
+                                            (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100)
+                                                ? 'Dataset name should be between 4 and 100 characters'
+                                                : '')
+                                        }
                                     />
                                 </HtmlTooltip>
                             </Grid>
@@ -198,8 +222,9 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
                                         required
                                         variant="outlined"
                                         fullWidth
-                                        value={datasetId}
+                                        value={datasetName}
                                         onChange={(e) => setDatasetId(e.target.value)}
+                                        disabled
                                     />
                                 </HtmlTooltip>
                             </Grid>
