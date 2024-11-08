@@ -117,12 +117,12 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
                     setIsLiveExists(true)
                     return
                 }
-                await importDataset(contents[0], config, overwrite);
+                const response = await importDataset(contents[0], config, overwrite);
                 setDatasetName("")
                 setDatasetId("")
-                showAlert(`Dataset imported successfully`, "success");
+                showAlert(_.get(response,"data.result.message","Dataset imported successfully"), "success");
                 navigate(`/home/datasets?status=${DatasetStatus.Draft}`)
-                window.location.reload()
+                // window.location.reload()
             } catch (err) {
                 setOpen(false)
                 setAcceptedFiles([])
