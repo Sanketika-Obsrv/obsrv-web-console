@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Box, Button, Dialog, DialogTitle, DialogContent, Grid, TextField, Typography, DialogActions, IconButton } from '@mui/material';
+import { Box, Button, Dialog, DialogTitle, DialogContent, Grid, TextField, Typography, DialogActions, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { readJsonFileContents } from 'services/utils';
 import AnimateButton from 'components/@extended/AnimateButton';
@@ -13,8 +13,9 @@ import _ from 'lodash';
 import { DatasetStatus } from 'types/datasets';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from 'contexts/AlertContextProvider';
+import { DeleteOutlined } from '@ant-design/icons';
 
-const ImportDataset = ({ open, onClose }: any) => {
+const ImportDataset = ({ open, onClose, setOpen }: any) => {
     const [openImportDialog, setOpenImportDialog] = useState(false);
     const [flattenedContents, setFlattenedContents] = useState([]);
     const [isProceedEnabled, setIsProceedEnabled] = useState(false);
@@ -28,13 +29,35 @@ const ImportDataset = ({ open, onClose }: any) => {
     const [contents, setContents] = useState<string[]>([]);
     const navigate = useNavigate();
     const { showAlert } = useAlert();
-
+    const [acceptedFiles, setAcceptedFiles] = useState<any[]>([]);
 
     const flattenContents = (content: Record<string, any> | any) => {
         return content.flat().filter((field: any) => field && Object.keys(field).length > 0);
     };
 
+    const removeFile = (fileIndex: number) => {
+        const updatedFiles = acceptedFiles.filter((_, index) => index !== fileIndex);
+        setAcceptedFiles(updatedFiles);
+        setIsProceedEnabled(updatedFiles.length > 0);
+    };
+
+    const FileList = ({ files, onDelete }: { files: File[], onDelete: (index: number) => void }) => (
+        <List>
+            {files.map((file, index) => (
+                <ListItem key={index}>
+                    <ListItemText primary={file.name} />
+                    <ListItemSecondaryAction>
+                        <IconButton edge="end" onClick={() => onDelete(index)}>
+                            <DeleteOutlined />
+                        </IconButton>
+                    </ListItemSecondaryAction>
+                </ListItem>
+            ))}
+        </List>
+    );
+
     const onDrop = useCallback(async (acceptedFiles: any[]) => {
+        setAcceptedFiles(prevFiles => [...prevFiles, ...acceptedFiles]);
         const contents = await Promise.all(acceptedFiles.map((file: File) => readJsonFileContents(file)));
         if (contents.length > 0) {
             setContents(contents as string[])
@@ -61,22 +84,19 @@ const ImportDataset = ({ open, onClose }: any) => {
                 const conflictingIds = matchingIds;
                 setIsProceedEnabled(false);
                 setConflictingIds(conflictingIds);
-                setMessage(`Conflicting dataset IDs found: ${conflictingIds.join(', ')}.`);
                 setCheckValidation(true);
-                setMessage('');
                 onClose();
                 setOpenImportDialog(true);
             } else {
                 setIsProceedEnabled(true);
                 setConflictingIds([]);
-                setMessage('No conflicting dataset IDs found.');
             }
         } catch (error) {
             console.error('Error fetching datasets:', error);
         }
     }, []);
 
-    const { getRootProps, getInputProps } = useDropzone({ onDrop });
+    const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: { 'application/json': ['.json'] }, maxFiles: 1, multiple: false });
 
     const fetchDataset = async () => {
         return datasetRead({ datasetId: `${datasetId}?status=${DatasetStatus.Live}` }).then((response: any) => {
@@ -100,10 +120,12 @@ const ImportDataset = ({ open, onClose }: any) => {
                 await importDataset(contents[0], config, overwrite);
                 setDatasetName("")
                 setDatasetId("")
-                navigate(`/home/datasets?status=${DatasetStatus.Draft}`)
                 showAlert(`Dataset imported successfully`, "success");
+                navigate(`/home/datasets?status=${DatasetStatus.Draft}`)
                 window.location.reload()
             } catch (err) {
+                setOpen(false)
+                setAcceptedFiles([])
                 const errStatus = _.get(err, ["response", "status"]);
                 const errCode = _.get(err, ["response", "data", "error", "code"])
                 if (errStatus === 409 && errCode == "DATASET_EXISTS") {
@@ -143,7 +165,7 @@ const ImportDataset = ({ open, onClose }: any) => {
                                 top: 12,
                                 color: theme.palette.grey[500],
                             })}
-                            >
+                        >
                             <CloseIcon />
                         </IconButton>
                     </DialogTitle>
@@ -178,7 +200,7 @@ const ImportDataset = ({ open, onClose }: any) => {
                         </Grid>
                         <Box {...getRootProps()} sx={{ p: 2, border: '2px dashed #ccc' }}>
                             <input {...getInputProps()} />
-                            <Grid ml={6}> 
+                            <Grid ml={6}>
                                 <PlaceholderContent
                                     imageUrl={uploadIcon}
                                     mainText="Upload Sample Data"
@@ -187,6 +209,7 @@ const ImportDataset = ({ open, onClose }: any) => {
                                 />
                             </Grid>
                         </Box>
+                        <FileList files={acceptedFiles} onDelete={removeFile} />
                     </DialogContent>
                     <DialogActions>
                         <Box>
