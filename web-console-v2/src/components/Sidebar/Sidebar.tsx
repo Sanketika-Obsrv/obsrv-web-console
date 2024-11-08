@@ -104,8 +104,8 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     };
 
     const handleLogout = () => {
-        localStorage.clear();
         http.get(apiEndpoints.logout).then(() => {
+            localStorage.clear();
             navigate(`/login`);
         }).catch(() => {
             showAlert('Failed to logout', 'error');

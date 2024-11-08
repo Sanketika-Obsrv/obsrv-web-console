@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Box, Button, Dialog, DialogTitle, DialogContent, Grid, TextField, Typography, DialogActions, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -30,7 +30,6 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
     const navigate = useNavigate();
     const { showAlert } = useAlert();
     const [acceptedFiles, setAcceptedFiles] = useState<any[]>([]);
-    const [nameError, setNameError] = useState('');
 
     const flattenContents = (content: Record<string, any> | any) => {
         return content.flat().filter((field: any) => field && Object.keys(field).length > 0);
@@ -58,7 +57,7 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
     );
 
     const onDrop = useCallback(async (acceptedFiles: any[]) => {
-        setAcceptedFiles(acceptedFiles);
+        setAcceptedFiles(prevFiles => [...prevFiles, ...acceptedFiles]);
         const contents = await Promise.all(acceptedFiles.map((file: File) => readJsonFileContents(file)));
         if (contents.length > 0) {
             setContents(contents as string[])
@@ -118,12 +117,12 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
                     setIsLiveExists(true)
                     return
                 }
-                await importDataset(contents[0], config, overwrite);
+                const response = await importDataset(contents[0], config, overwrite);
                 setDatasetName("")
                 setDatasetId("")
-                showAlert(`Dataset imported successfully`, "success");
+                showAlert(_.get(response,"data.result.message","Dataset imported successfully"), "success");
                 navigate(`/home/datasets?status=${DatasetStatus.Draft}`)
-                window.location.reload()
+                // window.location.reload()
             } catch (err) {
                 setOpen(false)
                 setAcceptedFiles([])
@@ -148,28 +147,6 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
     const handleClose = () => {
         setOpenImportDialog(false)
     }
-
-    useEffect(() => {
-        setDatasetId('')
-        setDatasetName('')
-        setAcceptedFiles([])
-    }, [open])
-
-    const [name ,setName] = useState<any>('');
-    const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
-
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setDatasetName(newValue);
-        setName(newValue)
-        if (nameRegex.test(newValue)) {
-            const generatedId = newValue.toLowerCase().replace(/\s+/g, '-');
-            setDatasetId(generatedId)
-            setNameError('');
-        } else {
-            setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
-        }
-    };
 
     return (
         <>
@@ -203,14 +180,7 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
                                         variant="outlined"
                                         fullWidth
                                         value={datasetName}
-                                        onChange={handleNameChange}
-                                        error={Boolean(nameError)}
-                                        helperText={
-                                            nameError ||
-                                            (datasetName.length > 0 && (datasetName.length < 4 || datasetName.length > 100)
-                                                ? 'Dataset name should be between 4 and 100 characters'
-                                                : '')
-                                        }
+                                        onChange={(e) => setDatasetName(e.target.value)}
                                     />
                                 </HtmlTooltip>
                             </Grid>
@@ -222,19 +192,18 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
                                         required
                                         variant="outlined"
                                         fullWidth
-                                        value={datasetName}
+                                        value={datasetId}
                                         onChange={(e) => setDatasetId(e.target.value)}
-                                        disabled
                                     />
                                 </HtmlTooltip>
                             </Grid>
                         </Grid>
                         <Box {...getRootProps()} sx={{ p: 2, border: '2px dashed #ccc' }}>
                             <input {...getInputProps()} />
-                            <Grid>
+                            <Grid ml={6}>
                                 <PlaceholderContent
                                     imageUrl={uploadIcon}
-                                    mainText="Select dataset file"
+                                    mainText="Upload Sample Data"
                                     subText="JSON"
                                     type="upload"
                                 />
