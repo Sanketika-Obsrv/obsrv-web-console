@@ -18,10 +18,12 @@ const QueryBuilder = (props: any) => {
         if (!_.isEmpty(existingState)) {
             const operatorType = _.get(existingState, "operator")
             const thresholdValue = _.get(existingState, "threshold")
+            const metricId = _.get(existingState, "id") || ""
+
             if (_.includes(["within_range", "outside_range"], operatorType)) {
-                return { ..._.omit(existingState, ["threshold"]), threshold_from: _.get(thresholdValue, 0), threshold_to: _.get(thresholdValue, 1) }
+                return { ..._.omit(existingState, ["threshold"]), threshold_from: _.get(thresholdValue, 0), threshold_to: _.get(thresholdValue, 1), metric: metricId }
             }
-            return { ..._.omit(existingState, ["threshold_from", "threshold_to"]), threshold: _.get(thresholdValue, 0) }
+            return { ..._.omit(existingState, ["threshold_from", "threshold_to"]), threshold: _.get(thresholdValue, 0), metric: metricId }
         }
         return {}
     });
@@ -68,18 +70,18 @@ const QueryBuilder = (props: any) => {
         if (selectedSubComponent) {
             const filteredMetrics = _.filter(supportedMetrics, (supportedMetric) => supportedMetric.subComponent == selectedSubComponent);
             return _.map(filteredMetrics, (supportedMetric) => {
-                const { alias, metric } = supportedMetric;
+                const { alias, id } = supportedMetric;
                 return {
                     label: alias,
-                    value: metric
+                    value: id
                 };
             });
         }
         return _.map(supportedMetrics, (supportedMetric) => {
-            const { alias, metric } = supportedMetric;
+            const { alias, id } = supportedMetric;
             return {
                 label: alias,
-                value: metric
+                value: id
             };
         });
     };
@@ -264,7 +266,7 @@ const QueryBuilder = (props: any) => {
                 </Grid>
                 {runQuery && (
                     <Grid item xs={12}>
-                        <RunQuery random={Math.random()} handleClose={updateRunQuery} queryBuilderContext={value} />
+                        <RunQuery random={Math.random()} handleClose={updateRunQuery} queryBuilderContext={value} component={_.get(components, _.get(value, 'category'))} />
                     </Grid>
                 )}
             </>
@@ -301,4 +303,4 @@ const QueryBuilder = (props: any) => {
     </>
 }
 
-export default QueryBuilder;
+export default React.memo(QueryBuilder);

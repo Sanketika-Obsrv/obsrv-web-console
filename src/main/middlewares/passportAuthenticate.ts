@@ -29,20 +29,20 @@ export default {
             if (!user) {
                 return res.redirect(`${baseURL}/login`);
             }
-            req.login(user, (loginErr) => {
+            return req.login(user, (loginErr) => {
                 if (loginErr) {
                     return next(loginErr);
                 }
-                generateToken(user)
+                return generateToken(user)
                     .then((token: any) => {
                         req.session.token = token;
+                        req.session.roles = _.get(user, ['roles']);
+                        req.session.userDetails = _.pick(user, ['id', 'user_name', 'email_address', 'roles']);
+                        return res.redirect(baseURL || '/');
                     })
                     .catch((tokenError) => {
                         return next(tokenError);
                     });
-                req.session.roles = _.get(user, ['roles']);
-                req.session.userDetails = _.pick(user, ['id', 'user_name', 'email_address', 'roles']);
-                res.redirect(baseURL || '/');
             });
         })(req, res, next);
     },

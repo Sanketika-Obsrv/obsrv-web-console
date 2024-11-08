@@ -27,6 +27,12 @@ const AddAlertrules = () => {
         const commonProps = { formData, setFormData, showAlert, isFieldEditable };
         return [
             {
+                id: 'notifications',
+                title: 'Notification Channel',
+                description: 'Configure notification channel for your alert',
+                component: <NotificationComponent {...{ ...commonProps, existingState: {}, sectionLabel: 'notifications' }} />
+            },
+            {
                 id: 'queryBuilder',
                 title: 'Query Builder',
                 description: 'List down the requirements of your query and set the alert conditions',
@@ -52,18 +58,12 @@ const AddAlertrules = () => {
                 title: 'Labels',
                 description: 'Attach labels to your alert',
                 component: <RuleLabels {...{ ...commonProps, existingState: {}, sectionLabel: 'labels', isFieldEditable }} />
-            },
-            {
-                id: 'notifications',
-                title: 'Notification Channel',
-                description: 'Configure notification channel for your alert',
-                component: <NotificationComponent {...{ ...commonProps, existingState: {}, sectionLabel: 'notifications' }} />
             }
         ];
     }, []);
 
     const addAlertRule: any = async () => {
-        const rulePayload = transformRulePayload({ ...formData, context: { alertType: 'CUSTOM' } });
+        const rulePayload = await transformRulePayload({ ...formData, context: { alertType: 'CUSTOM' } });
         return addAlert(rulePayload);
     };
 
