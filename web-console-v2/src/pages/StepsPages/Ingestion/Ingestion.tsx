@@ -15,7 +15,7 @@ import _, { isEmpty } from 'lodash';
 import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
 import UploadFiles from 'pages/Dataset/wizard/UploadFiles';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
     useCreateDataset,
     useFetchDatasetsById,
@@ -58,10 +58,12 @@ const Ingestion = () => {
     const { showAlert } = useAlert();
 
     const navigate = useNavigate();
+    const params:any = useParams();
+    const { datasetIdParam }: any = params === '<new>' ? '' : params;
     const initialConfigDetails = JSON.parse(sessionStorage.getItem('configDetails') || '{}');
     const [datasetType, setDatasetType] = useState<string>('event');
     const [datasetName, setDatasetName] = useState('');
-    const [datasetId, setDatasetId] = useState('');
+    const [datasetId, setDatasetId] = useState(datasetIdParam);
     const [nameError, setNameError] = useState('');
 
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
@@ -343,11 +345,11 @@ const Ingestion = () => {
     }, [createData, data, updateDatasetMutate]);
 
     const handleNavigate = () => {
-        navigate(`/home//new-dataset/connector-configuration/${datasetId}`);
+        navigate(`/dataset/edit/connector/configure/${datasetId}`);
     };
 
     useEffect(() => {
-        if (updateDatasetData) navigate(`/home/ingestion/schema-details/${datasetId}`);
+        if (updateDatasetData) navigate(`/dataset/edit/ingestion/schema/${datasetId}`);
     }, [updateDatasetData, navigate]);
 
     const onSubmit = () => {
@@ -386,11 +388,13 @@ const Ingestion = () => {
     };
 
     useEffect(() => {
-        if (datasetName) {
-            const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
-            setDatasetId(generatedId);
-        } else {
-            setDatasetId('');
+        if(_.isEmpty(datasetIdParam)) {
+            if (datasetName) {
+                const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
+                setDatasetId(generatedId);
+            } else {
+                setDatasetId('');
+            }
         }
     }, [datasetName]);
 
@@ -451,8 +455,7 @@ const Ingestion = () => {
                             >
                                 <Box mx={4}>
                                     <Button
-                                        variant="text"
-                                        sx={{ color: theme.palette.common.black, marginBlock: 2 }}
+                                        variant="back"
                                         startIcon={
                                             <KeyboardBackspaceIcon className={ingestionStyle.iconStyle} />
                                         }
@@ -529,7 +532,7 @@ const Ingestion = () => {
                                                 subscribeErrors={setFileErrors}
                                             />
                                             {!_.isEmpty(files) && (
-                                                <Box mx={3} mt={18}>
+                                                <Box mx={3} mt={0}>
                                                     <Box display="flex" justifyContent="space-between">
                                                         <Typography variant="h5" mt={1.5}>
                                                             Files Uploaded
@@ -547,7 +550,7 @@ const Ingestion = () => {
                                                     />
                                                 </Box>
                                             )}
-                                            <Box sx={{ marginTop: 30, mr: 1, ml: 1, mb: 1 }}>
+                                            <Box sx={{ marginTop: 0, mr: 1, ml: 1, mb: 1 }}>
                                                 {fileErrors?.length > 0 && <RejectionFiles fileRejections={fileErrors} />}
                                             </Box>
                                         </GenericCard>

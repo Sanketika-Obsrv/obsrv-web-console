@@ -15,16 +15,17 @@ const PlaceholderContent = ({ imageUrl, mainText, subText, type }: PlaceholderCo
             {type !== DropzopType.standard && (
                 <Card
                     sx={{
-                        width: '22rem',
+                        minWidth: '21rem',
                         height: '11rem',
-                        margin: 4,
-                        boxShadow: '0.625rem 0.625rem 2.75rem 0 rgba(0, 0, 0, 0.1)'
+                        margin: 2,
+                        boxShadow: '0.625rem 0.625rem 2.75rem 0 rgba(0, 0, 0, 0.1)',
+                        textAlign: '-webkit-center'
                     }}
                 >
                     <CardMedia
                         component="img"
                         image={imageUrl}
-                        sx={{ width: '64px', height: '4rem', marginLeft: 15, marginTop: 3 }}
+                        sx={{ width: '64px', height: '4rem', marginTop: 3 }}
                     />
                     <CardContent>
                         <Stack

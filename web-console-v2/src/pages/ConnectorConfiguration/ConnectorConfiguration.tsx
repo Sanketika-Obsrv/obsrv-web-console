@@ -7,8 +7,7 @@ import Ajv, { ErrorObject } from 'ajv';
 import HelpSection from 'components/HelpSection/HelpSection';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { getConfigValue } from 'services/configData';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useFetchDatasetsById, useReadConnectors } from 'services/dataset';
 import { theme } from 'theme';
 import { deleteSessionStorageItem, fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
@@ -41,6 +40,7 @@ const ConnectorConfiguration: React.FC = () => {
         interval: 'Periodic',
         schedule: 'Hourly'
     });
+    const { datasetId }: any = useParams();
     const [formData, setFormData] = useState<FormData>({});
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -56,7 +56,6 @@ const ConnectorConfiguration: React.FC = () => {
     const { selectedCardId, selectedCardName } = location.state || {};
     const readConnector = useReadConnectors({ connectorId: selectedCardId });
     const navigate = useNavigate();
-    const datasetId = getConfigValue('dataset_id');
 
     const customErrors = (errors: null | ErrorObject[] = []) => {
         if (_.isEmpty(errors)) return;
@@ -148,7 +147,7 @@ const ConnectorConfiguration: React.FC = () => {
 
         if (connectorConfigDetails) {
             const connectorId = _.get(connectorConfigDetails, 'connectors_config[0].value.connector_id')
-            if (selectedCardId != connectorId) {
+            if (selectedCardId !== connectorId) {
                 deleteSessionStorageItem('connectorConfigDetails')
                 return
             }
@@ -279,7 +278,7 @@ const ConnectorConfiguration: React.FC = () => {
             ]
         };
         storeSessionStorageItem('connectorConfigDetails', connectionData);
-        navigate('/home/ingestion');
+        navigate(`/home/dataset/edit/${datasetId}?step=connector&skipped=false&complete=true`);
     };
 
     const handleHelpSectionToggle = () => {
@@ -287,7 +286,7 @@ const ConnectorConfiguration: React.FC = () => {
     };
 
     const handleBack = () => {
-        navigate('/home/new-dataset/connector-list');
+        navigate(`/home/dataset/edit/connectors/${datasetId}`);
     };
 
     const handleIntervalChange = (e: SelectChangeEvent) => {

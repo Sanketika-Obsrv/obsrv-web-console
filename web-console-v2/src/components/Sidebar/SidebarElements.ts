@@ -106,7 +106,7 @@ const SidebarElements = () => {
       id: 'datasetcreation',
       icon: React.createElement(AddCircleOutlineIcon),
       title: 'Dataset Creation',
-      route: '/home/new-dataset'
+      route: '/dataset/create'
     },
     {
       id: 'datasetmanagement',

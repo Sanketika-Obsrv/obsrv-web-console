@@ -19,8 +19,11 @@ interface StepperProps {
 }
 
 const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperProps) => {
+
     const navigate = useNavigate();
     const location = useLocation();
+    const { datasetId }: any = useParams();
+    const [skippedStep, setSkippedStep] = useState();
     const [selectedStep, setSelectedStep] = useState(initialSelectedStep);
     const [steps, setSteps] = useState(initialSteps);
     const handleClick = (route: string, index: number, completed: boolean, onProgress: boolean) => {
@@ -31,10 +34,10 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
     };
 
     useEffect(() => {
-        const pathSegments = location.pathname.split('/');
-        const lastSegment = pathSegments[pathSegments.length - 2];
-        const activeStep = steps.find((step) => step.route === lastSegment);
-        console.log("### activeStep", activeStep, "### steps", steps, lastSegment)
+        
+        const route = location.pathname.split('/')[3];
+        const activeStep = steps.find((step) => step.route === route);
+        console.log("### activeStep", activeStep, "### steps", steps, route)
         if (activeStep) {
             setSelectedStep(activeStep.index);
             setSteps((prevSteps) => {
@@ -52,16 +55,13 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
         }
     }, [location, initialSteps]);
 
-    const params = useParams();
-    const { datasetId }: any = params;
-
     const handleRouteNavigation = (route: string, datasetId: string) => {
         const routeMapping: Record<string, string> = {
-            connector: `/home/new-dataset/connector-configuration/${datasetId}`,
-            'schema-details': `/home/ingestion/schema-details/${datasetId}`,
-            processing: `/home/processing/${datasetId}`,
-            storage: `/home/storage/${datasetId}`,
-            preview: `/home/preview/${datasetId}`
+            connector: `/dataset/edit/connector/${datasetId}`,
+            ingestion: `/dataset/edit/ingestion/${datasetId}`,
+            processing: `/dataset/edit/processing/${datasetId}`,
+            storage: `/dataset/edit/storage/${datasetId}`,
+            preview: `/dataset/edit/preview/${datasetId}`
         };
         const targetRoute = routeMapping[route] || route;
         console.log("route", route, "datasetId", datasetId)
@@ -121,7 +121,7 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
                     <Typography
                         variant={step.completed && !step.active ? 'body1' : step.active ? 'h1' : 'body1'}
                         color={step.completed && !step.active ? '' : step.index === selectedStep ? 'secondary.main' : ''}
-                        sx={{fontSize: '1.125rem'}}
+                        sx={{fontSize: '0.8rem'}}
                     >
                         {step.name}
                     </Typography>

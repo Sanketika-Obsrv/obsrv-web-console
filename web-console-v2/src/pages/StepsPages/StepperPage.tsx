@@ -18,8 +18,8 @@ const stepData = {
             index: 2,
             completed: false,
             skipped: false,
-            active: true,
-            route: 'schema-details'
+            active: false,
+            route: 'ingestion'
         },
         {
             name: 'Processing',
@@ -56,7 +56,7 @@ const StepperPage = () => {
                 steps={stepData.steps}
                 initialSelectedStep={stepData.initialSelectedStep}
             />
-            <Box sx={{ pt: 8 }}>
+            <Box sx={{ pt: 7 }}>
                 <Outlet />
             </Box>
         </Box>
