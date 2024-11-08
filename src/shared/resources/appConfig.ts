@@ -26,6 +26,7 @@ export default {
         URL: env.ALERT_MANAGER_URL || 'http://localhost:9093',
     },
     GRAFANA: {
+        ADMIN_URL: env.GRAFANA_ADMIN_URL || 'http://localhost:8000',
         URL: env.GRAFANA_URL || 'http://localhost:8000',
         TOKEN: env.GF_BEARER_TOKEN || '',
     },

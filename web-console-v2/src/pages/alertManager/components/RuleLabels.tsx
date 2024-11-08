@@ -165,7 +165,7 @@ const LabelComponent = (props: any) => {
                 <Grid item xs={12}>
                     <Button
                         variant="contained"
-                        color="success"
+                        color="primary"
                         disabled={formErrors}
                         onClick={() => {
                             const index = _.findIndex(labels, (label) => label.label === value.label);
