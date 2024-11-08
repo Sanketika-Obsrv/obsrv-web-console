@@ -301,4 +301,4 @@ const QueryBuilder = (props: any) => {
     </>
 }
 
-export default QueryBuilder;
+export default React.memo(QueryBuilder);
