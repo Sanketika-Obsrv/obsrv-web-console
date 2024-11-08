@@ -218,7 +218,6 @@ const MUIForm = forwardRef((props: any, ref: any) => {
                                         <FormControl fullWidth key={name} className={classes.formControl} required={required} disabled={disabled}>
                                             <Autocomplete
                                                 id={name}
-                                                componentsProps={{ popper: { style: { width: 'fit-content' } } }}
                                                 value={val || null}
                                                 disableClearable
                                                 options={selectOptions}
