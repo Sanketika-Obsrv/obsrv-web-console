@@ -48,7 +48,7 @@ const GaugeChart = (props: any) => {
 
     return <>
         {loading && <Loader loading={loading} />}
-        <Chart id={v4()}
+        {!loading &&<Chart id={v4()}
             nrOfLevels={nrOfLevels}
             arcsLength={arcsLength}
             colors={colors}
@@ -56,7 +56,7 @@ const GaugeChart = (props: any) => {
             textColor={textColor}
             className={className}
             needleColor={'#6a727a'}
-        />
+        />}
     </>
 }
 
