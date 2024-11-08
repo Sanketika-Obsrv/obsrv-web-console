@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Grid, Popper, Stack, Typography } from "@mui/material";
+import { Box, Button, Grid, Stack, Typography } from "@mui/material";
 import MUIForm from "components/form";
 import { StandardWidthButton } from "components/Styled/Buttons";
 import { useEffect, useRef, useState } from "react";
@@ -89,7 +89,7 @@ const NotificationComponent = (props: any) => {
                 />
             </Grid>
             <Grid item xs={6}>
-                <Button variant="contained" onClick={() => navigate("/home/alertChannels/new")}>Create Notification Channel</Button>
+                <Button variant="contained" onClick={() => navigate("/home/alertChannels")}>Create Notification Channel</Button>
             </Grid>
         </Grid>
     }
