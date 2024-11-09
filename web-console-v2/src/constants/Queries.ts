@@ -48,7 +48,7 @@ export default {
   },
   redis_last_backup_time: {
     query:
-      '(time() - s3_last_modified_object_date{job="s3-backups", prefix=~"redis"})',
+      'time() - s3_last_modified_object_date{job="s3-backups", prefix=~"denorm-redis|dedeup-redis"}',
   },
   pv_total_size: {
     query:

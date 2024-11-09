@@ -109,7 +109,7 @@ export default {
         "query": '(time() - s3_last_modified_object_date{job="s3-backups", prefix=~"postgresql"})'
     },
     "redis_last_backup_time": {
-        "query": '(time() - s3_last_modified_object_date{job="s3-backups", prefix=~"redis"})'
+        "query": 'time() - s3_last_modified_object_date{job="s3-backups", prefix=~"denorm-redis|dedeup-redis"}'
     },
     "ninty_percentile_query_response_time_data_out": {
         "query": 'quantile(0.9, max_over_time(node_query_response_time{entity="data-out"}[$interval]))'
