@@ -8,6 +8,7 @@ import { LocalizationProvider, DateTimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { searchAlert } from 'services/alerts';
 import { fetchChannels } from 'services/notificationChannels';
+import { getMetricsGroupedByComponents } from './queryBuilder';
 
 export const validateForm = (config: Record<string, any>) => {
     if (!config) return false;
@@ -196,10 +197,10 @@ const DatePicker = (props: any) => {
         <DateTimePicker
             label={label}
             value={date}
-            onChange={(newValue:any) => {
+            onChange={(newValue: any) => {
                 setDate(newValue, alertId);
             }}
-            renderInput={(params:any) => <TextField {...params} />}
+            renderInput={(params: any) => <TextField {...params} />}
         />
     );
 };
@@ -240,7 +241,7 @@ export const asyncValidation = () => {
 export const getStatusComponent = (props: any) => {
     return () => {
         const { statusData, setSilenceStatus, fetchDataHandler, toggleFilter, removeFilter } = props;
-        return _.map(statusData, (value:any, status:any) => (
+        return _.map(statusData, (value: any, status: any) => (
             <Chip
                 key={status}
                 size="small"
@@ -326,7 +327,7 @@ export const getStatusColor = (value: string) => {
     return _.get(valueToColorMapping, value?.toLowerCase()) || 'success';
 };
 
-export const transformRulePayload = (formData: Record<string, any>) => {
+export const transformRulePayload = async (formData: Record<string, any>) => {
     const {
         name,
         description,
@@ -340,7 +341,10 @@ export const transformRulePayload = (formData: Record<string, any>) => {
         context,
         severity
     } = formData;
-    const { threshold, threshold_from, threshold_to, operator } = queryBuilderContext
+    const { threshold, threshold_from, threshold_to, operator, metric } = queryBuilderContext
+    const components = await getMetricsGroupedByComponents();
+    const selectedComponent = _.get(components, category)
+    const metricValue = _.filter(selectedComponent, field => _.get(field, "id") == metric)
     const updatedThreshold = !_.includes(["within_range", "outside_range"], operator) ? [threshold] : [threshold_from, threshold_to]
     const rulePayload = {
         name,
@@ -356,7 +360,7 @@ export const transformRulePayload = (formData: Record<string, any>) => {
             type: category
         },
         metadata: {
-            queryBuilderContext: { ...queryBuilderContext, threshold: updatedThreshold }
+            queryBuilderContext: { ...queryBuilderContext, threshold: updatedThreshold, metric: _.get(metricValue, [0, "metric"]), id: metric }
         },
         context: {
             ...context

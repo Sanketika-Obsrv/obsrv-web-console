@@ -54,6 +54,12 @@ const EditRule = () => {
 
     const sections = useMemo(() => [
         {
+            id: 'notifications',
+            title: 'Notification Channel',
+            description: 'Configure notification channel for your alert',
+            component: <NotificationComponent {...{ ...commonProps, existingState: _.pick(ruleMetadata, 'notification'), sectionLabel: "notifications", isFieldEditable }} />
+        },
+        {
             id: 'queryBuilder',
             title: 'Query Builder',
             description: 'List down the requirements of your query and set the alert conditions',
@@ -70,17 +76,11 @@ const EditRule = () => {
             title: 'Labels',
             description: 'Attach labels to your alert',
             component: <RuleLabels {...{ ...commonProps, existingState: _.pick(ruleMetadata, 'labels'), sectionLabel: "labels", isFieldEditable }} />
-        },
-        {
-            id: 'notifications',
-            title: 'Notification Channel',
-            description: 'Configure notification channel for your alert',
-            component: <NotificationComponent {...{ ...commonProps, existingState: _.pick(ruleMetadata, 'notification'), sectionLabel: "notifications", isFieldEditable }} />
         }
     ], [ruleMetadata]);
 
-    const editAlertRule = () => {
-        const rulePayload = transformRulePayload({ ...formData, context: { alertType: alertType } });
+    const editAlertRule = async () => {
+        const rulePayload = await transformRulePayload({ ...formData, context: { alertType: alertType } });
         return editAlert({ id: id, data: rulePayload });
     };
 
