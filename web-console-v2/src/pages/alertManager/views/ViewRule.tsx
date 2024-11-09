@@ -193,7 +193,7 @@ const ViewRule = () => {
         return (
             <Box sx={{ p: 2, pb: 0 }} textAlign="end">
                 <Grid item xs={12}>
-                    <RuleHeader alerts={alertPayload} refresh={getAlertInfo} configuration={configuration} />
+                    <RuleHeader alerts={alertPayload} refresh={getAlertInfo} configuration={configuration} setLoading={setLoading} />
                 </Grid>
             </Box>
         );
