@@ -96,9 +96,14 @@ declare module '@mui/material/Button' {
         warning: true;
         info: true;
     }
+
+    interface ButtonPropsVariantOverrides {
+        back: true
+    }
 }
 
 export const theme = createTheme({
+    
     palette: {
         common: {
             black: '#111111',
@@ -185,7 +190,7 @@ export const theme = createTheme({
         h1: {
             fontFamily: 'Montserrat',
             fontWeight: 600,
-            fontSize: '1.25rem',
+            fontSize: '1.1rem',
             color: '#111111'
         },
         h1Secondary: {
@@ -213,10 +218,10 @@ export const theme = createTheme({
             fontSize: '0.8rem',
             color: '#111111'
         },
-        h5: {
+        h6: {
             fontFamily: 'Montserrat',
-            fontWeight: 600,
-            fontSize: '1rem',
+            fontWeight: 500,
+            fontSize: '15px',
             color: '#111111',
             lineHeight: '1.05rem'
         },
@@ -310,6 +315,17 @@ export const theme = createTheme({
         }
     },
     components: {
+        MuiButton: {
+            variants: [{
+                props: { variant: 'back' },
+                style: {
+                    fontSize: '0.8rem',
+                    color: '#111111', 
+                    marginBottom: '0.3rem',
+                    paddingLeft: '2px'
+                },
+            }]
+        },
         MuiTypography: {
             defaultProps: {
                 variantMapping: {
@@ -325,7 +341,8 @@ export const theme = createTheme({
                     bodyBold: 'body1',
                     captionMedium: 'caption',
                     textCTAPrimary: 'body1',
-                    textCTASecondary: 'body2'
+                    textCTASecondary: 'body2',
+                    h5: 'h5'
                 }
             }
         }

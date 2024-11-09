@@ -7,15 +7,13 @@ import Ajv, { ErrorObject } from 'ajv';
 import HelpSection from 'components/HelpSection/HelpSection';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { getConfigValue } from 'services/configData';
-import { useFetchDatasetsById, useReadConnectors } from 'services/dataset';
-import { theme } from 'theme';
-import { deleteSessionStorageItem, fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { endpoints, useFetchDatasetsById, useReadConnectors } from 'services/dataset';
 import styles from './ConnectorConfiguration.module.css';
 import sampleSchema from './Schema';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
+import { http } from 'services/http';
 
 interface FormData {
     [key: string]: unknown;
@@ -37,26 +35,26 @@ const GenericCard = styled(Card)(({ theme }) => ({
 
 const ConnectorConfiguration: React.FC = () => {
 
-    const [opFormData, setOpFormData] = useState<FormData>({
+    
+    const location = useLocation();
+    const { datasetId }: any = useParams();
+    const { selectedConnectorId, connectorConfig } = location.state || {};
+    const defaultFormData = connectorConfig ? _.get(connectorConfig, 'connector_config') : {}
+    const defaultOpFormData = connectorConfig ? _.get(connectorConfig, 'operations_config') : {
         interval: 'Periodic',
         schedule: 'Hourly'
-    });
-    const [formData, setFormData] = useState<FormData>({});
+    }
+    const [formData, setFormData] = useState<FormData>(defaultFormData);
+    const [opFormData, setOpFormData] = useState<FormData>(defaultOpFormData);
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [connectorType, setConnectorType] = useState<string>("stream");
-    const [selectedConnectorId, setSelectedConnectorId] = useState<string | null>(null);
     const [connectorHelpText, setConnectorHelpText] = useState<string | null>(null);
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
     const [schema, setSchema] = useState<Schema>(sampleSchema);
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
 
-    const location = useLocation();
-
-    const { selectedCardId, selectedCardName } = location.state || {};
-    const readConnector = useReadConnectors({ connectorId: selectedCardId });
     const navigate = useNavigate();
-    const datasetId = getConfigValue('dataset_id');
 
     const customErrors = (errors: null | ErrorObject[] = []) => {
         if (_.isEmpty(errors)) return;
@@ -126,46 +124,9 @@ const ConnectorConfiguration: React.FC = () => {
             }
         }
     }
-
-    const fetchDatasetById = useFetchDatasetsById({
-        datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=connectors_config'
-    });
-    const connectionResponse = fetchDatasetById.data;
-
+    const readConnector = useReadConnectors({ connectorId: selectedConnectorId });
     useEffect(() => {
-        if (connectionResponse) {
-            const existingData = {
-                ...connectionResponse.connectors_config[0]
-            };
-            setFormData(existingData);
-        }
-    }, [connectionResponse]);
-
-    useEffect(() => {
-
-        const connectorConfigDetails: any = fetchSessionStorageItem('connectorConfigDetails');
-
-        if (connectorConfigDetails) {
-            const connectorId = _.get(connectorConfigDetails, 'connectors_config[0].value.connector_id')
-            if (selectedCardId != connectorId) {
-                deleteSessionStorageItem('connectorConfigDetails')
-                return
-            }
-            setTimeout(() => {
-                const connectorConfig = connectorConfigDetails.connectors_config[0].value.connector_config;
-                setFormData(connectorConfig);
-                handleFormDataChange(connectorConfig);
-            }, 100)
-
-            setOpFormData(connectorConfigDetails.connectors_config[0].value.operations_config);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (selectedCardId && readConnector.data) {
-            const selectedConnectorId = readConnector.data.connector_id;
-            setSelectedConnectorId(selectedConnectorId);
+        if (datasetId === '<new>' && selectedConnectorId && readConnector.data) {
             setConnectorType(_.toLower(readConnector.data.category));
             const apiSchema = readConnector.data.ui_spec;
             if (apiSchema) {
@@ -176,7 +137,31 @@ const ConnectorConfiguration: React.FC = () => {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
         }
-    }, [selectedCardId, readConnector.data]);
+    }, [selectedConnectorId, readConnector.data]);
+    
+    const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config'});
+    useEffect(() => {
+        if (dataset.data) {
+            const connectorId = _.get(dataset.data.connectors_config[0], 'connector_id')
+            http.get(`${endpoints.READ_CONNECTORS}/${connectorId}`).then((response: any) => {
+                const connectorData = _.get(response, ['data', 'result'])
+                if(connectorData) {
+                    setConnectorType(_.toLower(connectorData.category));
+                    const apiSchema = connectorData.ui_spec;
+                    if (apiSchema) {
+                        setSchema(transformSchema(apiSchema));
+                        setHelpSectionContent(apiSchema);
+                        setErrorMessage(null);
+                        setFormErrors([])
+                        setFormData(_.get(dataset.data.connectors_config[0], 'connector_config'));
+                        setOpFormData(_.get(dataset.data.connectors_config[0], 'operations_config'));
+                    } else {
+                        setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
+                    }
+                }
+            })
+        }
+    }, [dataset.data]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);
@@ -184,7 +169,7 @@ const ConnectorConfiguration: React.FC = () => {
 
     const transformSchema = (apiSchema: any): Schema => {
         return {
-            title: `Configure ${selectedCardName}`,
+            title: _.get(apiSchema, 'description'),
             schema: {
                 type: 'object',
                 ...apiSchema
@@ -195,7 +180,6 @@ const ConnectorConfiguration: React.FC = () => {
 
     const setHelpSectionContent = (schema: any): string[] => {
 
-        // TODO: Convert this to a JSX Element
         const combinedHelp: string[] = [];
         if (schema?.properties) {
             combinedHelp.push(`
@@ -265,21 +249,17 @@ const ConnectorConfiguration: React.FC = () => {
 
     const handleButtonClick = () => {
 
-        const connectionData = {
-            connectors_config: [
-                {
-                    value: {
-                        id: selectedConnectorId,
-                        connector_id: selectedCardId,
-                        connector_config: formData || {},
-                        operations_config: opFormData || {}
-                    },
-                    action: 'upsert'
-                }
-            ]
-        };
-        storeSessionStorageItem('connectorConfigDetails', connectionData);
-        navigate('/home/ingestion');
+        navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=false&completed=true`, {
+            state: {
+                connectorConfig: {
+                    id: selectedConnectorId,
+                    connector_id: selectedConnectorId,
+                    connector_config: formData || {},
+                    operations_config: opFormData || {}
+                },
+                selectedConnectorId
+            }
+        });
     };
 
     const handleHelpSectionToggle = () => {
@@ -287,7 +267,7 @@ const ConnectorConfiguration: React.FC = () => {
     };
 
     const handleBack = () => {
-        navigate('/home/new-dataset/connector-list');
+        navigate(`/dataset/edit/connector/list/${datasetId}`);
     };
 
     const handleIntervalChange = (e: SelectChangeEvent) => {
@@ -307,22 +287,22 @@ const ConnectorConfiguration: React.FC = () => {
     };
 
     return (
-        <Box>
-            <Box mx={4} my={1}>
-                <Button
-                    variant="text"
-                    sx={{ color: theme.palette.common.black }}
-                    startIcon={<KeyboardBackspaceIcon className={styles.iconStyle} />}
-                    onClick={handleBack}
-                >
-                    Back
-                </Button>
-            </Box>
+        <Box ml={1}>
+            {datasetId && datasetId === '<new>' && (
+                <Box mx={2}>
+                    <Button
+                        variant="back"
+                        startIcon={<KeyboardBackspaceIcon className={styles.iconStyle} />}
+                        onClick={handleBack}
+                    >
+                        Back
+                    </Button>
+                </Box>
+            )}
 
             <Box
                 className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
-                pr={4}
-                pl={3}
+                pr={2}
                 sx={{ boxShadow: 'none', pb: '5rem' }}
             >
                 {errorMessage ? (
@@ -336,7 +316,7 @@ const ConnectorConfiguration: React.FC = () => {
                                 <Typography variant='h1'>{schema.title}</Typography>
                             </Box>
 
-                            <Grid container spacing={3} className={styles?.gridContainer} justifyContent={'flex-start'}>
+                            <Grid container columnSpacing={3} className={styles?.gridContainer} justifyContent={'flex-start'}>
                                 {schema.schema.properties && _.sortBy(_.entries(schema.schema.properties), [([, value]) => (value as any).uiIndex]).map(([sectionKey, sectionValue]) => {
                                     return (
                                         <Grid item xs={12} sm={6} lg={6}
@@ -375,7 +355,7 @@ const ConnectorConfiguration: React.FC = () => {
                                     <Typography variant='h1'>Configure Fetch Settings</Typography>
                                 </Box>
 
-                                <Grid container spacing={3} className={styles?.gridContainer}>
+                                <Grid container columnSpacing={3} rowSpacing={1} className={styles?.gridContainer}>
                                     <Grid item xs={12} sm={6} lg={6}>
                                         <FormControl fullWidth required>
                                             <InputLabel id="interval-label">Polling Interval</InputLabel>

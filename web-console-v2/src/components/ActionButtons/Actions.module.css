@@ -1,6 +1,6 @@
 .actionContainers {
   width: 100%;
-  height: 5.25rem;
+  height: 3rem;
   box-shadow: var(--drop-shadow-small);
   background-color: var(--white-color);
   display: flex;
