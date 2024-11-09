@@ -249,7 +249,7 @@ const ConnectorConfiguration: React.FC = () => {
 
     const handleButtonClick = () => {
 
-        navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=false&complete=true`, {
+        navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=false&completed=true`, {
             state: {
                 connectorConfig: {
                     id: selectedConnectorId,

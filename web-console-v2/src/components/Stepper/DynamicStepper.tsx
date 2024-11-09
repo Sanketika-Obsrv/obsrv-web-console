@@ -34,6 +34,8 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
     };
 
     useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const prevStep = queryParams.get('step');
         
         const route = location.pathname.split('/')[3];
         const activeStep = steps.find((step) => step.route === route);
@@ -42,6 +44,9 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
             setSteps((prevSteps) => {
                 return prevSteps.map((step) => {
                     if (step.index < activeStep.index) {
+                        if(step.route === prevStep) {
+                            return { ...step, skipped: queryParams.get('skipped') === 'true', completed: queryParams.get('completed') === 'true', active: false };
+                        }
                         return { ...step, completed: true, active: false };
                     } else if (step.index === activeStep.index) {
                         return { ...step, active: true };
