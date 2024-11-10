@@ -23,6 +23,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import SubdirectoryArrowRightIcon from '@mui/icons-material/SubdirectoryArrowRight';
 
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import * as _ from 'lodash';
@@ -94,7 +95,7 @@ const renderColumnCell = ({ cell, value }: any) => {
               : '3px';
 
     return (
-        <Box maxWidth={'30vw'} minWidth={'20vw'} py={2} pl={paddingLeft}>
+        <Box maxWidth={'30vw'} minWidth={'20vw'} py={isSubRow ? 1.4 : 2} pl={paddingLeft}>
             <Stack direction="column">
                 <Box
                     display="flex"
@@ -103,8 +104,9 @@ const renderColumnCell = ({ cell, value }: any) => {
                     minWidth="75%"
                     maxWidth="80%"
                 >
+                    {isSubRow && (<SubdirectoryArrowRightIcon sx={{color: "#555666", marginTop: '-4px', marginRight: '5px'}}/>)}
                     <Typography
-                        variant="h3"
+                        variant="h6"
                         component="span"
                         textOverflow="ellipsis"
                         overflow="hidden"

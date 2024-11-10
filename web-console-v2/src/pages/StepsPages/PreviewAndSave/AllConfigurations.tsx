@@ -9,7 +9,7 @@ import { getConfigValue } from 'services/configData';
 import { useDatasetList, useFetchDatasetsById } from 'services/dataset';
 import _ from 'lodash';
 import SchemaDetails from '../Ingestion/SchemaDetails/SchemaDetails';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import CustomTable from 'components/CustomeTable/CustomTable';
 import Loader from 'components/Loader';
 import { getDatasetType } from '../Storage/Storage';
@@ -24,7 +24,7 @@ interface TransformationRow {
 
 const AllConfigurations = () => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const datasetId = getConfigValue('dataset_id');
+    const {datasetId}:any = useParams();
 
     const datasetList = useDatasetList({
         status: ['Live']

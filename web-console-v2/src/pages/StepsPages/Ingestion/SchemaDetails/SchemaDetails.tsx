@@ -1,21 +1,35 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {
-    Grid,
     Box,
+    FormControl,
+    Grid,
+    IconButton,
+    InputLabel,
+    Select,
     Stack,
-    Typography,
-    useTheme,
     SvgIcon,
     SvgIconProps,
-    Select,
-    FormControl,
-    InputLabel,
-    IconButton
+    Typography,
+    useTheme
 } from '@mui/material';
 import * as _ from 'lodash';
+import React, { useEffect, useMemo, useState } from 'react';
 import ingestionStyle from '../Ingestion.module.css';
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 
+import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
+import { Button, MenuItem } from '@mui/material';
+import CollapsibleSuggestions from 'components/CollapsibleSuggestions/CollapsibleSuggestions';
+import AccordionSection from 'components/EditDataset/AccordionSection';
+import ExpandingTable from 'components/ExpandingTable/ExpandingTable';
+import Loader from 'components/Loader';
+import Retry from 'components/Retry/Retry';
+import IconButtonWithTips from 'components/ToolTip/IconButtonWithTips';
+import { useAlert } from 'contexts/AlertContextProvider';
+import ReUploadFiles from 'pages/Dataset/wizard/ReUploadFiles';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
+import { dataMappings } from 'utils/dataMappings';
+import Actions from '../../../../components/ActionButtons/Actions';
 import AlertDialog from '../../../../components/AlertDialog/AlertDialog';
 import {
     areConflictsResolved,
@@ -24,13 +38,12 @@ import {
     getNesting,
     prepareFieldsFromJson
 } from '../../../../services/json-schema';
-import IconButtonWithTips from 'components/ToolTip/IconButtonWithTips';
-import { downloadJsonFile } from '../../../../utils/downloadUtils';
 import {
+    resetSuggestionResolve,
     updateDataType,
-    updateFormatType,
-    resetSuggestionResolve
+    updateFormatType
 } from '../../../../utils/dataTypeUtil';
+import { downloadJsonFile } from '../../../../utils/downloadUtils';
 import {
     renderActionsCell,
     renderArrivalFormatCell,
@@ -38,26 +51,8 @@ import {
     renderDataTypeCell,
     renderRequiredCell
 } from '../../../../utils/renderCells';
-import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
-import styles from '../../../ConnectorConfiguration/ConnectorConfiguration.module.css';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandingTable from 'components/ExpandingTable/ExpandingTable';
-import Actions from '../../../../components/ActionButtons/Actions';
-import { Button } from '@mui/material';
-import { useNavigate, useParams } from 'react-router-dom';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import CollapsibleSuggestions from 'components/CollapsibleSuggestions/CollapsibleSuggestions';
-import { MenuItem } from '@mui/material';
-import AccordionSection from 'components/EditDataset/AccordionSection';
-import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
-import { useAlert } from 'contexts/AlertContextProvider';
 import { EditLiveDataset } from './EditLiveDataset';
-import ReUploadFiles from 'pages/Dataset/wizard/ReUploadFiles';
-import { getConfigValue } from 'services/configData';
-import Loader from 'components/Loader';
-import { dataMappings } from 'utils/dataMappings';
-import { storeSessionStorageItem } from 'utils/sessionStorage';
-import Retry from 'components/Retry/Retry';
+import { KeyboardArrowDownOutlined, KeyboardArrowRightOutlined } from '@mui/icons-material';
 
 export const validFormatTypes = [
     'text',
@@ -122,13 +117,17 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     const theme = useTheme();
     const navigate = useNavigate();
     const { showAlert } = useAlert();
-
+    const { datasetId }:any = useParams();
     const [selection, setSelection] = useState<Record<string, any>>({});
     const [flattenedData, setFlattenedData] = useState<Array<Record<string, any>>>([]);
     const [openAlertDialog, setOpenAlertDialog] = useState(false);
     const [filterByChip, setFilterByChip] = useState<columnFilter | null>(null);
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
     const [requiredFieldFilters, setRequiredFieldFilters] = useState<string>('');
+    const [datasetName, setDatasetName] = useState<string>('');
+    const [datasetType, setDatasetType] = useState<string>('');
+    const [selectedConnectorId, setSelectedConnectorId] = useState<string>('');
+    const [versionKey, setVersionKey] = useState<string>('');
     const [allConflictsResolved, setAllConflictsResolved] = useState(false);
     const [uploadLoading, setUploadLoading] = useState(false);
     const [isErrorUpload, setIsErrorUpload] = useState(false);
@@ -137,15 +136,11 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     const [atleastOneFieldPresent, setAtleastOneFieldPresent] = useState(true);
     const [jsonSchema, setJsonSchema] = useState({});
     const updateDataset = useUpdateDataset();
-
-    const params = useParams();
-    const { datasetId: editDatasetId } = params;
-
-    const datasetId = editDatasetId || getConfigValue('dataset_id');
+    
 
     const fetchDatasetById = useFetchDatasetsById({
         datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,dataset_config'
+        queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,type,dataset_config,connectors_config'
     });
 
     const fetchLiveDataset: any = useFetchDatasetsById({
@@ -155,14 +150,11 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
 
     useEffect(() => {
         if (fetchDatasetById.data) {
-            if (editDatasetId) {
-                const configDetail = {
-                    name: _.get(fetchDatasetById, ['data', 'name']),
-                    dataset_id: editDatasetId,
-                    version_key: _.get(fetchDatasetById, ['data', 'version_key'])
-                };
-
-                storeSessionStorageItem(configDetailKey, configDetail);
+            if (datasetId) {
+                setDatasetName(_.get(fetchDatasetById, ['data', 'name']));
+                setDatasetType(_.get(fetchDatasetById, ['data', 'type']));
+                setVersionKey(_.get(fetchDatasetById, ['data', 'version_key']));
+                setSelectedConnectorId(_.get(_.get(fetchDatasetById, ['data', 'connectors_config'])[0], 'connector_id'));
             }
 
             const { properties } = fetchDatasetById.data.data_schema || {};
@@ -188,7 +180,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
         const baseColumns = [
             {
                 Header: () => (
-                    <Typography variant="h1Secondary" component="span" fontWeight={500} ml={-2}>
+                    <Typography variant="h6" component="span" ml={-2}>
                         Fields
                     </Typography>
                 ),
@@ -197,9 +189,10 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                 editable: false,
                 Cell: ({ row, value, cell }: any) => {
                     const collapseIcon = row.isExpanded ? (
-                        <KeyboardArrowUpIcon sx={{ color: 'white' }} />
+                        <KeyboardArrowDownOutlined />
                     ) : (
-                        <ExpandMoreIcon sx={{ color: 'white' }} />
+                        
+                        <KeyboardArrowRightOutlined />
                     );
                     const isSubRow = cell?.row?.depth > 0;
                     const isObjectType = row.original.arrival_format === 'object';
@@ -219,20 +212,22 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                 <IconButton
                                     {...row.getToggleRowExpandedProps()}
                                     sx={{
-                                        backgroundColor: '#056ECE',
-                                        color: 'white',
+                                        backgroundColor: '#ffffff',
+                                        color: '#056ECE',
                                         borderRadius: '4px',
                                         height: 22,
                                         width: 22,
                                         mr: 1,
                                         '&:hover': {
-                                            backgroundColor: 'blue'
+                                            backgroundColor: '#056ECE',
+                                            color: '#ffffff'
                                         }
                                     }}
                                 >
                                     {collapseIcon}
                                 </IconButton>
                             )}
+                            
                             {renderColumnCell({
                                 cell,
                                 value,
@@ -246,8 +241,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
             {
                 Header: () => (
                     <Typography
-                        variant="h1Secondary"
-                        fontWeight={500}
+                        variant="h6"
                         component="span"
                         display="flex"
                         alignItems="center"
@@ -283,8 +277,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
             {
                 Header: () => (
                     <Typography
-                        variant="h1Secondary"
-                        fontWeight={500}
+                        variant="h6"
                         component="span"
                         display="flex"
                         width={'full-width'}
@@ -330,9 +323,8 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                     Header: () => (
                         <Box display="flex" alignItems="center">
                             <Typography
-                                variant="h1Secondary"
+                                variant="h6"
                                 component="span"
-                                fontWeight={500}
                                 display="flex"
                                 alignItems="center"
                             >
@@ -394,7 +386,9 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     };
 
     const handleNavigate = () => {
-        navigate('/home/datasets?status=Draft')
+        navigate(`/dataset/edit/ingestion/meta/${datasetId}`, {
+            state: {datasetName, datasetType, selectedConnectorId}
+        })
     };
 
     const markRowAsDeleted = (cellValue: Record<string, any>) => {
@@ -558,7 +552,8 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                     type: 'object',
                     properties: propertiesObject,
                     additionalProperties: true
-                }
+                },
+                dataset_id: datasetId
             };
 
             updateDataset.mutate(
@@ -568,7 +563,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                 {
                     onSuccess: () => {
                         showAlert('Schema updated successfully', 'success');
-                        navigate(`/home/processing/${datasetId}`);
+                        navigate(`/dataset/edit/processing/${datasetId}`);
                     }
                 }
             );
@@ -705,8 +700,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                 <>
                                     {fetchLiveDataset?.data !== undefined ? <></> : <Box marginBlock={2}>
                                         <Button
-                                            variant="text"
-                                            sx={{ color: theme.palette.common.black, mt: 0.5 }}
+                                            variant="back"
                                             startIcon={
                                                 <KeyboardBackspaceIcon
                                                     className={ingestionStyle.iconStyle}

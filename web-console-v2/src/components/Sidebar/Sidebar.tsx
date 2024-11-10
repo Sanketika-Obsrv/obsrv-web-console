@@ -1,25 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
+import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import KeyboardDoubleArrowRightOutlinedIcon from '@mui/icons-material/KeyboardDoubleArrowRightOutlined';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { Icon, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import { Icon, Typography } from '@mui/material';
-import KeyboardDoubleArrowRightOutlinedIcon from '@mui/icons-material/KeyboardDoubleArrowRightOutlined';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
-import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
-import LogoutIcon from '@mui/icons-material/Logout';
+import { useTheme } from '@mui/material/styles';
 import Tooltip from '@mui/material/Tooltip';
+import { useAlert } from 'contexts/AlertContextProvider';
+import apiEndpoints from 'data/apiEndpoints';
+import _ from 'lodash';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { http } from 'services/http';
 import styles from './Sidebar.module.css';
 import SidebarElements from './SidebarElements';
-import { useTheme } from '@mui/material/styles';
-import _ from 'lodash';
-import apiEndpoints from 'data/apiEndpoints';
-import { http } from 'services/http';
-import { useAlert } from 'contexts/AlertContextProvider';
 
 interface Props {
     onExpandToggle: () => void;
@@ -27,7 +26,7 @@ interface Props {
 }
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string;
-const redirectUrl: any = [""];
+const redirectUrl: string[] = [""];
 
 const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     const theme = useTheme();
@@ -45,8 +44,8 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
         const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
         const subRoute = location.pathname;
 
-        if (['new-dataset', 'ingestion', 'processing', 'storage', 'preview'].includes(pathSegments[1])) {
-            setSelectedItem('/home/new-dataset');
+        if (['create', 'connectors', 'connector', 'edit', 'schema', 'processing', 'storage', 'preview'].includes(pathSegments[1])) {
+            setSelectedItem('/dataset/create');
             setOpenParent(null);
             setSelectedChildItem(null);
         } else if (pathSegments[1] === 'alertRules') {
@@ -70,7 +69,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
             setSelectedItem(null);
             setSelectedChildItem(null);
         }
-    }, [location.pathname]);
+    }, [location.pathname, navigate]);
 
     const redirectToConsole = () => {
         navigate(OBSRV_WEB_CONSOLE);
