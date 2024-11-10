@@ -417,7 +417,7 @@ export const createDraftversion = async ({ selection, navigateToPath, rollupRedi
             navigateToPath(`/home/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
             return;
         }
-        navigateToPath(`/home/ingestion/schema-details/${datasetResponse?.data?.result?.dataset_id}`)
+        navigateToPath(`/dataset/edit/ingestion/schema/${datasetResponse?.data?.result?.dataset_id}`)
         _.set(versionKeyMap, "version_keys", { [selection]: _.get(datasetResponse, "data.result.version_key") })
         return;
     }
