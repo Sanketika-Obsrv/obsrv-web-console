@@ -15,7 +15,7 @@
 .gridContainer {
     display: flex;
     align-items: baseline;
-    justify-content: center;
+    justify-content: left;
 }
 
 .heading {

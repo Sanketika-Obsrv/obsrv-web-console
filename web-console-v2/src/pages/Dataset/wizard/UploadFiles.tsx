@@ -60,7 +60,7 @@ const UploadFiles = ({
     return (
         <Box
             sx={{
-                margin: '0.125rem 2.9375rem 210px 1.0625rem'
+                margin: '0.125rem 1rem 0px 1rem'
             }}
         >
             <Grid container spacing={1}>

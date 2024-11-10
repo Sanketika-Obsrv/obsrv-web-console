@@ -1,7 +1,7 @@
 .helpSectionContainer {
   background-color: var(--white-color);
   position: fixed;
-  top: 3.438rem;
+  top: 2.54rem;
   right: 0;
   max-height: calc(100vh - 3.438rem);
   display: flex;

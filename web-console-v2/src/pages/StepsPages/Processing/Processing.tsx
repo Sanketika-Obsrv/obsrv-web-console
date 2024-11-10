@@ -17,7 +17,7 @@ import DedupeEvent from './ProcessingSection/DedupeEvent/DedupeEvent';
 import DataValidation from './ProcessingSection/DataValidation/DataValidation';
 import { useFetchDatasetsById, useDatasetList, useUpdateDataset } from 'services/dataset';
 import { TransformationMode } from 'types/datasets';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Loader from 'components/Loader';
 import { useDetectPiiFields } from 'services/system';
 import { fetchSessionStorageValue } from 'utils/sessionStorage';
@@ -126,14 +126,15 @@ export const keyMapping: any = {
 let updatedSchema = {};
 
 const Processing: React.FC = () => {
-    const datasetId = fetchSessionStorageValue('configDetails', 'dataset_id') || '';
+
+    const { datasetId }:any = useParams();
 
     const navigate = useNavigate();
 
     const { data: datasetData, isSuccess: fetchSuccess } = useFetchDatasetsById({
         datasetId,
         queryParams:
-            'status=Draft&mode=edit&fields=data_schema,sample_data,transformations_config,validation_config,dedup_config,denorm_config'
+            'status=Draft&mode=edit&fields=data_schema,sample_data,transformations_config,validation_config,dedup_config,denorm_config,version_key'
     });
 
     const datasetList = useDatasetList({
@@ -211,7 +212,8 @@ const Processing: React.FC = () => {
             updateDataset({
                 data: {
                     [keyName]: data,
-                    data_schema: updatedSchema
+                    data_schema: updatedSchema,
+                    dataset_id: datasetId
                 }
             });
         } else {
@@ -235,7 +237,7 @@ const Processing: React.FC = () => {
     };
 
     const handleButtonClick = () => {
-        navigate(`/home/storage/${datasetId}`);
+        navigate(`/dataset/edit/storage/${datasetId}`);
     };
     const handleDatasetNameClick = (id: string) => setHighlightedSection(id);
 

@@ -233,7 +233,7 @@ export const EditLiveDataset = (props: any) => {
             <Grid sx={{ textAlign: 'end' }}>
                 <Button
                     variant="outlined"
-                    size="medium"
+                    size="small"
                     sx={{ fontWeight: 500, mt: 2, mr: 2 }}
                     onClick={() => {
                         handleClear();
@@ -243,7 +243,7 @@ export const EditLiveDataset = (props: any) => {
                 </Button>
                 <Button
                     variant="contained"
-                    size="medium"
+                    size="small"
                     disabled={formErrors}
                     startIcon={<AddOutlinedIcon />}
                     sx={{ fontWeight: 500, mt: 2, textAlign: 'end' }}
