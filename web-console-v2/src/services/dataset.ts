@@ -128,7 +128,8 @@ export const useCreateDataset = () =>
         },
         onSuccess: (response, variables) => {
             const configDetail = {
-                version_key: _.get(response, 'version_key')
+                version_key: _.get(response, 'version_key'),
+                dataset_id: _.get(response, 'id')
             };
 
             storeSessionStorageItem(configDetailKey, configDetail);
