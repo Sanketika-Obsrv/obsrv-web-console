@@ -44,20 +44,20 @@ const BASE_PATH = '/home';
 export const routeConfigurations: RouteConfig[] = [
     { path: '/', label: "Dashboard", element: <Navigate to={`${BASE_PATH}/dashboard`} replace /> },
     { path: `${BASE_PATH}`, label: "Home", element: <Navigate to={`${BASE_PATH}`} replace /> },
-    { path: `${BASE_PATH}/new-dataset`, label: "New Dataset", element: <NewDatasetPage /> },
+    { path: `/dataset/create`, label: "New Dataset", element: <NewDatasetPage /> },
     {
-        path: `${BASE_PATH}`,
+        path: '/dataset',
         element: <StepperPage />,
         children: [
-            { path: 'ingestion', label: "Ingestion", element: <IngestionPage /> },
-            { path: 'ingestion/schema-details/:datasetId', label: "Schema Details", element: <SchemaDetailsPage /> },
-            { path: 'processing/:datasetId', label: "Processing", element: <ProcessingPage /> },
-            { path: 'storage/:datasetId', label: "Storage", element: <StoragePage /> },
-            { path: 'preview/:datasetId', label: "Preview", element: <PreviewPage /> }
+            { path: `edit/connector/list/:datasetId`, label: "Connector List", element: <SelectConnectorPage /> },
+            { path: `edit/connector/configure/:datasetId`, label: `Connector Configuration`, element: <ConnectorConfigurationPage /> },
+            { path: 'edit/ingestion/meta/:datasetId', label: "Ingestion", element: <IngestionPage /> },
+            { path: 'edit/ingestion/schema/:datasetId', label: "Schema Details", element: <SchemaDetailsPage /> },
+            { path: 'edit/processing/:datasetId', label: "Processing", element: <ProcessingPage /> },
+            { path: 'edit/storage/:datasetId', label: "Storage", element: <StoragePage /> },
+            { path: 'edit/preview/:datasetId', label: "Preview", element: <PreviewPage /> }
         ],
     },
-    { path: `${BASE_PATH}/new-dataset/connector-configuration`, label: `Connector Configuration`, element: <ConnectorConfigurationPage /> },
-    { path: `${BASE_PATH}/new-dataset/connector-list`, label: "Connector List", element: <SelectConnectorPage /> },
     { path: `${BASE_PATH}/dashboard`, label: "Dashboard" ,element: <Dashboard /> },
     { path: `${BASE_PATH}/dashboard/infrastructure`, label: "Infrastructure", element: <IndividualMetricDashboards id="overallInfra" /> },
     { path: `${BASE_PATH}/dashboard/ingestion`, label: "Ingestion", element: <IndividualMetricDashboards id="ingestion" /> },

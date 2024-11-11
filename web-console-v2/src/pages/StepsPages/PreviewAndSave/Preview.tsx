@@ -42,7 +42,7 @@ const Preview: FC = (): ReactElement => {
 
     const fetchDatasetById = useFetchDatasetsById({
         datasetId,
-        queryParams: 'mode=edit&fields=status'
+        queryParams: 'mode=edit&fields=status,dataset_id'
     });
 
     const dialogContext = {

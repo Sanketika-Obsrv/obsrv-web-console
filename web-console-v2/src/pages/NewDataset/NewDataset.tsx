@@ -3,7 +3,6 @@ import styles from './NewDataset.module.css';
 import { Grid, Typography, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { t } from 'utils/i18n';
-import { getBaseURL } from 'services/configData';
 import datasetImg from 'assets/images/DatasetLaunch.svg';
 
 const NewDataset: React.FC = () => {
@@ -12,7 +11,7 @@ const NewDataset: React.FC = () => {
         sessionStorage.removeItem('configDetails');
         sessionStorage.removeItem('connectorConfigDetails');
 
-        navigate('/home/new-dataset/connector-list');
+        navigate('/dataset/edit/connector/list/<new>');
     };
     return (
         <div className={styles.main}>
