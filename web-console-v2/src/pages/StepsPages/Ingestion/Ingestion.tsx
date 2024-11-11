@@ -390,12 +390,20 @@ const Ingestion = () => {
     const handleFileRemove = (fileToRemove:any) => {
         setFiles([]);
     };
+    useEffect(() => {
+        if(datasetIdParam === '<new>') {
+            if (nameRegex.test(datasetName)) {
+                const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
+                setDatasetId(generatedId);
+            } else {
+                setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
+            }
+        }
+    }, [datasetName])
 
     const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
+    const handleNameChange = (newValue: any) => {
         if (nameRegex.test(newValue)) {
-            console.log("### newValue", newValue)
             setDatasetName(newValue);
             if(datasetIdParam === '<new>') {
                 const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
@@ -480,7 +488,8 @@ const Ingestion = () => {
                                                         name={'name'}
                                                         label={'Dataset Name'}
                                                         value={datasetName}
-                                                        onChange={handleNameChange}
+                                                        onChange={(e) => handleNameChange(e.target.value)}
+                                                        onBlur={(e) => handleNameChange(e.target.value)}
                                                         required
                                                         variant="outlined"
                                                         fullWidth
@@ -492,10 +501,11 @@ const Ingestion = () => {
                                                     <TextField
                                                         name={'dataset_id'}
                                                         label={'Dataset ID'}
-                                                        value={datasetName}
+                                                        value={datasetId}
                                                         required
                                                         variant="outlined"
                                                         fullWidth
+                                                        key={datasetId}
                                                         disabled
                                                         helperText="This field is auto-generated using the Dataset name"
                                                     />

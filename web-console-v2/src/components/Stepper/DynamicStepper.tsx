@@ -23,7 +23,6 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
     const navigate = useNavigate();
     const location = useLocation();
     const { datasetId }: any = useParams();
-    const [skippedStep, setSkippedStep] = useState();
     const [selectedStep, setSelectedStep] = useState(initialSelectedStep);
     const [steps, setSteps] = useState(initialSteps);
     const handleClick = (route: string, index: number, completed: boolean, onProgress: boolean) => {
@@ -71,9 +70,14 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
             case 'connector':
                 navigate(targetRoute);
                 break;
-            case 'ingestion':
-                navigate(targetRoute);
+            case 'ingestion': {
+                const ingestionStep = steps.find((step) => step.route === 'ingestion');
+                if(ingestionStep?.completed) 
+                    navigate(targetRoute);
+                else 
+                    navigate(`/dataset/edit/ingestion/meta/${datasetId}`);
                 break;
+            }       
             case 'processing': {
                 const prevStep = steps.find((step) => step.route === 'ingestion');
                 if(prevStep?.completed) navigate(targetRoute);
@@ -90,7 +94,6 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
                 break;
             }
         }
-        
         
     };
 
