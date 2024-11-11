@@ -111,7 +111,7 @@ const Ingestion = () => {
 
     const { data: fetchData, refetch } = useFetchDatasetsById({
         datasetId: datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=dataset_config,name'
+        queryParams: 'status=Draft&mode=edit&fields=dataset_config,name,version_key'
     });
 
     const {
