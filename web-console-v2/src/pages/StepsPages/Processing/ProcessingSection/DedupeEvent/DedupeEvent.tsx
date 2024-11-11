@@ -4,16 +4,32 @@ import _ from 'lodash';
 
 const DedupeEvent = (props: any) => {
     const { data, handleAddOrEdit, transformationOptions, isSuccess, isProceed } = props;
-    const [isChecked, setIsChecked] = useState(false);
-    const [dedupKey, setDedupKey] = useState("");
+    const existingDropDuplicates = _.get(data, ['drop_duplicates'], false);
+    const existingDedupKey = _.get(data, ['dedup_key'], "");
+    const [isChecked, setIsChecked] = useState(existingDropDuplicates);
+    const [dedupKey, setDedupKey] = useState(existingDedupKey);
+
+    useEffect(() => {
+        const isKeyValid = transformationOptions.includes(existingDedupKey);
+        
+        if (existingDropDuplicates && isKeyValid) {
+            setIsChecked(true);
+            setDedupKey(existingDedupKey);
+            isProceed(true)
+        } else {
+            setIsChecked(false);
+            setDedupKey("");
+        }
+    }, []);
+
     useEffect(() => {
         if(isChecked && !_.isEmpty(dedupKey)){
             isProceed(true);
         }
     }, [isChecked])
+
     const handleCheckBox = (event: any) => {
         setIsChecked(event.target.checked);
-        console.log('Checkbox is checked:', event.target.checked);
         if(event.target.checked && _.isEmpty(dedupKey)){
             isProceed(false)
         }

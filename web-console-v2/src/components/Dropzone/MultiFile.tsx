@@ -10,10 +10,9 @@ import _ from 'lodash';
 
 const DropzoneWrapper = styled('div')(({ theme }) => ({
     outline: 'none',
-    padding: theme.spacing(3, 1),
+    paddingTop: '5px',
     borderRadius: theme.shape.borderRadius,
-    backgroundColor: theme.palette.background.paper,
-    maxHeight: 428
+    backgroundColor: theme.palette.background.paper
 }));
 
 const useCustomDropzone = (options: DropzoneOptions) => {
@@ -67,10 +66,7 @@ const MultiFileUpload = ({
         multiple: isMultiple,
         onDrop: handleDrop,
         accept: {
-            'application/json': ['.json'],
-            'text/csv': ['.csv'],
-            'application/xml': ['.xml'],
-            'application/octet-stream': ['.parquet', '.avro', '.orc']
+            'application/json': ['.json']
         },
         maxSize: maxFileSize
     });
@@ -79,10 +75,7 @@ const MultiFileUpload = ({
         multiple: isMultiple,
         onDrop: handleDrop,
         accept: {
-            'application/json': ['.json'],
-            'text/csv': ['.csv'],
-            'application/xml': ['.xml'],
-            'application/octet-stream': ['.parquet', '.avro', '.orc']
+            'application/json': ['.json']
         },
         maxSize: maxFileSize
     });
@@ -103,8 +96,7 @@ const MultiFileUpload = ({
                     width: 'auto',
                     display: 'flex'
                 }),
-                ...sx,
-                maxHeight: 128
+                ...sx
             }}
         >
             <Stack {...(type === DropzopType.standard && { alignItems: 'center' })}>
@@ -128,10 +120,10 @@ const MultiFileUpload = ({
                     <input {...dropzoneProps.getInputProps()} />
                     <input {...otherDropzoneProps.getInputProps()} />
                     <Box mt={1}>
-                        <Typography variant="h1Secondary" mt={1} mb={2}>
+                        <Typography variant="h1Secondary" mt={1} mb={1}>
                             Upload Data
                         </Typography>
-                        <Stack direction="row" mt={-3} ml={-4}>
+                        <Stack direction="row" display={"flex"} alignItems={"center"} justifyContent={"center"}>
                             <Box {...otherDropzoneProps.getRootProps()}>
                                 <PlaceholderContent
                                     imageUrl={uploadIcon}
@@ -140,7 +132,7 @@ const MultiFileUpload = ({
                                     type="upload"
                                 />
                             </Box>
-                            <Box {...dropzoneProps.getRootProps()} ml={-4}>
+                            <Box {...dropzoneProps.getRootProps()}>
                                 <PlaceholderContent
                                     imageUrl={uploadImage}
                                     mainText="Upload Schema File"

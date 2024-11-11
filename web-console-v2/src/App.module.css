@@ -5,7 +5,7 @@
 
 .mainContainer {
   flex-grow: 1;
-  margin-top: 2.5rem;
+  margin-top: 1.55rem;
   padding: 1rem 0 1rem 0;
   transition: margin-left 0.3s ease;
   max-height: calc(100vh - 3.7rem);

@@ -39,7 +39,7 @@ export default {
     query: 's3_objects{job="s3-backups", prefix=~"postgresql"}',
   },
   redis_backup_files: {
-    query: 's3_objects{job="s3-backups", prefix=~"redis"}',
+    query: 'sum(s3_objects{job="s3-backups", prefix=~"denorm-redis"}) + sum(s3_objects{job="s3-backups", prefix=~"dedup-redis"})',
   },
 
   postgres_last_backup_time: {
@@ -48,7 +48,7 @@ export default {
   },
   redis_last_backup_time: {
     query:
-      '(time() - s3_last_modified_object_date{job="s3-backups", prefix=~"redis"})',
+      'time() - s3_last_modified_object_date{job="s3-backups", prefix=~"denorm-redis|dedeup-redis"}',
   },
   pv_total_size: {
     query:

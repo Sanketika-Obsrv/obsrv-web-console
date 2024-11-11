@@ -91,9 +91,9 @@ function BasicBreadcrumbs(): JSX.Element {
 
     return (pathname !== '/login' ? (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
-            <Grid item xs={1.5} className={styles.logo}>
-                <Box onClick={handleNavigate}>
-                    <img src={logoIcon} alt="Logo" width={130} />
+            <Grid item xs={1.5} className={styles.logo} sx={{width: '16.125rem', textAlign: 'center', maxWidth:'16.125rem'}}>
+                <Box onClick={handleNavigate} sx={{width: '16.125rem', textAlign: 'center'}}>
+                    <img src={logoIcon} alt="Logo" width={100} />
                 </Box>
             </Grid>
             <Grid item xs={9.5} className={styles.breadcrumb}>
