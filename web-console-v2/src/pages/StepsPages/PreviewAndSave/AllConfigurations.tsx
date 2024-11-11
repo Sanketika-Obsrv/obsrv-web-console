@@ -1,5 +1,5 @@
 import ArrowForwardIosSharpIcon from '@mui/icons-material/ArrowForwardIosSharp';
-import { Box, Grid, Paper, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Toolbar, Typography } from '@mui/material';
+import { Box, Checkbox, Grid, Paper, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Toolbar, Typography } from '@mui/material';
 import MuiAccordion, { AccordionProps } from '@mui/material/Accordion';
 import MuiAccordionDetails from '@mui/material/AccordionDetails';
 import MuiAccordionSummary, {
@@ -29,6 +29,9 @@ const AllConfigurations = () => {
     const [connectorMeta, setConnectorMeta] = useState<any>(undefined);
     const [connectorConfig, setConnectorConfig] = useState<any>(undefined);
     const [dataSchema, setDataSchema] = useState<any>(undefined);
+    const [datasetType, setDatasetType] = useState<string>('');
+    const [indexingConfig, setIndexingConfig] = useState<any>(undefined);
+    const [keysConfig, setKeysConfig] = useState<any>(undefined);
 
     const response = useFetchDatasetsById({
         datasetId,
@@ -44,10 +47,9 @@ const AllConfigurations = () => {
             const denormData = _.get(dataset, 'denorm_config.denorm_fields', []);
             const transformationData = _.get(dataset, 'transformations_config', []);
             const connectorConfigData = _.get(dataset, ['connectors_config'], []);
-            const storageKeys = _.get(dataset, ['dataset_config', 'keys_config'], []);
-            const storageType = _.get(dataset, ['dataset_config', 'indexing_config'], []);
-            const datasetType = _.get(dataset, 'type');
-            const { olap_store_enabled, lakehouse_enabled, cache_enabled } = storageType;
+            setKeysConfig(_.get(dataset, ['dataset_config', 'keys_config'], {}));
+            setIndexingConfig(_.get(dataset, ['dataset_config', 'indexing_config'], {}));
+            setDatasetType(_.get(dataset, 'type'))
             if (connectorConfigData.length > 0) {
                 setConnectorConfig(connectorConfigData[0]);
                 const connectorId = connectorConfigData[0].connector_id;
@@ -256,12 +258,30 @@ const AllConfigurations = () => {
                         <Typography variant='h6'>Storage</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
-                        <Typography>
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                            malesuada lacus ex, sit amet blandit leo lobortis eget. Lorem ipsum dolor
-                            sit amet, consectetur adipiscing elit. Suspendisse malesuada lacus ex,
-                            sit amet blandit leo lobortis eget.
-                        </Typography>
+                        <TableContainer component={Paper} sx={{width: '100%'}}>
+                            <Table size="small" aria-label="a dense table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell align="left" width={'20%'}>Lakehouse (Hudi)</TableCell>
+                                        <TableCell align="left" width={'20%'}>Real-time Store (Druid)</TableCell>
+                                        <TableCell align="left" width={'20%'}>Cache Store (Redis)</TableCell>
+                                        <TableCell align="left" width={'20%'}>Primary Key</TableCell>
+                                        <TableCell align="left" width={'20%'}>Timestamp Key</TableCell>
+                                        <TableCell align="left" width={'20%'}>Partition Key</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig.lakehouse_enabled} /></TableCell>
+                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig.olap_store_enabled} /></TableCell>
+                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig.cache_enabled} /></TableCell>
+                                        <TableCell align="left">{keysConfig.data_key}</TableCell>
+                                        <TableCell align="left">{keysConfig.timestamp_key}</TableCell>
+                                        <TableCell align="left">{keysConfig.partition_key}</TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
                     </AccordionDetails>
                 </Accordion>
             </Box>
