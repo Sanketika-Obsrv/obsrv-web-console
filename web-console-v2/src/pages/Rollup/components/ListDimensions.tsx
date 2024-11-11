@@ -224,7 +224,7 @@ const ListDimensions = (props: any) => {
                         type="button"
                         onClick={() => gotoNextSection()}
                     >
-                        <Typography variant="h5">proceed</Typography>
+                        <Typography variant="h5">Proceed</Typography>
                     </StandardWidthButton>
                 </AnimateButton>
             </Stack>
