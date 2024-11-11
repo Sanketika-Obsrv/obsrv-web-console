@@ -1,6 +1,7 @@
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {
     Box,
+    Card,
     FormControl,
     Grid,
     IconButton,
@@ -14,12 +15,11 @@ import {
 } from '@mui/material';
 import * as _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
-import ingestionStyle from '../Ingestion.module.css';
+import { default as schemaDetailsStyle} from '../SchemaDetails/SchemaDetails.module.css';
 
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import { Button, MenuItem } from '@mui/material';
 import CollapsibleSuggestions from 'components/CollapsibleSuggestions/CollapsibleSuggestions';
-import AccordionSection from 'components/EditDataset/AccordionSection';
 import ExpandingTable from 'components/ExpandingTable/ExpandingTable';
 import Loader from 'components/Loader';
 import Retry from 'components/Retry/Retry';
@@ -140,12 +140,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
 
     const fetchDatasetById = useFetchDatasetsById({
         datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,type,dataset_config,connectors_config'
-    });
-
-    const fetchLiveDataset: any = useFetchDatasetsById({
-        datasetId,
-        queryParams: 'fields=status'
+        queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,type,dataset_config,connectors_config,dataset_id'
     });
 
     useEffect(() => {
@@ -180,9 +175,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
         const baseColumns = [
             {
                 Header: () => (
-                    <Typography variant="h6" component="span" ml={-2}>
-                        Fields
-                    </Typography>
+                    <Typography variant="h2" component="span" > Fields </Typography>
                 ),
                 accessor: 'column',
                 tipText: 'Name of the field.',
@@ -240,14 +233,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
             },
             {
                 Header: () => (
-                    <Typography
-                        variant="h6"
-                        component="span"
-                        display="flex"
-                        alignItems="center"
-                    >
-                        Arrival format
-                    </Typography>
+                    <Typography variant="h2" component="span" > Arrival format </Typography>
                 ),
                 accessor: 'arrival_format',
                 tipText: 'Arrival format of the field',
@@ -276,15 +262,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
             },
             {
                 Header: () => (
-                    <Typography
-                        variant="h6"
-                        component="span"
-                        display="flex"
-                        width={'full-width'}
-                        justifyContent={'flex-start'}
-                    >
-                        Data type
-                    </Typography>
+                    <Typography variant="h2" component="span" > Data type </Typography>
                 ),
                 accessor: 'data_type',
                 tipText: 'Data type of the field',
@@ -322,14 +300,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                 {
                     Header: () => (
                         <Box display="flex" alignItems="center">
-                            <Typography
-                                variant="h6"
-                                component="span"
-                                display="flex"
-                                alignItems="center"
-                            >
-                                Required
-                            </Typography>
+                            <Typography variant="h2" component="span" > Required</Typography>
                         </Box>
                     ),
                     accessor: 'isRequired',
@@ -651,19 +622,6 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
         getNesting(fetchNonDeletedData(filterData(flattenedData)), jsonSchema)
     ) as [];
 
-    const sections = [
-        {
-            id: 'addNewField',
-            title: 'Add new field',
-            component: (
-                <EditLiveDataset
-                    flattenedData={flattenedData}
-                    setFlattenedData={setFlattenedData}
-                    datamappings={dataMappings || validFormatTypes}
-                />
-            )
-        }
-    ];
     return (
         <Box
             sx={{
@@ -698,45 +656,34 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                         >
                             {!showTableOnly && (
                                 <>
-                                    {fetchLiveDataset?.data !== undefined ? <></> : <Box marginBlock={2}>
+                                    <Box>
                                         <Button
                                             variant="back"
                                             startIcon={
                                                 <KeyboardBackspaceIcon
-                                                    className={ingestionStyle.iconStyle}
+                                                    className={schemaDetailsStyle.iconStyle}
                                                 />
                                             }
                                             onClick={handleNavigate}
                                         >
                                             Back
                                         </Button>
-                                    </Box>}
+                                    </Box>
 
                                     <Stack
                                         direction="row"
                                         alignItems="center"
                                         justifyContent="space-between"
                                     >
-                                        <Box display="flex" alignItems="center">
-                                            <Typography
-                                                variant="h1"
-                                                component="span"
-                                                fontWeight={600}
-                                            >
-                                                Schema Details
-                                            </Typography>
+                                        
+                                        <Box>
+                                            <Typography variant='h1'>Schema Details</Typography>
                                         </Box>
 
                                         <Box display="flex" alignItems="center">
                                             <Stack direction="row" spacing={2}>
                                                 <FormControl sx={{ minWidth: 150 }}>
-                                                    <InputLabel
-                                                        sx={{
-                                                            display: 'flex',
-                                                            justifyContent: 'center',
-                                                            top: '0.125rem'
-                                                        }}
-                                                    >
+                                                    <InputLabel>
                                                         Filter by
                                                     </InputLabel>
                                                     <Select
@@ -811,14 +758,8 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                     />
                                 </>
                             )}
-                            <Box overflow="auto" display="flex" flexDirection="column" mt={1}>
-                                <Grid
-                                    container
-                                    spacing={2}
-                                    sx={{
-                                        backgroundColor: showTableOnly ? theme.palette.common.white : 'none'
-                                    }}
-                                >
+                            <Box overflow="auto" display="flex" flexDirection="column">
+                                <Grid>
                                     <Grid item xs={12} sm={12}>
                                         <ExpandingTable
                                             columns={columns}
@@ -837,9 +778,18 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                     />
                                 </Grid>
                                 {!showTableOnly && (
-                                    <Box>
-                                        <AccordionSection sections={sections} />
-                                    </Box>
+                                    <Card className={schemaDetailsStyle.addNewFields} >
+                                        <Box className={schemaDetailsStyle?.heading}>
+                                            <Typography variant='h1'>Add New Field</Typography>
+                                        </Box>
+                                        <Box>
+                                            <EditLiveDataset
+                                                flattenedData={flattenedData}
+                                                setFlattenedData={setFlattenedData}
+                                                datamappings={dataMappings || validFormatTypes}
+                                            />
+                                        </Box>
+                                    </Card>
                                 )}
                             </Box>
                         </Box>

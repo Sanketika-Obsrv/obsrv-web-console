@@ -163,7 +163,7 @@ const ReactTable = ({
 
     return (
         <TableContainer sx={tableSx}>
-            <Table sx={{ marginTop: showHeaders ? 0 : '1rem', width: '99.8%', marginRight: '0.063rem', marginLeft: '0.063rem', marginBottom: '0.063rem' }} {...getTableProps()}>
+            <Table sx={{ marginTop: showHeaders ? 0 : '0.5rem', width: '99.8%', marginRight: '0.063rem', marginLeft: '0.063rem', marginBottom: '0.063rem' }} {...getTableProps()}>
                 {!showHeaders && (
                     <TableHead sx={tHeadHeight ? { height: tHeadHeight } : {}}>
                         {headerGroups.map((headerGroup) => (
