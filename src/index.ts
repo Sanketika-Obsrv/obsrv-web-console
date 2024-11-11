@@ -25,7 +25,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 // mount routers
 mountRoutes(app);
 
-app.get(["/home", '/home/new-dataset', '/home/ingestion/schema-details/:datasetId', '/home/ingestion/schema-details/:datasetId', "/home/new-dataset/connector-list", "/home/new-dataset/connector-configuration", "/home/ingestion", "/home/processing", "/home/storage", "/home/preview"], function (req, res) {
+app.get(["/home", '/dataset/create', '/home/dataset/edit/ingestion/:datasetId', '/home/dataset/edit/schema/:datasetId', "/home/dataset/edit/connectors", "/home/dataset/edit/connector", "/home/dataset/edit/processing", "/home/dataset/edit/processing", "/home/dataset/edit/preview"], function (req, res) {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 

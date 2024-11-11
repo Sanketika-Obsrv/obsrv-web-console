@@ -47,7 +47,7 @@ const NotificationComponent = (props: any) => {
             label: "Notification Channels",
             type: "autocomplete",
             required: true,
-            selectOptions: _.concat([{ label: 'none', value: null }], notificationFieldOptions),
+            selectOptions: notificationFieldOptions,
             tooltip: "Select the channel for notification delivery"
         },
     ];
@@ -89,7 +89,7 @@ const NotificationComponent = (props: any) => {
                 />
             </Grid>
             <Grid item xs={6}>
-                <Button variant="contained" onClick={() => navigate("/home/alertChannels")}>Add Notification Channel</Button>
+                <Button variant="contained" onClick={() => navigate("/home/alertChannels")}>Create Notification Channel</Button>
             </Grid>
         </Grid>
     }
@@ -103,12 +103,12 @@ const NotificationComponent = (props: any) => {
                 <Box>
                     <StandardWidthButton
                         data-edataid={interactIds.add_notification_channel}
-                        onClick={() => navigate('/home/alertChannels')}
+                        onClick={() => navigate('/home/alertChannels/new')}
                         variant="contained"
                         size="large"
                         sx={{ width: 'auto' }}
                     >
-                        <Typography variant="h5">
+                        <Typography variant="button">
                             Create Notification Channel
                         </Typography>
                     </StandardWidthButton>

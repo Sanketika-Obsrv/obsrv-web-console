@@ -10,8 +10,9 @@ import { useEffect, useState } from "react";
 import Loader from "components/Loader";
 
 const RunQuery = (props: any) => {
-    const { handleClose, queryBuilderContext } = props;
+    const { handleClose, queryBuilderContext, component } = props;
     const { metric, threshold, threshold_from, threshold_to, operator } = queryBuilderContext
+    const metricValue = _.filter(component, field => _.get(field, "id") == metric)
     const [metadata, setMetadata] = useState<Record<string, any> | null>(null);
     const [loading, setLoading] = useState(false)
 
@@ -69,6 +70,14 @@ const RunQuery = (props: any) => {
             fillColor: '#8AFF8A',
             opacity: 0.2
         }
+    }
+
+    const getQueryValue = (query: string) => {
+        if (query.includes("$__range")) {
+            const modifiedQuery = query.replace(/\$__range/g, "600s");
+            return modifiedQuery
+        }
+        return query;
     }
 
     const getChartQuery = () => {
@@ -139,7 +148,7 @@ const RunQuery = (props: any) => {
                 headers: {},
                 body: {},
                 params: {
-                    query: metric,
+                    query: getQueryValue(_.get(metricValue, [0, "metric"]) || metric),
                     step: '5m',
                     start: dayjs().unix(),
                     end: dayjs().subtract(1, 'day').unix()
@@ -186,7 +195,7 @@ const RunQuery = (props: any) => {
     }
 
     const renderChart = () => {
-        if (loading) return <Loader loading={loading}/>
+        if (loading) return <Loader loading={loading} />
         if (!metadata) return null;
         let refresh = false;
 

@@ -248,9 +248,11 @@ const NotificationChannelsTable = (props: any) => {
 
     return (
         <Grid>
-            <MainCard content={false}>
-                {loading ? renderSkeleton({ config: { type: 'table', width: "100%", totallines: 6 } }) : renderListChannels()}
-            </MainCard>
+            <Box sx={{ padding: "1rem" }}>
+                <MainCard content={false} >
+                    {loading ? renderSkeleton({ config: { type: 'table', width: "100%", totallines: 6 } }) : renderListChannels()}
+                </MainCard>
+            </Box>
         </Grid>
     );
 };

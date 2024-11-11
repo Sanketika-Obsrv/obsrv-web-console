@@ -118,6 +118,16 @@ export const setVersionKey = (value: number) => {
     storeSessionStorageItem(configDetailKey, configDetail);
 };
 
+export const setDatasetId = (value: number) => {
+    const configDetailKey = 'configDetails';
+
+    const configDetail = fetchSessionStorageItem(configDetailKey) || {};
+
+    _.set(configDetail, 'dataset_id', String(value));
+
+    storeSessionStorageItem(configDetailKey, configDetail);
+};
+
 export const transformResponse = (response: AxiosResponse) => _.get(response, ['data', 'result']);
 
 export const transformAlertDescription = (payload: Record<string, any>) => {

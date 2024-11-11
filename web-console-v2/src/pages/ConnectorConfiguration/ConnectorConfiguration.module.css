@@ -43,7 +43,6 @@
 .gridContainer {
     display: flex;
     align-items: baseline;
-    justify-content: center;
 }
 
 .heading {

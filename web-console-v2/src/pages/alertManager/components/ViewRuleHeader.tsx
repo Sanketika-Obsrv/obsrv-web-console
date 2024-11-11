@@ -15,12 +15,11 @@ import { useAlert } from 'contexts/AlertContextProvider';
 
 dayjs.extend(utc);
 const RuleHeader = (props: any) => {
-    const { alerts, refresh, configuration } = props;
+    const { alerts, refresh, configuration, setLoading } = props;
     const navigate = useNavigate();
     const [dialogContext, setDialogContext] = useState<any>(null);
     const [endDate, setEndDate] = useState<Date>(dayjs.utc().add(1, 'day').toDate());
     const pathToNavigate = _.toLower(_.get(alerts, 'context.alertType'));
-    const [loading, setLoading] = useState(false);
     const [customSilence, setCustomSilence] = useState<boolean>(false);
     const { showAlert } = useAlert();
 
@@ -289,7 +288,6 @@ const RuleHeader = (props: any) => {
                 <Grid>{renderRuleName()}</Grid>
                 <Grid>{renderButtons()}</Grid>
             </Stack>
-            {loading && <Loader loading={true} />}
         </Box>
     );
 };

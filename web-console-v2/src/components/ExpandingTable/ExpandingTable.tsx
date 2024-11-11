@@ -12,6 +12,7 @@ import {
     TableRow,
     Typography
 } from '@mui/material';
+
 import { useTable, useFilters, Column, useExpanded, TableOptions } from 'react-table';
 import { theme } from 'theme';
 
@@ -106,14 +107,36 @@ const ReactTable = ({
             const isLastRow = index === row.length - 1;
             const isLastSubRow = isSubRow && isLastRow;
             const isExpandedWithSubRows = row.isExpanded && row.subRows && row.subRows.length > 0;
-
+            const borderStyles = (row.subRows.length == 0 && !isSubRow) ? {
+                borderRadius: '2px'
+            } : {
+                borderTopLeftRadius: !isSubRow ? '2px' : '0px',
+                borderBottomLeftRadius: isLastSubRow ? '4px': '0px',
+                borderTopRightRadius: !isSubRow ? '2px' : '0px',
+                borderBottomRightRadius: isLastSubRow ? '4px' : '0px'
+            }
             return (
                 <React.Fragment key={uuidv4()}>
+                    {!isSubRow &&
+                        <TableRow>
+                            <TableCell colSpan={columns.length} sx={{ padding: 0, borderBottom: "none" }}>
+                                
+                                    <Box
+                                        sx={{
+                                            height: '.75rem',
+                                            width: '100%',
+                                            backgroundColor: showHeaders ? 'white' : 'none',
+
+                                        }}
+                                    />
+                            </TableCell>
+                        </TableRow>
+                    }
                     <TableRow
                         {...row.getRowProps()}
                         sx={{
                             outline: '1px solid #d6d6d6',
-                            borderRadius: '0.5rem',
+                            ...borderStyles,
                             backgroundColor: theme.palette.common.white,
                             ...(!disableRowColor && bgColor()),
                             marginLeft: isSubRow ? `${depth * 20}px` : '0'
@@ -124,44 +147,15 @@ const ReactTable = ({
                                 {...cell.getCellProps()}
                                 key={uuidv4()}
                                 sx={{
-                                    py: 2, px: 0, borderTopLeftRadius: index === 0 ? '10px' : 0,
-                                    borderBottomLeftRadius: index === 0 ? '10px' : 0,
-                                    borderTopRightRadius: index === row.cells.length - 1 ? '10px' : 0,
-                                    borderBottomRightRadius: index === row.cells.length - 1 ? '10px' : 0,
+                                    py: 0, px: 0, 
                                     borderBottom: "none", ...styles
                                 }}
                             >
-                                <Typography variant="h3">{cell.render('Cell')}</Typography>
+                                <Typography variant="h6">{cell.render('Cell')}</Typography>
                             </TableCell>
                         ))}
-                    </TableRow>
-                    <TableRow>
-                        <TableCell colSpan={columns.length} sx={{ padding: 0, borderBottom: "none" }}>
-                            {!row.isExpanded && !isSubRow && (
-                                <Box
-                                    sx={{
-                                        height: '1.25rem',
-                                        width: '100%',
-                                        backgroundColor: showHeaders ? 'white' : 'none',
-
-                                    }}
-                                />
-                            )}
-                        </TableCell>
-                    </TableRow>
-                {!row.isExpanded && (
-                    <TableRow>
-                        <TableCell colSpan={columns.length} sx={{ padding: 0, borderBottom: "none" }}>
-                            <Box
-                                sx={{
-                                    height: '8px',
-                                    width: '100%',
-                                    backgroundColor: showHeaders ? theme.palette.common.white : 'transparent',
-                                }}
-                            />
-                        </TableCell>
-                    </TableRow>
-                )}
+                    </TableRow> 
+ 
                 </React.Fragment>
             );
         });
@@ -169,7 +163,7 @@ const ReactTable = ({
 
     return (
         <TableContainer sx={tableSx}>
-            <Table sx={{ marginTop: showHeaders ? 0 : '1rem', width: '99.8%', marginRight: '0.063rem', marginLeft: '0.063rem', marginBottom: '0.063rem' }} {...getTableProps()}>
+            <Table sx={{ marginTop: showHeaders ? 0 : '0.5rem', width: '99.8%', marginRight: '0.063rem', marginLeft: '0.063rem', marginBottom: '0.063rem' }} {...getTableProps()}>
                 {!showHeaders && (
                     <TableHead sx={tHeadHeight ? { height: tHeadHeight } : {}}>
                         {headerGroups.map((headerGroup) => (

@@ -61,8 +61,8 @@ code {
 
 .contentsHeader {
   font-family: Montserrat;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 500;
   line-height: 27px;
   letter-spacing: -0.011em;
   text-align: left;
@@ -117,4 +117,13 @@ div.HelpSection_expanded__vqSxk {
 
 .MuiPopover-root.jsonata {
   z-index: 1303;
+}
+
+.MuiFormHelperText-root {
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+}
+
+.MuiAccordionSummary-content {
+  margin-bottom: 5px !important;
 }

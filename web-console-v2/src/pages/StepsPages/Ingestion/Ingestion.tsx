@@ -15,7 +15,7 @@ import _, { isEmpty } from 'lodash';
 import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
 import UploadFiles from 'pages/Dataset/wizard/UploadFiles';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
     useCreateDataset,
     useFetchDatasetsById,
@@ -56,12 +56,14 @@ const MAX_FILES = 10;
 
 const Ingestion = () => {
     const { showAlert } = useAlert();
-
+    const location = useLocation();
     const navigate = useNavigate();
-    const initialConfigDetails = JSON.parse(sessionStorage.getItem('configDetails') || '{}');
-    const [datasetType, setDatasetType] = useState<string>('event');
+    const { connectorConfig, datasetType: datasetTypeParam, selectedConnectorId } = location.state || {};
+    const { datasetId: datasetIdParam }: any = useParams();
+    const [datasetType, setDatasetType] = useState<string>(datasetTypeParam || 'event');
     const [datasetName, setDatasetName] = useState('');
-    const [datasetId, setDatasetId] = useState('');
+    const [connectorConfigState, setConnectorConfigState] = useState<any>(undefined);
+    const [datasetId, setDatasetId] = useState(datasetIdParam === '<new>'? null : datasetIdParam);
     const [nameError, setNameError] = useState('');
 
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
@@ -75,14 +77,9 @@ const Ingestion = () => {
     const [files, setFiles] = useState(filesState);
 
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
-
-    const connectorConfigData = sessionStorage.getItem('connectorConfigDetails');
-
-    const ConnectorConfiguration = connectorConfigData ? JSON.parse(connectorConfigData) : null;
-
     const [fileErrors, setFileErrors] = useState<any>(null);
     const maxFileSizeConfig = 5242880;
-
+    
     const {
         data: uploadData,
         isPending: isUploadLoading,
@@ -115,7 +112,7 @@ const Ingestion = () => {
 
     const { data: fetchData, refetch } = useFetchDatasetsById({
         datasetId: datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=dataset_config'
+        queryParams: 'status=Draft&mode=edit&fields=dataset_config,name,version_key,connectors_config'
     });
 
     const {
@@ -154,7 +151,10 @@ const Ingestion = () => {
 
     useEffect(() => {
         if (datasetId !== '' && fetchData) {
-            refetch();
+            setDatasetName(_.get(fetchData, 'name'));
+            if(fetchData.connectors_config && fetchData.connectors_config[0]) {
+                setConnectorConfigState(fetchData.connectors_config[0])
+            }
             const filePathList = fetchData.dataset_config?.file_upload_path;
 
             if (filePathList) {
@@ -223,7 +223,7 @@ const Ingestion = () => {
     );
 
     useEffect(() => {
-        if (datasetId) {
+        if (datasetIdParam === '<new>') {
             debouncedFetchDataset(datasetId);
         }
     }, [datasetId]);
@@ -277,7 +277,18 @@ const Ingestion = () => {
         if (!_.isEmpty(uploadData) && generateData) {
             const { schema } = generateData;
             const filePaths = _.map(uploadData, 'filePath');
-            if (datasetId) {
+            let mergedEvent = {};
+            if (data) {
+                _.map(data, (item: any) => {
+                    mergedEvent = _.merge(mergedEvent, item);
+                });
+            }
+            if (datasetIdParam === '<new>' && datasetId) {
+                const connectors_config = (connectorConfig) ? [{
+                    ...connectorConfig,
+                    id: `${datasetId}_${connectorConfig.connector_id}`,
+                    version: 'v2'
+                }] : []
                 const config = {
                     name: datasetName,
                     dataset_id: datasetId,
@@ -286,8 +297,10 @@ const Ingestion = () => {
                         indexing_config: {},
                         file_upload_path: filePaths
                     },
+                    connectors_config: connectors_config,
                     data_schema: schema,
-                    type: datasetType
+                    type: datasetType,
+                    sample_data: { mergedEvent }
                 };
                 createDatasetMutate({ payload: config });
             } else {
@@ -301,71 +314,61 @@ const Ingestion = () => {
                         },
                         data_schema: schema,
                         dataset_id: datasetId,
-                        type: datasetType
+                        type: datasetType,
+                        sample_data: { mergedEvent }
                     }
                 });
             }
         }
-    }, [uploadData, generateData, createDatasetMutate]);
-
-    useEffect(() => {
-        if (createData) {
-            let mergedEvent = {};
-            if (data) {
-                _.map(data, (item: any) => {
-                    mergedEvent = _.merge(mergedEvent, item);
-                });
-            }
-
-            let updatedConnectorsConfig = [];
-            if (
-                ConnectorConfiguration !== null &&
-                Array.isArray(ConnectorConfiguration.connectors_config)
-            ) {
-                updatedConnectorsConfig = ConnectorConfiguration.connectors_config.map(
-                    (config: { value: any }) => ({
-                        ...config,
-                        value: {
-                            ...config.value,
-                            version: 'v2'
-                        }
-                    })
-                );
-            }
-
-            updateDatasetMutate({
-                data: {
-                    sample_data: { mergedEvent },
-                    connectors_config: updatedConnectorsConfig
-                }
-            });
-        }
-    }, [createData, data, updateDatasetMutate]);
+    }, [uploadData, generateData, data]);
 
     const handleNavigate = () => {
-        navigate(-1);
+
+        if(!connectorConfig && !connectorConfigState) {
+            navigate(`/dataset/edit/connector/list/${datasetIdParam}`);
+        } else {
+            navigate(`/dataset/edit/connector/configure/${datasetIdParam}`, {
+                state: {selectedConnectorId, connectorConfig}
+            });
+        }
     };
 
     useEffect(() => {
-        if (updateDatasetData) navigate(`/home/ingestion/schema-details/${datasetId}`);
-    }, [updateDatasetData, navigate]);
+        if (updateDatasetData || createData) navigate(`/dataset/edit/ingestion/schema/${datasetId}`);
+    }, [updateDatasetData, createData, navigate]);
 
     const onSubmit = () => {
-        initialConfigDetails.name = datasetName;
-        sessionStorage.setItem('configDetails', JSON.stringify(initialConfigDetails));
-
         if (!_.isEmpty(files) && _.size(files) > MAX_FILES) {
             showAlert(`Exceeded the maximum number of files, ${MAX_FILES} files are allowed`, 'error');
             return;
         }
-        if (data || !_.isEmpty(files)) {
-            try {
-                if (!_.isEmpty(files)) uploadFilesMutate({ files });
-            } catch {
-                showAlert('Failed to upload schema', 'error');
+        if(datasetIdParam === '<new>') {
+            if (data || !_.isEmpty(files)) {
+                try {
+                    if (!_.isEmpty(files)) uploadFilesMutate({ files });
+                } catch {
+                    showAlert('Failed to upload schema', 'error');
+                }
+            } else {
+                showAlert('Please fill the required fields', 'error');
             }
         } else {
-            showAlert('Please fill the required fields', 'error');
+            if (data || !_.isEmpty(files)) {
+                try {
+                    if (!_.isEmpty(files)) uploadFilesMutate({ files });
+                } catch {
+                    showAlert('Failed to upload schema', 'error');
+                }
+            } else {
+                console.log("# datasetName before update", datasetName)
+                updateDatasetMutate({
+                    data: {
+                        name: datasetName,
+                        dataset_id: datasetId,
+                        type: datasetType
+                    }
+                });
+            }
         }
     };
 
@@ -385,24 +388,41 @@ const Ingestion = () => {
         setData(null);
     };
 
-    useEffect(() => {
-        if (datasetName) {
-            const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
-            setDatasetId(generatedId);
-        } else {
-            setDatasetId('');
+    const handleFileSelection = (selectedFiles:any) => {
+        if (selectedFiles?.length > 0) {
+            // Keep only the latest selected file
+            setFiles([selectedFiles[selectedFiles.length - 1]]); 
         }
-    }, [datasetName]);
+    };
+    
+    // File removal logic to clear the selected file
+    const handleFileRemove = (fileToRemove:any) => {
+        setFiles([]);
+    };
+    useEffect(() => {
+        if(datasetIdParam === '<new>') {
+            if (nameRegex.test(datasetName)) {
+                const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
+                setDatasetId(generatedId);
+            } else {
+                setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
+            }
+        }
+    }, [datasetName])
 
     const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
+    const handleNameChange = (newValue: any) => {
         if (nameRegex.test(newValue)) {
             setDatasetName(newValue);
+            if(datasetIdParam === '<new>') {
+                const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
+                setDatasetId(generatedId);
+            }
             setNameError('');
         } else {
             setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
         }
+        console.log("### datasetName", datasetName)
     };
 
     return (
@@ -451,8 +471,7 @@ const Ingestion = () => {
                             >
                                 <Box mx={4}>
                                     <Button
-                                        variant="text"
-                                        sx={{ color: theme.palette.common.black, marginBlock: 2 }}
+                                        variant="back"
                                         startIcon={
                                             <KeyboardBackspaceIcon className={ingestionStyle.iconStyle} />
                                         }
@@ -472,13 +491,14 @@ const Ingestion = () => {
                                                 <Typography variant='h1'>Dataset Details</Typography>
                                             </Box>
 
-                                            <Grid container spacing={3} className={localStyles?.gridContainer}>
+                                            <Grid container columnSpacing={4} rowSpacing={2} className={localStyles?.gridContainer}>
                                                 <Grid item xs={12} sm={6} lg={6}>
                                                     <TextField
                                                         name={'name'}
                                                         label={'Dataset Name'}
                                                         value={datasetName}
-                                                        onChange={handleNameChange}
+                                                        onChange={(e) => handleNameChange(e.target.value)}
+                                                        onBlur={(e) => handleNameChange(e.target.value)}
                                                         required
                                                         variant="outlined"
                                                         fullWidth
@@ -494,15 +514,16 @@ const Ingestion = () => {
                                                         required
                                                         variant="outlined"
                                                         fullWidth
+                                                        key={datasetId}
                                                         disabled
                                                         helperText="This field is auto-generated using the Dataset name"
                                                     />
                                                 </Grid>
                                                 <Grid item xs={24} sm={12} lg={12}>
+                                                    <Typography variant='body1'>
+                                                        <strong>Dataset Type:</strong> Choose the type of data you&apos;re working with: <strong>Event Data</strong> for ongoing records, <strong>Data Changes</strong> for updates like transactions, or <strong>Master Data</strong> for data used in denormalization of other datasets.
+                                                    </Typography>
                                                     <FormControl sx={{paddingLeft: '5px'}}>
-                                                        <FormLabel id="demo-row-radio-buttons-group-label">
-                                                        <p><strong>Dataset Type:</strong> Choose the type of data you&apos;re working with: <strong>Event Data</strong> for ongoing records, <strong>Data Changes</strong> for updates like transactions, or <strong>Master Data</strong> for data used in denormalization of other datasets.</p>
-                                                        </FormLabel>
                                                         <RadioGroup
                                                             row
                                                             aria-labelledby="demo-row-radio-buttons-group-label"
@@ -529,7 +550,7 @@ const Ingestion = () => {
                                                 subscribeErrors={setFileErrors}
                                             />
                                             {!_.isEmpty(files) && (
-                                                <Box mx={3} mt={18}>
+                                                <Box mx={3} mt={0}>
                                                     <Box display="flex" justifyContent="space-between">
                                                         <Typography variant="h5" mt={1.5}>
                                                             Files Uploaded
@@ -547,7 +568,7 @@ const Ingestion = () => {
                                                     />
                                                 </Box>
                                             )}
-                                            <Box sx={{ marginTop: 30, mr: 1, ml: 1, mb: 1 }}>
+                                            <Box sx={{ marginTop: 0, mr: 1, ml: 1, mb: 1 }}>
                                                 {fileErrors?.length > 0 && <RejectionFiles fileRejections={fileErrors} />}
                                             </Box>
                                         </GenericCard>
@@ -583,7 +604,7 @@ const Ingestion = () => {
                                             label: datasetId !== '' ? 'Proceed' : 'Create Schema',
                                             variant: 'contained',
                                             color: 'primary',
-                                            disabled: !_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files) || (datasetName.length < 4 || datasetName.length > 100)
+                                            disabled: datasetIdParam === '<new>' && (!_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files) || (datasetName.length < 4 || datasetName.length > 100))
                                         }
                                     ]}
                                     onClick={onSubmit}
