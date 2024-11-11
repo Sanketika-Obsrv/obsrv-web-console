@@ -15,6 +15,7 @@ import Ajv from "ajv";
 import _ from "lodash";
 import { useAlert } from "contexts/AlertContextProvider";
 import Loader from "components/Loader";
+import Skeleton from 'components/Skeleton';
 
 
 const sampleFilterQuery = JSON.stringify({
@@ -132,6 +133,7 @@ const FilteredRollUps = (props: Record<string, any>) => {
             setSkipFilters(true)
             setFilterRollupErrors(undefined)
             setAddFilter(false)
+            setFilteredRollup({})            
             showAlert("Filters are skipped", 'success');
             setTimeout(() => { setSkipFilters(false) }, 500)
         }
@@ -213,8 +215,7 @@ const FilteredRollUps = (props: Record<string, any>) => {
             id: 'filteredRollups',
             title: <Typography variant="h6" fontWeight={500} mt={0.5}>Add Filters</Typography>,
             component: loading ?  
-                        <></>
-                        // Skeleton
+                        <Skeleton/>
                         : filteredRollupForm(),
             description: <Typography variant="body2" fontWeight={500}>Set up filters to selectively process input data during ingestion. Only the data that meets the specified conditions will be ingested</Typography>,
             noGrid: true,

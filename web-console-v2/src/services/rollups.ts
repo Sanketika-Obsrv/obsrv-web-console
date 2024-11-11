@@ -47,6 +47,22 @@ const defaultTsObject = [
     }
 ]
 
+const DEFAULT_TS_SCHEMA = {
+    "obsrv_meta": {
+        arrival_format: "object", data_type: "object", isRequired: false, key: DEFAULT_TIMESTAMP.rootPath, resolved: true, type: "object",
+        properties: {
+            "syncts": {
+                "arrival_format": "text",
+                "data_type": "date-time",
+                "isRequired": false,
+                "key": DEFAULT_TIMESTAMP.label,
+                "resolved": false,
+                "type": "string"
+            }
+        }
+    }
+}
+
 export const generateRollupIngestionSpec = async (list: any, schema: any, datasetId: any, maskedDataSourceName: any, granularity: any, config = {}, filterRollup = {}) => {
     const jsonSchema = _.get(schema, 'data_schema');
     const trasformations = _.get(schema, 'transformations_config');
@@ -71,6 +87,11 @@ export const generateRollupIngestionSpec = async (list: any, schema: any, datase
     if (timestampCol === DEFAULT_TIMESTAMP.indexValue)
         ingestionPayload = { schema: [...flattenSchemaV1(jsonSchema), ...defaultTsObject, ...newField] };
 
+    if (timestampCol === DEFAULT_TIMESTAMP.indexValue) {
+        jsonSchema.properties = {
+            ..._.get(jsonSchema, "properties"), ...DEFAULT_TS_SCHEMA
+        }
+    }
     const updatedIngestionPayload = _.get(updateJSONSchema({ schema: _.get(jsonSchema, "properties") }, ingestionPayload), 'schema');
 
     const payload = {
