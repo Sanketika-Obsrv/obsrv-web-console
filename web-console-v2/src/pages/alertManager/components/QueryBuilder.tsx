@@ -300,7 +300,7 @@ const QueryBuilder = (props: any) => {
             :
             <Grid container direction={'column'} spacing={2}>
                 {renderQueryBuilderForm()}
-                {validQuery && renderQueryChart()}
+                {renderQueryChart()}
             </Grid >}
     </>
 }
