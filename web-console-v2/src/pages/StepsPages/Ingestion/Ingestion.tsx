@@ -379,6 +379,18 @@ const Ingestion = () => {
         setData(null);
     };
 
+    const handleFileSelection = (selectedFiles:any) => {
+        if (selectedFiles?.length > 0) {
+            // Keep only the latest selected file
+            setFiles([selectedFiles[selectedFiles.length - 1]]); 
+        }
+    };
+    
+    // File removal logic to clear the selected file
+    const handleFileRemove = (fileToRemove:any) => {
+        setFiles([]);
+    };
+
     const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
@@ -480,7 +492,7 @@ const Ingestion = () => {
                                                     <TextField
                                                         name={'dataset_id'}
                                                         label={'Dataset ID'}
-                                                        value={datasetId}
+                                                        value={datasetName}
                                                         required
                                                         variant="outlined"
                                                         fullWidth

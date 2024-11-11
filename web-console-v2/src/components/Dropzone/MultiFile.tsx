@@ -66,10 +66,7 @@ const MultiFileUpload = ({
         multiple: isMultiple,
         onDrop: handleDrop,
         accept: {
-            'application/json': ['.json'],
-            'text/csv': ['.csv'],
-            'application/xml': ['.xml'],
-            'application/octet-stream': ['.parquet', '.avro', '.orc']
+            'application/json': ['.json']
         },
         maxSize: maxFileSize
     });
@@ -78,10 +75,7 @@ const MultiFileUpload = ({
         multiple: isMultiple,
         onDrop: handleDrop,
         accept: {
-            'application/json': ['.json'],
-            'text/csv': ['.csv'],
-            'application/xml': ['.xml'],
-            'application/octet-stream': ['.parquet', '.avro', '.orc']
+            'application/json': ['.json']
         },
         maxSize: maxFileSize
     });
