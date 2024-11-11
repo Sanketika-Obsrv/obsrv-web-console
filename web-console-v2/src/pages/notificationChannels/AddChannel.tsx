@@ -61,7 +61,7 @@ const AddChannel = () => {
                     data: { ..._.omit(formData, ['error']) }
                 });
 
-                navigate('/home/alertChannels');
+                navigate('/alertChannels');
                 showAlert('Notification channel created successfully', "success")
             }
         } catch (err) {

@@ -422,7 +422,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const isMaster: boolean = row?.type == DatasetType.MasterDataset;
                     const fileName = `${row?.name}_${row?.status}_${row?.version}`;
                     return <Stack direction="row" justifyContent="flex-start" alignItems="center">
-                        <Tooltip title="View Dataset" onClick={(e: any) => navigateToPath(`/home/datasets/view/${row?.dataset_id}?master=${isMaster}&status=${DatasetStatus.Live}`)}>
+                        <Tooltip title="View Dataset" onClick={(e: any) => navigateToPath(`/datasets/view/${row?.dataset_id}?master=${isMaster}&status=${DatasetStatus.Live}`)}>
                             <IconButton
                                 data-objectid={row?.dataset_id}
                                 data-objecttype="dataset"
@@ -432,7 +432,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 <EyeOutlined />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="View Metrics" onClick={(e: any) => navigateToPath(`/home/datasets/metrics/${row?.dataset_id}`)}>
+                        <Tooltip title="View Metrics" onClick={(e: any) => navigateToPath(`/datasets/metrics/${row?.dataset_id}`)}>
                             <IconButton
                                 data-edataid={interactIds.view_dataset_metrics}
                                 data-objectid={row?.dataset_id}
