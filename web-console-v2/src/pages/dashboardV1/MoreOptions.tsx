@@ -60,7 +60,7 @@ const MoreOptions = (props: any) => {
             >
                 <Box sx={{ display: "flex" }}>
                     <MenuItem onClick={handleButtonMenuClose}>
-                        <Tooltip title="Create Events" onClick={(e: any) => navigateToPath(`/home/datasets/addEvents/${row?.dataset_id}`)}>
+                        <Tooltip title="Create Events" onClick={(e: any) => navigateToPath(`/datasets/addEvents/${row?.dataset_id}`)}>
                             <IconButton
                                 data-edataid={interactIds.push_dataset_events}
                                 data-objectid={row?.dataset_id}

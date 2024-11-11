@@ -13,44 +13,44 @@ const SidebarElements = () => {
       id: 'dashboard',
       icon: React.createElement(DashboardOutlinedIcon),
       title: 'Dashboard',
-      route: '/home/dashboard',
+      route: '/dashboard',
       dropdownIcon: React.createElement(ExpandMoreOutlinedIcon),
       children: [
         {
           id: 'infrastructure',
           color: theme.palette.primary.main,
           title: 'Infrastructure',
-          route: '/home/dashboard/infrastructure'
+          route: '/dashboard/infrastructure'
         },
         {
           id: 'ingestion',
           color: theme.palette.secondary.main,
           title: 'Ingestion',
-          route: '/home/dashboard/ingestion'
+          route: '/dashboard/ingestion'
         },
         {
           id: 'api',
           color: theme.palette.error.main,
           title: 'API',
-          route: '/home/dashboard/api'
+          route: '/dashboard/api'
         },
         {
           id: 'processing',
           color: theme.palette.tertiary.main,
           title: 'Processing',
-          route: '/home/dashboard/processing'
+          route: '/dashboard/processing'
         },
         {
           id: 'storage',
           color: theme.palette.info.dark,
           title: 'Storage',
-          route: '/home/dashboard/storage'
+          route: '/dashboard/storage'
         }
         // {
         //     id: 'query',
         //     color: theme.palette.secondary.main,
         //     title: 'Query',
-        //     route: '/home/dashboard/query'
+        //     route: '/dashboard/query'
         // }
       ]
     },
@@ -58,26 +58,26 @@ const SidebarElements = () => {
     //     id: 'datasetmanagement',
     //     icon: React.createElement(DatasetManagementIcon),
     //     title: 'Dataset Management',
-    //     route: '/home/dataset-management',
+    //     route: '/dataset-management',
     //     dropdownIcon: React.createElement(ExpandMoreOutlinedIcon),
     //     children: [
     //         {
     //             id: 'datasetmanagementmanage',
     //             color: theme.palette.primary.main,
     //             title: 'Manage',
-    //             route: '/home/dataset-management/manage'
+    //             route: '/dataset-management/manage'
     //         },
     //         {
     //             id: 'datasetmanagementobserve',
     //             color: theme.palette.secondary.main,
     //             title: 'Observe/Monitor',
-    //             route: '/home/dataset-management/observe-monitor'
+    //             route: '/dataset-management/observe-monitor'
     //         },
     //         {
     //             id: 'datasetmanagementplayground',
     //             color: theme.palette.tertiary.main,
     //             title: 'Playground',
-    //             route: '/home/dataset-management/playground'
+    //             route: '/dataset-management/playground'
     //         }
     //     ]
     // },
@@ -85,20 +85,20 @@ const SidebarElements = () => {
     //     id: 'connectormanagement',
     //     icon: React.createElement(ConnectorManagement),
     //     title: 'Connector Management',
-    //     route: '/home/connector-management',
+    //     route: '/connector-management',
     //     dropdownIcon: React.createElement(ExpandMoreOutlinedIcon),
     //     children: [
     //         {
     //             id: 'manage',
     //             color: theme.palette.primary.main,
     //             title: 'Manage',
-    //             route: '/home/connector-management/manage'
+    //             route: '/connector-management/manage'
     //         },
     //         {
     //             id: 'observe/monitor',
     //             color: theme.palette.secondary.main,
     //             title: 'Observe/Monitor',
-    //             route: '/home/connector-management/observe-monitor'
+    //             route: '/connector-management/observe-monitor'
     //         }
     //     ]
     // },
@@ -112,19 +112,19 @@ const SidebarElements = () => {
       id: 'datasetmanagement',
       icon: React.createElement(DatasetManagementIcon),
       title: 'Datasets',
-      route: '/home/datasets',
+      route: '/datasets',
     },
     {
       id: 'alertmanagement',
       icon: React.createElement(AlertOutlined),
       title: 'Alerts',
-      route: '/home/alertRules'
+      route: '/alertRules'
     },
     {
       id: 'notifications',
       icon: React.createElement(MailOutlined),
       title: 'Notification Channels',
-      route: '/home/alertChannels',
+      route: '/alertChannels',
     },
   ];
 

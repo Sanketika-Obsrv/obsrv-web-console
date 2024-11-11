@@ -122,7 +122,7 @@ const ImportDataset = ({ open, onClose, setOpen }: any) => {
                 setDatasetName("")
                 setDatasetId("")
                 showAlert(_.get(response,"data.result.message","Dataset imported successfully"), "success");
-                navigate(`/home/datasets?status=${DatasetStatus.Draft}`)
+                navigate(`/datasets?status=${DatasetStatus.Draft}`)
                 window.location.reload()
             } catch (err) {
                 setOpen(false)

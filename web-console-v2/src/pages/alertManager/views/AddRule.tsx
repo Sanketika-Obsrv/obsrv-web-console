@@ -72,7 +72,7 @@ const AddAlertrules = () => {
         try {
             if (validateForm(_.get(formData, 'error'))) {
                 await addAlertRule();
-                navigate('/home/alertRules/custom');
+                navigate('/alertRules/custom');
                 showAlert('Alert Rule created successfully', 'success');
             } else {
                 showAlert('Please fill all required fields', 'error');
