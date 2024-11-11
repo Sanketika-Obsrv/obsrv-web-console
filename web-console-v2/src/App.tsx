@@ -17,7 +17,7 @@ const useSidebarToggle = () => {
 
     const sidebarExpandValue = localStorage.getItem('sidebarExpand')
     const [isSidebarExpanded, setSidebarExpanded] = useState<boolean>(
-        _.isEqual(localStorage.getItem('sidebarExpand'), "true")
+        _.isEqual(localStorage.getItem('sidebarExpand'), "true") && window.location.pathname !== '/console/login'
     );
 
     const toggleSidebar = useCallback(() => {
