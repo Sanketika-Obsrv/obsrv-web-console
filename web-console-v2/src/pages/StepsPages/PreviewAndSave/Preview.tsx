@@ -114,11 +114,11 @@ const Preview: FC = (): ReactElement => {
                                 overflow="auto"
                                 paddingBottom="8rem"
                             >
-                                <Box mb={2} mt={2}>
+                                <Box sx={{ml: '5px', mt: '2px'}}>
                                     <Button
-                                        variant="text"
+                                        variant="back"
                                         className={styles.button}
-                                        onClick={() => navigate(-1)}
+                                        onClick={() => navigate(`/dataset/edit/storage/${datasetId}`)}
                                         startIcon={
                                             <KeyboardBackspaceIcon
                                                 sx={{ color: 'black', width: '24px', height: '24px' }}
@@ -161,7 +161,7 @@ const Preview: FC = (): ReactElement => {
                                         ))}
                                     </Tabs>
 
-                                    <Stack sx={{ background: 'white' }} height="90%" pb={3}>
+                                    <Stack sx={{ background: 'white' }} height="90%">
                                         {renderContent(selectedTab)}
                                     </Stack>
                                 </Box>
