@@ -30,6 +30,8 @@ import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
 import DatasetManagement from 'pages/datasetManagement/components/DatasetManagement';
+import Loadable from 'pages/auth/components/Loadable';
+
 // Type definition for the route configuration
 interface RouteConfig {
     path: string;
@@ -38,10 +40,12 @@ interface RouteConfig {
     children?: RouteConfig[];
 }
 const CustomAlerts = lazy(() => import('pages/alertManager/views/CustomRules'));
+const Login = Loadable(lazy(() => import('pages/auth/Login')));
 // Base path for all routes
 
 export const routeConfigurations: RouteConfig[] = [
     { path: '/', label: "Dashboard", element: <Navigate to={`/dashboard`} replace /> },
+    {path: '/login', element: <Login/>},
     { path: `/dataset/create`, label: "New Dataset", element: <NewDatasetPage /> },
     {
         path: '/dataset',
