@@ -199,7 +199,6 @@ const ListDimensions = (props: any) => {
                             limitHeight
                             tHeadHeight={52}
                             showSearchBar={false}
-                            styles={{ '&.MuiTableCell-root': { border: '1px solid #D9D9D9' } }}
                         // context={{ disableRowColor: true }}
                         />
                     </Grid>
