@@ -360,11 +360,10 @@ const Ingestion = () => {
                     showAlert('Failed to upload schema', 'error');
                 }
             } else {
-                console.log("# datasetName before update", datasetName)
                 updateDatasetMutate({
                     data: {
                         name: datasetName,
-                        dataset_id: datasetId,
+                        dataset_id: datasetIdParam,
                         type: datasetType
                     }
                 });
