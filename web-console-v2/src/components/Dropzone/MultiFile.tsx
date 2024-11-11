@@ -63,25 +63,19 @@ const MultiFileUpload = ({
     };
 
     const dropzoneProps = useCustomDropzone({
-        multiple: isMultiple,
+        multiple: false,
         onDrop: handleDrop,
         accept: {
-            'application/json': ['.json'],
-            'text/csv': ['.csv'],
-            'application/xml': ['.xml'],
-            'application/octet-stream': ['.parquet', '.avro', '.orc']
+            'application/json': ['.json']
         },
         maxSize: maxFileSize
     });
 
     const otherDropzoneProps = useCustomDropzone({
-        multiple: isMultiple,
+        multiple: false,
         onDrop: handleDrop,
         accept: {
-            'application/json': ['.json'],
-            'text/csv': ['.csv'],
-            'application/xml': ['.xml'],
-            'application/octet-stream': ['.parquet', '.avro', '.orc']
+            'application/json': ['.json']
         },
         maxSize: maxFileSize
     });
