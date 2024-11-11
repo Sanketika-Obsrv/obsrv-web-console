@@ -136,14 +136,16 @@ const ClusterHealth = () => {
                 border: 0,
                 "&.Mui-selected": {
                     backgroundColor: theme.palette.primary.main,
-                    color: "white"
+                    color: "white",
+                    ".MuiTypography-body2":{
+                        fontWeight: 600
+                    }
                 }
             }}
             label={<Tooltip title={tooltip}>
                 <Box alignItems={"center"} display={"flex"}>
                     <FiberManualRecordIcon color={color as any} sx={{ fontSize: '1.25rem', mr: 1 }} />
-                    <Typography variant={datasetType === id ? 'button' : 'body1'}
-                        fontWeight={500}>{label}</Typography>
+                    <Typography variant="body2">{label}</Typography>
                 </Box>
             </Tooltip>} value={id} />
     }
