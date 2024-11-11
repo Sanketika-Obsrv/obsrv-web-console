@@ -135,6 +135,7 @@ export const EditLiveDataset = (props: any) => {
         setFlattenedData(updatedFlattenedData);
         showAlert(en.newFieldAdded, 'success');
         setFormData({});
+        setFormErrors(true);
         setFormKey((prevKey) => prevKey + 1);
     };
 
@@ -234,7 +235,7 @@ export const EditLiveDataset = (props: any) => {
                 <Button
                     variant="outlined"
                     size="small"
-                    sx={{ fontWeight: 500, mt: 2, mr: 2 }}
+                    sx={{ fontWeight: 500, mr: 2 }}
                     onClick={() => {
                         handleClear();
                     }}
@@ -246,7 +247,7 @@ export const EditLiveDataset = (props: any) => {
                     size="small"
                     disabled={formErrors}
                     startIcon={<AddOutlinedIcon />}
-                    sx={{ fontWeight: 500, mt: 2, textAlign: 'end' }}
+                    sx={{ fontWeight: 500, textAlign: 'end' }}
                     onClick={handleAddNewField}
                 >
                     Add new field
