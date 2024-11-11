@@ -207,7 +207,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                                     title={!expand ? child.title : ''}
                                                     placement="right"
                                                 >
-                                                    <ListItem
+                                                    <ListItemButton
                                                         className={`${styles.childItem} ${isChildSelected
                                                             ? styles.selected
                                                             : styles.unselected
@@ -245,7 +245,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                                                 {child.title}
                                                             </Typography>
                                                         )}
-                                                    </ListItem>
+                                                    </ListItemButton>
                                                 </Tooltip>
                                             );
                                         })}

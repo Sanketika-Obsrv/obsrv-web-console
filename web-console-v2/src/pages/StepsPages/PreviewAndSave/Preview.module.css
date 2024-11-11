@@ -41,6 +41,7 @@
 .scrollableContent {
     flex: 1;
     overflow-y: auto;
+    padding-bottom: '1rem';
 }
 
 .button {
@@ -63,4 +64,10 @@
 
 .scrollable::-webkit-scrollbar {
     display: none;
+}
+
+.backIcon {
+    color: black;
+    width: 1.5rem;
+    height: 1.5rem;
 }
