@@ -84,6 +84,7 @@ const renderColumnCell = ({ cell, value }: any) => {
     const row = cell?.row?.original || {};
     const isSubRow = cell?.row?.depth > 0;
     const isObjectType = row.arrival_format === 'object';
+    const hasConflicts = _.get(row, 'suggestions.length') > 0;
 
     const depthIndentation = `${cell?.row?.depth * 0.25}rem`;
     const subdepthIndentation = `${cell?.row?.depth * 3.5}rem`;
@@ -95,7 +96,7 @@ const renderColumnCell = ({ cell, value }: any) => {
               : '3px';
 
     return (
-        <Box maxWidth={'30vw'} minWidth={'20vw'} py={isSubRow ? 1.4 : 2} pl={paddingLeft}>
+        <Box maxWidth={'30vw'} minWidth={'20vw'} py={isSubRow ? (hasConflicts ? 2.7 : 1.4) : 2} pl={paddingLeft}>
             <Stack direction="column">
                 <Box
                     display="flex"
@@ -802,7 +803,7 @@ const renderArrivalFormatCell = ({
                                 minWidth: 'max-content',
                                 p: 0,
                                 '& .MuiButton-startIcon': { marginRight: '0.25px' },
-                                mt: -3,
+                                mt: -2,
                                 mb: 2,
                                 '&:hover': {
                                     backgroundColor: 'transparent'
@@ -835,7 +836,7 @@ const renderArrivalFormatCell = ({
                                 minWidth: 'max-content',
                                 p: 0,
                                 '& .MuiButton-startIcon': { marginRight: '0.25px' },
-                                mt: -3,
+                                mt: -2,
                                 mb: 2,
                                 '&:hover': {
                                     backgroundColor: 'transparent'
