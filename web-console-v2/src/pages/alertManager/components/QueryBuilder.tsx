@@ -186,28 +186,30 @@ const QueryBuilder = (props: any) => {
         category: yup.string().required(en.isRequired),
         metric: yup.string().required(en.isRequired),
         operator: yup.string().required(en.isRequired),
-        threshold: yup.number().when('operator', (operator: any, schema) => {
-            return !_.includes(["within_range", "outside_range"], operator)
-                ? schema.required(en.isRequired)
-                : schema;
+        threshold: yup.number().when('operator', {
+            is: (operator: any) => !_.includes(["within_range", "outside_range"], operator),
+            then: (schema) => schema.required(en.isRequired),
+            otherwise: (schema) => schema.notRequired(),
         }),
-        threshold_from: yup.number().when('operator', (operator: any, schema) => {
-            return _.includes(["within_range", "outside_range"], operator)
-                ? schema.required(en.isRequired).min(0)
-                : schema;
+        threshold_from: yup.number().when('operator', {
+            is: (operator: any) => _.includes(["within_range", "outside_range"], operator),
+            then: (schema) => schema.required(en.isRequired).min(0),
+            otherwise: (schema) => schema.notRequired(),
         }),
-        threshold_to: yup.number().when('operator', (operator: any, schema) => {
-            return _.includes(["within_range", "outside_range"], operator)
-                ? schema.required(en.isRequired)
+        threshold_to: yup.number().when('operator', {
+            is: (operator: any) => _.includes(["within_range", "outside_range"], operator),
+            then: (schema) =>
+                schema
+                    .required(en.isRequired)
                     .min(0)
                     .test(
                         'greater-than-threshold-from',
                         'Value must be greater than Threshold - From.',
-                        function (testValue) {
-                            return testValue > _.get(this.parent, "threshold_from");
+                        function (value) {
+                            return value > this.parent.threshold_from;
                         }
-                    )
-                : schema;
+                    ),
+            otherwise: (schema) => schema.notRequired(),
         })
     });
 
@@ -298,7 +300,7 @@ const QueryBuilder = (props: any) => {
             :
             <Grid container direction={'column'} spacing={2}>
                 {renderQueryBuilderForm()}
-                {renderQueryChart()}
+                {validQuery && renderQueryChart()}
             </Grid >}
     </>
 }
