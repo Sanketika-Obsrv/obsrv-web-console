@@ -12,6 +12,7 @@ import {
 import * as _ from 'lodash';
 import config from 'data/initialConfig';
 import MainCard from 'components/CustomCard/MainCard';
+import { borderColor } from '@mui/system';
 const { spacing } = config;
 
 const FieldSection = (props: any) => {
@@ -66,7 +67,7 @@ const FieldSection = (props: any) => {
                     </Typography>
                 }
                 contentSX={{ px: 3, background: 'inherit' }}
-                sx={{ border: '1px solid #D6D6D6' }}
+                sx={{ border: '1px solid #D6D6D6', borderColor: '#d6d6d6d' }}
             >
                 {sectionDetails()}
             </MainCard>

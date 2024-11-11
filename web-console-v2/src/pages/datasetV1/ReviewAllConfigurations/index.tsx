@@ -71,6 +71,7 @@ const ReviewAllCongurations = ({ master, datasetState }: any) => {
             component: <Datasource datasetState={dataset_state}></Datasource>,
             master: true,
             dataset: true,
+            componentType: 'box'
         },
         {
             id: 'dataschema',
@@ -78,7 +79,8 @@ const ReviewAllCongurations = ({ master, datasetState }: any) => {
             description: 'Details about data schema',
             component: <IngestionSpec datasetState={dataset_state}></IngestionSpec>,
             master: true,
-            dataset: true
+            dataset: true,
+            componentType: 'box'
         },
         {
             id: 'transformations',
@@ -87,13 +89,15 @@ const ReviewAllCongurations = ({ master, datasetState }: any) => {
             component: <Transformations datasetState={dataset_state}></Transformations>,
             master: true,
             dataset: true,
+            componentType: 'box'
         },
         {
             id: 'denorm',
             title: 'Denormalization',
             description: 'Details about Denormalization',
             component: <Denormalization datasetState={dataset_state}></Denormalization>,
-            dataset: true
+            dataset: true,
+            componentType: 'box'
         }
     ]
 
@@ -128,7 +132,7 @@ const ReviewAllCongurations = ({ master, datasetState }: any) => {
         return <>
             <Button key={value}
                 variant="contained" size="large" type="button" onClick={onClick} startIcon={icon} disabled={disabled}>
-                <Typography variant="body1">{label}</Typography>
+                <Typography variant="button">{label}</Typography>
             </Button>
         </>
     }
@@ -136,14 +140,16 @@ const ReviewAllCongurations = ({ master, datasetState }: any) => {
     return <>
         <Grid container spacing={1}>
             <Grid item xs={12}>
-                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{mr: '2rem'}}>
                     {_.map(datasetActions, renderDatasetActions)}
                 </Stack>
             </Grid>
             <Grid item xs={12}>
             </Grid>
         </Grid>
-        {renderSections({ sections: sections })}
+        <Stack sx={{mr: '2rem', ml: '2rem', border: '1px solid #d6d6d6', borderRadius: '8px'}}>
+            {renderSections({ sections: sections })}
+        </Stack>
     </>
 }
 
