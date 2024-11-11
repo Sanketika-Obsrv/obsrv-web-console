@@ -87,6 +87,10 @@ const Preview: FC = (): ReactElement => {
         setOpen(false);
     };
 
+    const handleNavigate = () => {
+        navigate(`/dataset/edit/storage/${datasetId}`)
+    };
+
     return (
         <Box
             sx={{
@@ -110,18 +114,17 @@ const Preview: FC = (): ReactElement => {
                                 flex={1}
                                 mx={3.5}
                                 overflow="auto"
-                                paddingBottom="8rem"
+                                paddingBottom="3.8rem"
                             >
-                                <Box mb={2} mt={2}>
+                                <Box mx={0.5}>
                                     <Button
-                                        variant="text"
-                                        className={styles.button}
-                                        onClick={() => navigate(-1)}
+                                        variant="back"
                                         startIcon={
                                             <KeyboardBackspaceIcon
-                                                sx={{ color: 'black', width: '24px', height: '24px' }}
+                                                className={styles.backIcon}
                                             />
                                         }
+                                        onClick={handleNavigate}
                                     >
                                         Back
                                     </Button>
