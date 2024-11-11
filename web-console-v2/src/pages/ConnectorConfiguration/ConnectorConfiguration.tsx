@@ -125,23 +125,10 @@ const ConnectorConfiguration: React.FC = () => {
         }
     }
     const readConnector = useReadConnectors({ connectorId: selectedConnectorId });
-    useEffect(() => {
-        if (datasetId === '<new>' && selectedConnectorId && readConnector.data) {
-            setConnectorType(_.toLower(readConnector.data.category));
-            const apiSchema = readConnector.data.ui_spec;
-            if (apiSchema) {
-                setSchema(transformSchema(apiSchema));
-                setHelpSectionContent(apiSchema);
-                setErrorMessage(null);
-            } else {
-                setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
-            }
-        }
-    }, [selectedConnectorId, readConnector.data]);
     
     const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config'});
     useEffect(() => {
-        if (dataset.data) {
+        if (dataset.data && dataset.data.connectors_config[0]) {
             const connectorId = _.get(dataset.data.connectors_config[0], 'connector_id')
             http.get(`${endpoints.READ_CONNECTORS}/${connectorId}`).then((response: any) => {
                 const connectorData = _.get(response, ['data', 'result'])
@@ -160,8 +147,18 @@ const ConnectorConfiguration: React.FC = () => {
                     }
                 }
             })
+        } else if(readConnector.data) {
+            setConnectorType(_.toLower(readConnector.data.category));
+            const apiSchema = readConnector.data.ui_spec;
+            if (apiSchema) {
+                setSchema(transformSchema(apiSchema));
+                setHelpSectionContent(apiSchema);
+                setErrorMessage(null);
+            } else {
+                setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
+            }
         }
-    }, [dataset.data]);
+    }, [dataset.data, readConnector.data]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);

@@ -123,3 +123,7 @@ div.HelpSection_expanded__vqSxk {
   margin-left: 4px !important;
   margin-right: 4px !important;
 }
+
+.MuiAccordionSummary-content {
+  margin-bottom: 5px !important;
+}
