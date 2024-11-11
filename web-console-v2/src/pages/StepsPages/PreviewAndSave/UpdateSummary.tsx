@@ -11,6 +11,7 @@ const UpdateSummary = (props: any) => {
 
     const columns = [
         {
+            id: 'type',
             header: 'Type',
             accessor: 'type',
             Cell(value: any) {
@@ -20,6 +21,7 @@ const UpdateSummary = (props: any) => {
             }
         },
         {
+            id: 'field',
             header: 'Field',
             accessor: 'field',
             Cell(value: any) {
@@ -29,6 +31,7 @@ const UpdateSummary = (props: any) => {
             }
         },
         {
+            id: 'property',
             header: 'Property',
             accessor: 'name',
             Cell({ value }: any) {
@@ -36,6 +39,7 @@ const UpdateSummary = (props: any) => {
             }
         },
         {
+            id: 'from',
             header: 'Current Live Value',
             accessor: 'from',
             Cell(value: any) {
@@ -45,6 +49,7 @@ const UpdateSummary = (props: any) => {
             }
         },
         {
+            id: 'to',
             header: 'Updated Value',
             accessor: 'to',
             Cell(value: any) {

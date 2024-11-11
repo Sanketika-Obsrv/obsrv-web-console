@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FC, ReactElement, useState, useEffect } from 'react';
 import { Box, Button, Stack, Tab, Tabs } from '@mui/material';
 import AllConfigurations from './AllConfigurations';
@@ -9,7 +9,6 @@ import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import styles from './Preview.module.css';
 import Actions from 'components/ActionButtons/Actions';
 import { useFetchDatasetsById, usePublishDataset } from 'services/dataset';
-import { fetchSessionStorageValue } from 'utils/sessionStorage';
 import AlertDialog from 'components/AlertDialog/AlertDialog';
 import en from 'utils/locales/en.json';
 import Loader from 'components/Loader';
@@ -30,15 +29,14 @@ const renderContent = (selectedTab: number) => {
 
 const Preview: FC = (): ReactElement => {
     const navigate = useNavigate();
-    const datasetId = fetchSessionStorageValue('configDetails', 'dataset_id') || '';
-
+    const { datasetId }:any = useParams();
     const { search, state } = useLocation();
     const [selectedTab, setSelectedTab] = useState(0);
     const [open, setOpen] = useState<boolean>(false);
 
     const publishDataset = usePublishDataset();
 
-    const urlToPublish = `/home/datasets?status=ReadyToPublish`;
+    const urlToPublish = `/datasets?status=ReadyToPublish`;
 
     const fetchDatasetById = useFetchDatasetsById({
         datasetId,
@@ -89,6 +87,10 @@ const Preview: FC = (): ReactElement => {
         setOpen(false);
     };
 
+    const handleNavigate = () => {
+        navigate(`/dataset/edit/storage/${datasetId}`)
+    };
+
     return (
         <Box
             sx={{
@@ -112,18 +114,17 @@ const Preview: FC = (): ReactElement => {
                                 flex={1}
                                 mx={3.5}
                                 overflow="auto"
-                                paddingBottom="8rem"
+                                paddingBottom="3.8rem"
                             >
-                                <Box mb={2} mt={2}>
+                                <Box mx={0.5}>
                                     <Button
-                                        variant="text"
-                                        className={styles.button}
-                                        onClick={() => navigate(-1)}
+                                        variant="back"
                                         startIcon={
                                             <KeyboardBackspaceIcon
-                                                sx={{ color: 'black', width: '24px', height: '24px' }}
+                                                className={styles.backIcon}
                                             />
                                         }
+                                        onClick={handleNavigate}
                                     >
                                         Back
                                     </Button>

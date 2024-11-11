@@ -12,6 +12,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
 import { extractTransformationOptions } from '../Processing/Processing';
+import storageStyle from './Storage.module.css';
 
 export const getDatasetType = (type: string) => {
     if (type === 'event') {
@@ -146,6 +147,10 @@ const Storage = () => {
         }
     }
 
+    const handleNavigate = () => {
+        navigate(`/dataset/edit/processing/${datasetId}`)
+    }
+
     useEffect(() => {
         if (!lakehouseEnabled && !realtimeStoreEnabled && !cacheStoreEnabled) return setCanProceed(false);
         if (lakehouseEnabled && (_.isEmpty(primaryKey) || _.isEmpty(partitionKey))) return setCanProceed(false);
@@ -163,28 +168,22 @@ const Storage = () => {
             }}
         >
             <Box
-                mx={1}
                 sx={{
                     flex: 1,
                     overflowY: 'auto',
-                    paddingBottom: '1rem',
-                    paddingTop: '2rem'
+                    paddingBottom: '80px'
                 }}
-                mr={4}
+                mr={3}
             >
-                <Box mx={1} my={1}>
+                <Box mx={4}>
                     <Button
-                        variant="text"
-                        className={styles.button}
+                        variant="back"
                         startIcon={
                             <KeyboardBackspaceIcon
-                                sx={{ color: 'black', width: '1.5rem', height: '1.5rem' }}
+                                className={storageStyle.backIcon}
                             />
                         }
-                        sx={{ fontSize: '1rem', ml: 2 }}
-                        onClick={() => {
-                            navigate(-1);
-                        }}
+                        onClick={handleNavigate}
                     >
                         Back
                     </Button>

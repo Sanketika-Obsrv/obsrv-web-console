@@ -257,14 +257,14 @@ const ListAlerts = (props: any) => {
                 name: 'view',
                 label: 'View',
                 color: 'primary',
-                onclick: (_: any) => navigate(`/home/alertRules/view/${id}`),
+                onclick: (_: any) => navigate(`/alertRules/view/${id}`),
                 icon: <EyeOutlined />
             },
             {
                 name: 'edit',
                 label: 'Edit',
                 color: 'primary',
-                onclick: (_: any) => navigate(`/home/alertRules/edit/${id}`),
+                onclick: (_: any) => navigate(`/alertRules/edit/${id}`),
                 icon: <EditOutlined />
             },
             {

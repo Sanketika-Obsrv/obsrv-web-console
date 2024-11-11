@@ -5,13 +5,13 @@ import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import _ from 'lodash';
 import en from 'utils/locales/en.json';
 import { useFetchDatasetDiff } from 'services/dataset';
-import { getConfigValue } from 'services/configData';
 import { renderSections } from 'pages/alertManager/services/utils';
 import UpdateSummary from './UpdateSummary';
 import DeletionSummary from './DeletionSummary';
+import { useParams } from 'react-router-dom';
 
 const ReviewDataset = () => {
-    const datasetId = getConfigValue('dataset_id');
+    const { datasetId }:any = useParams();
 
     const { data } = useFetchDatasetDiff({
         datasetId

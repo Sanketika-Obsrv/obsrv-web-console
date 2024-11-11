@@ -41,14 +41,44 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
 
     useEffect(() => {
         const pathSegments = location.pathname.split('/').filter(Boolean);
-        const mainRoute = `/${pathSegments[0]}/${pathSegments[1]}`;
+        const mainRoute = `/${pathSegments[0]}`;
         const subRoute = location.pathname;
 
-        if (['create', 'connectors', 'connector', 'edit', 'schema', 'processing', 'storage', 'preview'].includes(pathSegments[1])) {
+        if(subRoute === '/dashboard') {
+            setSelectedItem(mainRoute);
+            setOpenParent(mainRoute);
+            setSelectedChildItem(null);
+            return
+        }
+        if(subRoute.startsWith('/dashboard')) {
+            setSelectedItem(mainRoute);
+            setOpenParent(mainRoute);
+            setSelectedChildItem(subRoute);
+            return
+        } 
+
+        if(subRoute == '/dataset/create' || subRoute.startsWith('/dataset/edit')) {
             setSelectedItem('/dataset/create');
             setOpenParent(null);
             setSelectedChildItem(null);
-        } else if (pathSegments[1] === 'alertRules') {
+            return
+        }
+
+        if(subRoute === '/datasets') {
+            setSelectedItem(mainRoute);
+            setOpenParent(null);
+            setSelectedChildItem(null);
+            return
+        }
+
+        if(subRoute === '/alertChannels' || subRoute.startsWith('/alertChannels')) {
+            setSelectedItem(mainRoute);
+            setOpenParent(null);
+            setSelectedChildItem(null);
+            return
+        }
+
+        if (pathSegments[0] === 'alertRules') {
             setSelectedItem(mainRoute);
             setOpenParent(mainRoute);
             if (mainRoute.match(subRoute)?.index === 0) {
@@ -56,19 +86,8 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
             } else {
                 navigate(subRoute);
             }
-        } else if (pathSegments.length > 2) {
-            setSelectedItem(mainRoute);
-            setOpenParent(mainRoute);
-            setSelectedChildItem(subRoute);
-        } else if (pathSegments.length > 1) {
-            setSelectedItem(mainRoute);
-            setOpenParent(mainRoute);
-            setSelectedChildItem(null);
-        } else {
-            setOpenParent(null);
-            setSelectedItem(null);
-            setSelectedChildItem(null);
-        }
+            return
+        } 
     }, [location.pathname, navigate]);
 
     const redirectToConsole = () => {
@@ -207,7 +226,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                                     title={!expand ? child.title : ''}
                                                     placement="right"
                                                 >
-                                                    <ListItem
+                                                    <ListItemButton
                                                         className={`${styles.childItem} ${isChildSelected
                                                             ? styles.selected
                                                             : styles.unselected
@@ -245,7 +264,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                                                 {child.title}
                                                             </Typography>
                                                         )}
-                                                    </ListItem>
+                                                    </ListItemButton>
                                                 </Tooltip>
                                             );
                                         })}
@@ -260,27 +279,27 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                     {/* <Tooltip title={!expand ? 'Settings' : ''} placement="right">
                         <ListItem
                             className={`${styles.listItem} ${
-                                selectedItem === '/home/settings'
+                                selectedItem === '/settings'
                                     ? styles.selected
                                     : styles.unselected
                             }`}
                             disablePadding={true}
                             sx={{
                                 borderLeft:
-                                    selectedItem === '/home/settings'
+                                    selectedItem === '/settings'
                                         ? `0.25rem solid ${theme.palette.secondary.main}`
                                         : ''
                             }}
                         >
                             <ListItemButton
                                 onClick={(event) =>
-                                    handleNavigation('/home/settings', '/home/settings')
+                                    handleNavigation('/settings', '/settings')
                                 }
                             >
                                 <Icon
                                     sx={{
                                         color:
-                                            selectedItem === '/home/settings'
+                                            selectedItem === '/settings'
                                                 ? theme.palette.secondary.main
                                                 : theme.palette.text.primary
                                     }}
@@ -293,7 +312,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                                         className={styles.sidebarIcons}
                                         sx={{
                                             color:
-                                                selectedItem === '/home/settings'
+                                                selectedItem === '/settings'
                                                     ? theme.palette.secondary.main
                                                     : theme.palette.text.primary
                                         }}
