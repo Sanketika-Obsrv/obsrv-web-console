@@ -140,13 +140,13 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
 
     const fetchDatasetById = useFetchDatasetsById({
         datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,type,dataset_config,connectors_config'
+        queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,type,dataset_config,connectors_config,dataset_id'
     });
 
-    const fetchLiveDataset: any = useFetchDatasetsById({
-        datasetId,
-        queryParams: 'fields=status'
-    });
+    // const fetchLiveDataset: any = useFetchDatasetsById({
+    //     datasetId,
+    //     queryParams: 'fields=status'
+    // });
 
     useEffect(() => {
         if (fetchDatasetById.data) {
@@ -698,7 +698,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                         >
                             {!showTableOnly && (
                                 <>
-                                    {fetchLiveDataset?.data !== undefined ? <></> : <Box marginBlock={2}>
+                                    <Box marginBlock={2}>
                                         <Button
                                             variant="back"
                                             startIcon={
@@ -710,7 +710,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                                         >
                                             Back
                                         </Button>
-                                    </Box>}
+                                    </Box>
 
                                     <Stack
                                         direction="row"

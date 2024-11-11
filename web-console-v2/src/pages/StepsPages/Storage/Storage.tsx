@@ -53,7 +53,7 @@ const Storage = () => {
         isLoading: fetchLoading
     } = useFetchDatasetsById({
         datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=data_schema,dataset_config,type,version_key'
+        queryParams: 'status=Draft&mode=edit&fields=dataset_id,data_schema,dataset_config,type,version_key'
     });
     const [canProceed, setCanProceed] = useState(false);
 

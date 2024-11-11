@@ -58,7 +58,7 @@ const StepperPage = () => {
     const [steps, setSteps] = useState<any>(stepData.steps);
     const [stateId, setStateId] = useState<any>(uuidv4());
 
-    const dataset = useFetchDatasetsById({datasetId, queryParams:'status=Draft&mode=edit&fields=connectors_config,validation_config,dataset_config,type,version_key'});
+    const dataset = useFetchDatasetsById({datasetId, queryParams:'status=Draft&mode=edit&fields=dataset_id,connectors_config,validation_config,dataset_config,type,version_key'});
 
     useEffect(() => {
         if(!dataset.data) {

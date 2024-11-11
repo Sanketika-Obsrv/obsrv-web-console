@@ -3,7 +3,7 @@ import { http } from './http';
 import { AxiosResponse } from 'axios';
 import _ from 'lodash';
 import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
-import { generateRequestBody, setVersionKey, transformResponse } from './utils';
+import { generateRequestBody, setDatasetId, setVersionKey, transformResponse } from './utils';
 import { queryClient } from 'queryClient';
 import apiEndpoints from 'data/apiEndpoints';
 
@@ -50,6 +50,7 @@ export const useFetchDatasetsById = ({
         queryKey: ['fetchDatasetsById', 'datasetId', 'status', queryParams],
         queryFn: () => http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}?${queryParams}`).then((response: AxiosResponse) => {
             console.log("response", response)
+            setDatasetId(_.get(response, ['data', 'result', 'dataset_id']))
             setVersionKey(_.get(response, ['data', 'result', 'version_key']));
             return _.get(response, ['data', 'result'])
         }),
