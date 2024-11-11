@@ -64,7 +64,7 @@ const FieldSection = (props: any) => {
                     </Typography>
                 }
                 contentSX={{ px: 3, background: 'inherit' }}
-                sx={{ border: '1px solid #D6D6D6' }}
+                sx={{ border: '1px solid #D6D6D6', borderColor: '#d6d6d6'}}
             >
                 {sectionDetails()}
             </MainCard>

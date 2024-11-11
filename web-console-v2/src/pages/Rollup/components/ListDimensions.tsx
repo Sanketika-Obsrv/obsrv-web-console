@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { Grid, Box, useTheme, Typography, Alert } from '@mui/material';
+import { Grid, Box, useTheme, Typography, Alert, Button } from '@mui/material';
 import * as _ from 'lodash';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -189,7 +189,7 @@ const ListDimensions = (props: any) => {
                 setSelectedOptions={setSelectedOptions}
                 selectedOptions={selectedOptions}
             />}
-            <GenericCard elevation={1}>
+            <GenericCard elevation={1} sx={{mx: 6, border: '1px solid #d6d6d6'}}>
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={12}>
                         {isEditing ? <Alert sx={{ display: "flex", alignItems: "center", mb: 2 }} severity="info">{en.newlyAddedFieldsAlertMessage}</Alert> : <></>}
@@ -205,28 +205,24 @@ const ListDimensions = (props: any) => {
                     </Grid>
                 </Grid>
             </GenericCard>
-            <GenericCard elevation={1}>
+            <GenericCard elevation={1} sx={{mx:6, border: '1px solid #d6d6d6'}}>
                 <FilteredRollUps {...props} />
-            </GenericCard>
-            <Stack direction="row" justifyContent="space-between">
-                <AnimateButton>
-                    <StandardWidthButton
-                        variant="outlined"
-                        type="button"
-                        onClick={() => navigate(-1)}
-                    >
-                        <Typography variant="h5">Previous</Typography>
-                    </StandardWidthButton>
-                </AnimateButton>
-                <AnimateButton>
-                    <StandardWidthButton
-                        variant="contained"
-                        type="button"
-                        onClick={() => gotoNextSection()}
-                    >
-                        <Typography variant="h5">proceed</Typography>
-                    </StandardWidthButton>
-                </AnimateButton>
+            </GenericCard>  
+            <Stack direction="row" justifyContent="space-between" sx={{mx:6, mb:4}}>
+                <Button
+                    variant="outlined"
+                    type="button"
+                    onClick={() => navigate(-1)}
+                >
+                    <Typography variant="buttonSecondaryCTA">Previous</Typography>
+                </Button>
+                <Button
+                    variant="contained"
+                    type="button"
+                    onClick={() => gotoNextSection()}
+                >
+                    <Typography variant="button">Proceed</Typography>
+                </Button>
             </Stack>
         </>
     );

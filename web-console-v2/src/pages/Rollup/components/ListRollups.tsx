@@ -1,6 +1,6 @@
 import React from 'react';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ArrowLeftOutlined } from "@ant-design/icons";
-import { Alert, Button, Grid, Stack, Box } from "@mui/material";
+import { Alert, Button, Grid, Stack, Box, Typography } from "@mui/material";
 import { useNavigate, useParams } from "react-router";
 import _ from 'lodash';
 import MainCard from "components/MainCard";
@@ -147,11 +147,11 @@ const ListRollups = () => {
             </> : renderRollups()}
             <Grid item xs={12}>
                 {rollups.length === granularityOptions.length ? <></> : <Stack direction="row" justifyContent="space-between" alignItems="center" mt={1}>
-                    <Button size="medium" startIcon={<ArrowLeftOutlined />} sx={{ fontWeight: 500 }} onClick={() => navigate(`/home/datasets?status=${DatasetStatus.ReadyToPublish}`)}>
-                        Previous
+                    <Button size="medium" startIcon={<ArrowLeftOutlined />} sx={{ fontWeight: 500 }} onClick={() => navigate(`/home/datasets?status=${DatasetStatus.ReadyToPublish}`)} variant='outlined'>
+                        <Typography variant='buttonSecondaryCTA'>Previous</Typography>
                     </Button>
-                    <Button size="medium" startIcon={<PlusOutlined />} sx={{ fontWeight: 500 }} onClick={addNewRollup}>
-                        Add Rollup
+                    <Button size="medium" startIcon={<PlusOutlined />} sx={{ fontWeight: 500 }} onClick={addNewRollup} variant='outlined'>
+                        <Typography variant='buttonSecondaryCTA'>Add Rollup</Typography>
                     </Button>
                 </Stack>}
                 <AlertDialog open={open} handleClose={handleClose} action={handleAction} context={dialogContext} />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Autocomplete, Button, Dialog, Grid, TextField } from '@mui/material';
+import { Autocomplete, Button, Dialog, Grid, TextField, Typography } from '@mui/material';
 import { Box, DialogTitle } from '@mui/material';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
@@ -31,8 +31,9 @@ const CustomGranularity = ({ setDisableCustomGranularity, customGranularity, set
                         startIcon={<PlusOutlined />}
                         sx={{ fontWeight: 500, position: 'absolute', right: 0 }}
                         onClick={() => setOpen(true)}
+                        variant='outlined'
                     >
-                        Custom granularity
+                        <Typography variant='buttonSecondaryCTA'>Custom granularity</Typography>
                     </Button>
                     <Dialog open={open} onClose={handleClose} fullWidth={true}>
                         <Box sx={{ p: 1, paddingBottom: 3 }}>

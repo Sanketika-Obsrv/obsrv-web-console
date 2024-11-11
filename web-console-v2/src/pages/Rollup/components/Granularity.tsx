@@ -5,6 +5,7 @@ import { useLocation } from 'react-router';
 import AccordionSection from 'components/Accordian/AccordionSection';
 import GranularityOptions from './GranularityOptions';
 import Loader from 'components/Loader';
+import { Box } from '@mui/material';
 
 const Granularity = (props: any) => {
     const {
@@ -39,7 +40,7 @@ const Granularity = (props: any) => {
     return (
         <>
             {loading && <Loader loading={loading} />}
-            {!loading && <AccordionSection sections={sections} />}
+            {!loading && <Box sx={{px: 6}}><AccordionSection sections={sections} /></Box>}
         </>
     );
 };

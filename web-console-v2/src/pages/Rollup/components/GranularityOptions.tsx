@@ -79,7 +79,7 @@ const GranularityOptions = ({ selectedOptions, setSelectedOptions, setSelectedGr
                                     onChange={() => handleCheckboxChange(option.value)}
                                     disabled={location.state?.edit ? true : existingGranularity.includes(option.value)}
                                 />
-                                {_.capitalize(option.label)}
+                                <Typography variant='body1'>{_.capitalize(option.label)}</Typography>
                             </Grid>
                         }
                     })}

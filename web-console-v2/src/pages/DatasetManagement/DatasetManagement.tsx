@@ -3,7 +3,7 @@ import AccordionSection from "components/Accordian/AccordionSection";
 import _ from "lodash";
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from "react";
-import { Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { DatasetStatus } from "types/datasets";
 import Loader from "components/Loader";
 import ReviewAllCongurations from "pages/datasetV1/ReviewAllConfigurations";
@@ -68,7 +68,7 @@ const DatasetManagement = () => {
     }
 
     return <>
-        {loading ? <Loader loading={loading} /> : <AccordionSection sections={datasetSection()} />}
+        {loading ? <Loader loading={loading} /> : <Box sx={{padding: '2rem'}}><AccordionSection sections={datasetSection()} /></Box>}
     </>
 }
 
