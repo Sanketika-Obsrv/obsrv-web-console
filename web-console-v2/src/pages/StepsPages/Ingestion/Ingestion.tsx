@@ -62,6 +62,7 @@ const Ingestion = () => {
     const { datasetId: datasetIdParam }: any = useParams();
     const [datasetType, setDatasetType] = useState<string>(datasetTypeParam || 'event');
     const [datasetName, setDatasetName] = useState('');
+    const [connectorConfigState, setConnectorConfigState] = useState<any>(undefined);
     const [datasetId, setDatasetId] = useState(datasetIdParam === '<new>'? null : datasetIdParam);
     const [nameError, setNameError] = useState('');
 
@@ -111,7 +112,7 @@ const Ingestion = () => {
 
     const { data: fetchData, refetch } = useFetchDatasetsById({
         datasetId: datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=dataset_config,name,version_key'
+        queryParams: 'status=Draft&mode=edit&fields=dataset_config,name,version_key,connectors_config'
     });
 
     const {
@@ -151,6 +152,9 @@ const Ingestion = () => {
     useEffect(() => {
         if (datasetId !== '' && fetchData) {
             setDatasetName(_.get(fetchData, 'name'));
+            if(fetchData.connectors_config && fetchData.connectors_config[0]) {
+                setConnectorConfigState(fetchData.connectors_config[0])
+            }
             const filePathList = fetchData.dataset_config?.file_upload_path;
 
             if (filePathList) {
@@ -319,9 +323,14 @@ const Ingestion = () => {
     }, [uploadData, generateData, data]);
 
     const handleNavigate = () => {
-        navigate(`/dataset/edit/connector/configure/${datasetIdParam}`, {
-            state: {selectedConnectorId, connectorConfig}
-        });
+
+        if(!connectorConfig && !connectorConfigState) {
+            navigate(`/dataset/edit/connector/list/${datasetIdParam}`);
+        } else {
+            navigate(`/dataset/edit/connector/configure/${datasetIdParam}`, {
+                state: {selectedConnectorId, connectorConfig}
+            });
+        }
     };
 
     useEffect(() => {

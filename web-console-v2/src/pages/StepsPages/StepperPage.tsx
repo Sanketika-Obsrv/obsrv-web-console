@@ -72,15 +72,15 @@ const StepperPage = () => {
         newSteps.push(connectorData.length > 0 ? {
             name: 'Connector',
             index: 1,
-            completed: false,
-            skipped: true,
+            completed: true,
+            skipped: false,
             active: false,
             route: 'connector'
         } : {
             name: 'Connector',
             index: 1,
-            completed: true,
-            skipped: false,
+            completed: false,
+            skipped: true,
             active: false,
             route: 'connector'
         });

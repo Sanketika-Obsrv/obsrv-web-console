@@ -46,6 +46,9 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
                         if(step.route === prevStep) {
                             return { ...step, skipped: queryParams.get('skipped') === 'true', completed: queryParams.get('completed') === 'true', active: false };
                         }
+                        if(step.route === 'connector') {
+                            return { ...step, active: false };    
+                        }
                         return { ...step, completed: true, active: false };
                     } else if (step.index === activeStep.index) {
                         return { ...step, active: true };
@@ -67,13 +70,18 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
         };
         const targetRoute = routeMapping[route] || route;
         switch(route) {
-            case 'connector':
-                navigate(targetRoute);
+            case 'connector': {
+                const connectorStep = steps.find((step) => step.route === 'connector');
+                if(connectorStep?.completed) 
+                    navigate(`/dataset/edit/connector/configure/${datasetId}`);
+                else 
+                    navigate(`/dataset/edit/connector/list/${datasetId}`);
                 break;
+            }
             case 'ingestion': {
                 const ingestionStep = steps.find((step) => step.route === 'ingestion');
                 if(ingestionStep?.completed) 
-                    navigate(targetRoute);
+                    navigate(`/dataset/edit/ingestion/schema/${datasetId}`);
                 else 
                     navigate(`/dataset/edit/ingestion/meta/${datasetId}`);
                 break;
