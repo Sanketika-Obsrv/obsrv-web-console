@@ -129,10 +129,9 @@ export default {
       parse: (response: any) => {
         const result = _.get(response, 'data.result[0].value[1]');
         if (!result) throw new Error();
-        return {
-          value: dayjs(result * 1000).fromNow(),
-          hoverValue: dayjs(result * 1000).format('YYYY-MM-DD HH:mm:ss'),
-        };
+        const date = dayjs().subtract(result * 1000, 'milliseconds');
+        const timeAgo = date.fromNow();
+        return timeAgo
       },
       error() {
         return prettyMilliseconds(0);
@@ -153,10 +152,9 @@ export default {
       parse: (response: any) => {
         const result = _.get(response, 'data.result[0].value[1]');
         if (!result) throw new Error();
-        return {
-          value: dayjs(result * 1000).fromNow(),
-          hoverValue: dayjs(result * 1000).format('YYYY-MM-DD HH:mm:ss'),
-        };
+        const date = dayjs().subtract(result * 1000, 'milliseconds');
+        const timeAgo = date.fromNow();
+        return timeAgo
       },
       error() {
         return prettyMilliseconds(0);

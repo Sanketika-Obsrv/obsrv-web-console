@@ -255,6 +255,12 @@ const Processing: React.FC = () => {
         { label: 'Lenient', component: '', value: TransformationMode.Lenient }
     ];
 
+    const piiColumns:any = _.map(_.get(processingData, 'pii'), 'column');
+    // Filter out items from transformationOptions where the column matches any in piiColumns
+    const transformationOptionsWithoutPii = _.filter(transformationOptions, (ele: any) => {
+        return !piiColumns.includes(ele);
+    });
+
     const processingSections = [
         {
             id: 'dataValidation',
@@ -348,7 +354,7 @@ const Processing: React.FC = () => {
                         label={'Add Transformation'}
                         dialog={<AddTransformationExpression />}
                         jsonData={jsonData}
-                        transformationOptions={transformationOptions}
+                        transformationOptions={transformationOptionsWithoutPii}
                         addedSuggestions={[]}
                         data={_.get(processingData, 'transform')}
                         handleAddOrEdit={(data: any) => handleAddOrEdit(data, 'transformations')}
