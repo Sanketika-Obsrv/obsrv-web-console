@@ -52,7 +52,7 @@ const DEFAULT_TS_SCHEMA = {
         arrival_format: "object", data_type: "object", isRequired: false, key: DEFAULT_TIMESTAMP.rootPath, resolved: true, type: "object",
         properties: {
             "syncts": {
-                "arrival_format": "text",
+                "arrival_format": "integer",
                 "data_type": "date-time",
                 "isRequired": false,
                 "key": DEFAULT_TIMESTAMP.label,
@@ -84,14 +84,11 @@ export const generateRollupIngestionSpec = async (list: any, schema: any, datase
     });
     newField = formatNewFields(newField, null);
     let ingestionPayload = { schema: [...flattenSchemaV1(jsonSchema), ...newField] };
-    if (timestampCol === DEFAULT_TIMESTAMP.indexValue)
-        ingestionPayload = { schema: [...flattenSchemaV1(jsonSchema), ...defaultTsObject, ...newField] };
-
     if (timestampCol === DEFAULT_TIMESTAMP.indexValue) {
-        jsonSchema.properties = {
-            ..._.get(jsonSchema, "properties"), ...DEFAULT_TS_SCHEMA
-        }
+        ingestionPayload = { schema: [...flattenSchemaV1(jsonSchema), ...newField] };
+        jsonSchema.properties = { ..._.get(jsonSchema, "properties"), ...DEFAULT_TS_SCHEMA }
     }
+
     const updatedIngestionPayload = _.get(updateJSONSchema({ schema: _.get(jsonSchema, "properties") }, ingestionPayload), 'schema');
 
     const payload = {
