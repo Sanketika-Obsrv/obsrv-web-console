@@ -46,7 +46,7 @@ const NotificationChannelsHeader = (props: any) => {
                     globalFilter={state.globalFilter}
                     setGlobalFilter={setGlobalFilter}
                 />
-                <Button sx={{ mx: 1 }} variant="contained" onClick={(e) => navigate('/home/alertChannels/new')}>
+                <Button sx={{ mx: 1 }} variant="contained" onClick={(e) => navigate('/alertChannels/new')}>
                     Add Channel
                 </Button>
             </>

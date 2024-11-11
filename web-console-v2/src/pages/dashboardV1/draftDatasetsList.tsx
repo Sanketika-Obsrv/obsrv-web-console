@@ -279,7 +279,7 @@ const DraftDatasetsList = (props: any) => {
                                     const datasetId = row?.dataset_id;
                                     // const master = row?.type === DatasetType.MasterDataset;
                                     // const status = row?.status;
-                                    // const url = `/home/ingestion/schema-details/${datasetId}`;
+                                    // const url = `/ingestion/schema-details/${datasetId}`;
                                     // window.location.href = url;
                                     navigate(`/dataset/edit/ingestion/schema/${datasetId}`);
                                 }}>
