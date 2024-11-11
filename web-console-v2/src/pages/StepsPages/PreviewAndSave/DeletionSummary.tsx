@@ -11,6 +11,7 @@ const DeletionSummary = (props: any) => {
 
     const columns = [
         {
+            id:  'type',
             header: 'Type',
             accessor: 'type',
             Cell(value: any) {
@@ -20,6 +21,7 @@ const DeletionSummary = (props: any) => {
             }
         },
         {
+            id: 'name',
             header: 'Name',
             accessor: 'name',
             Cell(value: any) {
