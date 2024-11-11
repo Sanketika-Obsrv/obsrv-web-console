@@ -63,7 +63,7 @@ const MultiFileUpload = ({
     };
 
     const dropzoneProps = useCustomDropzone({
-        multiple: false,
+        multiple: isMultiple,
         onDrop: handleDrop,
         accept: {
             'application/json': ['.json']
@@ -72,7 +72,7 @@ const MultiFileUpload = ({
     });
 
     const otherDropzoneProps = useCustomDropzone({
-        multiple: false,
+        multiple: isMultiple,
         onDrop: handleDrop,
         accept: {
             'application/json': ['.json']
