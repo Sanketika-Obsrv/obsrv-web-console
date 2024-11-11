@@ -232,7 +232,6 @@ const ProcessingSection = (props: any) => {
                         onClick={(_) => setDialogOpen(true)}
                         variant="text"
                         startIcon={<AddOutlinedIcon fontSize="large" />}
-                        sx={{ mt: 2 }}
                     >
                         <Typography variant="body2" fontWeight="500">
                             {label}

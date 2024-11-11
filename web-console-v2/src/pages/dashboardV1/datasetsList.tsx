@@ -1,4 +1,4 @@
-/*eslint-disable*/
+import React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Chip, CircularProgress, Stack, Tooltip, Typography, Box } from '@mui/material';
 import MainCard from 'components/MainCard';
@@ -55,7 +55,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
         navigate(path);
     }
     const [executeAction, setExecuteAction] = useState<string>("");
-    const alertDialogContext = (datasetName: string = "") => {
+    const alertDialogContext = (datasetName = "") => {
         switch (executeAction) {
             case DatasetActions.Retire:
                 return { title: <FormattedMessage id="retire-dataset-title" />, content: <FormattedMessage id="retire-dataset-context" values={{ id: datasetName }} /> };
@@ -93,7 +93,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
             const fetchData = async (value: any) => {
                 setIsLoading(true);
                 try {
-                    let data = await fetchChartData(value);
+                    const data = await fetchChartData(value);
                     const responseData = _.isArray(data) ? _.first(data) : data;
 
                     // Always store the successful response in localStorage under datasetId and cellKey
@@ -149,7 +149,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
 
     const updateDatasetProps = ({ dataset_id, status, id, name, tags }: any) => {
         setData((prevState: any) => {
-            let prevData = _.cloneDeep(prevState);
+            const prevData = _.cloneDeep(prevState);
             const index = _.findIndex(prevData, (data: any) => {
                 return dataset_id === _.get(data, 'dataset_id') && status === _.get(data, 'status') && id === _.get(data, 'id') && name === _.get(data, 'name')
             });
@@ -279,7 +279,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                         <Box display="flex" flexDirection="row" gap={1} flexWrap="wrap" flexGrow={1} alignItems="center">
                             {
                                 row?.sources && row?.sources.map((connector: string, index: number) => (
-                                    <Tooltip title="Source Connector">
+                                    <Tooltip title="Source Connector" key={index}>
                                         <Chip key={index} label={
                                             <Typography align="left" variant="caption">
                                                 {connector}
@@ -301,7 +301,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 /></Tooltip>}
                             {
                                 row?.tags && row?.tags?.map((tag: string, index: number) => (
-                                    <Tooltip title="Custom Tags">
+                                    <Tooltip title="Custom Tags" key={index}>
                                         <Chip key={index} label={
                                             <Typography align="left" variant="caption">
                                                 {tag}
@@ -422,7 +422,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const isMaster: boolean = row?.type == DatasetType.MasterDataset;
                     const fileName = `${row?.name}_${row?.status}_${row?.version}`;
                     return <Stack direction="row" justifyContent="flex-start" alignItems="center">
-                        <Tooltip title="View Dataset" onClick={(e: any) => navigateToPath(`/home/datasets/view/${row?.dataset_id}?master=${isMaster}&status=${DatasetStatus.Live}`)}>
+                        <Tooltip title="View Dataset" onClick={(e: any) => navigateToPath(`/datasets/view/${row?.dataset_id}?master=${isMaster}&status=${DatasetStatus.Live}`)}>
                             <IconButton
                                 data-objectid={row?.dataset_id}
                                 data-objecttype="dataset"
@@ -432,7 +432,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 <EyeOutlined />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="View Metrics" onClick={(e: any) => navigateToPath(`/home/datasets/metrics/${row?.dataset_id}`)}>
+                        <Tooltip title="View Metrics" onClick={(e: any) => navigateToPath(`/datasets/metrics/${row?.dataset_id}`)}>
                             <IconButton
                                 data-edataid={interactIds.view_dataset_metrics}
                                 data-objectid={row?.dataset_id}

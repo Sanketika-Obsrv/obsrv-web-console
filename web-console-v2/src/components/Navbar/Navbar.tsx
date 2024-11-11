@@ -6,7 +6,6 @@ import styles from './Navbar.module.css';
 import Grafana from 'assets/icons/Grafana';
 import Superset from 'assets/icons/Superset';
 import _ from 'lodash';
-import { getConfigValue } from 'services/dataset';
 import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
@@ -16,7 +15,7 @@ import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
 import { routeConfigurations } from 'router';
 
-const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/home/dashboard";
+const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/dashboard";
 
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
@@ -91,12 +90,12 @@ function BasicBreadcrumbs(): JSX.Element {
 
     return (pathname !== '/login' ? (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
-            <Grid item xs={1.5} className={styles.logo} sx={{width: '16.125rem', textAlign: 'center', maxWidth:'16.125rem'}}>
-                <Box onClick={handleNavigate} sx={{width: '16.125rem', textAlign: 'center'}}>
+            <Grid item xs="auto" className={styles.logo}>
+                <Box onClick={handleNavigate} sx={{width: '16.05rem', textAlign: 'center'}}>
                     <img src={logoIcon} alt="Logo" width={100} />
                 </Box>
             </Grid>
-            <Grid item xs={9.5} className={styles.breadcrumb}>
+            <Grid item xs={7} className={styles.breadcrumb}>
                 <Breadcrumbs aria-label="breadcrumb">
                     {
                     pathnames.map((name, index) => {
@@ -136,7 +135,7 @@ function BasicBreadcrumbs(): JSX.Element {
                     })}
                 </Breadcrumbs>
             </Grid>
-            <Grid item xs={1} className={styles.navIcons}>
+            <Grid item xs className={styles.navIcons} justifyContent={'right'}>
                 <div className={styles.icons}
                     onClick={() => { navigate(getConfigValueV1("GRAFANA_URL")) }}>
                     <Grafana color="secondary" />

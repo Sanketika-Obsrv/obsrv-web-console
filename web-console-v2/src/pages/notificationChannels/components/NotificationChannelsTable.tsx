@@ -28,7 +28,7 @@ const actions = [
         onClick: (context: Record<string, any>) => {
             const { payload, navigate } = context;
             const { id } = payload;
-            navigate(`/home/alertChannels/view/${id}`);
+            navigate(`/alertChannels/view/${id}`);
         }
     },
     {
@@ -77,7 +77,7 @@ const actions = [
         onClick: (context: Record<string, any>) => {
             const { payload, navigate } = context;
             const { id } = payload;
-            navigate(`/home/alertChannels/edit/${id}`);
+            navigate(`/alertChannels/edit/${id}`);
         }
     },
     {

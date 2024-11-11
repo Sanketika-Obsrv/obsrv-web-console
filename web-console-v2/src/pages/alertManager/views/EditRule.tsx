@@ -89,7 +89,7 @@ const EditRule = () => {
         try {
             if (validateForm(_.get(formData, 'error'))) {
                 await editAlertRule();
-                navigate(`/home/alertRules/${_.toLower(alertType)}`);
+                navigate(`/alertRules/${_.toLower(alertType)}`);
                 showAlert("Alert Rule updated successfully", "success");
             } else {
                 showAlert("Please fill all required fields", "error");

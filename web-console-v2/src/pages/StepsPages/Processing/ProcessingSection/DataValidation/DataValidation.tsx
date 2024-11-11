@@ -62,7 +62,7 @@ const DataValidation = (props: any) => {
     };
 
     return (
-        <Stack mt={-8} ml={-1}>
+        <Stack ml={-1} mt={-7} mb={-2}>
             <DataValidationForm
                 schema={schema}
                 formData={formData}

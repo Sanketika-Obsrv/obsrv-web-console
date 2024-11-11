@@ -25,6 +25,7 @@ const AdditionSummary = (props: any) => {
 
     const columns = [
         {
+            id: 'type',
             header: 'Type',
             accessor: 'type',
             Cell(value: any) {
@@ -34,6 +35,7 @@ const AdditionSummary = (props: any) => {
             }
         },
         {
+            id: 'name',
             header: 'Name',
             accessor: 'name',
             Cell(value: any) {
@@ -42,6 +44,7 @@ const AdditionSummary = (props: any) => {
             }
         },
         {
+            id: 'config',
             header: 'Config',
             Cell(payload: any) {
                 const row = payload?.cell?.row?.original || {};
