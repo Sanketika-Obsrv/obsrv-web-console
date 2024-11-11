@@ -25,7 +25,6 @@ const MetricsCard: React.FC<any> = (props: any) => {
     try {
       setLoading(true);
       const response = await fetchMetricData(query, { uuid });
-      console.log({ response })
       const transformedLabel =
         (await (transformer && transformer(response))) || response;
       setValue(response);

@@ -123,7 +123,7 @@ const MultiFileUpload = ({
                         <Typography variant="h1Secondary" mt={1} mb={1}>
                             Upload Data
                         </Typography>
-                        <Stack direction="row" justifyContent={'center'}>
+                        <Stack direction="row" display={"flex"} alignItems={"center"} justifyContent={"center"}>
                             <Box {...otherDropzoneProps.getRootProps()}>
                                 <PlaceholderContent
                                     imageUrl={uploadIcon}
