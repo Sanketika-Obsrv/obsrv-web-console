@@ -49,7 +49,6 @@ export const useFetchDatasetsById = ({
     return useQuery({
         queryKey: ['fetchDatasetsById', 'datasetId', 'status', queryParams],
         queryFn: () => http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}?${queryParams}`).then((response: AxiosResponse) => {
-            console.log("response", response)
             setDatasetId(_.get(response, ['data', 'result', 'dataset_id']))
             setVersionKey(_.get(response, ['data', 'result', 'version_key']));
             return _.get(response, ['data', 'result'])
@@ -160,7 +159,7 @@ export const useUpdateDataset = () =>
             const request = generateRequestBody({
                 request: {
                     ..._.omit(updatedRequestPayload, ['configurations', 'dataMappings']),
-                    ..._.omit(configDetail, ['name'])
+                    ..._.pick(configDetail, ['version_key'])
                 },
                 apiId: 'api.datasets.update'
             });

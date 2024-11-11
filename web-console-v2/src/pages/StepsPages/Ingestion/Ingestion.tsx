@@ -286,7 +286,7 @@ const Ingestion = () => {
             if (datasetIdParam === '<new>' && datasetId) {
                 const connectors_config = (connectorConfig) ? [{
                     ...connectorConfig,
-                    id: `${datasetId}_${connectorConfig.connector_id}`,
+                    id: `${datasetId}-${connectorConfig.connector_id}`,
                     version: 'v2'
                 }] : []
                 const config = {
@@ -360,11 +360,10 @@ const Ingestion = () => {
                     showAlert('Failed to upload schema', 'error');
                 }
             } else {
-                console.log("# datasetName before update", datasetName)
                 updateDatasetMutate({
                     data: {
                         name: datasetName,
-                        dataset_id: datasetId,
+                        dataset_id: datasetIdParam,
                         type: datasetType
                     }
                 });

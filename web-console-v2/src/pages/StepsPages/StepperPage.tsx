@@ -41,7 +41,7 @@ const stepData = {
             route: 'storage'
         },
         {
-            name: 'Preview & Save',
+            name: 'Preview',
             index: 5,
             completed: false,
             skipped: false,
@@ -70,14 +70,14 @@ const StepperPage = () => {
         const storageKeys = _.get(dataset.data, ['dataset_config', 'keys_config'], {});
         const storageType = _.get(dataset.data, ['dataset_config', 'indexing_config'], {});
         newSteps.push(connectorData.length > 0 ? {
-            name: 'Connector',
+            name: 'Connector?',
             index: 1,
             completed: true,
             skipped: false,
             active: false,
             route: 'connector'
         } : {
-            name: 'Connector',
+            name: 'Connector?',
             index: 1,
             completed: false,
             skipped: true,
@@ -146,7 +146,7 @@ const StepperPage = () => {
         }
 
         newSteps.push({
-            name: 'Preview & Save',
+            name: 'Preview',
             index: 5,
             completed: false,
             skipped: false,
