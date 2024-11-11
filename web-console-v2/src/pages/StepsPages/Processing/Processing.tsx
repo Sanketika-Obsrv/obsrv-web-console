@@ -134,7 +134,7 @@ const Processing: React.FC = () => {
     const { data: datasetData, isSuccess: fetchSuccess } = useFetchDatasetsById({
         datasetId,
         queryParams:
-            'status=Draft&mode=edit&fields=data_schema,sample_data,transformations_config,validation_config,dedup_config,denorm_config,version_key'
+            'status=Draft&mode=edit&fields=dataset_id,data_schema,sample_data,transformations_config,validation_config,dedup_config,denorm_config,version_key'
     });
 
     const datasetList = useDatasetList({

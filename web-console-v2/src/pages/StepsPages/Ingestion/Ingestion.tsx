@@ -525,7 +525,7 @@ const Ingestion = () => {
                                                 data={data}
                                                 setData={setData}
                                                 files={files}
-                                                setFiles={handleFileSelection}
+                                                setFiles={setFiles}
                                                 allowSchema
                                                 maxFileSize={maxFileSizeConfig}
                                                 subscribeErrors={setFileErrors}
@@ -545,7 +545,7 @@ const Ingestion = () => {
                                                     <FilesPreview
                                                         files={files}
                                                         showList={false}
-                                                        onRemove={handleFileRemove}
+                                                        onRemove={onFileRemove}
                                                     />
                                                 </Box>
                                             )}

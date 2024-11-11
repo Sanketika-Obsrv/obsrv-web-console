@@ -72,6 +72,14 @@ const RunQuery = (props: any) => {
         }
     }
 
+    const getQueryValue = (query: string) => {
+        if (query.includes("$__range")) {
+            const modifiedQuery = query.replace(/\$__range/g, "600s");
+            return modifiedQuery
+        }
+        return query;
+    }
+
     const getChartQuery = () => {
         const y_axis_value = _.includes(["within_range", "outside_range"], operator) ? [threshold_from, threshold_to] : threshold
         return {
@@ -140,7 +148,7 @@ const RunQuery = (props: any) => {
                 headers: {},
                 body: {},
                 params: {
-                    query: _.get(metricValue, [0, "metric"]) || metric,
+                    query: getQueryValue(_.get(metricValue, [0, "metric"]) || metric),
                     step: '5m',
                     start: dayjs().unix(),
                     end: dayjs().subtract(1, 'day').unix()
@@ -187,7 +195,7 @@ const RunQuery = (props: any) => {
     }
 
     const renderChart = () => {
-        if (loading) return <Loader loading={loading}/>
+        if (loading) return <Loader loading={loading} />
         if (!metadata) return null;
         let refresh = false;
 
