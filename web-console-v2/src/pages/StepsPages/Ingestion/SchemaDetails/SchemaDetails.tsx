@@ -143,11 +143,6 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
         queryParams: 'status=Draft&mode=edit&fields=data_schema,version_key,name,type,dataset_config,connectors_config,dataset_id'
     });
 
-    // const fetchLiveDataset: any = useFetchDatasetsById({
-    //     datasetId,
-    //     queryParams: 'fields=status'
-    // });
-
     useEffect(() => {
         if (fetchDatasetById.data) {
             if (datasetId) {
