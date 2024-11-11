@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: center;
   height: 2.5rem;
-  border-right: 0.083rem solid var(--light-grey);
+  border-right: 0.043rem solid var(--light-grey);
 }
 
 .breadcrumb {
@@ -42,7 +42,7 @@
 
 .alertNotification {
   position: fixed;
-  top: 4rem;
+  top: 2.5rem;
   right: 0;
   width: 25rem;
 }

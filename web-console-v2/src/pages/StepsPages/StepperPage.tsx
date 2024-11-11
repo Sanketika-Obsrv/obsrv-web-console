@@ -69,19 +69,18 @@ const StepperPage = () => {
         const connectorData = _.get(dataset.data, ['connectors_config'], []);
         const storageKeys = _.get(dataset.data, ['dataset_config', 'keys_config'], {});
         const storageType = _.get(dataset.data, ['dataset_config', 'indexing_config'], {});
-
         newSteps.push(connectorData.length > 0 ? {
             name: 'Connector',
             index: 1,
-            completed: false,
-            skipped: true,
+            completed: true,
+            skipped: false,
             active: false,
             route: 'connector'
         } : {
             name: 'Connector',
             index: 1,
-            completed: true,
-            skipped: false,
+            completed: false,
+            skipped: true,
             active: false,
             route: 'connector'
         });
@@ -108,21 +107,44 @@ const StepperPage = () => {
             active: false,
             route: 'processing'
         });
-        newSteps.push(_.keys(storageKeys).length > 0 && _.keys(storageType).length > 0 ? {
-            name: 'Storage',
-            index: 4,
-            completed: true,
-            skipped: false,
-            active: false,
-            route: 'storage'
-        } : {
-            name: 'Storage',
-            index: 4,
-            completed: false,
-            skipped: false,
-            active: false,
-            route: 'storage'
-        });
+        if(storageType['olap_store_enabled'] && _.isEmpty(storageKeys['timestamp_key'])) {
+            newSteps.push({
+                name: 'Storage',
+                index: 4,
+                completed: false,
+                skipped: false,
+                active: false,
+                route: 'storage'
+            });
+        } else if(storageType['lakehouse_enabled'] && _.isEmpty(storageKeys['data_key']) && _.isEmpty(storageKeys['partition_key'])) {
+            newSteps.push({
+                name: 'Storage',
+                index: 4,
+                completed: false,
+                skipped: false,
+                active: false,
+                route: 'storage'
+            });
+        } else if(storageType['cache_enabled'] && _.isEmpty(storageKeys['data_key'])) {
+            newSteps.push({
+                name: 'Storage',
+                index: 4,
+                completed: false,
+                skipped: false,
+                active: false,
+                route: 'storage'
+            });
+        } else {
+            newSteps.push({
+                name: 'Storage',
+                index: 4,
+                completed: true,
+                skipped: false,
+                active: false,
+                route: 'storage'
+            });
+        }
+
         newSteps.push({
             name: 'Preview & Save',
             index: 5,

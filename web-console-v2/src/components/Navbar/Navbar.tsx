@@ -90,12 +90,12 @@ function BasicBreadcrumbs(): JSX.Element {
 
     return (pathname !== '/login' ? (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
-            <Grid item xs={1.5} className={styles.logo} sx={{width: '16.125rem', textAlign: 'center', maxWidth:'16.125rem'}}>
-                <Box onClick={handleNavigate} sx={{width: '16.125rem', textAlign: 'center'}}>
+            <Grid item xs="auto" className={styles.logo}>
+                <Box onClick={handleNavigate} sx={{width: '16.05rem', textAlign: 'center'}}>
                     <img src={logoIcon} alt="Logo" width={100} />
                 </Box>
             </Grid>
-            <Grid item xs={9.5} className={styles.breadcrumb}>
+            <Grid item xs={7} className={styles.breadcrumb}>
                 <Breadcrumbs aria-label="breadcrumb">
                     {
                     pathnames.map((name, index) => {
@@ -135,7 +135,7 @@ function BasicBreadcrumbs(): JSX.Element {
                     })}
                 </Breadcrumbs>
             </Grid>
-            <Grid item xs={1} className={styles.navIcons}>
+            <Grid item xs className={styles.navIcons} justifyContent={'right'}>
                 <div className={styles.icons}
                     onClick={() => { navigate(getConfigValueV1("GRAFANA_URL")) }}>
                     <Grafana color="secondary" />

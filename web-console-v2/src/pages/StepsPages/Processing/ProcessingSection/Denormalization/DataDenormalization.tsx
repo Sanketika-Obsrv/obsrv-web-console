@@ -8,7 +8,8 @@ import {
     Chip,
     Select,
     MenuItem,
-    TextField
+    TextField,
+    Alert
 } from '@mui/material';
 import BasicReactTable from 'components/CustomeTable/CustomTable';
 import React, { useEffect, useState } from 'react';
@@ -68,10 +69,11 @@ const DataDenorm = (props: any) => {
     const masterDatasetNotFound = () => (
         <Grid item xs={12}>
             <Stack spacing={spacing} direction="column" justifyContent="center" alignItems="center">
-                <Typography variant="body1" fontWeight={500}>
+                
+                <Alert severity="info" variant="outlined">
                     There are no master datasets configured in the system. Please create one to
                     setup data denormalization for the dataset.
-                </Typography>
+                </Alert>
                 <Box>
                     <Button
                         data-objectid="createMasterDataset"
