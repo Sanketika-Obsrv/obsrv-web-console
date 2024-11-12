@@ -352,7 +352,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 <EditOutlined />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Rollup Management" onClick={(e: any) => navigateToPath(`/home/datasets/management/${row?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)}>
+                        <Tooltip title="Rollup Management" onClick={(e: any) => navigateToPath(`/datasets/management/${row?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)}>
                             <IconButton
                                 color="primary"
                                 size="large"

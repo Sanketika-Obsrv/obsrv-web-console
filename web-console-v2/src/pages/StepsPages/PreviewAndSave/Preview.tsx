@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FC, ReactElement, useState, useEffect } from 'react';
 import { Box, Button, Stack, Tab, Tabs } from '@mui/material';
 import AllConfigurations from './AllConfigurations';
@@ -9,6 +9,7 @@ import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import styles from './Preview.module.css';
 import Actions from 'components/ActionButtons/Actions';
 import { useFetchDatasetsById, usePublishDataset } from 'services/dataset';
+import { fetchSessionStorageValue } from 'utils/sessionStorage';
 import AlertDialog from 'components/AlertDialog/AlertDialog';
 import en from 'utils/locales/en.json';
 import Loader from 'components/Loader';
@@ -29,7 +30,8 @@ const renderContent = (selectedTab: number) => {
 
 const Preview: FC = (): ReactElement => {
     const navigate = useNavigate();
-    const { datasetId }:any = useParams();
+    const datasetId = fetchSessionStorageValue('configDetails', 'dataset_id') || '';
+
     const { search, state } = useLocation();
     const [selectedTab, setSelectedTab] = useState(0);
     const [open, setOpen] = useState<boolean>(false);
@@ -87,10 +89,6 @@ const Preview: FC = (): ReactElement => {
         setOpen(false);
     };
 
-    const handleNavigate = () => {
-        navigate(`/dataset/edit/storage/${datasetId}`)
-    };
-
     return (
         <Box
             sx={{
@@ -114,17 +112,18 @@ const Preview: FC = (): ReactElement => {
                                 flex={1}
                                 mx={3.5}
                                 overflow="auto"
-                                paddingBottom="3.8rem"
+                                paddingBottom="8rem"
                             >
-                                <Box mx={0.5}>
+                                <Box sx={{ml: '5px', mt: '2px'}}>
                                     <Button
                                         variant="back"
+                                        className={styles.button}
+                                        onClick={() => navigate(`/dataset/edit/storage/${datasetId}`)}
                                         startIcon={
                                             <KeyboardBackspaceIcon
-                                                className={styles.backIcon}
+                                                sx={{ color: 'black', width: '24px', height: '24px' }}
                                             />
                                         }
-                                        onClick={handleNavigate}
                                     >
                                         Back
                                     </Button>
@@ -162,7 +161,7 @@ const Preview: FC = (): ReactElement => {
                                         ))}
                                     </Tabs>
 
-                                    <Stack sx={{ background: 'white' }} height="90%" pb={3}>
+                                    <Stack sx={{ background: 'white' }} height="90%">
                                         {renderContent(selectedTab)}
                                     </Stack>
                                 </Box>

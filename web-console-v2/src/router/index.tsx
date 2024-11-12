@@ -28,8 +28,11 @@ import ListChannels from 'pages/notificationChannels/ListChannels';
 import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
-import DatasetManagement from 'pages/DatasetManagement/DatasetManagement';
+import DatasetManagement from 'pages/datasetManagement/components/DatasetManagement';
+import Loadable from 'pages/auth/components/Loadable';
+
 import RollupConfig from 'pages/Rollup/components';
+
 // Type definition for the route configuration
 interface RouteConfig {
     path: string;
@@ -38,10 +41,12 @@ interface RouteConfig {
     children?: RouteConfig[];
 }
 const CustomAlerts = lazy(() => import('pages/alertManager/views/CustomRules'));
+const Login = Loadable(lazy(() => import('pages/auth/Login')));
 // Base path for all routes
 
 export const routeConfigurations: RouteConfig[] = [
     { path: '/', label: "Dashboard", element: <Navigate to={`/dashboard`} replace /> },
+    {path: '/login', element: <Login/>},
     { path: `/dataset/create`, label: "New Dataset", element: <NewDatasetPage /> },
     {
         path: '/dataset',
@@ -84,7 +89,9 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/datasets`, label: "Datasets", element: <ClusterHealth /> },
     { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <DatasetMetrics /> },
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
-    { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> }
+    { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
+    { path: `/datasets/rollups/:datasetId`, element: <RollupConfig />},
+    { path: `$/datasets/management/:datasetId`, label: "Rollups", element: <DatasetManagement /> }
 ];
 
 const AppRouter = () => (
