@@ -100,7 +100,6 @@ const renderCategoryCell = ({
                         exclusive
                         onChange={handleChange}
                         style={{ height: "2rem" }}
-                        sx={{ border: "1px solid gray", padding: 0 }}
                     >
                         {
                             validDatatypes.map((option: any) =>
