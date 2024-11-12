@@ -92,7 +92,7 @@ const ClusterHealth = () => {
         { id: DatasetStatus.Live, label: <FormattedMessage id="dataset-live-header" />, color: "success", tooltip: <FormattedMessage id="dataset-live-tooltip" /> },
         { id: DatasetStatus.ReadyToPublish, label: <FormattedMessage id="dataset-publish-header" />, color: "info", tooltip: <FormattedMessage id="dataset-publish-tooltip" /> },
         { id: DatasetStatus.Draft, label: <FormattedMessage id="dataset-draft-header" />, color: "warning", tooltip: <FormattedMessage id="dataset-draft-tooltip" /> },
-        { id: DatasetStatus.Retired, label: <FormattedMessage id="dataset-retired-header" />, color: "secondary", tooltip: <FormattedMessage id="dataset-retired-tooltip" /> }
+        { id: DatasetStatus.Retired, label: <FormattedMessage id="dataset-retired-header" />, color: "error", tooltip: <FormattedMessage id="dataset-retired-tooltip" /> }
     ]
 
     const actions = [{
