@@ -203,7 +203,7 @@ const AllConfigurations = () => {
                                             <TableBody>
                                                 {connectorConfig && _.entries(connectorConfig.connector_config).map(([configKey, configValue]) => (
                                                     <StyledTableRow key={configKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                                        <TableCell align="left">{connectorMeta.ui_spec.properties[configKey].title}</TableCell>
+                                                        <TableCell align="left">{connectorMeta.ui_spec?.properties[configKey]?.title}</TableCell>
                                                         <TableCell align="left">{String(configValue)}</TableCell>
                                                     </StyledTableRow>
                                                 ))}
@@ -336,9 +336,9 @@ const AllConfigurations = () => {
                                     }
                                     {dataDenormalizations.length > 0 && dataDenormalizations.map((value) => (
                                          <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                            <TableCell align="left">{value.denorm_key}</TableCell>
-                                            <TableCell align="left">{value.dataset_id}</TableCell>
-                                            <TableCell align="left">{value.denorm_out_field}</TableCell>
+                                            <TableCell align="left">{value?.denorm_key}</TableCell>
+                                            <TableCell align="left">{value?.dataset_id}</TableCell>
+                                            <TableCell align="left">{value?.denorm_out_field}</TableCell>
                                         </StyledTableRow>
                                     ))}
                                 </TableBody>
