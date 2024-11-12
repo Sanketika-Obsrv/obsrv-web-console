@@ -43,6 +43,7 @@ const AllConfigurations = () => {
     const [sensitiveFields, setSensitiveFields] = useState<any[]>([]);
     const [derivedFields, setDerivedFields] = useState<any[]>([]);
     const [transformFields, setTransformFields] = useState<any[]>([]);
+    const [dataDenormalizations, setDataDenormalizations] = useState<any[]>([]);
 
     const response = useFetchDatasetsById({
         datasetId,
@@ -72,6 +73,7 @@ const AllConfigurations = () => {
                     }
                 })
             }
+            const dataDenormalizations:any[] = [];
             const sensitiveFields:any[] = [];
             const transformations:any[] = [];
             const derived:any[] = [];
@@ -93,6 +95,12 @@ const AllConfigurations = () => {
                 setSensitiveFields(sensitiveFields);
                 setDerivedFields(derived);
                 setTransformFields(transformations);
+            }
+            if(denormData.length > 0) {
+                _.forEach(denormData, (denorm) => {
+                    dataDenormalizations.push(denorm);
+                })
+                setDataDenormalizations(dataDenormalizations)
             }
         }
     }, [response.data])
@@ -315,15 +323,24 @@ const AllConfigurations = () => {
                                         <TableCell align="center" colSpan={3}>Data Denormalization</TableCell>
                                     </StyledTableRow>
                                     <TableRow>
-                                        <TableCell align="center" width={'30%'}>Dataset Field</TableCell>
-                                        <TableCell align="center" width={'30%'}>Master Dataset</TableCell>
-                                        <TableCell align="center" width={'40%'}>Input Field (to store the data)</TableCell>
+                                        <TableCell align="left" width={'30%'}>Dataset Field</TableCell>
+                                        <TableCell align="left" width={'30%'}>Master Dataset</TableCell>
+                                        <TableCell align="left" width={'40%'}>Input Field (to store the data)</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="center" colSpan={3}>No fields are added for denormalization</TableCell>
-                                    </StyledTableRow>
+                                    {dataDenormalizations.length === 0 &&
+                                        (<StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                            <TableCell align="center" colSpan={3}>No fields are added for denormalization</TableCell>
+                                        </StyledTableRow>)
+                                    }
+                                    {dataDenormalizations.length > 0 && dataDenormalizations.map((value) => (
+                                         <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                            <TableCell align="left">{value.denorm_key}</TableCell>
+                                            <TableCell align="left">{value.dataset_id}</TableCell>
+                                            <TableCell align="left">{value.denorm_out_field}</TableCell>
+                                        </StyledTableRow>
+                                    ))}
                                 </TableBody>
                             </Table>
                         </TableContainer>
