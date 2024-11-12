@@ -61,7 +61,7 @@ const ReviewAllCongurations = ({ master, datasetState, datasetName }: any) => {
             </Box>
             <Grid container spacing={1}>
                 <Grid item xs={12}>
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{mt: '0.375rem'}}>
                         {_.map(datasetActions, renderDatasetActions)}
                     </Stack>
                 </Grid>
