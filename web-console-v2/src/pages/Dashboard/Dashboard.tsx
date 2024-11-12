@@ -250,7 +250,7 @@ const Dashboard = () => {
         >
           <Grid container spacing={2}>
             {storageMetaData.map((metric, index) => (
-              <Grid item xs={12} sm={6} md={4} lg={4} key={index}>
+              <Grid item xs={12} sm={6} md={3} lg={3} key={index}>
                 {metric.chart}
               </Grid>
             ))}
