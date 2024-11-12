@@ -112,7 +112,7 @@ const Ingestion = () => {
     } = useGenerateJsonSchema();
 
     let readDatasetQueryParams = 'status=Draft&fields=dataset_config,name,version_key,connectors_config';
-    if(datasetIdParam === '<new>') readDatasetQueryParams += '&mode=edit'
+    if(datasetIdParam !== '<new>') readDatasetQueryParams += '&mode=edit'
     const { data: fetchData, refetch } = useFetchDatasetsById({
         datasetId: datasetId,
         queryParams: readDatasetQueryParams
