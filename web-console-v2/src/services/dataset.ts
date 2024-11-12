@@ -157,11 +157,13 @@ export const useGenerateJsonSchema = () =>
 export const useUpdateDataset = () =>
     useMutation({
         mutationFn: ({ data }: any) => {
-            const updatedRequestPayload = data?.data_schema ? omitSuggestions(data) : data;
+            if(data?.data_schema) {
+                data['data_schema'] = omitSuggestions(data?.data_schema)
+            }
             const configDetail = fetchSessionStorageItem('configDetails') || {};
             const request = generateRequestBody({
                 request: {
-                    ..._.omit(updatedRequestPayload, ['configurations', 'dataMappings']),
+                    ...data,
                     ..._.pick(configDetail, ['version_key'])
                 },
                 apiId: 'api.datasets.update'

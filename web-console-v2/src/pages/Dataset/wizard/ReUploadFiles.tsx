@@ -14,32 +14,19 @@ import { readJsonFileContents } from '../../../services/utils';
 import AlertDialog from '../../../components/AlertDialog/AlertDialog';
 import { useAlert } from '../../../contexts/AlertContextProvider';
 import UploadFiles from './UploadFiles';
+import { useParams } from 'react-router-dom';
 
 const alertDialogContext = {
-    title: 'Re Upload Sample Files ?',
+    title: <Typography variant='h1'>Re Upload Sample Files ?</Typography>,
     content: (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                bgcolor: 'secondary.100',
-                padding: '0.5rem'
-            }}
-        >
-            {' '}
-            <strong>
-                {' '}
-                Please be advised that reupload of sample files will result in the following
-                changes:{' '}
-            </strong>{' '}
-            <Box component="ul" sx={{ mt: 1 }}>
-                {' '}
+        <Box>
+            <Typography variant='body1'>Please be advised that reupload of sample files will result in the following changes:</Typography>
+            <Box component="ul">
                 <Box component="li">
-                    {' '}
-                    <strong>Loss of Previous Changes:</strong> Any previously saved changes will be
-                    permanently lost. It will be necessary to update the configuration once again.{' '}
-                </Box>{' '}
-            </Box>{' '}
+                    <Typography variant='body1'><strong>Loss of Previous Changes:</strong> Any previously saved changes will be
+                    permanently lost. It will be necessary to update the configuration once again.</Typography>
+                </Box>
+            </Box>
         </Box>
     )
 };
@@ -60,9 +47,7 @@ const ReUploadFiles = (props: any) => {
     const [files, setFiles] = useState<any>();
     const [filePaths, setFilePaths] = useState<string[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
-    const configDetails = sessionStorage.getItem('configDetails');
-    const configData = configDetails ? JSON.parse(configDetails) : null;
-    const { dataset_id: datasetId, name, version_key: versionKey } = configData || {};
+    const { datasetId }:any = useParams();
     const { mutateAsync: uploadFilesMutate } = useUploadUrls();
 
     const { mutate: uploadToUrlMutate } = useUploadToUrl();
@@ -92,28 +77,15 @@ const ReUploadFiles = (props: any) => {
                             })
                         )
                     );
+                    console.log("### uploadData", uploadData, _.map(uploadData, 'filePath'))
                     const filePath = _.map(uploadData, 'filePath');
-
+                    
                     setFilePaths(filePath);
-
-                    const config = {
-                        name,
-                        dataset_id: datasetId,
-                        dataset_config: {
-                            keys_config: (datasetConfig && datasetConfig?.keys_config) || {},
-                            indexing_config:
-                                (datasetConfig && datasetConfig?.indexing_config) || {},
-                            file_upload_path: filePath
-                        },
-                        sample_data: { data },
-                        type: 'event'
-                    };
-                    const dataset = _.get(config, 'name');
                     const payload = Array.isArray(data) ? data : [data];
 
                     generateJsonSchemaMutate.mutate({
                         _data: {},
-                        payload: { data: payload, config: { dataset } }
+                        payload: { data: payload, config: { dataset: datasetId } }
                     });
                 }
             }
@@ -128,25 +100,17 @@ const ReUploadFiles = (props: any) => {
             const { schema, configurations, dataMappings, ...restGenerateData } =
                 generateJsonSchemaMutate.data;
             const { ...restSchema } = schema;
-
-            const cleanedData = {
-                ...restGenerateData,
+            const data = {
                 dataset_config: {
-                    keys_config: (datasetConfig && datasetConfig?.keys_config) || {},
-                    indexing_config: (datasetConfig && datasetConfig?.indexing_config) || {},
                     file_upload_path: filePaths
                 },
-                data_schema: restSchema
-            };
+                data_schema: restSchema,
+                dataset_id: datasetId,
+            }
 
             updateDatasetMutate.mutate(
                 {
-                    config: {
-                        name,
-                        dataset_id: datasetId,
-                        version_key: versionKey
-                    },
-                    data: cleanedData
+                    data
                 },
                 {
                     onError: () => {
@@ -248,7 +212,7 @@ const ReUploadFiles = (props: any) => {
                         }
                     }}
                 >
-                    <DialogTitle>Upload Data/Schema</DialogTitle>
+                    {/* <DialogTitle><Typography variant='h1'>Upload Data/Schema</Typography></DialogTitle> */}
                     <DialogContent>
                         <UploadFiles
                             data={data}
@@ -275,10 +239,11 @@ const ReUploadFiles = (props: any) => {
                         )}
                     </DialogContent>
                     <DialogActions>
-                        <Button disabled={loading} onClick={(e) => resetState()}>
+                        <Button size='small' disabled={loading} onClick={(e) => resetState()}>
                             Cancel
                         </Button>
                         <Button
+                            size='small'
                             variant="contained"
                             disabled={loading}
                             onClick={(_) => onSubmission()}
