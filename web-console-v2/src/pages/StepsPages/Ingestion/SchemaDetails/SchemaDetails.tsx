@@ -454,9 +454,11 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
                     canExpand?: boolean;
                     isExpanded?: boolean;
                     description?: string;
+                    isDeleted?: boolean;
                 },
                 index
             ) => {
+                if (item?.isDeleted) return;
                 const {
                     subRows,
                     oneof,
