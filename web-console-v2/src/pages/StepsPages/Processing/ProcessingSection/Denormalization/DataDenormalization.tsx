@@ -318,9 +318,9 @@ const DataDenorm = (props: any) => {
                     </Grid>
                     <Grid container mt={2} display={"flex"} justifyContent={"flex-end"}>
                         <Box mx={2}>
-                            <Button onClick={handleClick} sx={{ width: 'auto' }}>
+                            {/* <Button onClick={handleClick} sx={{ width: 'auto' }}>
                                 Try Out
-                            </Button>
+                            </Button> */}
                         </Box>
 
                         <Button
