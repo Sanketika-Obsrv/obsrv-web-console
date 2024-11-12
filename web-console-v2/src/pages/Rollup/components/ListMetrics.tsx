@@ -144,7 +144,7 @@ const ListMetrics = (props: any) => {
             <GenericCard elevation={1} sx={{mx:6, border: '1px solid #d6d6d6'}}>
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={12}>
-                        <Alert sx={{ display: "flex", alignItems: "center", mb: 2 }} severity="info">{en.selectAggregateFunctionAlert}</Alert>
+                        <Alert sx={{ display: "flex", alignItems: "center" }} severity="info">{en.selectAggregateFunctionAlert}</Alert>
                         <ExpandingTable
                             type={"metrics"}
                             columns={columns}

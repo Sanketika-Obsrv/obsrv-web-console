@@ -29,11 +29,11 @@ const GranuralityInfo = (props: any) => {
         <Box>
             <Grid spacing={1}>
                 {_.map(sections, (item) => {
-                    return <Box display={'flex'} gap={1} alignItems={'center'}>
-                        <Typography mb={0.5} flexShrink={0} variant="h5">
+                    return <Box display={'flex'} gap={1} alignItems={'center'} mb={1}>
+                        <Typography flexShrink={0} variant="h5">
                             {item.lable}
                         </Typography>
-                        <Typography mb={0.5} width="100%" flexShrink={0}>
+                        <Typography  flexShrink={0} mt={1}>
                             {item.value}
                         </Typography>
                     </Box>
