@@ -8,7 +8,7 @@ import HelpSection from 'components/HelpSection/HelpSection';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { endpoints, useFetchDatasetsById, useReadConnectors } from 'services/dataset';
+import { endpoints, useFetchDatasetsById, useReadConnectors, useUpdateDataset } from 'services/dataset';
 import styles from './ConnectorConfiguration.module.css';
 import sampleSchema from './Schema';
 import { customizeValidator } from '@rjsf/validator-ajv8';
@@ -126,7 +126,7 @@ const ConnectorConfiguration: React.FC = () => {
     }
     const readConnector = useReadConnectors({ connectorId: selectedConnectorId });
     
-    const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config'});
+    const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config,version_key'});
     useEffect(() => {
         if (dataset.data && dataset.data.connectors_config[0]) {
             const connectorId = _.get(dataset.data.connectors_config[0], 'connector_id')
@@ -244,19 +244,46 @@ const ConnectorConfiguration: React.FC = () => {
         return combinedHelp;
     };
 
+    const updateDataset = useUpdateDataset();
+
     const handleButtonClick = () => {
 
-        navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=false&completed=true`, {
-            state: {
-                connectorConfig: {
-                    id: selectedConnectorId,
-                    connector_id: selectedConnectorId,
-                    connector_config: formData || {},
-                    operations_config: opFormData || {}
+        if(datasetId === '<new>') {
+            navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=false&completed=true`, {
+                state: {
+                    connectorConfig: {
+                        id: selectedConnectorId,
+                        connector_id: selectedConnectorId,
+                        connector_config: formData || {},
+                        operations_config: opFormData || {}
+                    },
+                    selectedConnectorId
+                }
+            });
+        } else {
+            updateDataset.mutate(
+                {
+                    data: {
+                        dataset_id: datasetId,
+                        connectors_config: [{
+                            value: {
+                                id: `${datasetId}_${selectedConnectorId}`,
+                                connector_id: selectedConnectorId,
+                                connector_config: formData || {},
+                                operations_config: opFormData || {},
+                                version: 'v2'
+                            },
+                            action: "upsert"
+                        }]
+                    }
                 },
-                selectedConnectorId
-            }
-        });
+                {
+                    onSuccess: () => {
+                        navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=false&completed=true`);
+                    }
+                }
+            );
+        }
     };
 
     const handleHelpSectionToggle = () => {

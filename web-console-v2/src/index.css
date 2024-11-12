@@ -127,3 +127,15 @@ div.HelpSection_expanded__vqSxk {
 .MuiAccordionSummary-content {
   margin-bottom: 5px !important;
 }
+
+.MuiStepIcon-root.Mui-completed {
+  color: #f58601 !important;
+}
+
+.MuiStepIcon-root.Mui-active {
+  color: #f58601 !important;
+}
+
+.MuiStepLabel-label.Mui-active {
+  color: #f58601 !important;
+}

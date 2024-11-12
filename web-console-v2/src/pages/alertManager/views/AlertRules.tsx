@@ -16,7 +16,7 @@ const AlertRules = () => {
 
   const handleChange = (event: any, newValue: any) => {
     const selectedPath = alertTypeField[newValue].path;
-    navigate(`/home/alertRules/${selectedPath}`);
+    navigate(`/alertRules/${selectedPath}`);
   };
 
   const renderTabs = () => {

@@ -18,6 +18,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
     useCreateDataset,
+    useFetchDatasetExists,
     useFetchDatasetsById,
     useGenerateJsonSchema,
     useReadUploadedFiles,
@@ -110,9 +111,14 @@ const Ingestion = () => {
         isPending: isGenerateLoading
     } = useGenerateJsonSchema();
 
+    let readDatasetQueryParams = 'status=Draft&fields=dataset_config,name,version_key,connectors_config';
+    if(datasetIdParam === '<new>') readDatasetQueryParams += '&mode=edit'
     const { data: fetchData, refetch } = useFetchDatasetsById({
         datasetId: datasetId,
-        queryParams: 'status=Draft&mode=edit&fields=dataset_config,name,version_key,connectors_config'
+        queryParams: readDatasetQueryParams
+    });
+    const { data: datasetExistsData, refetch: refetchExists } = useFetchDatasetExists({
+        datasetId: datasetId
     });
 
     const {
@@ -150,6 +156,9 @@ const Ingestion = () => {
         _.filter(_.flattenDeep(content), (field: any) => !_.isEmpty(field));
 
     useEffect(() => {
+        if (datasetIdParam === '<new>') {
+            return
+        }
         if (datasetId !== '' && fetchData) {
             setDatasetName(_.get(fetchData, 'name'));
             if(fetchData.connectors_config && fetchData.connectors_config[0]) {
@@ -208,7 +217,7 @@ const Ingestion = () => {
     }, [filenames, readUploadedFiles.data]);
 
     const fetchDataset = (id: string) => {
-        refetch().then(response => {
+        refetchExists().then(response => {
             if (response.isSuccess) {
                 setNameError('Dataset already exists');
             } else {
@@ -286,7 +295,7 @@ const Ingestion = () => {
             if (datasetIdParam === '<new>' && datasetId) {
                 const connectors_config = (connectorConfig) ? [{
                     ...connectorConfig,
-                    id: `${datasetId}_${connectorConfig.connector_id}`,
+                    id: `${datasetId}-${connectorConfig.connector_id}`,
                     version: 'v2'
                 }] : []
                 const config = {
@@ -360,11 +369,10 @@ const Ingestion = () => {
                     showAlert('Failed to upload schema', 'error');
                 }
             } else {
-                console.log("# datasetName before update", datasetName)
                 updateDatasetMutate({
                     data: {
                         name: datasetName,
-                        dataset_id: datasetId,
+                        dataset_id: datasetIdParam,
                         type: datasetType
                     }
                 });

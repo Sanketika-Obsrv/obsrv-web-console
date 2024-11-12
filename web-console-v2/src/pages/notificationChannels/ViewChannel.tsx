@@ -103,7 +103,7 @@ const ViewChannel = () => {
                 onClick: (context: Record<string, any>) => {
                     const { payload, navigate } = context;
                     const { id } = payload;
-                    navigate(`/home/alertChannels/edit/${id}`);
+                    navigate(`/alertChannels/edit/${id}`);
                 }
             },
             {
