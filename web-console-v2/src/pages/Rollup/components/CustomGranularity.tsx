@@ -27,7 +27,7 @@ const CustomGranularity = ({ setDisableCustomGranularity, customGranularity, set
             {
                 _.isEmpty(filteredGranularityOptions) ? "" : <>
                     <Button
-                        size="medium"
+                        size="small"
                         startIcon={<PlusOutlined />}
                         sx={{ fontWeight: 500, position: 'absolute', right: 0 }}
                         onClick={() => setOpen(true)}

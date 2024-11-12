@@ -178,7 +178,7 @@ const ListDimensions = (props: any) => {
     }, [flattenedData])
 
     return (
-        <>
+        <Box sx={{py:2}}>
             {isEditing ? <></> : <Granularity
                 proceedToListPage={proceedToListPage}
                 setProceedToListPage={setProceedToListPage}
@@ -191,7 +191,7 @@ const ListDimensions = (props: any) => {
             />}
             <GenericCard elevation={1} sx={{mx: 6, border: '1px solid #d6d6d6'}}>
                 <Grid container spacing={2}>
-                    <Grid item xs={12} sm={12}>
+                    <Grid item xs={12} sm={12} paddingTop={0}>
                         {isEditing ? <Alert sx={{ display: "flex", alignItems: "center", mb: 2 }} severity="info">{en.newlyAddedFieldsAlertMessage}</Alert> : <></>}
                         <ExpandingTable
                             columns={columns}
@@ -223,7 +223,7 @@ const ListDimensions = (props: any) => {
                     <Typography variant="button">Proceed</Typography>
                 </Button>
             </Stack>
-        </>
+        </Box>
     );
 };
 

@@ -207,7 +207,7 @@ const ReviewRollup = (props: any) => {
     const flattenedDataWithDefaultMetric = [...flattenedData, defaultMetric]
 
     return (
-        <div>
+        <Box sx={{py:2}}>
             {loading
                 ?
                 <Loader loading={loading} />
@@ -250,7 +250,7 @@ const ReviewRollup = (props: any) => {
                     </Stack>
                 </Grid>
             }
-        </div>
+        </Box>
     )
 }
 
