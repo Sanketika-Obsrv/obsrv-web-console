@@ -43,7 +43,7 @@ const RuleHeader = (props: any) => {
         try {
             const res = await deleteAlert({ id });
             if (res) {
-                navigate(`/home/alertRules/${pathToNavigate}`);
+                navigate(`/alertRules/${pathToNavigate}`);
                 showAlert("Alert Rule retired successfully", "success")
             }
         } catch {
@@ -56,7 +56,7 @@ const RuleHeader = (props: any) => {
     const publishAlertHandler = (id: string) => async () => {
         setLoading(true);
         try {
-            await publishAlert({ id }).then((res: any) => navigate(`/home/alertRules/${pathToNavigate}`));
+            await publishAlert({ id }).then((res: any) => navigate(`/alertRules/${pathToNavigate}`));
             showAlert("Alert Rule published successfully", "success")
         } catch {
             showAlert("Failed to publish alert rule", "error")
@@ -175,7 +175,7 @@ const RuleHeader = (props: any) => {
                 label: 'Back',
                 variant: 'outlined',
                 color: 'primary',
-                onClick: () => navigate(`/home/alertRules/${pathToNavigate}`)
+                onClick: () => navigate(`/alertRules/${pathToNavigate}`)
             },
             {
                 id: 'silence-button',
@@ -192,7 +192,7 @@ const RuleHeader = (props: any) => {
                 variant: 'contained',
                 color: 'primary',
                 icon: <EditOutlined />,
-                onClick: () => navigate(`/home/alertRules/edit/${alerts?.id}`)
+                onClick: () => navigate(`/alertRules/edit/${alerts?.id}`)
             },
             {
                 name: 'publish',

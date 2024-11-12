@@ -15,7 +15,7 @@ import Ajv from "ajv";
 import _ from "lodash";
 import { useAlert } from "contexts/AlertContextProvider";
 import Loader from "components/Loader";
-
+import Skeleton from 'components/Skeleton';
 
 const sampleFilterQuery = JSON.stringify({
     "filter": {
@@ -132,6 +132,7 @@ const FilteredRollUps = (props: Record<string, any>) => {
             setSkipFilters(true)
             setFilterRollupErrors(undefined)
             setAddFilter(false)
+            setFilteredRollup({})            
             showAlert("Filters are skipped", 'success');
             setTimeout(() => { setSkipFilters(false) }, 500)
         }

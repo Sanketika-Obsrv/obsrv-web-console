@@ -6,7 +6,6 @@ import styles from './Navbar.module.css';
 import Grafana from 'assets/icons/Grafana';
 import Superset from 'assets/icons/Superset';
 import _ from 'lodash';
-import { getConfigValue } from 'services/dataset';
 import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
@@ -16,7 +15,7 @@ import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
 import { routeConfigurations } from 'router';
 
-const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/home/dashboard";
+const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/dashboard";
 
 function BasicBreadcrumbs(): JSX.Element {
     const location = useLocation();
@@ -106,7 +105,7 @@ function BasicBreadcrumbs(): JSX.Element {
                         // Capitalize first letter apart from datasetId
                         // const displayName = isLast ? name : _.capitalize(name);
                         if(matchedRoute){
-                            const displayName = matchedRoute?.label !== undefined ? matchedRoute.label : name;
+                            const displayName = matchedRoute?.label !== undefined ? matchedRoute.label : _.capitalize(name);
                             return isLast ? (
                                 <Typography
                                     variant="body1"

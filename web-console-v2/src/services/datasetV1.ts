@@ -326,7 +326,7 @@ export const createDraftversion = async ({ selection, navigateToPath, rollupRedi
         if (rollupRedirect) {
             const transitionRequest = generateRequestBody({ request: { dataset_id: datasetResponse?.data?.result?.dataset_id, status: "ReadyToPublish" }, apiId: "api.datasets.status-transition" })
             await http.post(`${apiEndpoints.statusTransition}`, transitionRequest);
-            navigateToPath(`/home/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
+            navigateToPath(`/datasets/management/${datasetResponse?.data?.result?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)
             return;
         }
         navigateToPath(`/dataset/edit/ingestion/schema/${datasetResponse?.data?.result?.dataset_id}`)

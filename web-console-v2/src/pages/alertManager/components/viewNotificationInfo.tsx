@@ -28,7 +28,7 @@ const ViewNotification = (props: any) => {
         getChannelId();
     }, [])
 
-    const navigateToNotificationPage = (id: string) => navigate(`/home/alertChannels/view/${id}`);
+    const navigateToNotificationPage = (id: string) => navigate(`/alertChannels/view/${id}`);
 
     const renderNotificationChannel = (channel: Record<string, any>, index: any) => {
         const { type, name, id } = channel;

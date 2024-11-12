@@ -89,7 +89,7 @@ const NotificationComponent = (props: any) => {
                 />
             </Grid>
             <Grid item xs={6}>
-                <Button variant="contained" onClick={() => navigate("/home/alertChannels")}>Create Notification Channel</Button>
+                <Button variant="contained" onClick={() => navigate("/alertChannels")}>Create Notification Channel</Button>
             </Grid>
         </Grid>
     }
@@ -103,7 +103,7 @@ const NotificationComponent = (props: any) => {
                 <Box>
                     <StandardWidthButton
                         data-edataid={interactIds.add_notification_channel}
-                        onClick={() => navigate('/home/alertChannels/new')}
+                        onClick={() => navigate('/alertChannels/new')}
                         variant="contained"
                         size="large"
                         sx={{ width: 'auto' }}
