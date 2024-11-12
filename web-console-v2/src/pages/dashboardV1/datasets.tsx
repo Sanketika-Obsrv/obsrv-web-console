@@ -46,7 +46,7 @@ export const getDraftSourceConfig: any = (draftDataset: any, draftSourceConfigs:
     return draftDataset;
 }
 
-const showNoDatasetsError = (message = <FormattedMessage id="datasets-not-found" />) => <Alert severity='error' sx={{ lineHeight: 0, mt: 2 }}><Typography variant="caption" fontSize={14}>{message}</Typography></Alert>
+const showNoDatasetsError = (message = <FormattedMessage id="datasets-not-found" />) => <Alert severity='error' sx={{ lineHeight: 0, mt: 0, minWidth: '10rem' }}><Typography variant="body1">{message}</Typography></Alert>
 export const renderNoDatasetsMessage = (message: string | any) => <Grid item xs={12}>{showNoDatasetsError(message)}</Grid>
 
 const ClusterHealth = () => {
@@ -92,8 +92,7 @@ const ClusterHealth = () => {
         { id: DatasetStatus.Live, label: <FormattedMessage id="dataset-live-header" />, color: "success", tooltip: <FormattedMessage id="dataset-live-tooltip" /> },
         { id: DatasetStatus.ReadyToPublish, label: <FormattedMessage id="dataset-publish-header" />, color: "info", tooltip: <FormattedMessage id="dataset-publish-tooltip" /> },
         { id: DatasetStatus.Draft, label: <FormattedMessage id="dataset-draft-header" />, color: "warning", tooltip: <FormattedMessage id="dataset-draft-tooltip" /> },
-        { id: DatasetStatus.Retired, label: <FormattedMessage id="dataset-retired-header" />, color: "secondary", tooltip: <FormattedMessage id="dataset-retired-tooltip" /> },
-        { id: DatasetStatus.Purged, label: <FormattedMessage id="dataset-purged-header" />, color: "error", tooltip: <FormattedMessage id="dataset-purged-tooltip" /> }
+        { id: DatasetStatus.Retired, label: <FormattedMessage id="dataset-retired-header" />, color: "secondary", tooltip: <FormattedMessage id="dataset-retired-tooltip" /> }
     ]
 
     const actions = [{
@@ -124,8 +123,8 @@ const ClusterHealth = () => {
         const { id, label, onClick, disabled, icon } = action;
         return <Button key={id}
             startIcon={icon}
-            size="medium" type="button" disabled={disabled} onClick={onClick}
-            sx={{ mx: 1 }} variant="contained"><Typography variant="buttonText">{label}</Typography>
+            size="small" type="button" disabled={disabled} onClick={onClick}
+            sx={{ mx: 1 }} variant="outlined">{label}
         </Button>
     }
 
@@ -171,7 +170,7 @@ const ClusterHealth = () => {
     }
 
     return (
-        <Box p={2}>
+        <Box pt={1} pl={2}>
             {renderDatasetTabs()}
             <ImportDataset
                 open={openModal}
