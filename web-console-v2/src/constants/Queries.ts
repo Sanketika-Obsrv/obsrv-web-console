@@ -46,6 +46,10 @@ export default {
     query:
       '(time() - s3_last_modified_object_date{job="s3-backups", prefix=~"postgresql"})',
   },
+  cluster_last_backup_time: {
+    query:
+      'time() - s3_last_modified_object_date{job="s3-common-backups", bucket=~"velero.*"}',
+  },
   redis_last_backup_time: {
     query:
       'time() - s3_last_modified_object_date{job="s3-backups", prefix=~"denorm-redis|dedeup-redis"}',

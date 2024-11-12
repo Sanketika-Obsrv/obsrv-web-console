@@ -41,10 +41,8 @@ const DatasetManagement = () => {
 
     const liveSections = [
         {
-            title: <Typography variant="body1" fontWeight={500}>Review - {_.capitalize(datasetName)}</Typography>,
             id: datasetName,
-            componentType: 'box',
-            component: <ReviewAllCongurations datasetState={dataset} master={masterDataset == "true" ? true : false} />
+            component: <ReviewAllCongurations datasetState={dataset} master={masterDataset == "true" ? true : false} datasetName={datasetName} />
         }
     ]
 
@@ -69,7 +67,6 @@ const DatasetManagement = () => {
 
     return <>
         {loading ? <Loader loading={loading} /> : <Box sx={{padding: '2rem'}}><AccordionSection sections={datasetSection()} /></Box>}
-
     </>
 }
 

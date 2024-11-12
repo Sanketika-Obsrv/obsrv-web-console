@@ -22,6 +22,7 @@ export function GlobalFilter({ preGlobalFilteredRows, globalFilter, setGlobalFil
 
     return (
         <OutlinedInput
+            size='small'
             value={value || ''}
             onChange={(e) => {
                 setValue(e.target.value);

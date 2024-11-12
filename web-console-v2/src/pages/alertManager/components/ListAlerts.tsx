@@ -198,7 +198,7 @@ const ListAlerts = (props: any) => {
                                 return (
                                     <Grid key={Math.random()} marginRight="0.5rem">
                                         <Tooltip title={info.tooltip}>
-                                            <Chip label={info.label} color={info.color} size="small" variant="filled" />
+                                            <Chip label={info.label} color={info.color} size="small" variant="outlined" />
                                         </Tooltip>
                                     </Grid>
                                 );
@@ -288,7 +288,7 @@ const ListAlerts = (props: any) => {
                                         id={option.id}
                                         onClick={option.onclick}
                                         color={option.color}
-                                        size="large"
+                                        size="small"
                                         disabled={getButtonDisabled(option?.name)}
                                     >
                                         {option.icon}
@@ -332,7 +332,7 @@ const ListAlerts = (props: any) => {
                 const { status } = row;
                 return (
                     <Box minWidth={'7.5rem'}>
-                        <Chip size="small" variant="filled" color={alertStatusColor(status)} label={status.toUpperCase()} />
+                        <Chip size="small" variant="outlined" color={alertStatusColor(status)} label={status.toUpperCase()} />
                     </Box>
                 );
             }

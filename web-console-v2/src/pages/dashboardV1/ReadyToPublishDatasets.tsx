@@ -176,25 +176,10 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
 
     const columns = useMemo(
         () => [
-            {
-                Header: () => null,
-                id: 'expander',
-                className: 'cell-center',
-                tipText: '',
-                editable: 'false',
-                Cell: ({ row }: any) => {
-                    const collapseIcon = row.isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />;
-                    return row.canExpand && row.depth === 0 && (
-                        <Box sx={{ fontSize: '1rem', }} {...row.getToggleRowExpandedProps()}>
-                            {collapseIcon}
-                        </Box>
-                    );
-                },
-                SubCell: () => null
-            },
+            
             {
                 Header: 'Name',
-                accessor: 'id',
+                accessor: 'name',
                 disableFilters: true,
                 Cell: (value: any) => {
                     const row = value?.cell?.row?.original || {};
@@ -219,9 +204,6 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                         {
                             row?.status && row?.type && (
                                 <Box display="flex" alignItems="center" mb={1}>
-                                    <Tooltip title={row?.status}>
-                                        <FiberManualRecordIcon sx={{ fontSize: '1.25rem' }} color={"info"} />
-                                    </Tooltip>
                                     <Tooltip title={row?.dataset_id}>
                                         <Typography align="left" variant="subtitle1">
                                             {row?.name}
@@ -317,7 +299,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 data-objectid={row?.dataset_id}
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}
                                 color="primary"
-                                size="large"
+                                size="small"
                                 disabled={publishDataset}>
                                 <PlayCircleOutlined />
                             </IconButton>
@@ -328,7 +310,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 data-objectid={row?.dataset_id}
                                 data-objecttype="dataset_tags"
                                 color="primary"
-                                size="large"
+                                size="small"
                                 onClick={(e) => handleClick(e, row)}
                             >
                                 <StyleIcon />
@@ -340,7 +322,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 data-objectid={row?.dataset_id}
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}
                                 color="primary"
-                                size="large"
+                                size="small"
                                 onClick={() => {
                                     const datasetId = row?.dataset_id;
                                     // const master = row?.type === DatasetType.MasterDataset;
@@ -367,7 +349,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                         <Tooltip title="Export Dataset">
                             <IconButton
                                 color="primary"
-                                size="large"
+                                size="small"
                                 onClick={(e: any) => handleDownloadButton(row?.dataset_id, row?.version, row?.status, fileName)}
                                 data-objectid={row?.dataset_id}
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}
@@ -379,7 +361,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                         <Tooltip title="Delete Dataset">
                             <IconButton
                                 color="error"
-                                size="large"
+                                size="small"
                                 onClick={(e: any) => handleRetire(row)}
                                 data-objectid={row?.dataset_id}
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}

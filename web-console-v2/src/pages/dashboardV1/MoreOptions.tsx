@@ -29,7 +29,7 @@ const MoreOptions = (props: any) => {
         <Box >
             <IconButton
                 color="primary"
-                size="large"
+                size="small"
                 id={`demo-positioned-button-${row?.dataset_id}`}
                 aria-controls={open[row?.dataset_id] ? 'demo-positioned-menu' : undefined}
                 aria-haspopup="true"
@@ -59,27 +59,27 @@ const MoreOptions = (props: any) => {
                 }}
             >
                 <Box sx={{ display: "flex" }}>
-                    <MenuItem onClick={handleButtonMenuClose}>
+                    <MenuItem onClick={handleButtonMenuClose} sx={{pl:'8px', pr: '8px'}}>
                         <Tooltip title="Create Events" onClick={(e: any) => navigateToPath(`/datasets/addEvents/${row?.dataset_id}`)}>
                             <IconButton
                                 data-edataid={interactIds.push_dataset_events}
                                 data-objectid={row?.dataset_id}
                                 data-objecttype="dataset"
                                 color="primary"
-                                size="large"
+                                size="small"
                             >
                                 <DatabaseOutlined />
                             </IconButton>
                         </Tooltip>
                     </MenuItem>
-                    <MenuItem onClick={handleButtonMenuClose}>
+                    <MenuItem onClick={handleButtonMenuClose} sx={{pl:'8px', pr: '8px'}}>
                         <Tooltip title="Edit Dataset">
                             <IconButton
                                 data-edataid={interactIds.edit_dataset}
                                 data-objectid={row?.id}
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}
                                 color="primary"
-                                size="large"
+                                size="small"
                                 onClick={() => {
                                     setExecuteAction(DatasetActions.Edit)
                                     handleEdit(row)
@@ -106,11 +106,11 @@ const MoreOptions = (props: any) => {
                             </IconButton>
                         </Tooltip>
                     </MenuItem> */}
-                    <MenuItem onClick={handleButtonMenuClose}>
+                    <MenuItem onClick={handleButtonMenuClose} sx={{pl:'8px', pr: '8px'}}>
                         <Tooltip title="Export Dataset">
                             <IconButton
                                 color="primary"
-                                size="large"
+                                size="small"
                                 onClick={(e: any) => handleDownloadButton(row?.dataset_id, row?.version, row?.status, fileName)}
                                 data-objectid={row?.dataset_id}
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}
@@ -119,11 +119,11 @@ const MoreOptions = (props: any) => {
                             </IconButton>
                         </Tooltip>
                     </MenuItem>
-                    <MenuItem onClick={handleButtonMenuClose}>
+                    <MenuItem onClick={handleButtonMenuClose} sx={{pl:'8px', pr: '8px'}}>
                         <Tooltip title="Retire Dataset">
                             <IconButton
                                 color="error"
-                                size="large"
+                                size="small"
                                 onClick={(e: any) => {
                                     setExecuteAction(DatasetActions.Retire)
                                     handleRetire(row)

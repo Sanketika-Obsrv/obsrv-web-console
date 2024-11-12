@@ -8,9 +8,10 @@ import { Box, Grid, Tooltip } from '@mui/material';
 import _ from 'lodash';
 import { fetchMetricData } from '../../services/chartMetrics';
 import styles from "./MetricsCard/MetricsCard.module.css"
+import LinearProgress from '@mui/material/LinearProgress';
 
 const StorageMetricsCard: React.FC<any> = (props: any) => {
-    const { label, icon, query, uuid, transformer, description, refresh, interval } = props;
+    const { label, icon, query, uuid, transformer, description, refresh, interval, query2, query3 } = props;
     const [value, setValue] = useState('');
     const [loading, setLoading] = useState(false);
     const change = '0%';
@@ -20,6 +21,8 @@ const StorageMetricsCard: React.FC<any> = (props: any) => {
     ) : (
         <ArrowDownward sx={{ fontSize: 'small', color: 'error.main' }} />
     );
+    const [totalStorage, setTotalStorage] = useState('');
+    const [storageUtilization, setStorageUtilization] = useState('');
 
     const fetchMetric = async (query: any) => {
         try {
@@ -34,8 +37,40 @@ const StorageMetricsCard: React.FC<any> = (props: any) => {
         }
     };
 
+    const fetchMetricTotalStorage = async (query: any) => {
+        try {
+            setLoading(true);
+            const response = await fetchMetricData(query, { uuid });
+            const transformedLabel =
+                (await (transformer && transformer(response))) || response;
+            setTotalStorage(transformedLabel as any);
+            setLoading(false);
+        } catch (error) {
+            console.log('error occured', error);
+        }
+    };
+
+    const fetchMetricTotalStorageUtilization = async (query: any) => {
+        try {
+            setLoading(true);
+            const response = await fetchMetricData(query, { uuid });
+            const transformedLabel =
+                (await (transformer && transformer(response))) || response;
+            setStorageUtilization(transformedLabel as any);
+            setLoading(false);
+        } catch (error) {
+            console.log('error occured', error);
+        }
+    };
+
     useEffect(() => {
         fetchMetric(query);
+        if (query2) {
+            fetchMetricTotalStorage(query2)
+        }
+        if (query3) {
+            fetchMetricTotalStorageUtilization(query3)
+        }
     }, [refresh?.storage]);
 
     return (
@@ -51,7 +86,7 @@ const StorageMetricsCard: React.FC<any> = (props: any) => {
                         <span>{icon}</span>
 
                         <Typography variant="bodyBold" className={styles.loadingText}>
-                            {loading ? 'Loading...' : value}
+                            {loading ? 'Loading...' : !_.isEmpty(totalStorage) ? `${value} / ${totalStorage}` : value}
                         </Typography>
 
                         <Grid
@@ -69,6 +104,13 @@ const StorageMetricsCard: React.FC<any> = (props: any) => {
                                 {symbol} {_.trimStart(change, '+-')}
                             </Typography> */}
                         </Grid>
+                        {!_.isEmpty(storageUtilization) ?
+                            <Box className={styles.linearProgressContainer}>
+                                <Box className={styles.linearProgress}>
+                                    <LinearProgress variant='determinate' value={parseInt(_.replace(storageUtilization, "%"))} />
+                                </Box>
+                                <Typography variant="h6">{storageUtilization}</Typography>
+                            </Box> : <></>}
                     </CardContent>
                 </Card>
             </Box>

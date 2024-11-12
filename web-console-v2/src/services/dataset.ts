@@ -200,7 +200,7 @@ export const useFetchDatasetDiff = ({ datasetId }: { datasetId: string }) => {
 
 export const useFetchDatasetExists = ({ datasetId }: { datasetId: string }) => {
     return useQuery({
-        queryKey: ['fetchDatasetExists'],
+        queryKey: ['fetchDatasetExists', 'datasetId'],
         queryFn: () => http.get(`${ENDPOINTS.DATASET_EXISTS}/${datasetId}`).then((res) => res.data),
         enabled: !!datasetId
     });
