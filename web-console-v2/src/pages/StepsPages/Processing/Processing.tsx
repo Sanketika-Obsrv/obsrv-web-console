@@ -217,7 +217,7 @@ const Processing: React.FC = () => {
                 }
             });
         } else {
-            updateDataset({ data: { [keyName]: data } });
+            updateDataset({ data: { [keyName]: data, dataset_id: datasetId } });
         }
     };
 
@@ -228,7 +228,8 @@ const Processing: React.FC = () => {
                     value: { field_key: fieldKey },
                     action: 'remove'
                 }
-            ]
+            ],
+            dataset_id: datasetId
         };
 
         if (!fieldKey && _.has(data, 'denorm_config')) newData = data;

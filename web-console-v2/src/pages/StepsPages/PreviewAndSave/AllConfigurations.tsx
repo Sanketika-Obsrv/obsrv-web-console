@@ -22,6 +22,12 @@ interface TransformationRow {
     };
 }
 
+const datasetTypeMapping = {
+    'event': 'Event/Telemetry Data',
+    'transaction': 'Data Changes (Updates or Transactions)',
+    'master': 'Master Data'
+}
+
 const AllConfigurations = () => {
     const [isExpanded, setIsExpanded] = useState(false);
     const { datasetId }: any = useParams();
@@ -32,6 +38,11 @@ const AllConfigurations = () => {
     const [datasetType, setDatasetType] = useState<string>('');
     const [indexingConfig, setIndexingConfig] = useState<any>(undefined);
     const [keysConfig, setKeysConfig] = useState<any>(undefined);
+    const [validationConfig, setValidationConfig] = useState<any>(undefined);
+    const [dedupConfig, setDedupConfig] = useState<any>(undefined);
+    const [sensitiveFields, setSensitiveFields] = useState<any[]>([]);
+    const [derivedFields, setDerivedFields] = useState<any[]>([]);
+    const [transformFields, setTransformFields] = useState<any[]>([]);
 
     const response = useFetchDatasetsById({
         datasetId,
@@ -43,13 +54,14 @@ const AllConfigurations = () => {
             const dataset = response.data;
             setDatasetName(dataset.name);
             setDataSchema(_.get(dataset, 'data_schema', {}));
-            const validationConfig = _.get(dataset, 'validation_config', {});
             const denormData = _.get(dataset, 'denorm_config.denorm_fields', []);
             const transformationData = _.get(dataset, 'transformations_config', []);
             const connectorConfigData = _.get(dataset, ['connectors_config'], []);
+            setValidationConfig(_.get(dataset, 'validation_config', {}));
+            setDedupConfig(_.get(dataset, 'dedup_config', {}));
             setKeysConfig(_.get(dataset, ['dataset_config', 'keys_config'], {}));
             setIndexingConfig(_.get(dataset, ['dataset_config', 'indexing_config'], {}));
-            setDatasetType(_.get(dataset, 'type'))
+            setDatasetType(_.get(dataset, 'type'));
             if (connectorConfigData.length > 0) {
                 setConnectorConfig(connectorConfigData[0]);
                 const connectorId = connectorConfigData[0].connector_id;
@@ -60,11 +72,33 @@ const AllConfigurations = () => {
                     }
                 })
             }
+            const sensitiveFields:any[] = [];
+            const transformations:any[] = [];
+            const derived:any[] = [];
+            if(transformationData.length > 0) {
+                _.forEach(transformationData, (transformation) => {
+                    const mergedTF = {
+                        field: transformation['field_key'],
+                        ...transformation['transformation_function'],
+                        mode: transformation['mode']
+                    }
+                    if(mergedTF['category'] === 'pii' || mergedTF['type'] !== 'jsonata') {
+                        sensitiveFields.push(mergedTF)
+                    } else if (mergedTF['category'] === 'transform') {
+                        transformations.push(mergedTF);
+                    } else {
+                        derived.push(mergedTF);
+                    }
+                })
+                setSensitiveFields(sensitiveFields);
+                setDerivedFields(derived);
+                setTransformFields(transformations);
+            }
         }
     }, [response.data])
 
 
-    const [expanded, setExpanded] = React.useState<string | false>('panel1');
+    const [expanded, setExpanded] = React.useState<string | false>('connector');
 
     const handleChange = (panel: string) => (event: React.SyntheticEvent, newExpanded: boolean) => {
         setExpanded(newExpanded ? panel : false);
@@ -137,7 +171,7 @@ const AllConfigurations = () => {
         <Box>
             {(response.isPending) ? <Loader loading={response.isPending} descriptionText="Loading the page" /> : 
             <Box>
-                <Accordion expanded={expanded === 'panel1'} onChange={handleChange('panel1')}>
+                <Accordion expanded={expanded === 'connector'} onChange={handleChange('connector')}>
                     <AccordionSummary aria-controls="panel1d-content" id="panel1d-header" disabled={!connectorConfig}>
                         <Typography variant='h6'>Connector - {connectorConfig && connectorMeta ? connectorMeta.name : 'No connector configured'}</Typography>
                     </AccordionSummary>
@@ -200,34 +234,41 @@ const AllConfigurations = () => {
                         </AccordionDetails>
                     )}
                 </Accordion>
-                <Accordion expanded={expanded === 'panel2'} onChange={handleChange('panel2')}>
+                <Accordion expanded={expanded === 'ingestion'} onChange={handleChange('ingestion')}>
                     <AccordionSummary aria-controls="panel2d-content" id="panel2d-header">
                         <Typography variant='h6'>Ingestion</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
-                        <TableContainer component={Paper} sx={{width: '60%'}}>
+                        <TableContainer component={Paper} sx={{width: '80%'}}>
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell align="left" width={'50%'}>Dataset Name</TableCell>
-                                        <TableCell align="left" width={'50%'}>Dataset ID</TableCell>
+                                        <TableCell align="left" width={'40%'}>Dataset Name</TableCell>
+                                        <TableCell align="left" width={'30%'}>Dataset ID</TableCell>
+                                        <TableCell align="left" width={'30%'}>Dataset Type</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                         <TableCell align="left">{datasetName}</TableCell>
                                         <TableCell align="left">{datasetId}</TableCell>
+                                        <TableCell align="left">{_.get(datasetTypeMapping, datasetType)}</TableCell>
                                     </StyledTableRow>
                                 </TableBody>
                             </Table>
                         </TableContainer>
-                        <Paper sx={{ width: '100%', overflow: 'hidden', mt: '20px' }}>
-                            <TableContainer sx={{maxHeight: 440, width: '80%'}}>
+                        <Paper sx={{ width: '80%', overflow: 'hidden', mt: '20px' }}>
+                            <TableContainer sx={{maxHeight: 440}}>
                                 <Table stickyHeader size="small" aria-label="a dense table">
                                     <TableHead>
                                         <TableRow>
-                                            <TableCell align="left" width={'55%'}>Field</TableCell>
-                                            <TableCell align="left" width={'15%'}>Arrival Format</TableCell>
+                                            <TableCell align="left" colSpan={4}>
+                                                Data Schema
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell align="left" width={'50%'}>Field</TableCell>
+                                            <TableCell align="left" width={'20%'}>Arrival Format</TableCell>
                                             <TableCell align="left" width={'15%'}>Data Type</TableCell>
                                             <TableCell align="left" width={'15%'}>Required</TableCell>
                                         </TableRow>
@@ -240,20 +281,148 @@ const AllConfigurations = () => {
                         </Paper>
                     </AccordionDetails>
                 </Accordion>
-                <Accordion expanded={expanded === 'panel3'} onChange={handleChange('panel3')}>
+                <Accordion expanded={expanded === 'processing'} onChange={handleChange('processing')}>
                     <AccordionSummary aria-controls="panel3d-content" id="panel3d-header">
                         <Typography variant='h6'>Processing</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
-                        <Typography>
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                            malesuada lacus ex, sit amet blandit leo lobortis eget. Lorem ipsum dolor
-                            sit amet, consectetur adipiscing elit. Suspendisse malesuada lacus ex,
-                            sit amet blandit leo lobortis eget.
-                        </Typography>
+                        <TableContainer component={Paper} sx={{width: '70%'}}>
+                            <Table size="small" aria-label="a dense table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell align="center" colSpan={3}>Configurations</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="left" width={'35%'}>Add New Fields</TableCell>
+                                        <TableCell align="left" width={'10%'}>{validationConfig && validationConfig.mode === 'Strict' ? 'No' : 'Yes'}</TableCell>
+                                        <TableCell align="left" width={'55%'}>{validationConfig && validationConfig.mode === 'Strict' ? 'Events will be skipped if there are unknown fields' : 'Events will be processed even if there are unknown fields'}</TableCell>
+                                    </StyledTableRow>
+                                    <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="left" width={'35%'}>Enable Deduplication</TableCell>
+                                        <TableCell align="left" width={'10%'}>{dedupConfig && dedupConfig.drop_duplicates ? 'Yes' : 'No'}</TableCell>
+                                        <TableCell align="left" width={'55%'}>Dedupe Key: {dedupConfig ? dedupConfig?.dedup_key: 'Not Applicable'}</TableCell>
+                                    </StyledTableRow>
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+
+                        <TableContainer component={Paper} sx={{width: '80%', mt: '15px'}}>
+                            <Table size="small" aria-label="a dense table">
+                                <TableHead>
+                                    <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="center" colSpan={3}>Data Denormalization</TableCell>
+                                    </StyledTableRow>
+                                    <TableRow>
+                                        <TableCell align="center" width={'30%'}>Dataset Field</TableCell>
+                                        <TableCell align="center" width={'30%'}>Master Dataset</TableCell>
+                                        <TableCell align="center" width={'40%'}>Input Field (to store the data)</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="center" colSpan={3}>No fields are added for denormalization</TableCell>
+                                    </StyledTableRow>
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+
+                        <TableContainer component={Paper} sx={{width: '80%', mt: '15px'}}>
+                            <Table size="small" aria-label="a dense table">
+                                <TableHead>
+                                    <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="center" colSpan={4}>Data Privacy</TableCell>
+                                    </StyledTableRow>
+                                    <TableRow>
+                                        <TableCell align="left" width={'45%'}>Field</TableCell>
+                                        <TableCell align="left" width={'15%'}>Data Type</TableCell>
+                                        <TableCell align="left" width={'10%'}>Action</TableCell>
+                                        <TableCell align="left" width={'30%'}>Skip Record on Failure?</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                {sensitiveFields.length === 0 &&
+                                    (<StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="center" colSpan={4}>No senstive fields have been added</TableCell>
+                                    </StyledTableRow>)
+                                }
+                                {sensitiveFields.length > 0 && sensitiveFields.map((value) => (
+                                    <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="left">{value.field}</TableCell>
+                                        <TableCell align="left">{_.capitalize(value.datatype)}</TableCell>
+                                        <TableCell align="left">{_.capitalize(value.type)}</TableCell>
+                                        <TableCell align="left">{value.mode === 'Strict' ? 'Yes': 'No'}</TableCell>
+                                    </StyledTableRow>
+                                ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+
+                        <TableContainer component={Paper} sx={{width: '80%', mt: '15px'}}>
+                            <Table size="small" aria-label="a dense table">
+                                <TableHead>
+                                    <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="center" colSpan={4}>Data Transformations</TableCell>
+                                    </StyledTableRow>
+                                    <TableRow>
+                                        <TableCell align="left" width={'45%'}>Field</TableCell>
+                                        <TableCell align="left" width={'15%'}>Data Type</TableCell>
+                                        <TableCell align="left" width={'10%'}>Transformation</TableCell>
+                                        <TableCell align="left" width={'30%'}>Skip Record on Failure?</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                {transformFields.length === 0 &&
+                                    (<StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="center" colSpan={4}>No transformation fields have been added</TableCell>
+                                    </StyledTableRow>)
+                                }
+                                {transformFields.length > 0 && transformFields.map((value) => (
+                                    <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="left">{value.field}</TableCell>
+                                        <TableCell align="left">{_.capitalize(value.datatype)}</TableCell>
+                                        <TableCell align="left">{_.capitalize(value.expr)}</TableCell>
+                                        <TableCell align="left">{value.mode === 'Strict' ? 'Yes': 'No'}</TableCell>
+                                    </StyledTableRow>
+                                ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+
+                        <TableContainer component={Paper} sx={{width: '80%', mt: '15px'}}>
+                            <Table size="small" aria-label="a dense table">
+                                <TableHead>
+                                    <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="center" colSpan={4}>Derived Fields</TableCell>
+                                    </StyledTableRow>
+                                    <TableRow>
+                                    <TableCell align="left" width={'45%'}>Field</TableCell>
+                                        <TableCell align="left" width={'15%'}>Data Type</TableCell>
+                                        <TableCell align="left" width={'10%'}>Transformation</TableCell>
+                                        <TableCell align="left" width={'30%'}>Skip Record on Failure?</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                {derivedFields.length === 0 &&
+                                    (<StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="center" colSpan={4}>No derived fields have been added</TableCell>
+                                    </StyledTableRow>)
+                                }
+                                {derivedFields.length > 0 && derivedFields.map((value) => (
+                                    <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                        <TableCell align="left">{value.field}</TableCell>
+                                        <TableCell align="left">{_.capitalize(value.datatype)}</TableCell>
+                                        <TableCell align="left">{_.capitalize(value.expr)}</TableCell>
+                                        <TableCell align="left">{value.mode === 'Strict' ? 'Yes': 'No'}</TableCell>
+                                    </StyledTableRow>
+                                ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
                     </AccordionDetails>
                 </Accordion>
-                <Accordion expanded={expanded === 'panel4'} onChange={handleChange('panel4')}>
+                <Accordion expanded={expanded === 'storage'} onChange={handleChange('storage')}>
                     <AccordionSummary aria-controls="panel4d-content" id="panel4d-header">
                         <Typography variant='h6'>Storage</Typography>
                     </AccordionSummary>
@@ -262,22 +431,22 @@ const AllConfigurations = () => {
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell align="left" width={'20%'}>Lakehouse (Hudi)</TableCell>
-                                        <TableCell align="left" width={'20%'}>Real-time Store (Druid)</TableCell>
-                                        <TableCell align="left" width={'20%'}>Cache Store (Redis)</TableCell>
-                                        <TableCell align="left" width={'20%'}>Primary Key</TableCell>
-                                        <TableCell align="left" width={'20%'}>Timestamp Key</TableCell>
-                                        <TableCell align="left" width={'20%'}>Partition Key</TableCell>
+                                        <TableCell align="left" width={'15%'}>Lakehouse (Hudi)</TableCell>
+                                        <TableCell align="left" width={'18%'}>Real-time Store (Druid)</TableCell>
+                                        <TableCell align="left" width={'18%'}>Cache Store (Redis)</TableCell>
+                                        <TableCell align="left" width={'17%'}>Primary Key</TableCell>
+                                        <TableCell align="left" width={'17%'}>Timestamp Key</TableCell>
+                                        <TableCell align="left" width={'15%'}>Partition Key</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     <TableRow>
-                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig.lakehouse_enabled} /></TableCell>
-                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig.olap_store_enabled} /></TableCell>
-                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig.cache_enabled} /></TableCell>
-                                        <TableCell align="left">{keysConfig.data_key}</TableCell>
-                                        <TableCell align="left">{keysConfig.timestamp_key}</TableCell>
-                                        <TableCell align="left">{keysConfig.partition_key}</TableCell>
+                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig?.lakehouse_enabled} /></TableCell>
+                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig?.olap_store_enabled} /></TableCell>
+                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig?.cache_enabled} /></TableCell>
+                                        <TableCell align="left">{keysConfig?.data_key}</TableCell>
+                                        <TableCell align="left">{keysConfig?.timestamp_key}</TableCell>
+                                        <TableCell align="left">{keysConfig?.partition_key}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
