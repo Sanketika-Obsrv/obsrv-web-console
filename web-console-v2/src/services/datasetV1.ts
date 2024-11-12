@@ -1,15 +1,14 @@
 /*eslint-disable*/
 import * as _ from 'lodash';
 import { http } from 'services/http';
-import { flattenSchema, setAdditionalProperties, updateDenormDerived, updateJSONSchema } from './json-schema';
+import { flattenSchema, updateJSONSchema } from './json-schema';
 import apiEndpoints from 'data/apiEndpoints';
-import { DatasetStatus, DatasetType } from 'types/datasets';
-import { aggregationFunctions, allowedSegmentGranurality } from './commonUtils';
+import { DatasetStatus } from 'types/datasets';
 import { generateRequestBody } from './utils';
-import { fetchDataset, generateDatasetState } from './datasetState';
+import { generateDatasetState } from './datasetState';
 import moment from 'moment';
 import { v4 as uuid } from 'uuid';
-import { useAlert } from 'contexts/AlertContextProvider';
+import { fetchDataset } from './dataset';
 
 export const DEFAULT_TIMESTAMP = {
     indexValue: "obsrv_meta.syncts",
@@ -219,93 +218,6 @@ export const generateDimensionExclusions = (list: any) => {
         .value();
     return dimensionExclusions
 }
-
-export const generateMetrics = (list: any[]) => {
-    const validTypes = aggregationFunctions;
-    const filteredData = list.filter(item => item?.aggregateFunctions);
-    const newMetrics: any[] = []
-    filteredData.forEach(item => {
-        // Check if the object has 'aggregateFunctions' key and it's an array of strings
-        if (item.aggregateFunctions && Array.isArray(item.aggregateFunctions)) {
-            item.aggregateFunctions.forEach((func: any) => {
-                if (typeof func === 'string' && validTypes.includes(func.trim())) {
-                    newMetrics.push({
-                        type: func.trim(),
-                        path: item.column,
-                        outputField: `${item.column.replace(/\./g, '_')}_${func.trim()}`,
-                    });
-                }
-            });
-        } else {
-            // If 'aggregateFunctions' is not present or not an array, create a default payload
-            newMetrics.push({
-                type: item.type,
-                path: item.column,
-                outputField: `${item.column.replace(/\./g, '_')}_${item.type}`,
-            });
-        }
-    });
-    return newMetrics
-};
-
-export const generateRollupIngestionSpec = async (list: any, schema: any, datasetId: any, maskedDataSourceName: any, granularity: any, config = {}, filterRollup = {}) => {
-    const jsonSchema = _.get(schema, 'jsonSchema');
-    const timestampCol = _.get(schema, 'timestamp.indexCol') || DEFAULT_TIMESTAMP.indexValue;
-    let updatedColumns = _.get(schema, 'columns.state.schema', []);
-    const transformedFields = _.get(schema, 'transformation.selection', []);
-    let newField: any = _.get(schema, 'additionalFields.selection') || [];
-    updatedColumns = _.map(updatedColumns, (item) => {
-        const transformedData = _.find(transformedFields, { column: item.column });
-        if (transformedData) {
-            return {
-                ...item,
-                type: _.get(transformedData, '_transformedFieldSchemaType') || "string",
-                ...transformedData,
-            };
-        }
-        return item;
-    });
-    newField = formatNewFields(newField, null);
-    let ingestionPayload = { schema: [...flattenSchema(_.get(schema, 'jsonSchema.schema')), ...newField] };
-    if (timestampCol === DEFAULT_TIMESTAMP.indexValue)
-        ingestionPayload = { schema: [...flattenSchema(_.get(schema, 'jsonSchema.schema')), ...defaultTsObject, ...newField] };
-
-    const updatedIngestionPayload = _.get(updateJSONSchema(jsonSchema, ingestionPayload), 'schema');
-
-    const payload = {
-        schema: updatedIngestionPayload,
-        config: {
-            "dataset": maskedDataSourceName || `${datasetId}_day`,
-            "indexCol": _.get(schema, "timestamp.indexCol"),
-            "granularitySpec": {
-                "rollup": true,
-                "segmentGranularity": allowedSegmentGranurality.includes(granularity) ? 'day' : granularity,
-                "queryGranularity": granularity,
-            },
-            "tuningConfig": {
-                "maxRowPerSegment": 500000,
-                "taskCount": 1
-            },
-            "ioConfig": {
-                "topic": datasetId,
-                "taskDuration": "PT1H",
-            },
-            "rollup": {
-                "dimensionExclusions": generateDimensionExclusions(list),
-                "metrics": generateMetrics(list)
-            }
-        }
-    };
-
-    const modifiedPayload = !_.isEmpty(filterRollup) ?
-        {
-            ...payload,
-            config: { ...payload.config, transformSpec: filterRollup }
-        } : payload
-
-    return http.post(apiEndpoints.generateIngestionSpec, modifiedPayload, config);
-}
-
 
 export const publishDataset = async (state: Record<string, any>, storeState: any, master: any, masterDatasets: any) => {
     const dataset_id = _.get(state, 'pages.datasetConfiguration.state.config.dataset_id')

@@ -1,29 +1,6 @@
-import * as _ from "lodash";
 import { DatasetType } from "types/datasets";
-import moment from "moment";
-import { v4 as uuid } from 'uuid';
-import { http } from "./http";
-import apiEndpoints from "data/apiEndpoints";
-type Payload = Record<string, any>;
-
-export const generateJsonSchema = (payload: Payload) => {
-    const transitionRequest = generateRequestBody({ request: payload?.data, apiId: "api.datasets.dataschema" })
-    return http.post(`${apiEndpoints.generateJsonSchema}`, transitionRequest)
-        .then(transform);
-}
-
-export const generateRequestBody = (configs: Record<string, any>) => {
-    const { apiId, request } = configs;
-    return {
-        "id": apiId,
-        "ver": "v2",
-        "ts": moment().format(),
-        "params": {
-            "msgid": uuid()
-        },
-        "request": request
-    }
-}
+import { generateJsonSchema } from "./dataset";
+import _ from "lodash";
 
 const getDedupeState = (dataset: Record<string, any>, createAction?: boolean) => {
     const dedupeConfig = _.get(dataset, 'dedup_config') || {};
@@ -257,17 +234,3 @@ export const generateDatasetState = async (state: Record<string, any>, createAct
         }
     }
 }
-
-const transform = (response: any) => _.get(response, 'data.result')
-
-const fieldsByStatus: { [key: string]: string } = {
-    Draft: 'name,type,id,dataset_id,version,validation_config,extraction_config,dedup_config,data_schema,denorm_config,router_config,dataset_config,tags,status,created_by,updated_by,created_date,updated_date,version_key,api_version,entry_topic,transformations_config,connectors_config,sample_data',
-    default: 'name,type,id,dataset_id,version,validation_config,extraction_config,dedup_config,data_schema,denorm_config,router_config,dataset_config,tags,status,created_by,updated_by,created_date,updated_date,api_version,entry_topic,sample_data'
-};
-
-export const fetchDataset = (datasetId: string, status: string) => {
-    const fields = fieldsByStatus[status] || fieldsByStatus.default;
-    const params = status === 'Draft' ? `mode=edit&fields=${fields}` : `fields=${fields}`;
-    const url = `${apiEndpoints.readDataset}/${datasetId}?${params}`;
-    return http.get(url).then(transform);
-};
