@@ -163,6 +163,14 @@ export default [
                     ensureLoggedInMiddleware,
                     controllers.get('dataset:diff')?.handler({})
                 ]
+            },
+            {
+                path: 'exists/:datasetId',
+                method: 'GET',
+                middlewares: [
+                    ensureLoggedInMiddleware,
+                    controllers.get('dataset:exists')?.handler({})
+                ]
             }
         ]
     },
