@@ -9,6 +9,29 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(relativeTime);
 
 export default {
+    cluster_last_backup_time: {
+        query: {
+            id: 'clusterLastBackupTime',
+            type: 'api',
+            url: endpoints.prometheusRead,
+            method: 'GET',
+            headers: {},
+            body: {},
+            params: {
+                query: promql.cluster_last_backup_time.query,
+            },
+            parse: (response: any) => {
+                const result = _.get(response, 'data.result[0].value[1]');
+                if (!result) throw new Error();
+                const date = dayjs().subtract(result * 1000, 'milliseconds');
+                const timeAgo = date.fromNow();
+                return timeAgo
+            },
+            error() {
+                return prettyMilliseconds(0);
+            },
+        },
+    },
     data_growth_over_time: {
         type: 'line',
         series: [],
@@ -287,17 +310,17 @@ export default {
             headers: {},
             body: {},
             params: {
-                query: promql.pv_usage_percent.query
+                query: promql.pv_usage_percent.query,
             },
             parse: (response: any) => {
                 const result = _.get(response, 'data.result[0].value[1]');
                 if (!result) throw new Error();
-                return _.floor(result, 0);
+                return `${_.floor(result, 0)}%`;
             },
             error() {
-                return 0;
-            }
-        }
+                return '0%';
+            },
+        },
     },
     hoursSinceLastBackup: {
         query: {
