@@ -17,30 +17,16 @@ import UploadFiles from './UploadFiles';
 import { useParams } from 'react-router-dom';
 
 const alertDialogContext = {
-    title: 'Re Upload Sample Files ?',
+    title: <Typography variant='h1'>Re Upload Sample Files ?</Typography>,
     content: (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                bgcolor: 'secondary.100',
-                padding: '0.5rem'
-            }}
-        >
-            {' '}
-            <strong>
-                {' '}
-                Please be advised that reupload of sample files will result in the following
-                changes:{' '}
-            </strong>{' '}
-            <Box component="ul" sx={{ mt: 1 }}>
-                {' '}
+        <Box>
+            <Typography variant='body1'>Please be advised that reupload of sample files will result in the following changes:</Typography>
+            <Box component="ul">
                 <Box component="li">
-                    {' '}
-                    <strong>Loss of Previous Changes:</strong> Any previously saved changes will be
-                    permanently lost. It will be necessary to update the configuration once again.{' '}
-                </Box>{' '}
-            </Box>{' '}
+                    <Typography variant='body1'><strong>Loss of Previous Changes:</strong> Any previously saved changes will be
+                    permanently lost. It will be necessary to update the configuration once again.</Typography>
+                </Box>
+            </Box>
         </Box>
     )
 };
@@ -226,7 +212,7 @@ const ReUploadFiles = (props: any) => {
                         }
                     }}
                 >
-                    <DialogTitle>Upload Data/Schema</DialogTitle>
+                    {/* <DialogTitle><Typography variant='h1'>Upload Data/Schema</Typography></DialogTitle> */}
                     <DialogContent>
                         <UploadFiles
                             data={data}
@@ -253,10 +239,11 @@ const ReUploadFiles = (props: any) => {
                         )}
                     </DialogContent>
                     <DialogActions>
-                        <Button disabled={loading} onClick={(e) => resetState()}>
+                        <Button size='small' disabled={loading} onClick={(e) => resetState()}>
                             Cancel
                         </Button>
                         <Button
+                            size='small'
                             variant="contained"
                             disabled={loading}
                             onClick={(_) => onSubmission()}
