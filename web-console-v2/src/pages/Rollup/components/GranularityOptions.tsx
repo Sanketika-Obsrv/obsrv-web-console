@@ -73,13 +73,13 @@ const GranularityOptions = ({ selectedOptions, setSelectedOptions, setSelectedGr
                 <Grid item style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
                     {granularityOptions.map((option: any) => {
                         if (option.checkbox === true) {
-                            return <Grid style={{ display: 'flex', alignItems: 'center' }} key={option.value}>
+                            return <Grid style={{ display: 'flex', alignItems: 'center' }} key={option?.value}>
                                 <Checkbox
-                                    checked={location.state?.edit ? true : selectedOptions.includes(option.value) || existingGranularity.includes(option.value)}
-                                    onChange={() => handleCheckboxChange(option.value)}
-                                    disabled={location.state?.edit ? true : existingGranularity.includes(option.value)}
+                                    checked={location.state?.edit ? true : selectedOptions.includes(option?.value) || existingGranularity.includes(option?.value)}
+                                    onChange={() => handleCheckboxChange(option?.value)}
+                                    disabled={location.state?.edit ? true : existingGranularity.includes(option?.value)}
                                 />
-                                <Typography variant='body1'>{_.capitalize(option.label)}</Typography>
+                                <Typography variant='body1'>{_.capitalize(option?.label)}</Typography>
                             </Grid>
                         }
                     })}
