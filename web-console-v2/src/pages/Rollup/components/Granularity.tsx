@@ -5,6 +5,7 @@ import { useLocation } from 'react-router';
 import AccordionSection from 'components/Accordian/AccordionSection';
 import GranularityOptions from './GranularityOptions';
 import Loader from 'components/Loader';
+import { Box, Typography } from '@mui/material';
 
 const Granularity = (props: any) => {
     const {
@@ -19,27 +20,23 @@ const Granularity = (props: any) => {
     const [loading, setLoading] = useState(false);
     const isEditing = location.state?.edit;
 
-    const sections = [
-        {
-            id: 'granularity',
-            title: 'Granularity *',
-            component: (!isEditing ?
-                <GranularityOptions
-                    setSelectedOptions={setSelectedOptions}
-                    selectedOptions={selectedOptions}
-                    setCustomGranularity={setCustomGranularity}
-                    customGranularity={customGranularity}
-                    setProceedToListPage={setProceedToListPage}
-                    setSelectedGranularityOptions={setSelectedGranularityOptions}
-                /> : null),
-            componentType: 'box',
-        },
-    ];
-
     return (
         <>
             {loading && <Loader loading={loading} />}
-            {!loading && <AccordionSection sections={sections} />}
+            {!loading &&
+                <Box sx={{ mx:6, px:2.5, pt:2, background: '#ffffff', border: '1px solid #d6d6d6', borderRadius: '8px'}}>
+                    <Typography variant='h5' sx={{pb:2}}>Granularity *</Typography>
+                    {!isEditing ?
+                    <GranularityOptions
+                        setSelectedOptions={setSelectedOptions}
+                        selectedOptions={selectedOptions}
+                        setCustomGranularity={setCustomGranularity}
+                        customGranularity={customGranularity}
+                        setProceedToListPage={setProceedToListPage}
+                        setSelectedGranularityOptions={setSelectedGranularityOptions}
+                    /> : null}
+                </Box>
+            }
         </>
     );
 };

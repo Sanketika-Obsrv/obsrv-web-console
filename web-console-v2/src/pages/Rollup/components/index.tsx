@@ -268,7 +268,7 @@ const RollupConfig = () => {
   }, [filteredRollup]);
 
   const stepper = () => (
-    <Stepper activeStep={activeStep} sx={{ py: 2 }}>
+    <Stepper activeStep={activeStep} sx={{ py: 2, px:6 }}>
       {steps.map((label, index: any) => {
         const labelProps: { error?: boolean; optional?: ReactNode } = {};
         if (index === errorIndex) {

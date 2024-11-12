@@ -17,7 +17,6 @@ import { useAlert } from "contexts/AlertContextProvider";
 import Loader from "components/Loader";
 import Skeleton from 'components/Skeleton';
 
-
 const sampleFilterQuery = JSON.stringify({
     "filter": {
         "type": "and",
@@ -210,19 +209,15 @@ const FilteredRollUps = (props: Record<string, any>) => {
         </>
     }
 
-    const sections = [
-        {
-            id: 'filteredRollups',
-            title: <Typography variant="h6" fontWeight={500} mt={0.5}>Add Filters</Typography>,
-            component: loading ?  
-                        <Skeleton/>
-                        : filteredRollupForm(),
-            description: <Typography variant="body2" fontWeight={500}>Set up filters to selectively process input data during ingestion. Only the data that meets the specified conditions will be ingested</Typography>,
-            noGrid: true,
-        },
-    ];
-
-    return <AccordionSection sections={sections} />
+    return (
+        <>
+            <Typography variant="h5">Add Filters</Typography>
+            <Typography variant="body2" sx={{ my: 1 }}>Set up filters to selectively process input data during ingestion. Only the data that meets the specified conditions will be ingested</Typography>
+            {loading
+                ? <Skeleton/>
+                : filteredRollupForm()}
+        </>
+    )
 }
 
 export default FilteredRollUps;

@@ -91,7 +91,7 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
     { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
     { path: `/datasets/rollups/:datasetId`, element: <RollupConfig />},
-    { path: `$/datasets/management/:datasetId`, label: "Rollups", element: <DatasetManagement /> }
+    { path: `/datasets/management/:datasetId`, label: "Rollups", element: <DatasetManagement /> }
 ];
 
 const AppRouter = () => (

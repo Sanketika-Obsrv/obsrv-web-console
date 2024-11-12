@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMemo, useState } from 'react'
-import { Grid, Typography, Stack } from '@mui/material';
+import { Grid, Typography, Stack, Button } from '@mui/material';
 import AnimateButton from 'components/@extended/AnimateButton';
 import { StandardWidthButton } from 'components/Styled/Buttons';
 import { useLocation, useNavigate, useParams } from 'react-router';
@@ -207,14 +207,14 @@ const ReviewRollup = (props: any) => {
     const flattenedDataWithDefaultMetric = [...flattenedData, defaultMetric]
 
     return (
-        <div>
+        <Box sx={{py:2}}>
             {loading
                 ?
                 <Loader loading={loading} />
                 :
                 <Grid item xs={12}>
-                    <AccordionSection sections={sections} />
-                    <GenericCard elevation={1}>
+                    <Box sx={{mx:6}}><AccordionSection sections={sections} /></Box>
+                    <GenericCard elevation={1} sx={{mx:6, border: '1px solid #d6d6d6'}}>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={12}>
                                 <ExpandingTable
@@ -224,7 +224,6 @@ const ReviewRollup = (props: any) => {
                                     limitHeight
                                     tHeadHeight={52}
                                     showSearchBar={false}
-                                    styles={{ '&.MuiTableCell-root': { border: '1px solid #D9D9D9' } }}
                                     context={{ disableRowColor: true }}
                                 />
                             </Grid>
@@ -233,29 +232,25 @@ const ReviewRollup = (props: any) => {
                     {!_.isEmpty(filteredRollup) &&
                         <AccordionSection sections={filterRollupSection} />
                     }
-                    <Stack direction="row" justifyContent="space-between">
-                        <AnimateButton>
-                            <StandardWidthButton
-                                variant="outlined"
-                                type="button"
-                                onClick={gotoPreviousSection}
-                            >
-                                <Typography variant="h5">Previous</Typography>
-                            </StandardWidthButton>
-                        </AnimateButton>
-                        <AnimateButton>
-                            <StandardWidthButton
-                                variant="contained"
-                                type="button"
-                                onClick={gotoNextSection}
-                            >
-                                <Typography variant="h5">Save rollup</Typography>
-                            </StandardWidthButton>
-                        </AnimateButton>
+                    <Stack direction="row" justifyContent="space-between" sx={{mx: 6}}>
+                        <Button
+                            variant="outlined"
+                            type="button"
+                            onClick={gotoPreviousSection}
+                        >
+                            <Typography variant="buttonSecondaryCTA">Previous</Typography>
+                        </Button>
+                        <Button
+                            variant="contained"
+                            type="button"
+                            onClick={gotoNextSection}
+                        >
+                            <Typography variant="button">Save rollup</Typography>
+                        </Button>
                     </Stack>
                 </Grid>
             }
-        </div>
+        </Box>
     )
 }
 
