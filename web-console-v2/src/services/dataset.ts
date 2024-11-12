@@ -32,7 +32,8 @@ const ENDPOINTS = {
     DATASETS_DIFF: '/api/dataset/diff',
     PUBLISH_DATASET: '/config/v2/datasets/status-transition',
     LIST_CONNECTORS: '/config/v2/connectors/list',
-    READ_CONNECTORS: '/config/v2/connectors/read'
+    READ_CONNECTORS: '/config/v2/connectors/read',
+    DATASET_EXISTS: '/api/dataset/exists'
 };
 
 export const endpoints = ENDPOINTS
@@ -191,6 +192,14 @@ export const useFetchDatasetDiff = ({ datasetId }: { datasetId: string }) => {
     return useQuery({
         queryKey: ['fetchDatasetDiff'],
         queryFn: () => http.get(`${ENDPOINTS.DATASETS_DIFF}/${datasetId}`).then((res) => res.data),
+        enabled: !!datasetId
+    });
+};
+
+export const useFetchDatasetExists = ({ datasetId }: { datasetId: string }) => {
+    return useQuery({
+        queryKey: ['fetchDatasetExists'],
+        queryFn: () => http.get(`${ENDPOINTS.DATASET_EXISTS}/${datasetId}`).then((res) => res.data),
         enabled: !!datasetId
     });
 };
