@@ -232,7 +232,7 @@ const Ingestion = () => {
     );
 
     useEffect(() => {
-        if (datasetIdParam === '<new>') {
+        if (datasetIdParam === '<new>' && datasetId) {
             debouncedFetchDataset(datasetId);
         }
     }, [datasetId]);
