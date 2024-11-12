@@ -345,14 +345,14 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                     const datasetId = row?.dataset_id;
                                     // const master = row?.type === DatasetType.MasterDataset;
                                     // const status = row?.status;
-                                    // const url = `/home/ingestion/schema-details/${datasetId}`;
+                                    // const url = `/ingestion/schema-details/${datasetId}`;
                                     // window.location.href = url;
                                     navigate(`/dataset/edit/ingestion/schema/${datasetId}`);
                                 }}>
                                 <EditOutlined />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Rollup Management" onClick={(e: any) => navigateToPath(`/home/datasets/management/${row?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)}>
+                        <Tooltip title="Rollup Management" onClick={(e: any) => navigateToPath(`/datasets/management/${row?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)}>
                             <IconButton
                                 color="primary"
                                 size="large"

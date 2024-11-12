@@ -55,7 +55,7 @@ const AlertTableHeader = (props: any) => {
                     globalFilter={state.globalFilter}
                     setGlobalFilter={setGlobalFilter}
                 />
-                {configuration?.list?.showAddAlertBtn && <Button sx={{ mx: 1 }} variant="contained" onClick={(e) => navigate('/home/alertRules/add')}>
+                {configuration?.list?.showAddAlertBtn && <Button sx={{ mx: 1 }} variant="contained" onClick={(e) => navigate('/alertRules/add')}>
                     Add Alert Rule
                 </Button>}
             </>

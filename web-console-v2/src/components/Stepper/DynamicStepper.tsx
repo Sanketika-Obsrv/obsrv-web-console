@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Box, Typography } from '@mui/material';
+import { Box, StepButton, StepLabel, Step, Stepper, Typography } from '@mui/material';
 import styles from './Stepper.module.css';
-import { theme } from 'theme';
 
 interface Step {
     name: string;
@@ -25,12 +24,6 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
     const { datasetId }: any = useParams();
     const [selectedStep, setSelectedStep] = useState(initialSelectedStep);
     const [steps, setSteps] = useState(initialSteps);
-    const handleClick = (route: string, index: number, completed: boolean, onProgress: boolean) => {
-        if (completed || onProgress) {
-            setSelectedStep(index);
-            navigate(route);
-        }
-    };
 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -60,7 +53,7 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
         }
     }, [location, initialSteps]);
 
-    const handleRouteNavigation = (route: string, datasetId: string) => {
+    const handleRouteNavigation = (route: string) => {
         const routeMapping: Record<string, string> = {
             connector: `/dataset/edit/connector/configure/${datasetId}`,
             ingestion: `/dataset/edit/ingestion/schema/${datasetId}`,
@@ -107,43 +100,18 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
 
     return (
         <Box className={styles.stepper}>
-            {steps.map((step, idx) => (
-                <Box
-                    key={idx}
-                    className={`${styles.step} ${step.completed ? styles.completed : ''} ${step.active ? styles.selected : ''}`}
-                    onClick={() => {
-                        if (['connector', 'ingestion', 'processing', 'storage', 'preview'].includes(step.route)) {
-                            handleRouteNavigation(step.route, datasetId);
-                        } else {
-                            handleClick(step.route, step.index, step.completed, step.active);
-                        }
-                    }}
-                >
-                    <Box
-                        className={`${styles.circle} ${step.completed ? styles.completed : ''} ${step.active ? styles.selected : ''}`}
-                        sx={{
-                            backgroundColor: step.completed ? 'secondary.main' : step.active ? 'secondary.light' : 'var(--body-secondary-background)',
-                            border: step.active || step.completed ? `0.125rem solid ${theme.palette.secondary.main}` : ' 0.125rem solid var(--body-secondary)'
-                        }}
-                    >
-                        {step.completed ? (
-                            <span>&#10003;</span>
-                        ) : (
-                            <Typography color={step.active ? 'secondary.main' : 'var(--body-secondary)'}>
-                                {step.index}
-                            </Typography>
-                        )}
-                    </Box>
-                    <Typography
-                        variant={step.completed && !step.active ? 'body1' : step.active ? 'h1' : 'body1'}
-                        color={step.completed && !step.active ? '' : step.index === selectedStep ? 'secondary.main' : ''}
-                        sx={{fontSize: '0.8rem'}}
-                    >
-                        {step.name}
-                    </Typography>
-                </Box>
-            ))}
-        </Box>
+            <Stepper nonLinear activeStep={selectedStep - 1} sx={{ width: '48rem' }} >
+            {steps.map((step) => {
+                return (
+                    <Step key={step.route} completed={step.completed}>
+                        <StepButton onClick={() => handleRouteNavigation(step.route)}>
+                            <StepLabel optional={<Typography variant="body1">Optional</Typography>} StepIconProps={{sx: {classes: step.completed ? 'completed':''}}}>{step.name}</StepLabel>
+                        </StepButton>
+                    </Step>
+                );
+            })}
+            </Stepper>
+      </Box>
     );
 };
 

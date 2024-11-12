@@ -217,7 +217,7 @@ const Processing: React.FC = () => {
                 }
             });
         } else {
-            updateDataset({ data: { [keyName]: data } });
+            updateDataset({ data: { [keyName]: data, dataset_id: datasetId } });
         }
     };
 
@@ -228,7 +228,8 @@ const Processing: React.FC = () => {
                     value: { field_key: fieldKey },
                     action: 'remove'
                 }
-            ]
+            ],
+            dataset_id: datasetId
         };
 
         if (!fieldKey && _.has(data, 'denorm_config')) newData = data;
@@ -406,6 +407,10 @@ const Processing: React.FC = () => {
         }
     ];
 
+    const handleNavigate = () => {
+        navigate(`/dataset/edit/ingestion/schema/${datasetId}`)
+    };
+
     useEffect(() => {
         window.scrollTo(0, 1);
     }, []);
@@ -424,14 +429,15 @@ const Processing: React.FC = () => {
                     paddingBottom: '80px'
                 }}
             >
-                <Box mx={3.5} my={2}>
+                <Box mx={4}>
                     <Button
-                        variant="text"
-                        sx={{ color: theme.palette.text.primary }}
-                        startIcon={<KeyboardBackspaceIcon className={processingStyle.backIcon} />}
-                        onClick={() => {
-                            navigate(-1);
-                        }}
+                        variant="back"
+                        startIcon={
+                            <KeyboardBackspaceIcon
+                                className={processingStyle.backIcon}
+                            />
+                        }
+                        onClick={handleNavigate}
                     >
                         Back
                     </Button>

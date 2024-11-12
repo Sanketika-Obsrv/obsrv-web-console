@@ -12,7 +12,7 @@ const LoginSocialButton = () => {
     const matchDownSM = useMediaQuery(theme.breakpoints.down('sm'));
     const allowedAuthTypes = getConfigValueV1("AUTHENTICATION_ALLOWED_TYPES")  || ""
 
-    const renderSocialButtons = (option) => {
+    const renderSocialButtons = (option: any) => {
         return (
            ( _.includes(allowedAuthTypes, _.lowerCase(option.value))) ? 
         <Button
@@ -26,7 +26,7 @@ const LoginSocialButton = () => {
             onClick={option.onClick}
         >
             {!matchDownSM && option.label}
-        </Button> : <></>
+        </Button> : null
         )
     }
 
