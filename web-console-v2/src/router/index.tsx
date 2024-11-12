@@ -18,7 +18,6 @@ import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/
 import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
 import ClusterHealth from 'pages/dashboardV1/datasets';
-
 import StepperPage from 'pages/StepsPages/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
@@ -32,6 +31,7 @@ import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
 import DatasetManagement from 'pages/datasetManagement/components/DatasetManagement';
 import Loadable from 'pages/auth/components/Loadable';
 
+import RollupConfig from 'pages/Rollup/components';
 // Type definition for the route configuration
 interface RouteConfig {
     path: string;
