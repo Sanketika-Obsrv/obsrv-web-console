@@ -105,7 +105,7 @@ function BasicBreadcrumbs(): JSX.Element {
                         // Capitalize first letter apart from datasetId
                         // const displayName = isLast ? name : _.capitalize(name);
                         if(matchedRoute){
-                            const displayName = matchedRoute?.label !== undefined ? matchedRoute.label : name;
+                            const displayName = matchedRoute?.label !== undefined ? matchedRoute.label : _.capitalize(name);
                             return isLast ? (
                                 <Typography
                                     variant="body1"
