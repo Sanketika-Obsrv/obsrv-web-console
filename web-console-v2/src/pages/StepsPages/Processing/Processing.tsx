@@ -407,6 +407,10 @@ const Processing: React.FC = () => {
         }
     ];
 
+    const handleNavigate = () => {
+        navigate(`/dataset/edit/ingestion/schema/${datasetId}`)
+    };
+
     useEffect(() => {
         window.scrollTo(0, 1);
     }, []);
@@ -425,14 +429,15 @@ const Processing: React.FC = () => {
                     paddingBottom: '80px'
                 }}
             >
-                <Box mx={3.5} my={2}>
+                <Box mx={4}>
                     <Button
-                        variant="text"
-                        sx={{ color: theme.palette.text.primary }}
-                        startIcon={<KeyboardBackspaceIcon className={processingStyle.backIcon} />}
-                        onClick={() => {
-                            navigate(-1);
-                        }}
+                        variant="back"
+                        startIcon={
+                            <KeyboardBackspaceIcon
+                                className={processingStyle.backIcon}
+                            />
+                        }
+                        onClick={handleNavigate}
                     >
                         Back
                     </Button>
