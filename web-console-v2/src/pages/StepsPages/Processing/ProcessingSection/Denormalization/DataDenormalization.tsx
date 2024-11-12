@@ -24,6 +24,7 @@ import { evaluateDataType } from 'pages/StepsPages/Processing/utils/dataTypeUtil
 import { theme } from 'theme';
 import { FormControl } from '@mui/material';
 import { InputLabel } from '@mui/material';
+import { useParams } from 'react-router-dom';
 
 const { spacing } = config;
 
@@ -40,6 +41,7 @@ const DataDenorm = (props: any) => {
     const { data, transformationOptions, masterDatasets, handleAddOrEdit, handleDelete, jsonData } =
         props;
 
+    const {datasetId} = useParams();
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
     const [evaluationData, setEvaluationData] = useState<string>('');
@@ -138,7 +140,8 @@ const DataDenorm = (props: any) => {
                             action: 'remove'
                         }
                     ]
-                }
+                },
+                dataset_id: datasetId
             };
 
             handleDelete(obj);

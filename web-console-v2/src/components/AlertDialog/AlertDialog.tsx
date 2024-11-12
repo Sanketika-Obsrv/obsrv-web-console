@@ -32,12 +32,14 @@ const AlertDialog = ({ handleClose, action = null, open = false, context = {} }:
                     {context.show === true && (
                         <DialogActions>
                             <Button
+                                size='small'
                                 data-edataid={interactIds.alert_dialog_cancel}
                                 onClick={(e) => handleClose()}
                             >
                                 Cancel
                             </Button>
                             <Button
+                                size='small'
                                 data-edataid={interactIds.alert_dialog_agree}
                                 variant="contained"
                                 onClick={handleAction}

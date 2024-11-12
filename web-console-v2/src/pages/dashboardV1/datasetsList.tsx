@@ -220,25 +220,10 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
 
     const columns = useMemo(
         () => [
-            {
-                Header: () => null,
-                id: 'expander',
-                className: 'cell-center',
-                tipText: '',
-                editable: 'false',
-                Cell: ({ row }: any) => {
-                    const collapseIcon = row.isExpanded ? <ExpandMoreIcon /> : <ChevronRightIcon />;
-                    return row.canExpand && row.depth === 0 && (
-                        <Box sx={{ fontSize: '1rem', }} {...row.getToggleRowExpandedProps()}>
-                            {collapseIcon}
-                        </Box>
-                    );
-                },
-                SubCell: () => null
-            },
+            
             {
                 Header: 'Name',
-                accessor: 'id',
+                accessor: 'name',
                 disableFilters: true,
                 disableGroupBy: true,
                 Aggregated: () => null,
@@ -248,9 +233,6 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                         {
                             row?.status && row?.type && (
                                 <Box display="flex" alignItems="center" mb={1}>
-                                    <Tooltip title={row?.status}>
-                                        <FiberManualRecordIcon sx={{ fontSize: '1.25rem' }} color={_.get(statusColors, _.toLower(row?.status)) || "secondary"} />
-                                    </Tooltip>
                                     <Tooltip title={row?.id}>
                                         <Typography align="left" variant="subtitle1">
                                             {row?.name}
@@ -427,7 +409,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 data-objectid={row?.dataset_id}
                                 data-objecttype="dataset"
                                 color="primary"
-                                size="large"
+                                size="small"
                             >
                                 <EyeOutlined />
                             </IconButton>
@@ -438,7 +420,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 data-objectid={row?.dataset_id}
                                 data-objecttype="dataset"
                                 color="primary"
-                                size="large"
+                                size="small"
                             >
                                 < DashboardOutlined />
                             </IconButton>
@@ -449,7 +431,7 @@ const DatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 data-objectid={row?.dataset_id}
                                 data-objecttype="dataset_tags"
                                 color="primary"
-                                size="large"
+                                size="small"
                                 onClick={(e) => handleClick(e, row)}
                                 disabled={true}
                             >
