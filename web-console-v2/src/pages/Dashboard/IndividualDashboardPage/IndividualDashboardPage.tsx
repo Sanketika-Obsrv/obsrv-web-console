@@ -11,6 +11,7 @@ import intereactIds from 'data/telemetry/interact.json'
 import { v4 } from 'uuid';
 import Health from '../health';
 import { metricsMetadata } from '../metrics';
+import { getConfigValueV1 } from 'services/configData';
 
 const IndividualMetricDashboards = (props: any) => {
   const { id } = props;
@@ -73,11 +74,16 @@ const IndividualMetricDashboards = (props: any) => {
     }
   }
 
+  const navigateToGrafana = (path: any) => {
+    if (path) {
+        window.open(path);
+    }
+}
   const renderGrafanaIcon = () => {
     const link = _.get(metadata, 'links.grafana.link')
     if (!link) return null;
     return (
-      <Tooltip title="Navigate to Grafana Dashboard" onClick={_ => navigateToGrafana(link)}>
+      <Tooltip title="Navigate to Grafana Dashboard" onClick={() => { navigateToGrafana(getConfigValueV1("GRAFANA_URL")) }}>
         <IconButton
           data-edataid={`${intereactIds.grafana_navigate}:${metricId}`}
           color="secondary" variant="light" sx={{ color: 'text.primary', bgcolor: 'transparent', ml: 0.75 }}>
