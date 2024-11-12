@@ -246,7 +246,7 @@ export const getStatusComponent = (props: any) => {
                 key={status}
                 size="small"
                 sx={{ padding: '0.5rem' }}
-                variant="filled"
+                variant="outlined"
                 label={`${value.length} ${status.toUpperCase()}`}
                 color={alertStatusColor(status)}
                 onClick={async () => {
@@ -301,7 +301,7 @@ export const getSilenceComponent = (props: any) => {
                 key={state}
                 size="small"
                 sx={{ padding: '0.5rem' }}
-                variant="filled"
+                variant="outlined"
                 label={`${value.length} ${state.toUpperCase()}`}
                 color={'error'}
                 onClick={async () => {
