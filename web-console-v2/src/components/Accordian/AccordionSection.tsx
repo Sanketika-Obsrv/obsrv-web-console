@@ -41,16 +41,21 @@ const FieldSection = (props: any) => {
     const renderAccordion = () => {
         return (
             <Accordion expanded={true} square={false}>
-                <AccordionSummary aria-controls="panel1bh-content" id="panel1bh-header">
-                    <Stack direction="column"  alignItems="center">
-                        <Typography sx={{ width: '100%', flexShrink: 0 }} variant="h1">
-                            {title}
-                        </Typography>
-                        <Typography variant="body1" sx={{pt: '2px'}}>
-                            {description}
-                        </Typography>
-                    </Stack>
-                </AccordionSummary>
+                {(title || description)
+                    ?
+                    <AccordionSummary aria-controls="panel1bh-content" id="panel1bh-header">
+                        <Stack direction="column" alignItems="center">
+                            <Typography sx={{ width: '100%', flexShrink: 0 }} variant="h1">
+                                {title}
+                            </Typography>
+                            <Typography variant="body1" sx={{ pt: '2px' }}>
+                                {description}
+                            </Typography>
+                        </Stack>
+                    </AccordionSummary>
+                    :
+                    <></>
+                }
                 <AccordionDetails>{sectionDetails()}</AccordionDetails>
             </Accordion>
         );

@@ -39,9 +39,8 @@ const DatasetManagement = () => {
 
     const liveSections = [
         {
-            title: <Typography variant="h1Secondary" sx={{mt: '0.5rem', ml: '2rem'}}>Review - {_.capitalize(datasetName)}</Typography>,
             id: datasetName,
-            component: <ReviewAllCongurations datasetState={dataset} master={masterDataset == "true" ? true : false} />
+            component: <ReviewAllCongurations datasetState={dataset} master={masterDataset == "true" ? true : false} datasetName={datasetName} />
         }
     ]
 

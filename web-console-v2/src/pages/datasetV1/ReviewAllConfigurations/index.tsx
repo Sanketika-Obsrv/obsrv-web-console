@@ -1,111 +1,19 @@
 import React from "react";
-import { renderSections } from 'pages/alertManager/services/utils';
-import Transformations from './Transformations';
-import TimestampField from './TimestampField';
-import Datasource from './Datasource';
-import DataFormats from './DataFormats';
-import Validation from './Validation';
-import Deduplication from './Deduplication';
-import Datakey from './Datakey';
-import Denormalization from './Denormalization';
 import * as _ from "lodash";
-import IngestionSpec from './ingestionSpec';
 import { downloadJSONSchemaV1 } from 'services/json-schema';
 import { downloadJsonFileV1 } from 'utils/downloadUtils';
 import { DownloadOutlined } from '@ant-design/icons';
-import { Button, Grid, Stack, Typography } from '@mui/material';
+import { Button, Grid, Stack, Typography, Box } from '@mui/material';
+import AllConfigurations from "pages/StepsPages/PreviewAndSave/AllConfigurations";
+import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
+import { useNavigate } from 'react-router-dom';
 
-const ReviewAllCongurations = ({ master, datasetState }: any) => {
+const ReviewAllCongurations = ({ master, datasetState, datasetName }: any) => {
     const dataset_state = !_.isEmpty(datasetState) ? datasetState : "";
-
     const jsonSchema = _.get(dataset_state, 'pages.jsonSchema');
     const flattenedData = _.get(dataset_state, ['pages', 'columns', 'state', 'schema']);
+    const navigate = useNavigate();
 
-    let sections = [
-        {
-            id: 'datakey',
-            title: 'Data key',
-            description: 'Details about data key',
-            component: <Datakey datasetState={dataset_state}></Datakey>,
-            master: true,
-            dataset: false,
-            componentType: 'box'
-        },
-        {
-            id: 'dataFormat',
-            title: 'Data formats',
-            description: 'Details about data formats',
-            component: <DataFormats datasetState={dataset_state}></DataFormats>,
-            master: true,
-            dataset: true,
-            componentType: 'box'
-        },
-        {
-            id: 'validation',
-            title: 'Validation',
-            description: 'Details about validation',
-            component: <Validation datasetState={dataset_state}></Validation>,
-            dataset: true,
-            componentType: 'box'
-        },
-        {
-            id: 'timestamp',
-            title: 'Timestamp',
-            description: 'Details about timestamp filed',
-            component: <TimestampField datasetState={dataset_state}></TimestampField>,
-            dataset: true,
-            componentType: 'box'
-        },
-        {
-            id: 'dedup',
-            title: 'Deduplication',
-            description: 'Details about deduplication',
-            component: <Deduplication datasetState={dataset_state}></Deduplication>,
-            dataset: true,
-            componentType: 'box'
-        },
-        {
-            id: 'dataSource',
-            title: 'Data source',
-            description: 'Details about data sources',
-            component: <Datasource datasetState={dataset_state}></Datasource>,
-            master: true,
-            dataset: true,
-            componentType: 'box'
-        },
-        {
-            id: 'dataschema',
-            title: 'Data schema',
-            description: 'Details about data schema',
-            component: <IngestionSpec datasetState={dataset_state}></IngestionSpec>,
-            master: true,
-            dataset: true,
-            componentType: 'box'
-        },
-        {
-            id: 'transformations',
-            title: 'Transformations',
-            description: 'Details about transformations',
-            component: <Transformations datasetState={dataset_state}></Transformations>,
-            master: true,
-            dataset: true,
-            componentType: 'box'
-        },
-        {
-            id: 'denorm',
-            title: 'Denormalization',
-            description: 'Details about Denormalization',
-            component: <Denormalization datasetState={dataset_state}></Denormalization>,
-            dataset: true,
-            componentType: 'box'
-        }
-    ]
-
-    if (master) {
-        sections = _.filter(sections, ['master', true]);
-    } else {
-        sections = _.filter(sections, ['dataset', true]);
-    }
 
     const handleDownloadButton = () => {
         let data: Record<string, any> = _.get(jsonSchema, "schema");
@@ -131,25 +39,38 @@ const ReviewAllCongurations = ({ master, datasetState }: any) => {
         if (!display) return null;
         return <>
             <Button key={value}
-                variant="contained" size="large" type="button" onClick={onClick} startIcon={icon} disabled={disabled}>
-                <Typography variant="button">{label}</Typography>
+                variant="contained" size="small" type="button" onClick={onClick} startIcon={icon} disabled={disabled}>
+                <Typography sx={{ color: '#ffffff' }}>{label}</Typography>
             </Button>
         </>
     }
 
     return <>
-        <Grid container spacing={1}>
-            <Grid item xs={12}>
-                <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{mr: '2rem'}}>
-                    {_.map(datasetActions, renderDatasetActions)}
-                </Stack>
+        <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Box>
+                <Button
+                    variant="back"
+                    startIcon={
+                        <KeyboardBackspaceIcon
+                        />
+                    }
+                    onClick={() => navigate(`/datasets`)}
+                >
+                    Back
+                </Button>
+            </Box>
+            <Grid container spacing={1}>
+                <Grid item xs={12}>
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        {_.map(datasetActions, renderDatasetActions)}
+                    </Stack>
+                </Grid>
+                <Grid item xs={12}>
+                </Grid>
             </Grid>
-            <Grid item xs={12}>
-            </Grid>
-        </Grid>
-        <Stack sx={{mr: '2rem', ml: '2rem', border: '1px solid #d6d6d6', borderRadius: '8px'}}>
-            {renderSections({ sections: sections })}
-        </Stack>
+        </Box>
+        <Typography variant="h1Secondary" sx={{ my: '0.5rem' }}>{_.capitalize(datasetName)}</Typography>
+        <AllConfigurations />
     </>
 }
 
