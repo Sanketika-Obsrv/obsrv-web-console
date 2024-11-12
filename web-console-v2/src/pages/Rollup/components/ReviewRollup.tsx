@@ -53,7 +53,7 @@ const ReviewRollup = (props: any) => {
     };
 
     const handleFinish = () => {
-        navigate(`/home/datasets/management/${datasetId}?status=${DatasetStatus.Draft}`, { state: { jsonSchema: datasetState } });
+        navigate(`/datasets/management/${datasetId}?status=${DatasetStatus.Draft}`, { state: { jsonSchema: datasetState } });
     };
 
     const columns = useMemo(

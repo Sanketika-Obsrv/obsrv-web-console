@@ -32,6 +32,7 @@ import DatasetManagement from 'pages/datasetManagement/components/DatasetManagem
 import Loadable from 'pages/auth/components/Loadable';
 
 import RollupConfig from 'pages/Rollup/components';
+
 // Type definition for the route configuration
 interface RouteConfig {
     path: string;
@@ -88,7 +89,9 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/datasets`, label: "Datasets", element: <ClusterHealth /> },
     { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <DatasetMetrics /> },
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
-    { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> }
+    { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
+    { path: `/datasets/rollups/:datasetId`, element: <RollupConfig />},
+    { path: `$/datasets/management/:datasetId`, label: "Rollups", element: <DatasetManagement /> }
 ];
 
 const AppRouter = () => (

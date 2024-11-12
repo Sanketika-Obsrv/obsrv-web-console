@@ -69,7 +69,7 @@ const ListRollups = () => {
     })
 
     const addNewRollup = () => {
-        navigate(`/home/datasets/rollups/${datasetId}`, { state: { rollupGranularityOption: rollupGranularityOption, edit: false } })
+        navigate(`/datasets/rollups/${datasetId}`, { state: { rollupGranularityOption: rollupGranularityOption, edit: false } })
     }
 
     const handleClose = () => {
@@ -94,7 +94,7 @@ const ListRollups = () => {
         return <Box sx={{ marginLeft: -1.5 }}>
             <IconButton color="primary" size="large"
                 onClick={() => {
-                    navigate(`/home/datasets/rollups/${datasetId}`,
+                    navigate(`/datasets/rollups/${datasetId}`,
                         { state: { rollupGranularityOption: rollupGranularityOption, edit: true, rollupDatasourceName: value.row.original.datasourceId, aggregationLevel: value.row.original.aggregation } })
                 }}
             >
@@ -147,7 +147,7 @@ const ListRollups = () => {
             </> : renderRollups()}
             <Grid item xs={12}>
                 {rollups.length === granularityOptions.length ? <></> : <Stack direction="row" justifyContent="space-between" alignItems="center" mt={1}>
-                    <Button size="medium" startIcon={<ArrowLeftOutlined />} sx={{ fontWeight: 500 }} onClick={() => navigate(`/home/datasets?status=${DatasetStatus.ReadyToPublish}`)}>
+                    <Button size="medium" startIcon={<ArrowLeftOutlined />} sx={{ fontWeight: 500 }} onClick={() => navigate(`/datasets?status=${DatasetStatus.ReadyToPublish}`)}>
                         Previous
                     </Button>
                     <Button size="medium" startIcon={<PlusOutlined />} sx={{ fontWeight: 500 }} onClick={addNewRollup}>
