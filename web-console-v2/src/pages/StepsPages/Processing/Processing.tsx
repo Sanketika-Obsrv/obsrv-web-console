@@ -196,7 +196,6 @@ const Processing: React.FC = () => {
     const jsonData = _.get(datasetData, ['sample_data']) || {};
     const [canProceed, setCanProceed] = useState(true);
     const processingData = mapDatasetToProcessingData(datasetData);
-    console.log('processingData', processingData);
 
     const { mutate: updateDataset } = useUpdateDataset();
 
