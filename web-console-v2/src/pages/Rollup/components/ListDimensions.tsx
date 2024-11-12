@@ -192,6 +192,7 @@ const ListDimensions = (props: any) => {
             <GenericCard elevation={1} sx={{mx: 6, border: '1px solid #d6d6d6'}}>
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={12} paddingTop={0}>
+
                         {isEditing ? <Alert sx={{ display: "flex", alignItems: "center", mb: 2 }} severity="info">{en.newlyAddedFieldsAlertMessage}</Alert> : <></>}
                         <ExpandingTable
                             columns={columns}

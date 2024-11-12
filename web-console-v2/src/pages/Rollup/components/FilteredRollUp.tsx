@@ -17,7 +17,6 @@ import { useAlert } from "contexts/AlertContextProvider";
 import Loader from "components/Loader";
 import Skeleton from 'components/Skeleton';
 
-
 const sampleFilterQuery = JSON.stringify({
     "filter": {
         "type": "and",
