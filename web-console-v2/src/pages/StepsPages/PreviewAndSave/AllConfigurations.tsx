@@ -13,6 +13,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { endpoints, useFetchDatasetsById } from 'services/dataset';
 import { http } from 'services/http';
+import { datasetRead } from 'services/datasetV1';
+import IconButton from '@mui/material/IconButton';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import Collapse from '@mui/material/Collapse';
 
 interface TransformationRow {
     field_key: string;
@@ -27,6 +32,58 @@ const datasetTypeMapping = {
     'transaction': 'Data Changes (Updates or Transactions)',
     'master': 'Master Data'
 }
+
+const DenormRow = ({ value }: any) => {
+    const [open, setOpen] = useState(false);
+    return (
+        <>
+            <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                <TableCell align="left">{value?.denorm_key}</TableCell>
+                <TableCell align="left">{value?.name}</TableCell>
+                <TableCell>
+                    Show Fields
+                    <IconButton
+                        aria-label="expand row"
+                        size="small"
+                        onClick={() => setOpen(!open)}
+                    >
+                        {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                    </IconButton>
+                </TableCell>
+            </TableRow>
+            <TableRow>
+                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+                    <Collapse in={open} timeout="auto" unmountOnExit>
+                        <Box sx={{ margin: 1 }}>
+                            <Table stickyHeader size="small" aria-label="a dense table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell align="left" width={'50%'}>Field</TableCell>
+                                        <TableCell align="left" width={'20%'}>Arrival Format</TableCell>
+                                        <TableCell align="left" width={'15%'}>Data Type</TableCell>
+                                        <TableCell align="left" width={'15%'}>Required</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {value.data_schema.properties && _.entries(value.data_schema.properties).map(([key, value]) => (
+                                        <>
+                                        <TableRow key={key} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                            <TableCell align="left">{key}</TableCell>
+                                            <TableCell align="left">{(value as any).arrival_format}</TableCell>
+                                            <TableCell align="left">{(value as any).data_type}</TableCell>
+                                            <TableCell align="left"><Switch disabled checked={(value as any).isRequired}/></TableCell>
+                                        </TableRow>
+                                        </>
+                                    ))} 
+                                </TableBody>
+                            </Table>
+                        </Box>
+                    </Collapse>
+                </TableCell>
+            </TableRow>
+        </>
+    );
+};
 
 const AllConfigurations = () => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -43,7 +100,8 @@ const AllConfigurations = () => {
     const [sensitiveFields, setSensitiveFields] = useState<any[]>([]);
     const [derivedFields, setDerivedFields] = useState<any[]>([]);
     const [transformFields, setTransformFields] = useState<any[]>([]);
-    const [dataDenormalizations, setDataDenormalizations] = useState<any[]>([]);
+    const [dataDenormalizations, setDataDenormalizations] = useState<any[]>([])
+    const [openRows, setOpenRows] = useState<any>({});;
 
     const response = useFetchDatasetsById({
         datasetId,
@@ -97,8 +155,14 @@ const AllConfigurations = () => {
                 setTransformFields(transformations);
             }
             if(denormData.length > 0) {
-                _.forEach(denormData, (denorm) => {
-                    dataDenormalizations.push(denorm);
+                _.forEach(denormData, async (denorm) => {
+                    const datasetResponse = await datasetRead({ datasetId: `${denorm.dataset_id}?fields=data_schema,name` }).then(response => _.get(response, 'data.result'));
+                    const denormData = {
+                        ...denorm,
+                        name: _.get(datasetResponse, 'name'),
+                        data_schema: _.get(datasetResponse, 'data_schema')
+                    }
+                    dataDenormalizations.push(denormData);
                 })
                 setDataDenormalizations(dataDenormalizations)
             }
@@ -164,9 +228,9 @@ const AllConfigurations = () => {
         {properties && _.entries(properties).map(([key, value]) => (
             <>
             <StyledTableRow key={key} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell align="left">{parent?parent+'.':''}{key}</TableCell>
-                <TableCell align="left">{(value as any).arrival_format}</TableCell>
-                <TableCell align="left">{(value as any).data_type}</TableCell>
+                <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{parent?parent+'.':''}{key}</TableCell>
+                <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{(value as any).arrival_format}</TableCell>
+                <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{(value as any).data_type}</TableCell>
                 <TableCell align="left"><Switch disabled checked={(value as any).isRequired}/></TableCell>
             </StyledTableRow>
             {value && RenderFieldRows(key, (value as any).properties)}
@@ -196,14 +260,14 @@ const AllConfigurations = () => {
                                                     </TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell align="left" width={'50%'}>Config</TableCell>
-                                                    <TableCell align="left" width={'50%'}>Value</TableCell>
+                                                    <TableCell align="left" width={'50%'} sx={{ borderRight: '1px solid #ddd !important' }}>Config</TableCell>
+                                                    <TableCell align="left" width={'50%'} >Value</TableCell>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
                                                 {connectorConfig && _.entries(connectorConfig.connector_config).map(([configKey, configValue]) => (
                                                     <StyledTableRow key={configKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                                        <TableCell align="left">{connectorMeta.ui_spec?.properties[configKey]?.title}</TableCell>
+                                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{connectorMeta.ui_spec?.properties[configKey]?.title}</TableCell>
                                                         <TableCell align="left">{String(configValue)}</TableCell>
                                                     </StyledTableRow>
                                                 ))}
@@ -222,14 +286,14 @@ const AllConfigurations = () => {
                                                         </TableCell>
                                                     </TableRow>
                                                     <TableRow>
-                                                        <TableCell align="left" width={'50%'}>Config</TableCell>
+                                                        <TableCell align="left" width={'50%'} sx={{ borderRight: '1px solid #ddd !important' }}>Config</TableCell>
                                                         <TableCell align="left" width={'50%'}>Value</TableCell>
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
                                                     {connectorConfig && _.entries(connectorConfig.operations_config).map(([configKey, configValue]) => (
                                                         <StyledTableRow key={configKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                                            <TableCell align="left">{configKey == 'interval' ? 'Polling Interval' : 'Polling Schedule'}</TableCell>
+                                                            <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{configKey == 'interval' ? 'Polling Interval' : 'Polling Schedule'}</TableCell>
                                                             <TableCell align="left">{String(configValue)}</TableCell>
                                                         </StyledTableRow>
                                                     ))}
@@ -251,15 +315,15 @@ const AllConfigurations = () => {
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell align="left" width={'40%'}>Dataset Name</TableCell>
-                                        <TableCell align="left" width={'30%'}>Dataset ID</TableCell>
+                                        <TableCell align="left" width={'40%'} sx={{ borderRight: '1px solid #ddd !important' }}>Dataset Name</TableCell>
+                                        <TableCell align="left" width={'30%'} sx={{ borderRight: '1px solid #ddd !important' }}>Dataset ID</TableCell>
                                         <TableCell align="left" width={'30%'}>Dataset Type</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="left">{datasetName}</TableCell>
-                                        <TableCell align="left">{datasetId}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{datasetName}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{datasetId}</TableCell>
                                         <TableCell align="left">{_.get(datasetTypeMapping, datasetType)}</TableCell>
                                     </StyledTableRow>
                                 </TableBody>
@@ -275,9 +339,9 @@ const AllConfigurations = () => {
                                             </TableCell>
                                         </TableRow>
                                         <TableRow>
-                                            <TableCell align="left" width={'50%'}>Field</TableCell>
-                                            <TableCell align="left" width={'20%'}>Arrival Format</TableCell>
-                                            <TableCell align="left" width={'15%'}>Data Type</TableCell>
+                                            <TableCell align="left" width={'50%'} sx={{ borderRight: '1px solid #ddd !important' }}>Field</TableCell>
+                                            <TableCell align="left" width={'20%'} sx={{ borderRight: '1px solid #ddd !important' }}>Arrival Format</TableCell>
+                                            <TableCell align="left" width={'15%'} sx={{ borderRight: '1px solid #ddd !important' }}>Data Type</TableCell>
                                             <TableCell align="left" width={'15%'}>Required</TableCell>
                                         </TableRow>
                                     </TableHead>
@@ -298,18 +362,18 @@ const AllConfigurations = () => {
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell align="center" colSpan={3}>Configurations</TableCell>
+                                        <TableCell align="left" colSpan={3}>Configurations</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="left" width={'35%'}>Add New Fields</TableCell>
-                                        <TableCell align="left" width={'10%'}>{validationConfig && validationConfig.mode === 'Strict' ? 'No' : 'Yes'}</TableCell>
+                                        <TableCell align="left" width={'35%'} sx={{ borderRight: '1px solid #ddd !important' }}>Add New Fields</TableCell>
+                                        <TableCell align="left" width={'10%'} sx={{ borderRight: '1px solid #ddd !important' }}>{validationConfig && validationConfig.mode === 'Strict' ? 'No' : 'Yes'}</TableCell>
                                         <TableCell align="left" width={'55%'}>{validationConfig && validationConfig.mode === 'Strict' ? 'Events will be skipped if there are unknown fields' : 'Events will be processed even if there are unknown fields'}</TableCell>
                                     </StyledTableRow>
                                     <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="left" width={'35%'}>Enable Deduplication</TableCell>
-                                        <TableCell align="left" width={'10%'}>{dedupConfig && dedupConfig.drop_duplicates ? 'Yes' : 'No'}</TableCell>
+                                        <TableCell align="left" width={'35%'} sx={{ borderRight: '1px solid #ddd !important' }}>Enable Deduplication</TableCell>
+                                        <TableCell align="left" width={'10%'} sx={{ borderRight: '1px solid #ddd !important' }}>{dedupConfig && dedupConfig.drop_duplicates ? 'Yes' : 'No'}</TableCell>
                                         <TableCell align="left" width={'55%'}>Dedupe Key: {dedupConfig ? dedupConfig?.dedup_key: 'Not Applicable'}</TableCell>
                                     </StyledTableRow>
                                 </TableBody>
@@ -320,12 +384,12 @@ const AllConfigurations = () => {
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="center" colSpan={3}>Data Denormalization</TableCell>
+                                        <TableCell align="left" colSpan={3}>Data Denormalization</TableCell>
                                     </StyledTableRow>
                                     <TableRow>
-                                        <TableCell align="left" width={'30%'}>Dataset Field</TableCell>
-                                        <TableCell align="left" width={'30%'}>Master Dataset</TableCell>
-                                        <TableCell align="left" width={'40%'}>Input Field (to store the data)</TableCell>
+                                        <TableCell align="left" width={'40%'} sx={{ borderRight: '1px solid #ddd !important' }}>Dataset Field</TableCell>
+                                        <TableCell align="left" width={'40%'} sx={{ borderRight: '1px solid #ddd !important' }}>Master Dataset</TableCell>
+                                        <TableCell align="left" width={'20%'} sx={{ borderRight: '1px solid #ddd !important' }}></TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -335,11 +399,9 @@ const AllConfigurations = () => {
                                         </StyledTableRow>)
                                     }
                                     {dataDenormalizations.length > 0 && dataDenormalizations.map((value) => (
-                                         <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                            <TableCell align="left">{value?.denorm_key}</TableCell>
-                                            <TableCell align="left">{value?.dataset_id}</TableCell>
-                                            <TableCell align="left">{value?.denorm_out_field}</TableCell>
-                                        </StyledTableRow>
+                                        <React.Fragment key={value.field}>
+                                            <DenormRow value={value} />
+                                        </React.Fragment>
                                     ))}
                                 </TableBody>
                             </Table>
@@ -349,12 +411,12 @@ const AllConfigurations = () => {
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="center" colSpan={4}>Data Privacy</TableCell>
+                                        <TableCell align="left" colSpan={4}>Data Privacy</TableCell>
                                     </StyledTableRow>
                                     <TableRow>
-                                        <TableCell align="left" width={'45%'}>Field</TableCell>
-                                        <TableCell align="left" width={'15%'}>Data Type</TableCell>
-                                        <TableCell align="left" width={'10%'}>Action</TableCell>
+                                        <TableCell align="left" width={'45%'} sx={{ borderRight: '1px solid #ddd !important' }}>Field</TableCell>
+                                        <TableCell align="left" width={'15%'} sx={{ borderRight: '1px solid #ddd !important' }}>Data Type</TableCell>
+                                        <TableCell align="left" width={'10%'} sx={{ borderRight: '1px solid #ddd !important' }}>Action</TableCell>
                                         <TableCell align="left" width={'30%'}>Skip Record on Failure?</TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -366,9 +428,9 @@ const AllConfigurations = () => {
                                 }
                                 {sensitiveFields.length > 0 && sensitiveFields.map((value) => (
                                     <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="left">{value.field}</TableCell>
-                                        <TableCell align="left">{_.capitalize(value.datatype)}</TableCell>
-                                        <TableCell align="left">{_.capitalize(value.type)}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{value.field}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{_.capitalize(value.datatype)}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{_.capitalize(value.type)}</TableCell>
                                         <TableCell align="left">{value.mode === 'Strict' ? 'Yes': 'No'}</TableCell>
                                     </StyledTableRow>
                                 ))}
@@ -380,12 +442,12 @@ const AllConfigurations = () => {
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="center" colSpan={4}>Data Transformations</TableCell>
+                                        <TableCell align="left" colSpan={4}>Data Transformations</TableCell>
                                     </StyledTableRow>
                                     <TableRow>
-                                        <TableCell align="left" width={'45%'}>Field</TableCell>
-                                        <TableCell align="left" width={'15%'}>Data Type</TableCell>
-                                        <TableCell align="left" width={'10%'}>Transformation</TableCell>
+                                        <TableCell align="left" width={'45%'} sx={{ borderRight: '1px solid #ddd !important' }}>Field</TableCell>
+                                        <TableCell align="left" width={'15%'} sx={{ borderRight: '1px solid #ddd !important' }}>Data Type</TableCell>
+                                        <TableCell align="left" width={'10%'} sx={{ borderRight: '1px solid #ddd !important' }}>Transformation</TableCell>
                                         <TableCell align="left" width={'30%'}>Skip Record on Failure?</TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -397,9 +459,9 @@ const AllConfigurations = () => {
                                 }
                                 {transformFields.length > 0 && transformFields.map((value) => (
                                     <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="left">{value.field}</TableCell>
-                                        <TableCell align="left">{_.capitalize(value.datatype)}</TableCell>
-                                        <TableCell align="left">{_.capitalize(value.expr)}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{value.field}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{_.capitalize(value.datatype)}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{_.capitalize(value.expr)}</TableCell>
                                         <TableCell align="left">{value.mode === 'Strict' ? 'Yes': 'No'}</TableCell>
                                     </StyledTableRow>
                                 ))}
@@ -411,12 +473,12 @@ const AllConfigurations = () => {
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <StyledTableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="center" colSpan={4}>Derived Fields</TableCell>
+                                        <TableCell align="left" colSpan={4}>Derived Fields</TableCell>
                                     </StyledTableRow>
                                     <TableRow>
-                                    <TableCell align="left" width={'45%'}>Field</TableCell>
-                                        <TableCell align="left" width={'15%'}>Data Type</TableCell>
-                                        <TableCell align="left" width={'10%'}>Transformation</TableCell>
+                                    <TableCell align="left" width={'45%'} sx={{ borderRight: '1px solid #ddd !important' }}>Field</TableCell>
+                                        <TableCell align="left" width={'15%'} sx={{ borderRight: '1px solid #ddd !important' }}>Data Type</TableCell>
+                                        <TableCell align="left" width={'10%'} sx={{ borderRight: '1px solid #ddd !important' }}>Transformation</TableCell>
                                         <TableCell align="left" width={'30%'}>Skip Record on Failure?</TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -428,9 +490,9 @@ const AllConfigurations = () => {
                                 }
                                 {derivedFields.length > 0 && derivedFields.map((value) => (
                                     <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                        <TableCell align="left">{value.field}</TableCell>
-                                        <TableCell align="left">{_.capitalize(value.datatype)}</TableCell>
-                                        <TableCell align="left">{_.capitalize(value.expr)}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{value.field}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{_.capitalize(value.datatype)}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{_.capitalize(value.expr)}</TableCell>
                                         <TableCell align="left">{value.mode === 'Strict' ? 'Yes': 'No'}</TableCell>
                                     </StyledTableRow>
                                 ))}
@@ -448,21 +510,21 @@ const AllConfigurations = () => {
                             <Table size="small" aria-label="a dense table">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell align="left" width={'15%'}>Lakehouse (Hudi)</TableCell>
-                                        <TableCell align="left" width={'18%'}>Real-time Store (Druid)</TableCell>
-                                        <TableCell align="left" width={'18%'}>Cache Store (Redis)</TableCell>
-                                        <TableCell align="left" width={'17%'}>Primary Key</TableCell>
-                                        <TableCell align="left" width={'17%'}>Timestamp Key</TableCell>
+                                        <TableCell align="left" width={'15%'} sx={{ borderRight: '1px solid #ddd !important' }}>Lakehouse (Hudi)</TableCell>
+                                        <TableCell align="left" width={'18%'} sx={{ borderRight: '1px solid #ddd !important' }}>Real-time Store (Druid)</TableCell>
+                                        <TableCell align="left" width={'18%'} sx={{ borderRight: '1px solid #ddd !important' }}>Cache Store (Redis)</TableCell>
+                                        <TableCell align="left" width={'17%'} sx={{ borderRight: '1px solid #ddd !important' }}>Primary Key</TableCell>
+                                        <TableCell align="left" width={'17%'} sx={{ borderRight: '1px solid #ddd !important' }}>Timestamp Key</TableCell>
                                         <TableCell align="left" width={'15%'}>Partition Key</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     <TableRow>
-                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig?.lakehouse_enabled} /></TableCell>
-                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig?.olap_store_enabled} /></TableCell>
-                                        <TableCell align="left"><Checkbox readOnly checked={indexingConfig?.cache_enabled} /></TableCell>
-                                        <TableCell align="left">{keysConfig?.data_key}</TableCell>
-                                        <TableCell align="left">{keysConfig?.timestamp_key}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}><Checkbox readOnly checked={indexingConfig?.lakehouse_enabled} /></TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}><Checkbox readOnly checked={indexingConfig?.olap_store_enabled} /></TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}><Checkbox readOnly checked={indexingConfig?.cache_enabled} /></TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{keysConfig?.data_key}</TableCell>
+                                        <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{keysConfig?.timestamp_key}</TableCell>
                                         <TableCell align="left">{keysConfig?.partition_key}</TableCell>
                                     </TableRow>
                                 </TableBody>
