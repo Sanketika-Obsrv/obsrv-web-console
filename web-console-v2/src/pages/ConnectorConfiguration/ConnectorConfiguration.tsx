@@ -10,7 +10,6 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { endpoints, useFetchDatasetsById, useReadConnectors, useUpdateDataset } from 'services/dataset';
 import styles from './ConnectorConfiguration.module.css';
-import sampleSchema from './Schema';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { http } from 'services/http';
@@ -51,7 +50,7 @@ const ConnectorConfiguration: React.FC = () => {
     const [connectorType, setConnectorType] = useState<string>("stream");
     const [connectorHelpText, setConnectorHelpText] = useState<string | null>(null);
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
-    const [schema, setSchema] = useState<Schema>(sampleSchema);
+    const [schema, setSchema] = useState<Schema | null>(null);
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
 
     const navigate = useNavigate();
@@ -78,7 +77,7 @@ const ConnectorConfiguration: React.FC = () => {
 
     const handleFormDataChange = (data: FormData) => {
 
-        const valid = ajv.validate(schema.schema, data);
+        const valid = ajv.validate(schema ? schema.schema : {}, data);
         if (valid) {
             setFormData(data)
             setFormErrors([]);
@@ -96,18 +95,18 @@ const ConnectorConfiguration: React.FC = () => {
             properties: {
                 [sectionKey]: sectionValue as RJSFSchema
             },
-            required: schema.schema.required && schema.schema.required.includes(sectionKey) ? [sectionKey] : []
+            required: schema && schema.schema.required && schema.schema.required.includes(sectionKey) ? [sectionKey] : []
         }
         return fieldSchema;
     }
 
     const getUISchema = (sectionKey: string) => {
-        if (schema.uiSchema[sectionKey]) {
+        if (schema && schema.uiSchema[sectionKey]) {
             return {
                 [sectionKey]: schema.uiSchema[sectionKey]
             }
         } else {
-            const sectionValue: any = schema.schema.properties?.[sectionKey];
+            const sectionValue: any = schema?.schema.properties?.[sectionKey];
             if (typeof sectionValue === 'object' && 'format' in sectionValue && sectionValue.format === 'password') {
                 return {
                     [sectionKey]: {
@@ -337,11 +336,11 @@ const ConnectorConfiguration: React.FC = () => {
                     <>
                         <GenericCard className={styles.title}>
                             <Box className={styles?.heading}>
-                                <Typography variant='h1'>{schema.title}</Typography>
+                                <Typography variant='h1'>{schema?.title}</Typography>
                             </Box>
 
                             <Grid container columnSpacing={3} className={styles?.gridContainer} justifyContent={'flex-start'}>
-                                {schema.schema.properties && _.sortBy(_.entries(schema.schema.properties), [([, value]) => (value as any).uiIndex]).map(([sectionKey, sectionValue]) => {
+                                {schema && schema.schema.properties && _.sortBy(_.entries(schema.schema.properties), [([, value]) => (value as any).uiIndex]).map(([sectionKey, sectionValue]) => {
                                     return (
                                         <Grid item xs={12} sm={6} lg={6}
                                             key={sectionKey}
