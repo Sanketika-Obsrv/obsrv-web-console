@@ -11,7 +11,7 @@ import {
 import TransformationForm from 'components/Form/DynamicForm';
 import {v4 as uuidv4} from 'uuid';
 import schema from './Schema';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as _ from 'lodash';
 import { Stack } from '@mui/material';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
@@ -20,6 +20,7 @@ import JSONataPlayground from 'components/JsonPlay/JSONataPlayground';
 import { evaluateDataType } from 'pages/StepsPages/Processing/utils/dataTypeUtil';
 import { Alert } from '@mui/material';
 import en from 'utils/locales/en.json';
+import { useAsyncDebounce } from 'react-table';
 
 interface FormData {
     [key: string]: unknown;
@@ -40,7 +41,6 @@ interface TransformationFormProps {
 
 const AddTransformationExpression = (props: any) => {
     const { data, handleAddOrEdit, onClose, edit = false, transformationOptions, jsonData } = props;
-
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
     const [stateId, setStateId] = useState<string>(uuidv4())
@@ -81,16 +81,32 @@ const AddTransformationExpression = (props: any) => {
         setAnchorEl(event.currentTarget);
     };
 
-    const handleClose = () => {
+    const handleClose = async () => {
         
-        const newData = {
-            ...formData
-        };
+        const newData = {...formData};
         const keyPath = ['section', 'expression'];
         _.set(newData, keyPath, evaluationData);
-        setStateId(uuidv4())
         setFormData(newData);
         setFormErrors([])
+        if (evaluationData) {
+            const newExtraErrors = {
+                section: {
+                    expression: {
+                        __errors: []
+                    }
+                }
+            };
+            try {
+                await evaluateDataType(evaluationData, jsonData);
+                setExtraErrors(newExtraErrors);
+            } catch (error) {
+                const message = _.get(error, 'message');
+                _.set(newExtraErrors, ['section', 'expression', '__errors', 0], message);
+                setFormErrors([message]);
+                setExtraErrors(newExtraErrors)
+            }
+        }
+        setStateId(uuidv4())
         setAnchorEl(null);
     };
 
@@ -104,10 +120,7 @@ const AddTransformationExpression = (props: any) => {
 
     const onHandleClick = async () => {
         const newData = _.get(formData, ['section']);
-        console.log("#### newData", newData)
-
         const array = [];
-
         if (!_.isEmpty(data)) {
             array.push({
                 value: { field_key: _.get(data, ['column']) },
@@ -140,7 +153,8 @@ const AddTransformationExpression = (props: any) => {
         onClose();
     };
 
-    const handleChange: TransformationFormProps['onChange'] = async (formData, errors) => {
+    const handleChange: TransformationFormProps['onChange'] = useAsyncDebounce(async (formData, errors) => {
+        
         const expression = _.get(formData, ['section', 'expression']);
         const newExtraErrors = {
             section: {
@@ -159,19 +173,16 @@ const AddTransformationExpression = (props: any) => {
         if (expression) {
             try {
                 await evaluateDataType(expression, jsonData);
-                setExtraErrors(newExtraErrors);
-                setStateId(uuidv4())
             } catch (error) {
-                console.log("#### error", error)
                 const message = _.get(error, 'message');
-
                 _.set(newExtraErrors, ['section', 'expression', '__errors', 0], message);
                 setFormErrors([message]);
             }
-        }
+        } 
         setExtraErrors(newExtraErrors);
         setFormData(formData);
-    };
+        setStateId(uuidv4())
+    }, 800);
 
     return (
         <>
