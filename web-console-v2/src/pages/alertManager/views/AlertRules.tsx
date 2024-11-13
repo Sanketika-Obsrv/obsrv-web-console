@@ -33,6 +33,7 @@ const AlertRules = () => {
             const { label, id, path } = fields;
             return <Tab key={id} label={label} sx={{
               border: 'unset',
+              fontSize: '0.9rem',
               "&.Mui-selected": {
                 backgroundColor: theme.palette.primary.main,
                 color: "white"
