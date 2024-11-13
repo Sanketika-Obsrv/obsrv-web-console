@@ -80,14 +80,14 @@ const AddNewField = (props: any) => {
     };
 
     const handleClose = () => {
-        if (!transformErrors) {
-            const newData = _.cloneDeep(formData);
-
-            const keyPath = ['section', 'transformationType'];
-
-            _.set(newData, keyPath, evaluationData);
-
-            setFormData(newData);
+        if (!transformationTypeError) {
+            setFormData((prevState: any) => ({
+                ...prevState,
+                section: {
+                    ...prevState.section,
+                    transformationType: evaluationData
+                }
+            }));
         }
 
         setAnchorEl(null);
