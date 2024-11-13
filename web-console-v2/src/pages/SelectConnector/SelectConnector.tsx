@@ -125,9 +125,6 @@ const SelectConnector = () => {
                     <Typography variant="h1" className={styles.mainInfo} lineHeight="2.125rem">
                         {t('selectConnector.chooseConnectors')}
                     </Typography>
-                    <Typography variant="h2Secondary" className={styles.configureInfo}>
-                        {t('selectConnector.addDataSource')}
-                    </Typography>
                     <Box className={styles.searchAndFilter}>
                         <Paper variant="outlined" className={styles.search}>
                             <InputBase

@@ -94,9 +94,11 @@ const renderColumnCell = ({ cell, value }: any) => {
             : isSubRow && !isObjectType
               ? subdepthIndentation
               : '3px';
-
+    const hasHighSeverity = row?.suggestions?.some(
+        (suggestion: any) => suggestion.severity !== 'LOW' && suggestion.severity !== 'MEDIUM'
+    );
     return (
-        <Box maxWidth={'30vw'} minWidth={'20vw'} py={isSubRow ? (hasConflicts ? 2.7 : 1.4) : 2} pl={paddingLeft}>
+        <Box maxWidth={'30vw'} minWidth={'20vw'} py={ (hasConflicts && hasHighSeverity) ? 3 : (isSubRow ? 1.4 : 2)} pl={paddingLeft}>
             <Stack direction="column">
                 <Box
                     display="flex"
@@ -249,8 +251,8 @@ const renderDataTypeCell = ({
                                 minWidth: 'max-content',
                                 p: 0,
                                 '& .MuiButton-startIcon': { marginRight: '0.25px' },
-                                mt: -3,
-                                mb: 2,
+                                mt: -2.5,
+                                mb: 1.5,
                                 '&:hover': {
                                     backgroundColor: 'transparent'
                                 }
@@ -282,8 +284,8 @@ const renderDataTypeCell = ({
                                 minWidth: 'max-content',
                                 p: 0,
                                 '& .MuiButton-startIcon': { marginRight: '0.25px' },
-                                mt: -3,
-                                mb: 2,
+                                mt: -2.5,
+                                mb: 1.5,
                                 '&:hover': {
                                     backgroundColor: 'transparent'
                                 }
@@ -803,8 +805,8 @@ const renderArrivalFormatCell = ({
                                 minWidth: 'max-content',
                                 p: 0,
                                 '& .MuiButton-startIcon': { marginRight: '0.25px' },
-                                mt: -2,
-                                mb: 2,
+                                mt: -2.5,
+                                mb: 1.5,
                                 '&:hover': {
                                     backgroundColor: 'transparent'
                                 }
@@ -836,8 +838,8 @@ const renderArrivalFormatCell = ({
                                 minWidth: 'max-content',
                                 p: 0,
                                 '& .MuiButton-startIcon': { marginRight: '0.25px' },
-                                mt: -2,
-                                mb: 2,
+                                mt: -2.5,
+                                mb: 1.5,
                                 '&:hover': {
                                     backgroundColor: 'transparent'
                                 }
