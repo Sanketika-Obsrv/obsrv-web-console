@@ -406,7 +406,7 @@ const Ingestion = () => {
     useEffect(() => {
         if(datasetIdParam === '<new>') {
             if (nameRegex.test(datasetName)) {
-                const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
+                const generatedId = datasetName.toLowerCase().replace(/[^a-z0-9\s]+/g, '-').replace(/\s+/g, '-');
                 setDatasetId(generatedId);
             } else {
                 setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');

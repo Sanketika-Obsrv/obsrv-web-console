@@ -205,7 +205,7 @@ const DraftDatasetsList = (props: any) => {
             },
             {
                 Header: 'Created',
-                accessor: 'createdOn',
+                accessor: 'created_date',
                 disableFilters: true,
                 enableGlobalFilter: true,
                 

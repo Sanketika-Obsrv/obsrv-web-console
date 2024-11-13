@@ -27,7 +27,7 @@ export const getProcessingMetaData = (refresh: any) => {
     {
       chart: (
         <ProcessingMetricsCard
-          label="Processing Time (min)"
+          label="Processing Time (Min)"
           description="This chart shows the minimum data processing time for today"
           icon={
             <>
