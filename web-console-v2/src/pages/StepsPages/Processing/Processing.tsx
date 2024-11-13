@@ -257,10 +257,8 @@ const Processing: React.FC = () => {
 
     const piiColumns: any = _.map(_.get(processingData, 'pii'), 'column');
     const derivedColumns: any = _.map(_.get(processingData, 'derived'), 'column');
-    const transformationColumns: any = _.map(_.get(processingData, 'transform'), 'column');
 
     const columnsToExcludeInTransformation = _.union(piiColumns, derivedColumns);
-    const columnsToExcludeInDerived = _.union(piiColumns, transformationColumns);
 
     function filterTransformationOptions(
         transformationOptions: any[],
@@ -383,7 +381,7 @@ const Processing: React.FC = () => {
                         actions={[{ label: 'JSONata', component: '', value: 'custom' }]}
                         transformation_mode={transformation_mode}
                         label={'Add Derived Field'}
-                        dialog={<AddNewField filteredTransformation={columnsToExcludeInDerived} />}
+                        dialog={<AddNewField filteredTransformation={transformationOptions} />}
                         jsonData={jsonData}
                         transformationOptions={transformationOptions}
                         addedSuggestions={[]}
