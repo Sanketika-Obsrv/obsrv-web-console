@@ -59,10 +59,7 @@ export const validFormatTypes = [
     'number',
     'boolean',
     'object',
-    'array',
-    'string',
-    'date-time',
-    'integer'
+    'array'
 ];
 const alertDialogContext = {
     title: 'Delete Column',
