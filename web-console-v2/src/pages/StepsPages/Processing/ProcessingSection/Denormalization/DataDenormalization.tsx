@@ -93,7 +93,7 @@ const DataDenorm = (props: any) => {
     );
 
     const openCreateMasterDataset = () => {
-        navigate(`/new-dataset`, {
+        navigate(`/dataset/create`, {
             state: { replace: true, refreshMaster: true }
         });
     };
