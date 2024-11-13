@@ -6,9 +6,16 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    Popover
+    Popover,
+    Grid,
+    TextField,
+    FormControl,
+    FormLabel,
+    RadioGroup,
+    FormControlLabel,
+    Radio
 } from '@mui/material';
-import {v4 as uuidv4} from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import AddNewFields from 'components/Form/DynamicForm';
 import schema from './Schema';
 import React, { useEffect, useState } from 'react';
@@ -37,26 +44,19 @@ interface ConfigureConnectorFormProps {
 }
 
 const AddNewField = (props: any) => {
-    const { data, handleAddOrEdit, onClose, edit = false, jsonData } = props;
+    const { data, handleAddOrEdit, onClose, edit = false, jsonData, filteredTransformation } = props;
     const [stateId, setStateId] = useState<string>(uuidv4())
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
-    const [extraErrors, setExtraErrors] = useState<any>({
-        section: {
-            transformationType: {
-                __errors: []
-            }
-        }
-    });
 
     const open = Boolean(anchorEl);
 
-    const [formErrors, setFormErrors] = useState<unknown[]>([]);
-    const [formData, setFormData] = useState<FormData>({
+    const [formData, setFormData] = useState<any>({
         section: {
             transformations: '',
-            transformationType: ''
+            transformationType: '',
+            transformationMode: 'Strict'
         }
     });
 
@@ -133,28 +133,58 @@ const AddNewField = (props: any) => {
         onClose();
     };
 
-    const handleChange: ConfigureConnectorFormProps['onChange'] = async (formData, errors) => {
-        setFormData(formData);
-        const transformationType = _.get(formData, ['section', 'transformationType']);
-        
-        if (errors) {
-            setFormErrors(errors);
+    const [transformationError, setTransformationError] = useState<string | null>(null);
+    const [transformationTypeError, setTransformationTypeError] = useState<string | null>(null);
+
+    const transformation = _.get(formData, ['section', 'transformations']);
+
+    useEffect(() => {
+        const isTransformationExists = filteredTransformation.includes(transformation);
+        if (isTransformationExists && !_.isEmpty(transformation)) {
+            setTransformationError("Cannot add transformation for existing transformation field");
         } else {
-            setFormErrors([]);
+            setTransformationError(null);
         }
+    }, [transformation]);
+
+    const handleErrors = async () => {
+        const transformationType = _.get(formData, ['section', 'transformationType']);
 
         if (transformationType) {
             try {
                 await evaluateDataType(transformationType, jsonData);
-                _.set(extraErrors, ['section', 'transformationType', '__errors'], []);
-                setStateId(uuidv4())
+                setTransformationTypeError(null);
+                setStateId(uuidv4());
             } catch (error) {
-                const message = _.get(error, 'message');
-                _.set(extraErrors, ['section', 'transformationType', '__errors'], [message]);
-                setFormErrors([message]);
+                const message = _.get(error, 'message', 'Invalid transformation type');
+                setTransformationTypeError(message);
             }
         }
-        setExtraErrors(extraErrors);
+    };
+
+    useEffect(()=>{
+        handleErrors()
+    },[formData])
+
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = event.target;
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                [name]: value
+            }
+        }));
+    };
+
+    const handleRadioChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                transformationMode: event.target.value
+            }
+        }));
     };
 
     return (
@@ -182,21 +212,52 @@ const AddNewField = (props: any) => {
                     ) : null}
                 </DialogTitle>
                 <DialogContent>
-                    <Stack mt={-4} width="auto">
-                        <AddNewFields
-                            schema={schema}
-                            formData={formData}
-                            setFormData={setFormData}
-                            onChange={handleChange}
-                            extraErrors={extraErrors}
-                            customClassNames={{
-                                container: 'customContainerClass',
-                                sectionContainer: 'customSectionContainerClass',
-                                connectorName: 'customConnectorNameClass',
-                                sectionContainers: 'customSectionContainersClass'
-                            }}
-                            key={stateId}
-                        />
+                    <Stack width="auto" spacing={2} mt={2}>
+                        <Grid>
+                            <TextField
+                                name={'transformations'}
+                                label={'Field Name'}
+                                required
+                                variant="outlined"
+                                fullWidth
+                                value={formData.section.transformations}
+                                onChange={handleInputChange}
+                                error={Boolean(!_.isEmpty(transformationError))}
+                                helperText={
+                                    transformationError || ''
+                                }
+                            />
+                        </Grid>
+                        <Grid>
+                            <TextField
+                                name='transformationType'
+                                label={'Transformation Expression'}
+                                required
+                                variant="outlined"
+                                fullWidth
+                                value={formData.section.transformationType}
+                                onChange={handleInputChange}
+                                error={Boolean(!_.isEmpty(transformationTypeError))}
+                                helperText={
+                                    transformationTypeError || ''
+                                }
+                            />
+                        </Grid>
+                        <Grid>
+                            <FormControl>
+                                <FormLabel id="demo-radio-buttons-group-label">Skip On Transformation Failure?</FormLabel>
+                                <RadioGroup
+                                    name="radio-buttons-group"
+                                    value={formData.section.transformationMode}
+                                    onChange={handleRadioChange}
+                                >
+                                    <Box display="flex">
+                                        <FormControlLabel value="Strict" control={<Radio />} label="Yes" />
+                                        <FormControlLabel value="Lenient" control={<Radio />} label="No" />
+                                    </Box>
+                                </RadioGroup>
+                            </FormControl>
+                        </Grid>
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 4 }}>
@@ -209,7 +270,7 @@ const AddNewField = (props: any) => {
                         variant="contained"
                         autoFocus
                         onClick={onHandleClick}
-                        disabled={!_.isEmpty(formErrors) || _.isEmpty(_.get(formData, ["section", "transformations"])) || _.isEmpty(_.get(formData, ["section", "transformationType"]))}
+                        disabled={!_.isEmpty(transformationError) || !_.isEmpty(transformationTypeError) || _.isEmpty(_.get(formData, ["section", "transformations"])) || _.isEmpty(_.get(formData, ["section", "transformationType"]))}
                         size="large"
                         sx={{ width: 'auto' }}
                     >

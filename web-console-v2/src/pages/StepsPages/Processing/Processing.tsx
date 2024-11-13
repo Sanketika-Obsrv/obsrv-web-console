@@ -255,11 +255,20 @@ const Processing: React.FC = () => {
         { label: 'Lenient', component: '', value: TransformationMode.Lenient }
     ];
 
-    const piiColumns:any = _.map(_.get(processingData, 'pii'), 'column');
-    // Filter out items from transformationOptions where the column matches any in piiColumns
-    const transformationOptionsWithoutPii = _.filter(transformationOptions, (ele: any) => {
-        return !piiColumns.includes(ele);
-    });
+    const piiColumns: any = _.map(_.get(processingData, 'pii'), 'column');
+    const derivedColumns: any = _.map(_.get(processingData, 'derived'), 'column');
+    const transformationColumns: any = _.map(_.get(processingData, 'transform'), 'column');
+
+    const columnsToExcludeInTransformation = _.union(piiColumns, derivedColumns);
+    const columnsToExcludeInDerived = _.union(piiColumns, transformationColumns);
+    const columnsToExcludeInPii = _.union(derivedColumns, transformationColumns);
+
+    function filterTransformationOptions(
+        transformationOptions: any[],
+        columnsToExclude: any[]
+    ): any[] {
+        return _.filter(transformationOptions, (ele: any) => !columnsToExclude.includes(ele));
+    }
 
     const processingSections = [
         {
@@ -316,10 +325,7 @@ const Processing: React.FC = () => {
                         transformation_mode={transformation_mode}
                         label={'Add Sensitive Field'}
                         dialog={<AddPIIDialog />}
-                        transformationOptions={_.union(
-                            transformationOptions,
-                            _.map(piiSuggestions, 'column')
-                        )}
+                        transformationOptions={filterTransformationOptions(transformationOptions, columnsToExcludeInPii)}
                         addedSuggestions={piiSuggestions}
                         data={_.map(_.get(processingData, 'pii'), (obj1) => {
                             const matchingObj = _.find(piiSuggestions, {
@@ -354,7 +360,7 @@ const Processing: React.FC = () => {
                         label={'Add Transformation'}
                         dialog={<AddTransformationExpression />}
                         jsonData={jsonData}
-                        transformationOptions={transformationOptionsWithoutPii}
+                        transformationOptions={filterTransformationOptions(transformationOptions, columnsToExcludeInTransformation)}
                         addedSuggestions={[]}
                         data={_.get(processingData, 'transform')}
                         handleAddOrEdit={(data: any) => handleAddOrEdit(data, 'transformations')}
@@ -378,7 +384,7 @@ const Processing: React.FC = () => {
                         actions={[{ label: 'JSONata', component: '', value: 'custom' }]}
                         transformation_mode={transformation_mode}
                         label={'Add Derived Field'}
-                        dialog={<AddNewField />}
+                        dialog={<AddNewField filteredTransformation={columnsToExcludeInDerived} />}
                         jsonData={jsonData}
                         transformationOptions={transformationOptions}
                         addedSuggestions={[]}
