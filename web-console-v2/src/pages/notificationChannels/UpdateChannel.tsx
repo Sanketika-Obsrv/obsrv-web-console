@@ -1,6 +1,6 @@
 import React from 'react';
 import * as _ from 'lodash';
-import { Dialog, Grid } from '@mui/material';
+import { Dialog, Button, Grid, Box } from '@mui/material';
 import { useEffect, useState } from 'react';
 import SelectChannelType from './components/SelectChannelType';
 import ConfigureChannel from './components/ConfigureChannel';
@@ -11,6 +11,8 @@ import MainCard from 'components/MainCard';
 import SendTestMessage from './components/SendTestMessage';
 import { renderSkeleton } from 'services/skeleton';
 import { useAlert } from 'contexts/AlertContextProvider';
+import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
+import { default as alertStyle} from '../alertManager/views/Alert.module.css'
 
 const isValid = (config: Record<string, any>) => {
     if (!config) return false;
@@ -135,7 +137,19 @@ const UpdateChannel = () => {
     };
 
     return (
-        <MainCard content={false}>
+            <>
+            <Box mx={4}>
+                <Button variant="back"
+                    startIcon={
+                        <KeyboardBackspaceIcon
+                            className={alertStyle.backIcon}
+                        />
+                    }
+                    onClick={() => { navigate(`/alertChannels`)}}
+                >
+                    Back
+                </Button>
+            </Box>
             {loading ?
                 renderSkeleton({ config: { type: "card", height: 80 } }) :
                 (<>
@@ -143,7 +157,7 @@ const UpdateChannel = () => {
                     <Grid>{renderTestChannelDialog()}</Grid></>
                 )
             }
-        </MainCard>
+            </>
     );
 };
 

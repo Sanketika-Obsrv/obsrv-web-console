@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid } from '@mui/material';
+import { Button, Grid, Box } from '@mui/material';
 import MainCard from 'components/MainCard';
 import _ from 'lodash';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,6 +15,8 @@ import { getConfiguration } from '../services/configuration';
 import { Alert } from '@mui/material';
 import { renderSkeleton } from 'services/skeleton';
 import { useAlert } from 'contexts/AlertContextProvider';
+import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
+import { default as alertStyle} from '../views/Alert.module.css'
 
 const EditRule = () => {
     const { id } = useParams();
@@ -108,13 +110,25 @@ const EditRule = () => {
     }
 
     return (
-        <MainCard content={false}>
+        <>
+            <Box mx={4}>
+                <Button variant="back"
+                    startIcon={
+                        <KeyboardBackspaceIcon
+                            className={alertStyle.backIcon}
+                        />
+                    }
+                    onClick={() => { alertType ? navigate(`/alertRules/${_.toLower(alertType)}`) : navigate(`/alertRules/custom`) }}
+                >
+                    Back
+                </Button>
+            </Box>
             {renderWarningMessage()}
             <Grid>{loading ?
                 renderSkeleton({ config: { type: "card", loader: true, height: 80 } }) :
                 renderSections({ sections: sections, formData: formData, actionHandler: updateRule, actionLabel: "Update Rule" })
             }</Grid>
-        </MainCard>
+        </>
     );
 };
 
