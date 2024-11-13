@@ -443,7 +443,7 @@ const Ingestion = () => {
                     isGenerateLoading ||
                     isUpdateLoading
                 }
-                descriptionText="Loading the page"
+                descriptionText="Please wait while we process your request."
             />
 
             {!(

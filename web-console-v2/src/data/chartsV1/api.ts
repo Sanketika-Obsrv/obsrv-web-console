@@ -186,7 +186,7 @@ export default {
                     const endpoint = _.get(payload, 'metric.exported_endpoint');
                     const name = (endpoint && _.last(_.split(endpoint, "/")));
                     return {
-                        name: name || 'Total Api Calls',
+                        name: name || 'Total API Calls',
                         data: _.get(payload, 'values')
                     }
                 })
@@ -278,7 +278,7 @@ export default {
                     const endpoint = _.get(payload, 'metric.exported_endpoint');
                     const name = (endpoint && _.last(_.split(endpoint, "/")));
                     return {
-                        name: name || 'Total Failed Api Calls',
+                        name: name || 'Total Failed API Calls',
                         data: _.get(payload, 'values')
                     }
                 })
@@ -370,7 +370,7 @@ export default {
                     const endpoint = _.get(payload, 'metric.exported_endpoint');
                     const name = (endpoint && _.last(_.split(endpoint, "/")));
                     return {
-                        name: name || 'Total Api Calls',
+                        name: name || 'Total API Calls',
                         data: _.get(payload, 'values')
                     }
                 })
@@ -462,7 +462,7 @@ export default {
                     const endpoint = _.get(payload, 'metric.exported_endpoint');
                     const name = (endpoint && _.last(_.split(endpoint, "/")));
                     return {
-                        name: name || 'Total Failed Api Calls',
+                        name: name || 'Total Failed API Calls',
                         data: _.get(payload, 'values')
                     }
                 })

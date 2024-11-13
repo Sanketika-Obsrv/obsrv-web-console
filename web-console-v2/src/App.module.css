@@ -11,6 +11,13 @@
   max-height: calc(100vh - 3.7rem);
 }
 
+.mainLoginContainer {
+  flex-grow: 1;
+  padding: 1rem 0 1rem 0;
+  transition: margin-left 0.3s ease;
+  max-height: calc(100vh - 3.7rem);
+}
+
 .expanded .mainContainer {
   margin-left: 16rem;
   width: 65rem;

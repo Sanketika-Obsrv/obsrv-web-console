@@ -119,7 +119,7 @@ const SelectConnector = () => {
     return (
         <>
             {isPending ? (
-                <Loader loading={isPending} descriptionText="Loading the page" />
+                <Loader loading={isPending} descriptionText="Please wait while we process your request." />
             ) : (
                 <div className={styles.selectConnector}>
                     <Typography variant="h1" className={styles.mainInfo} lineHeight="2.125rem">
