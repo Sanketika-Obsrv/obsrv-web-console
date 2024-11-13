@@ -1,0 +1,57 @@
+.cardContainer {
+    width: 100%;
+    height: 100%;
+    padding-bottom: 0;
+    overflow: visible;
+}
+
+.card {
+    box-shadow: var(--dashboard-card-box-shadow) !important;
+    border-radius: 1.125rem !important;
+    padding-bottom: 0;
+    z-index: -1;
+    height: 100%;
+}
+
+.cardContent {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow: visible;
+}
+
+.loadingText {
+    font-size: 1.7rem !important;
+}
+
+.labelContainer {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label {
+    font-size: 1rem !important;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.symbol {
+    margin-left: auto;
+    text-align: center;
+    font-size: 1rem !important;
+}
+
+.linearProgressContainer{
+    display: flex;
+    align-items: center;
+}
+
+.linearProgress{
+    width: 100%;
+    margin-right: 0.5rem;
+}

@@ -78,10 +78,8 @@ export default {
             parse: (response: any) => {
                 const ms = _.get(response, 'result[0].event.last_synced_time') || 0;
                 if (!ms) return ["N/A", "primary"];
-                return {
-                    "value": dayjs(ms).fromNow(),
-                    "hoverValue": dayjs(ms).format('YYYY-MM-DD HH:mm:ss')
-                }
+                const timeAgo = dayjs(ms).fromNow();
+                return timeAgo
             },
             error() {
                 return ["N/A", "error"]
@@ -100,10 +98,8 @@ export default {
             parse: (response: any) => {
                 const ms = _.get(response, 'result[0].event.last_synced_time') || 0;
                 if (!ms) return ["N/A", "primary"];
-                return {
-                    "value": dayjs(ms).fromNow(),
-                    "hoverValue": dayjs(ms).format('YYYY-MM-DD HH:mm:ss')
-                }
+                const timeAgo = dayjs(ms).fromNow();
+                return timeAgo
             },
             error() {
                 return ["N/A", "error"]
