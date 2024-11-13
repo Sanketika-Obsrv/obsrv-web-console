@@ -1,9 +1,9 @@
 import * as _ from 'lodash';
-import { Grid, Tooltip, Typography, Stack } from '@mui/material';
+import { Grid, Tooltip, Typography, Stack, Box, Button } from '@mui/material';
 import IconButton from 'components/@extended/IconButton';
 import React, { useEffect, useState } from 'react';
 import MainCard from 'components/MainCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { navigateToGrafana } from 'services/grafana';
 import Grafana from 'assets/icons/Grafana';
@@ -12,12 +12,15 @@ import { v4 } from 'uuid';
 import Health from '../health';
 import { metricsMetadata } from '../metrics';
 import { getConfigValueV1 } from 'services/configData';
+import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 
 const IndividualMetricDashboards = (props: any) => {
   const { id } = props;
   const navigate = useNavigate();
   const [metadata, setmetadata] = useState<Record<string, any>>();
   const metricId = id
+  const params = useParams();
+  const { datasetId } = params;
 
   const navigateToHome = ({ errMsg }: any) => {
     navigate('/');
@@ -101,14 +104,18 @@ const IndividualMetricDashboards = (props: any) => {
           justifyContent="flex-start"
           alignItems="center"
           spacing={2}>
-          <div>
-            {`${metadata?.primaryLabel || ""} Metrics `}
-          </div>
+          <Typography variant='h5' fontWeight={500}>
+            {!datasetId ? `${metadata?.primaryLabel || ""} Metrics ` : `${datasetId}`}
+          </Typography>
           {health && <Health metadata={health} />}
-          <Tooltip title={metadata?.description}>
-            <InfoCircleOutlined />
-          </Tooltip>
-
+          {!datasetId
+            ?
+            <Tooltip title={metadata?.description}>
+              <InfoCircleOutlined />
+            </Tooltip>
+            :
+            <></>
+          }
         </Stack>
 
       </>
@@ -116,13 +123,25 @@ const IndividualMetricDashboards = (props: any) => {
   }
 
   return (
-    <>
+    <Box sx={{padding: datasetId && 3}}>
+      {datasetId && <Box>
+        <Button
+          variant="back"
+          startIcon={
+            <KeyboardBackspaceIcon
+            />
+          }
+          onClick={() => navigate(`/datasets`)}
+        >
+          Back
+        </Button>
+      </Box>}
       <MainCard title={renderTitle()} secondary={renderGrafanaIcon()}>
         <Grid container spacing={2} marginBottom={1} alignItems="stretch">
           {renderCharts(metadata)}
         </Grid>
       </MainCard >
-    </>
+    </Box>
   )
 };
 

@@ -68,6 +68,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
     }, [])
 
     const publishDraftDataset = async (datasetId: string) => {
+        showAlert(en['dataset-publish-inprogress'], "info")
         await publishDataset({ data: { datasetId } });
         showAlert(en['dataset-publish-success'], "success")
         getDatasets();

@@ -87,7 +87,7 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/alertChannels/edit/:id`, label: "Edit", element: <UpdateChannel /> },
     { path: `/alertChannels/view/:id`, label: "View", element: <ViewChannel /> },
     { path: `/datasets`, label: "Datasets", element: <ClusterHealth /> },
-    { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <DatasetMetrics /> },
+    { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <IndividualMetricDashboards id="individualDataset" /> },
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
     { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
     { path: `/datasets/rollups/:datasetId`, element: <RollupConfig />},

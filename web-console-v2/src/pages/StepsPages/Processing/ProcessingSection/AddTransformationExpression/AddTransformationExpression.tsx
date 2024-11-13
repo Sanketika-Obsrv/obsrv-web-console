@@ -6,11 +6,19 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    Popover
+    Popover,
+    Grid,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    TextField,
+    FormLabel,
+    RadioGroup,
+    FormControlLabel,
+    Radio
 } from '@mui/material';
-import TransformationForm from 'components/Form/DynamicForm';
-import {v4 as uuidv4} from 'uuid';
-import schema from './Schema';
+import { v4 as uuidv4 } from 'uuid';
 import React, { useEffect, useState } from 'react';
 import * as _ from 'lodash';
 import { Stack } from '@mui/material';
@@ -39,34 +47,30 @@ interface TransformationFormProps {
 }
 
 const AddTransformationExpression = (props: any) => {
-    const { data, handleAddOrEdit, onClose, edit = false, transformationOptions, jsonData } = props;
+    const { data, handleAddOrEdit, onClose, edit = false, transformationOptions, jsonData, } = props;
 
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
     const [stateId, setStateId] = useState<string>(uuidv4())
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
-    const [extraErrors, setExtraErrors] = useState<any>({});
 
     const open = Boolean(anchorEl);
 
-    const [formErrors, setFormErrors] = useState<unknown[]>([]);
-    const [formData, setFormData] = useState<{ [key: string]: any }>({});
-
-    if (!_.isEmpty(transformationOptions))
-        _.set(
-            schema,
-            ['schema', 'properties', 'section', 'properties', 'transformations', 'enum'],
-            transformationOptions
-        );
+    const [formData, setFormData] = useState<any>({
+        section: {
+            transformations: '',
+            transformationType: '',
+            transformationMode: 'Strict'
+        }
+    });
 
     useEffect(() => {
         if (!_.isEmpty(data)) {
-            const type = _.get(data, ['transformationType']);
-
+            const type = _.get(data, ['transformation']);
             const existingData = {
                 section: {
                     transformations: _.get(data, ['column']),
-                    transformationType: _.isEqual(type, 'custom') ? 'jsonata' : type,
+                    transformationType: type,
                     transformationMode: _.get(data, ['transformationMode']),
                     expression: _.get(data, ['transformation'])
                 }
@@ -82,15 +86,16 @@ const AddTransformationExpression = (props: any) => {
     };
 
     const handleClose = () => {
-        
-        const newData = {
-            ...formData
-        };
-        const keyPath = ['section', 'expression'];
-        _.set(newData, keyPath, evaluationData);
-        setStateId(uuidv4())
-        setFormData(newData);
-        setFormErrors([])
+        if (!transformationTypeError) {
+            setFormData((prevState: any) => ({
+                ...prevState,
+                section: {
+                    ...prevState.section,
+                    transformationType: evaluationData
+                }
+            }));
+        }
+
         setAnchorEl(null);
     };
 
@@ -98,16 +103,9 @@ const AddTransformationExpression = (props: any) => {
         setAnchorEl(null);
     };
 
-    const isJsonata = true;
-
-    const jsonataData = _.get(formData, ['section', 'expression']);
-
     const onHandleClick = async () => {
         const newData = _.get(formData, ['section']);
-        console.log("#### newData", newData)
-
         const array = [];
-
         if (!_.isEmpty(data)) {
             array.push({
                 value: { field_key: _.get(data, ['column']) },
@@ -120,7 +118,7 @@ const AddTransformationExpression = (props: any) => {
                 field_key: _.get(newData, ['transformations'], ''),
                 transformation_function: {
                     type: 'jsonata',
-                    expr: _.get(newData, ['expression'], ''),
+                    expr: _.get(newData, ['transformationType'], ''),
                     category: 'transform'
                 },
                 mode: _.get(newData, ['transformationMode'], '')
@@ -128,49 +126,65 @@ const AddTransformationExpression = (props: any) => {
             action: 'upsert'
         };
 
-        const datatype = await evaluateDataType(_.get(newData, ['expression'], ''), jsonData);
-        _.set(
-            obj,
-            ['value', 'transformation_function', 'datatype'],
-            _.get(datatype, 'data_type')
-        );        
+        try {
+            const datatype = await evaluateDataType(_.get(newData, ['transformationType'], ''), jsonData);
+            _.set(
+                obj,
+                ['value', 'transformation_function', 'datatype'],
+                _.get(datatype, 'data_type')
+            );
 
-        array.push(obj);
-        handleAddOrEdit(array);
-        onClose();
+            array.push(obj);
+            handleAddOrEdit(array);
+            onClose();
+        }
+        catch (error) {
+            const message = _.get(error, 'message', 'Invalid transformation type');
+            setTransformationTypeError(message);
+        }
     };
 
-    const handleChange: TransformationFormProps['onChange'] = async (formData, errors) => {
-        const expression = _.get(formData, ['section', 'expression']);
-        const newExtraErrors = {
-            section: {
-                expression: {
-                    __errors: []
-                }
-            }
-        };
-
-        if (errors) {
-            setFormErrors(errors);
-        } else {
-            setFormErrors([]);
-        }
-
-        if (expression) {
+    const transformationType = _.get(formData, ['section', 'transformationType']);
+    const handleErrors = async () => {
+        if (transformationType) {
             try {
-                await evaluateDataType(expression, jsonData);
-                setExtraErrors(newExtraErrors);
-                setStateId(uuidv4())
+                await evaluateDataType(transformationType, jsonData);
+                setTransformationTypeError(null);
+                setStateId(uuidv4());
             } catch (error) {
-                console.log("#### error", error)
-                const message = _.get(error, 'message');
-
-                _.set(newExtraErrors, ['section', 'expression', '__errors', 0], message);
-                setFormErrors([message]);
+                const message = _.get(error, 'message', 'Invalid transformation type');
+                setTransformationTypeError(message);
             }
         }
-        setExtraErrors(newExtraErrors);
-        setFormData(formData);
+    };
+
+    useEffect(() => {
+        handleErrors()
+        if (_.isEmpty(transformationType)) {
+            setTransformationTypeError(null)
+        }
+    }, [transformationType])
+
+    const [transformationTypeError, setTransformationTypeError] = useState<string | null>(null);
+    const handleInputChange: any = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = event.target;
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                [name]: value
+            }
+        }));
+    };
+
+    const handleRadioChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                transformationMode: event.target.value
+            }
+        }));
     };
 
     return (
@@ -198,21 +212,55 @@ const AddTransformationExpression = (props: any) => {
                     ) : null}
                 </DialogTitle>
                 <DialogContent>
-                    <Stack mt={-4} width="auto">
-                        <TransformationForm
-                            schema={schema}
-                            formData={formData}
-                            setFormData={setFormData}
-                            onChange={handleChange}
-                            extraErrors={extraErrors}
-                            customClassNames={{
-                                container: 'customContainerClass',
-                                sectionContainer: 'customSectionContainerClass',
-                                connectorName: 'customConnectorNameClass',
-                                sectionContainers: 'customSectionContainersClass'
-                            }}
-                            key={stateId}
-                        />
+                    <Stack mt={2} spacing={2} width="auto">
+                        <Grid>
+                            <FormControl fullWidth >
+                                <InputLabel>Select Field</InputLabel>
+                                <Select
+                                    required
+                                    name='transformations'
+                                    label="Select Field"
+                                    value={formData.section.transformations}
+                                    onChange={handleInputChange}
+                                >
+                                    {transformationOptions.map((option: string) => (
+                                        <MenuItem key={option} value={option}>
+                                            {option}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid>
+                            <TextField
+                                name='transformationType'
+                                label={'Add JSONAta Expression'}
+                                required
+                                variant="outlined"
+                                fullWidth
+                                value={formData.section.transformationType}
+                                onChange={handleInputChange}
+                                error={Boolean(!_.isEmpty(transformationTypeError))}
+                                helperText={
+                                    transformationTypeError || `Ex: $sum(Product.(Price * Quantity)) FirstName & " " & Surname` 
+                                }
+                            />
+                        </Grid>
+                        <Grid>
+                            <FormControl>
+                                <FormLabel required id="demo-radio-buttons-group-label">Skip On Transformation Failure?</FormLabel>
+                                <RadioGroup
+                                    name="radio-buttons-group"
+                                    value={formData.section.transformationMode}
+                                    onChange={handleRadioChange}
+                                >
+                                    <Box display="flex">
+                                        <FormControlLabel value="Strict" control={<Radio />} label="Yes" />
+                                        <FormControlLabel value="Lenient" control={<Radio />} label="No" />
+                                    </Box>
+                                </RadioGroup>
+                            </FormControl>
+                        </Grid>
                     </Stack>
 
                     <Alert severity="info" sx={{ background: '#f1fcf9' }}>
@@ -220,7 +268,6 @@ const AddTransformationExpression = (props: any) => {
                     </Alert>
                 </DialogContent>
                 <DialogActions sx={{ px: 4 }}>
-                    
                     <Box mx={2}>
                         <Button onClick={handleClick} sx={{ width: 'auto' }}>
                             Try Out
@@ -231,9 +278,7 @@ const AddTransformationExpression = (props: any) => {
                         autoFocus
                         onClick={onHandleClick}
                         disabled={
-                            !_.isEmpty(formErrors) ||
-                            _.isEmpty(formData) || _.isEmpty(formData.section['transformations']) ||
-                            (isJsonata && !jsonataData)
+                            !_.isEmpty(transformationTypeError) || _.isEmpty(_.get(formData, ["section", "transformations"])) || _.isEmpty(_.get(formData, ["section", "transformationType"]))
                         }
                         size="large"
                         sx={{ width: 'auto' }}

@@ -7,22 +7,6 @@ import { generateRequestBody, setDatasetId, setVersionKey, transformResponse } f
 import { queryClient } from 'queryClient';
 import { DatasetStatus } from 'types/datasets';
 import { generateDatasetState } from './datasetState';
-import apiEndpoints from 'data/apiEndpoints';
-
-// const ENDPOINTS = {
-//     DATASETS_READ: '/console/config/v2/datasets/read',
-//     CREATE_DATASET: '/console/config/v2/datasets/create',
-//     UPLOAD_FILES: '/console/config/v2/files/generate-url',
-//     GENERATE_JSON_SCHEMA: '/console/config/v2/datasets/dataschema',
-//     UPDATE_DATASCHEMA: '/console/config/v2/datasets/update',
-//     LIST_DATASET: '/console/config/v2/datasets/list',
-//     DATASETS_DIFF: '/console/api/dataset/diff',
-//     PUBLISH_DATASET: '/console/config/v2/datasets/status-transition',
-//     LIST_CONNECTORS: '/console/config/v2/connectors/list',
-//     READ_CONNECTORS: '/console/config/v2/connectors/read'
-// };
-
-//USE THESE ROUTES FOR LOCAL TESTING
 
 const ENDPOINTS = {
     DATASETS_READ: '/config/v2/datasets/read',
@@ -324,4 +308,32 @@ export const generateJsonSchema = (payload: any) => {
     const transitionRequest = generateRequestBody({ request: payload?.data, apiId: "api.datasets.dataschema" })
     return http.post(`${ENDPOINTS.GENERATE_JSON_SCHEMA}`, transitionRequest)
         .then(transform);
+}        
+export const isJsonSchema = (jsonObject: any) => {
+    if (typeof jsonObject !== "object" || jsonObject === null) {
+        return false;
+    }
+    const schemaKeywords = [
+        "$schema",
+        "type",
+        "properties",
+        "required",
+        "additionalProperties",
+        "definitions",
+        "items",
+        "allOf",
+        "oneOf",
+        "anyOf",
+        "not",
+    ];
+
+    const hasSchemaKeyword = schemaKeywords.some((keyword) =>
+        Object.prototype.hasOwnProperty.call(jsonObject, keyword)
+    );
+
+    if (!hasSchemaKeyword) {
+        return false;
+    } else {
+        return true;
+    }
 }

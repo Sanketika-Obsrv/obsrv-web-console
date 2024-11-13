@@ -177,6 +177,7 @@ const isValidTimestamp = (value: any) => {
 };
 
 const evaluateDataType = async (jsonAtaExpression: string, sampleJsonData: any) => {
+    console.log("### sampleJsonData", sampleJsonData)
     let data: any = {};
     _.map(sampleJsonData, (item: any) => {
         data = _.merge(data, item);
@@ -184,34 +185,37 @@ const evaluateDataType = async (jsonAtaExpression: string, sampleJsonData: any) 
 
     try {
         const ata: any = JSONata(jsonAtaExpression);
-        const sampleData = !_.isEmpty(sampleJsonData)
+        if(_.isEmpty(sampleJsonData) || _.isEmpty(_.get(sampleJsonData, "mergedEvent"))) {
+            return { data_type: 'string', schema_type: 'string' };
+        } else {
+            const sampleData = !_.isEmpty(sampleJsonData)
             ? _.isObject(sampleJsonData)
                 ? _.get(sampleJsonData, "mergedEvent")
                 : _.get(JSON.parse(sampleJsonData), "mergedEvent")
             : data;
-        const evaluatedData = await ata.evaluate(sampleData);
-        
-        const tsCheck = isValidTimestamp(evaluatedData);
-        switch (true) {
-            case !evaluatedData:
-                throw Error(en['noMatchTransformation']);
-            case evaluatedData?.sequence:
-                return { data_type: 'array', schema_type: 'array' };
-            case tsCheck?.isValidTimestamp:
-                return { data_type: tsCheck.type, schema_type: typeof evaluatedData };
-            case _.isString(evaluatedData):
-                return { data_type: tsCheck.type, schema_type: typeof evaluatedData };
-            case _.isFinite(evaluatedData):
-                return {
-                    data_type: Number.isInteger(evaluatedData) ? 'long' : 'double',
-                    schema_type: Number.isInteger(evaluatedData) ? 'integer' : 'number'
-                };
-            case evaluatedData === true || evaluatedData === false:
-                return { data_type: 'boolean', schema_type: 'boolean' };
-            case _.isObject(evaluatedData):
-                return { data_type: 'object', schema_type: 'object' };
-            default:
-                return { data_type: 'string', schema_type: 'string' };
+            const evaluatedData =  await ata.evaluate(sampleData);
+            const tsCheck = isValidTimestamp(evaluatedData);
+            switch (true) {
+                case !evaluatedData:
+                    throw Error(en['noMatchTransformation']);
+                case evaluatedData?.sequence:
+                    return { data_type: 'array', schema_type: 'array' };
+                case tsCheck?.isValidTimestamp:
+                    return { data_type: tsCheck.type, schema_type: typeof evaluatedData };
+                case _.isString(evaluatedData):
+                    return { data_type: tsCheck.type, schema_type: typeof evaluatedData };
+                case _.isFinite(evaluatedData):
+                    return {
+                        data_type: Number.isInteger(evaluatedData) ? 'long' : 'double',
+                        schema_type: Number.isInteger(evaluatedData) ? 'integer' : 'number'
+                    };
+                case evaluatedData === true || evaluatedData === false:
+                    return { data_type: 'boolean', schema_type: 'boolean' };
+                case _.isObject(evaluatedData):
+                    return { data_type: 'object', schema_type: 'object' };
+                default:
+                    return { data_type: 'string', schema_type: 'string' };
+            }
         }
     } catch (err: any) {
         throw Error(err?.message || en['invalidTransformation']);

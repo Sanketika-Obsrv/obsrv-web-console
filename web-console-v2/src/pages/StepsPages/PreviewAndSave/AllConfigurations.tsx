@@ -241,7 +241,7 @@ const AllConfigurations = () => {
 
     return (
         <Box>
-            {(response.isPending) ? <Loader loading={response.isPending} descriptionText="Loading the page" /> : 
+            {(response.isPending) ? <Loader loading={response.isPending} descriptionText="Please wait while we process your request." /> : 
             <Box>
                 <Accordion expanded={expanded === 'connector'} onChange={handleChange('connector')}>
                     <AccordionSummary aria-controls="panel1d-content" id="panel1d-header" disabled={!connectorConfig}>

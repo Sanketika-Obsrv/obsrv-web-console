@@ -17,6 +17,7 @@ import UploadFiles from 'pages/Dataset/wizard/UploadFiles';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
+    isJsonSchema,
     useCreateDataset,
     useFetchDatasetExists,
     useFetchDatasetsById,
@@ -38,13 +39,6 @@ interface Schema {
     title: string;
     schema: RJSFSchema;
     uiSchema: UiSchema;
-}
-
-interface ConfigureConnectorFormProps {
-    schemas: Schema[];
-    formData: FormData;
-    setFormData: React.Dispatch<React.SetStateAction<FormData>>;
-    onChange: (formData: FormData, errors?: unknown[] | null) => void;
 }
 
 const GenericCard = styled(Card)(({ theme }) => ({
@@ -287,9 +281,11 @@ const Ingestion = () => {
             const { schema } = generateData;
             const filePaths = _.map(uploadData, 'filePath');
             let mergedEvent = {};
-            if (data) {
-                _.map(data, (item: any) => {
-                    mergedEvent = _.merge(mergedEvent, item);
+            if (data.length > 0) {
+                _.forEach(data, (item: any) => {
+                    if(!isJsonSchema(item)) {
+                        mergedEvent = _.merge(mergedEvent, item);
+                    }
                 });
             }
             if (datasetIdParam === '<new>' && datasetId) {
@@ -430,7 +426,6 @@ const Ingestion = () => {
         } else {
             setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
         }
-        console.log("### datasetName", datasetName)
     };
 
     return (
@@ -448,7 +443,7 @@ const Ingestion = () => {
                     isGenerateLoading ||
                     isUpdateLoading
                 }
-                descriptionText="Loading the page"
+                descriptionText="Please wait while we process your request."
             />
 
             {!(
