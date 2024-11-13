@@ -137,6 +137,8 @@ const AddNewField = (props: any) => {
     const [transformationTypeError, setTransformationTypeError] = useState<string | null>(null);
 
     const transformation = _.get(formData, ['section', 'transformations']);
+    const transformationType = _.get(formData, ['section', 'transformationType']);
+
 
     useEffect(() => {
         const isTransformationExists = filteredTransformation.includes(transformation);
@@ -148,8 +150,6 @@ const AddNewField = (props: any) => {
     }, [transformation]);
 
     const handleErrors = async () => {
-        const transformationType = _.get(formData, ['section', 'transformationType']);
-
         if (transformationType) {
             try {
                 await evaluateDataType(transformationType, jsonData);
@@ -162,9 +162,12 @@ const AddNewField = (props: any) => {
         }
     };
 
-    useEffect(()=>{
+    useEffect(() => {
         handleErrors()
-    },[formData])
+        if(_.isEmpty(transformationType)){
+            setTransformationTypeError(null)
+        }
+    }, [transformationType])
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = event.target;
