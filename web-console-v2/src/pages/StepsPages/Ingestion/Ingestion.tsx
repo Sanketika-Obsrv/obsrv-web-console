@@ -323,6 +323,7 @@ const Ingestion = () => {
                                 (fetchData && fetchData.dataset_config?.indexing_config) || {},
                             file_upload_path: filePaths
                         },
+                        name: datasetName,
                         data_schema: schema,
                         dataset_id: datasetId,
                         type: datasetType,
@@ -422,15 +423,11 @@ const Ingestion = () => {
 
     const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
     const handleNameChange = (newValue: any, isBlur=false) => {
-        if(isBlur && newValue) {
-            setIsDatasetExistChecking(true);
-            debouncedFetchDataset(newValue)
-        }
         if (nameRegex.test(newValue)) {
             setDatasetName(newValue);
-            if(datasetIdParam === '<new>') {
-                const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
-                setDatasetId(generatedId);
+            if(datasetIdParam === '<new>' && isBlur) {
+                    setIsDatasetExistChecking(true);
+                    debouncedFetchDataset(newValue.toLowerCase().replace(/[^a-z0-9\s]+/g, '-').replace(/\s+/g, '-'))
             }
             setNameError('');
         } else {
