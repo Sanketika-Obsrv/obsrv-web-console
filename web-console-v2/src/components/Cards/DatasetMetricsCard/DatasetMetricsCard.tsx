@@ -30,45 +30,45 @@ const getQueryByType = (queryType: string, datasetId: any, isMasterDataset: bool
         };
 
         case 'total_events_processed': {
-            const startDate = dayjs().format(dateFormat);
-            const endDate = dayjs().add(1, 'day').format(dateFormat);
+            const startDate = interval === 'today' ? dayjs().format(dateFormat) : dayjs().subtract(1, 'day').format(dateFormat);
+            const endDate = interval === 'today' ? dayjs().add(1, 'day').format(dateFormat) : dayjs().format(dateFormat);
             const body = druidQueries.total_events_processed({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, })
             return { ..._.get(chartMeta, 'total_events_processed.query'), body }
         };
 
         case 'min_processing_time': {
-            const startDate = dayjs().format(dateFormat);
-            const endDate = dayjs().add(1, 'day').format(dateFormat);
+            const startDate = interval === 'today' ? dayjs().format(dateFormat) : dayjs().subtract(1, 'day').format(dateFormat);
+            const endDate = interval === 'today' ? dayjs().add(1, 'day').format(dateFormat) : dayjs().format(dateFormat);
             const body = druidQueries.druid_min_processing_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, });
             return { ..._.get(chartMeta, 'minProcessingTime.query'), body }
         };
 
-        case 'average_processing_time':  {
-            const startDate = dayjs().format(dateFormat);
-            const endDate = dayjs().add(1, 'day').format(dateFormat);
+        case 'average_processing_time': {
+            const startDate = interval === 'today' ? dayjs().format(dateFormat) : dayjs().subtract(1, 'day').format(dateFormat);
+            const endDate = interval === 'today' ? dayjs().add(1, 'day').format(dateFormat) : dayjs().format(dateFormat);
             const body = druidQueries.druid_avg_processing_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, });
             return { ..._.get(chartMeta, 'avgProcessingTime.query'), body }
         };
 
         case 'max_processing_time': {
-            const startDate = dayjs().format(dateFormat);
-            const endDate = dayjs().add(1, 'day').format(dateFormat);
+            const startDate = interval === 'today' ? dayjs().format(dateFormat) : dayjs().subtract(1, 'day').format(dateFormat);
+            const endDate = interval === 'today' ? dayjs().add(1, 'day').format(dateFormat) : dayjs().format(dateFormat);
             const body = druidQueries.druid_max_processing_time({ datasetId, intervals: `${startDate}/${endDate}`, master: isMasterDataset, });
             return { ..._.get(chartMeta, 'maxProcessingTime.query'), body }
         };
 
         case 'total_duplicate_batches': {
-            const endDate = dayjs().endOf('day').unix();
+            const endDate = interval === 'today' ? dayjs().endOf('day').unix() : dayjs().endOf('day').subtract(1, 'day').unix();
             return { ..._.get(chartMeta, 'duplicate_batches_summary.query'), time: endDate, dataset: datasetId, }
         };
 
         case 'total_duplicate_events': {
-            const endDate = dayjs().endOf('day').unix();
+            const endDate = interval === 'today' ? dayjs().endOf('day').unix() : dayjs().format(dateFormat) ;            ;
             return { ..._.get(chartMeta, 'duplicate_events_summary.query'), time: endDate, dataset: datasetId, }
         };
 
         case 'total_failed_events': {
-            const endDate = dayjs().endOf('day').unix();
+            const endDate = interval === 'today' ? dayjs().endOf('day').unix() : dayjs().endOf('day').subtract(1, 'day').unix();
             const metadata = isMasterDataset ?
                 _.cloneDeep({ ..._.get(chartMeta, 'failed_events_summary_master_datasets.query'), time: endDate, dataset: datasetId, }) :
                 _.cloneDeep({ ..._.get(chartMeta, 'failed_events_summary.query'), time: endDate, dataset: datasetId, });
