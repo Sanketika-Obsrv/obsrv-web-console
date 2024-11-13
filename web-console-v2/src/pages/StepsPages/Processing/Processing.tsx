@@ -449,7 +449,7 @@ const Processing: React.FC = () => {
                     {
                         (datasetList.isPending)
                             ?
-                            <Loader loading={datasetList.isPending} descriptionText="Loading the page" />
+                            <Loader loading={datasetList.isPending} descriptionText="Please wait while we process your request." />
                             :
                             <Box
                                 className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}

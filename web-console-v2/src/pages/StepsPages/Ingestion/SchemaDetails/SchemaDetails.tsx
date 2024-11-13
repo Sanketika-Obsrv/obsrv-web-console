@@ -633,7 +633,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
         >
             <Loader
                 loading={fetchDatasetById.isPending || fetchDatasetById.isFetching || uploadLoading}
-                descriptionText="Loading the page"
+                descriptionText="Please wait while we process your request."
             />
 
             {!(

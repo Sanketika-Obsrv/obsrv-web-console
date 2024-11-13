@@ -192,7 +192,7 @@ const Storage = () => {
                     {
                         (fetchPending || fetchLoading)
                             ?
-                            <Loader loading={fetchPending || fetchLoading} descriptionText="Loading the page" />
+                            <Loader loading={fetchPending || fetchLoading} descriptionText="Please wait while we process your request." />
                             :
                             <Box
                                 className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
