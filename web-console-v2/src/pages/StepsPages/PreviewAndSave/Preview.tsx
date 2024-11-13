@@ -98,7 +98,7 @@ const Preview: FC = (): ReactElement => {
         >
             {
                 publishDataset.isPending ? (
-                    <Loader loading={publishDataset.isPending} descriptionText="Loading the page" />
+                    <Loader loading={publishDataset.isPending} descriptionText="Please wait while we process your request." />
                 ) : (
                     publishDataset.isError ? (
                         <Retry
