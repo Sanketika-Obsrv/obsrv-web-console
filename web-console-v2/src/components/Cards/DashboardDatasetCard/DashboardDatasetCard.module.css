@@ -1,0 +1,16 @@
+.card {
+    padding-bottom: 0;
+    width: 100%;
+}
+
+.cardContent {
+    display: flex;
+    flex-direction: column;
+}
+
+.datasetTypeContainer {
+    font-size: 1.125rem !important;
+    margin-left: 0.6rem !important;
+    margin-bottom: 0.7rem !important;
+    text-align: left;
+}

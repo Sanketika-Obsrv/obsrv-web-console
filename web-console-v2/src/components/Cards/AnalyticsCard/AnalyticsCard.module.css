@@ -1,0 +1,16 @@
+.mainCard {
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+    height: 89%
+}
+
+.title {
+    display: flex;
+    justify-content: center;
+}
+
+.frequency {
+    text-align: right;
+    padding-right: 1rem !important;
+    margin-top: -0.5rem !important;
+}

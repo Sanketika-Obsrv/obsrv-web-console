@@ -1,0 +1,48 @@
+.navMain {
+  position: fixed;
+  top: 0;
+  background-color: var(--white);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  border-bottom: 0.063rem solid var(--lighter-grey);
+}
+
+.navMain .logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  border-right: 0.043rem solid var(--light-grey);
+}
+
+.breadcrumb {
+  padding-left: 1rem;
+}
+
+.navIcons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 2rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.icons {
+  margin: 0.125rem;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  background-color: var(--lighter-grey);
+}
+
+.noUnderline {
+  text-decoration: none;
+}
+
+.alertNotification {
+  position: fixed;
+  top: 2.5rem;
+  right: 0;
+  width: 25rem;
+}

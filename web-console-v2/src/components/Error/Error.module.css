@@ -1,0 +1,25 @@
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.errorTitle {
+  font-weight: bold;
+}
+
+.errorDescription {
+  width: 65%;
+  text-align: center;
+}
+
+.button {
+  padding: 0rem 3rem 0rem 3rem;
+  width: 15%;
+}
+
+.errorIcon {
+  height: 15%;
+  width: 15%;
+}

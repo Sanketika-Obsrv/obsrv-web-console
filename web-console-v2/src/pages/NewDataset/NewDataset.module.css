@@ -1,0 +1,19 @@
+.main {
+  max-height: 100vh;
+}
+
+.mainGrid {
+  padding-top: 5rem;
+  padding-left: 5rem;
+  width: 100;
+}
+.mainText {
+  padding-bottom: 1rem;
+  line-height: 2rem;
+}
+.image {
+  margin-top: -1rem;
+}
+.button {
+  margin-top: 2rem;
+}

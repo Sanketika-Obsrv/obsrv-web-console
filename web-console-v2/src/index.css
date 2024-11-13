@@ -1,0 +1,141 @@
+:root {
+  --drop-shadow-small: 4px 4px 44px 0px rgba(0, 0, 0, 0.1);
+  --drop-shadow-medium: 4px 4px 16px 0px rgba(0, 0, 0, 0.1);
+  --drop-shadow-blue: 0px 4px 16px 0px rgba(5, 110, 206, 0.7);
+  --shadow-large: 10px 10px 40px 0px #0000000d;
+  --common-black: #111111;
+  --secondary-dark: #fac280;
+  --secondary-lighter: #fef3e6;
+  --sidebar-background-color: rgba(255, 255, 255, 1);
+  --white: rgb(255, 255, 255);
+  --light-grey: rgba(214, 214, 214, 1);
+  --lighter-grey: rgb(244, 242, 242);
+  --background-gradient: linear-gradient(to right,
+      rgba(243, 153, 46, 0.4) 40%,
+      rgba(243, 153, 46, 0));
+  --body-secondary: #ababab;
+  --body-secondary-background: #ebebeb;
+  --monitor-icon: #B8EAE6;
+  --watch-icon: #FAC280;
+  --east-icon: #C0CBEF;
+  --watch-later-icon: #C0CBEF;
+  --trading-down-icon: #FBCDB9;
+  --assessment-icon: #B8EAE6;
+  --assessment-icon-2: #FAC280;
+  --dashboard-card-box-shadow: 0.6rem 0.6rem 5.15rem 0rem rgba(0, 0, 0, 0.05);
+}
+
+:root {
+  --white-color: #ffffff;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f6f6f6;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  border-left: 3px solid #f36d33;
+  color: #666;
+  page-break-inside: avoid;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 1.6em;
+  max-width: 100%;
+  overflow: auto;
+  padding: 1em 1.5em;
+  display: block;
+  word-wrap: break-word;
+}
+
+/* helpSection style */
+
+.customList li::marker {
+  color: #f58601;
+}
+
+.contentsHeader {
+  font-family: Montserrat;
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 27px;
+  letter-spacing: -0.011em;
+  text-align: left;
+}
+
+.links {
+  color: #056ece;
+  font-weight: 600;
+}
+
+.contentBody {
+  font-family: Montserrat;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 21px;
+  color: #777777;
+  letter-spacing: 0.011em;
+  text-align: left;
+}
+
+.SplitPane {
+  position: relative !important;
+}
+
+.MuiPaper-root.MuiAccordion-root {
+  box-shadow: none;
+}
+
+div.HelpSection_expanded__vqSxk {
+  z-index: 1301;
+}
+
+.section {
+  color: inherit;
+  opacity: 0.1;
+}
+
+.section.highlighted {
+  color: orange;
+  opacity: 1;
+}
+
+.MuiTableHead-root .MuiTableRow-root .MuiTableCell-head {
+  font-weight: bold;
+  resize: none;
+  overflow-x: scroll;
+}
+
+.MuiTableCell-root {
+  overflow-x: scroll;
+}
+
+.MuiPopover-root.jsonata {
+  z-index: 1303;
+}
+
+.MuiFormHelperText-root {
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+}
+
+.MuiAccordionSummary-content {
+  margin-bottom: 5px !important;
+}
+
+.MuiStepIcon-root.Mui-completed {
+  color: #f58601 !important;
+}
+
+.MuiStepIcon-root.Mui-active {
+  color: #f58601 !important;
+}
+
+.MuiStepLabel-label.Mui-active {
+  color: #f58601 !important;
+}

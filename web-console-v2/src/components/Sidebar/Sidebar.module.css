@@ -1,0 +1,119 @@
+.sidebarContainer {
+  background-color: var(--sidebar-background-color);
+  position: fixed;
+  top: 2.5rem;
+  padding-top: 3.813rem;
+  width: 16rem;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  bottom: 0;
+  border: 1px solid #f0f0f0;
+  z-index: 999;
+}
+
+.collapsed {
+  width: 3.75rem;
+  margin-right: 1.375rem;
+}
+
+.sidebarButton {
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 18.5rem;
+  margin-top: -2.75rem;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.buttonIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--white);
+  border-radius: 50%;
+}
+
+.buttonIcon.expanded {
+  transform: rotate(180deg);
+}
+
+.buttonIcon.collapsed {
+  transform: rotate(0deg);
+}
+
+.arrowIcon {
+  color: var(--white);
+  border-radius: 3.125rem;
+  height: 1em;
+}
+
+.sidebarButton.collapsed {
+  transform: translateX(-15.313rem);
+}
+
+.sidebarButton.expanded {
+  transform: translateX(-3.25rem);
+}
+
+.box {
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  height: 100vh;
+  margin-top: -3rem;
+  flex-direction: column;
+  padding-top: 2rem;
+}
+
+.listItem {
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+}
+
+.listItem.selected {
+  background: var(--background-gradient);
+}
+
+.sidebarIcons {
+  padding-left: 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dropdownIcon {
+  min-width: unset;
+  margin-left: auto;
+}
+
+.childItem {
+  padding-top: 0.313rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.childItem.selected {
+  background: var(--background-gradient);
+}
+
+.childItem.expand {
+  padding-left: 3.7rem;
+}
+
+.childItem.collapsed {
+  padding-left: 1.5rem;
+}
+
+.manualRecordIcon {
+  margin-right: 2.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.bottomIcons {
+  padding-left: 1rem;
+}

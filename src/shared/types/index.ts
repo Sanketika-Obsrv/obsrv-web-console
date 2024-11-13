@@ -57,3 +57,7 @@ export interface IProxy {
   handler: (config: Record<string, any>) => Function;
   [key: string]: any;
 }
+
+export interface IPostgres {
+  [key: string]: any;
+}

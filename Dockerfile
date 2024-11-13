@@ -1,21 +1,19 @@
-# Stage 1 - Build the React client
-FROM --platform=linux/amd64 node:18-alpine AS client-build
-ARG GRAFANA_URL="http://localhost"
-ARG SUPERSET_URL="http://localhost"
-WORKDIR /opt/app/client
-ENV REACT_APP_GRAFANA_URL=${GRAFANA_URL}
-ENV REACT_APP_SUPERSET_URL=${SUPERSET_URL}
-COPY ./client/package.json .
-RUN yarn install
-COPY ./client/ .
-RUN yarn run build
+
+# Stage 1 - Build the React client v2
+FROM --platform=linux/amd64 node:20.10-alpine AS clientv2-build
+WORKDIR /opt/app/web-console-v2
+COPY ./web-console-v2/package.json .
+RUN npm install --legacy-peer-deps
+COPY ./web-console-v2/ .
+RUN npm run build
 
 # Stage 2 - Run the Node.js server
-FROM --platform=linux/amd64 node:18-alpine AS server-build
+FROM --platform=linux/amd64 node:20.10-alpine AS server-build
 WORKDIR /opt/app/server
-COPY  ./package.json .
-RUN yarn install
+COPY ./package.json .
+RUN npm install
 COPY . .
-COPY --from=client-build /opt/app/client/build ./src/build
-RUN rm -rf /opt/app/server/client
+COPY LICENSE /opt/app/LICENSE
+COPY --from=clientv2-build /opt/app/web-console-v2/build ./src/build
+RUN rm -rf /opt/app/server/web-console-v2
 CMD ["npm", "run", "start"]

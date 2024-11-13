@@ -51,3 +51,4 @@ logs
 *.log
 /src/public/*
 /src/build/*
+package-lock.json
