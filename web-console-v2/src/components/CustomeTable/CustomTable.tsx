@@ -15,6 +15,7 @@ const CustomTable = ({ columns, data, striped, header = true, styles = {} }: any
                 border: '1px solid #D6D6D6',
                 tableLayout:"fixed"
             }}
+            size='small'
         >
             {header && (
                 <TableHead>
@@ -50,7 +51,7 @@ const CustomTable = ({ columns, data, striped, header = true, styles = {} }: any
                                 <TableCell
                                     sx={{
                                         border: '0.0625rem solid #D6D6D6',
-                                        padding: '0.9375rem',
+                                        padding: '0.2375rem',
                                         ...styles
                                     }}
                                     {...cell.getCellProps([{ className: cell.column.className }])}

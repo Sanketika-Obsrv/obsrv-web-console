@@ -1,19 +1,19 @@
 /* eslint-disable */
-import { useEffect, useMemo, useState } from 'react';
 import {
-    Box, Grid, Stack, Switch, Table, TableBody,
-    TableCell, TableHead, TableRow, FormControlLabel,
-    Button, Typography,
+    Box, Grid, Stack,
+    Table, TableBody,
+    TableCell, TableHead, TableRow,
+    Typography
 } from '@mui/material';
-import { useTable, useFilters, useGlobalFilter, useExpanded, } from 'react-table';
+import * as _ from "lodash";
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { useGlobalFilter, useTable } from 'react-table';
 import {
-    GlobalFilter,
     DefaultColumnFilter,
+    GlobalFilter,
     renderFilterTypes,
 } from 'utils/react-table';
-import { useNavigate } from 'react-router';
-import interactIds from 'data/telemetry/interact.json';
-import * as _ from "lodash";
 
 
 function FilteringTable({ columns, data, title = '', toggleRefresh = '' }: any) {
@@ -86,7 +86,7 @@ function FilteringTable({ columns, data, title = '', toggleRefresh = '' }: any) 
         // @ts-ignore
         setGlobalFilter,
         // @ts-ignore
-        toggleRowExpanded,
+        toggleRowExpanded
     } = useTable(
         {
             columns,
@@ -98,9 +98,7 @@ function FilteringTable({ columns, data, title = '', toggleRefresh = '' }: any) 
             filterTypes,
             autoResetExpanded: false,
         },
-        useGlobalFilter,
-        useFilters,
-        useExpanded,
+        useGlobalFilter
     );
 
     useEffect(() => {
@@ -118,7 +116,7 @@ function FilteringTable({ columns, data, title = '', toggleRefresh = '' }: any) 
 
     return (
         <Stack spacing={2}>
-            <Box sx={{ p: 2, pb: 0 }} textAlign='end'>
+            <Box sx={{ pt: 2, pl: 2, pb: 0 }} textAlign='end'>
                 <Grid
                     container
                     spacing={2}
@@ -128,29 +126,29 @@ function FilteringTable({ columns, data, title = '', toggleRefresh = '' }: any) 
                     sx={{ flexWrap: 'nowrap' }}
                 >
                     <Grid item display="flex" alignItems="center">
-                        <Typography variant="h5" mr={0.5}>{title}</Typography>
+                        <Typography variant="h1">{title}</Typography>
                     </Grid>
-                    <Grid item alignItems="center" display="flex">
+                    <Grid item alignItems="left" display="flex">
                         <GlobalFilter
                             preGlobalFilteredRows={preGlobalFilteredRows}
                             // @ts-ignore
                             globalFilter={state.globalFilter}
                             setGlobalFilter={setGlobalFilter}
-                        />
+                                                    />
                         <Box mx={2} display="flex" alignItems="center">
-                            <FormControlLabel control={
+                            {/* <FormControlLabel control={
                                 <Switch inputProps={{ 'aria-label': 'toggle-group' }} onChange={handleGroup} checked={toggleGroup} />
                             }
                                 label="Group by Tags"
                                 sx={{ mr: 0, ml: 0 }}
-                            />
+                            /> */}
                         </Box>
                     </Grid>
                 </Grid>
             </Box>
 
-            <Table {...getTableProps()}>
-                <TableHead sx={{ borderTopWidth: 2 }}>
+            <Table {...getTableProps()} size='small'>
+                <TableHead>
                     {headerGroups.map((headerGroup) => (
                         <TableRow {...headerGroup.getHeaderGroupProps()}>
                             {headerGroup.headers.map((column: any) => (
@@ -159,16 +157,7 @@ function FilteringTable({ columns, data, title = '', toggleRefresh = '' }: any) 
                         </TableRow>
                     ))}
                 </TableHead>
-                <TableBody {...getTableBodyProps()}>
-                    {headerGroups.map((group: any) => (
-                        <TableRow {...group.getHeaderGroupProps()}>
-                            {group.headers.map((column: any) => (
-                                <TableCell {...column.getHeaderProps([{ className: column.className }])}>
-                                    {column.canFilter ? column.render('Filter') : null}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    ))}
+                <TableBody {...getTableBodyProps()}>    
                     {rows.map((row: any) => {
                         prepareRow(row);
                         return (

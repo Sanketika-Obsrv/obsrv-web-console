@@ -12,6 +12,7 @@ import {
 import * as _ from 'lodash';
 import config from 'data/initialConfig';
 import MainCard from 'components/CustomCard/MainCard';
+import { borderColor } from '@mui/system';
 const { spacing } = config;
 
 const FieldSection = (props: any) => {
@@ -40,16 +41,21 @@ const FieldSection = (props: any) => {
     const renderAccordion = () => {
         return (
             <Accordion expanded={true} square={false}>
-                <AccordionSummary aria-controls="panel1bh-content" id="panel1bh-header">
-                    <Stack direction="column"  alignItems="center">
-                        <Typography sx={{ width: '100%', flexShrink: 0 }} variant="h1">
-                            {title}
-                        </Typography>
-                        <Typography variant="body1" sx={{pt: '2px'}}>
-                            {description}
-                        </Typography>
-                    </Stack>
-                </AccordionSummary>
+                {(title || description)
+                    ?
+                    <AccordionSummary aria-controls="panel1bh-content" id="panel1bh-header">
+                        <Stack direction="column" alignItems="center">
+                            <Typography sx={{ width: '100%', flexShrink: 0 }} variant="h1">
+                                {title}
+                            </Typography>
+                            <Typography variant="body1" sx={{ pt: '2px' }}>
+                                {description}
+                            </Typography>
+                        </Stack>
+                    </AccordionSummary>
+                    :
+                    <></>
+                }
                 <AccordionDetails>{sectionDetails()}</AccordionDetails>
             </Accordion>
         );
@@ -64,7 +70,7 @@ const FieldSection = (props: any) => {
                     </Typography>
                 }
                 contentSX={{ px: 3, background: 'inherit' }}
-                sx={{ border: '1px solid #D6D6D6' }}
+                sx={{ border: '1px solid #D6D6D6', borderColor: '#d6d6d6d' }}
             >
                 {sectionDetails()}
             </MainCard>

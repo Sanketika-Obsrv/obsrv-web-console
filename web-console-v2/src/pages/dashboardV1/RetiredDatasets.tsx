@@ -89,7 +89,7 @@ const RetiredDatasets = (props: any) => {
                             row?.status && row?.type && (
                                 <Box display="flex" alignItems="center" mb={1}>
                                     <Tooltip title={row?.status}>
-                                        <FiberManualRecordIcon sx={{ fontSize: '1.25rem' }} color={"secondary"} />
+                                        <FiberManualRecordIcon sx={{ fontSize: '1.25rem' }} color={"error"} />
                                     </Tooltip>
                                     <Tooltip title={row?.dataset_id}>
                                         <Typography align="left" variant="subtitle1">

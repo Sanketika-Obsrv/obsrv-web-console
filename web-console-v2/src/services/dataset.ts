@@ -155,11 +155,13 @@ export const useGenerateJsonSchema = () =>
 export const useUpdateDataset = () =>
     useMutation({
         mutationFn: ({ data }: any) => {
-            const updatedRequestPayload = data?.data_schema ? omitSuggestions(data) : data;
+            if(data?.data_schema) {
+                data['data_schema'] = omitSuggestions(data?.data_schema)
+            }
             const configDetail = fetchSessionStorageItem('configDetails') || {};
             const request = generateRequestBody({
                 request: {
-                    ..._.omit(updatedRequestPayload, ['configurations', 'dataMappings']),
+                    ...data,
                     ..._.pick(configDetail, ['version_key'])
                 },
                 apiId: 'api.datasets.update'
@@ -198,7 +200,7 @@ export const useFetchDatasetDiff = ({ datasetId }: { datasetId: string }) => {
 
 export const useFetchDatasetExists = ({ datasetId }: { datasetId: string }) => {
     return useQuery({
-        queryKey: ['fetchDatasetExists'],
+        queryKey: ['fetchDatasetExists', 'datasetId'],
         queryFn: () => http.get(`${ENDPOINTS.DATASET_EXISTS}/${datasetId}`).then((res) => res.data),
         enabled: !!datasetId
     });
