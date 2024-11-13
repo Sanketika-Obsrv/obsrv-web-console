@@ -16,8 +16,6 @@ import {
     Radio
 } from '@mui/material';
 import { v4 as uuidv4 } from 'uuid';
-import AddNewFields from 'components/Form/DynamicForm';
-import schema from './Schema';
 import React, { useEffect, useState } from 'react';
 import * as _ from 'lodash';
 import { Stack } from '@mui/material';
