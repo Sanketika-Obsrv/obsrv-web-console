@@ -248,7 +248,7 @@ const AddNewField = (props: any) => {
                         </Grid>
                         <Grid>
                             <FormControl>
-                                <FormLabel id="demo-radio-buttons-group-label">Skip On Transformation Failure?</FormLabel>
+                                <FormLabel required id="demo-radio-buttons-group-label">Skip On Transformation Failure?</FormLabel>
                                 <RadioGroup
                                     name="radio-buttons-group"
                                     value={formData.section.transformationMode}
