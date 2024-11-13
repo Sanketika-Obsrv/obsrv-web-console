@@ -325,7 +325,7 @@ const Processing: React.FC = () => {
                         transformation_mode={transformation_mode}
                         label={'Add Sensitive Field'}
                         dialog={<AddPIIDialog />}
-                        transformationOptions={filterTransformationOptions(transformationOptions, columnsToExcludeInPii)}
+                        transformationOptions={transformationOptions}
                         addedSuggestions={piiSuggestions}
                         data={_.map(_.get(processingData, 'pii'), (obj1) => {
                             const matchingObj = _.find(piiSuggestions, {
