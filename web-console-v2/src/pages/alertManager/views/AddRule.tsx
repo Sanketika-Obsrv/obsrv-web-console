@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid } from '@mui/material';
+import { Grid, Box, Button } from '@mui/material';
 import _ from 'lodash';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,8 @@ import { useAlert } from 'contexts/AlertContextProvider';
 import { validateForm } from '../services/queryBuilder';
 import { transformRulePayload, renderSections } from '../services/utils';
 import Loader from 'components/Loader';
+import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
+import { default as alertStyle} from '../views/Alert.module.css'
 
 const AddAlertrules = () => {
     const navigate = useNavigate();
@@ -89,7 +91,21 @@ const AddAlertrules = () => {
             ?
             <Loader loading={loading} />
             :
+            <>
+            <Box mx={4}>
+                <Button variant="back"
+                    startIcon={
+                        <KeyboardBackspaceIcon
+                            className={alertStyle.backIcon}
+                        />
+                    }
+                    onClick={() => { navigate(`/alertRules/custom`) }}
+                >
+                    Back
+                </Button>
+            </Box>
             <Grid>{renderSections({ sections: sections, formData: formData, actionHandler: createAlertRule, actionLabel: "Create Rule" })}</Grid>
+            </>
         }
     </>
 };

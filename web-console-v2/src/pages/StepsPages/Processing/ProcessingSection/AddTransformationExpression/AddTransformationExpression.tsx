@@ -82,6 +82,7 @@ const AddTransformationExpression = (props: any) => {
     }, [data]);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setEvaluationData(transformationType)
         setAnchorEl(event.currentTarget);
     };
 
@@ -100,6 +101,13 @@ const AddTransformationExpression = (props: any) => {
     };
 
     const closeTransformations = () => {
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                transformationType: ''
+            }
+        }));
         setAnchorEl(null);
     };
 

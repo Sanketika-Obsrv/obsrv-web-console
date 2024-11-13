@@ -96,7 +96,7 @@ const ImportDailog = (props: any) => {
         <Box sx={{ p: 1, py: 1.5 }}>
             <DialogTitle>
                 <Alert severity="error" sx={{ lineHeight: 0, display: "flex", justifyContent: "flex-start", mt: 1 }}>
-                    <Typography variant="caption" fontSize={14}>
+                    <Typography variant="body1" fontSize={14}>
                         Dataset Already Exists. Please select the option given below.
                     </Typography>
                 </Alert>

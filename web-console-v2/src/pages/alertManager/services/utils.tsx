@@ -33,7 +33,17 @@ export const renderSections = (context: Record<string, any>) => {
                         <Stack direction="row" spacing={2}>
                             {context.actionHandler && context.actionLabel && (
                                 <Button
-                                    variant="contained"
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                        borderColor: 'primary.main',
+                                        color: 'primary.main',
+                                        '&:hover': {
+                                            backgroundColor: 'primary.main',
+                                            color: 'white',
+                                            borderColor: 'primary.main',
+                                        },
+                                    }}
                                     disabled={
                                         !validateForm(_.get(context.formData, 'error')) ||
                                         !testChannel
@@ -45,7 +55,17 @@ export const renderSections = (context: Record<string, any>) => {
                             )}
                             {context.notificationTestHandler && (
                                 <Button
-                                    variant="contained"
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                        borderColor: 'primary.main',
+                                        color: 'primary.main',
+                                        '&:hover': {
+                                            backgroundColor: 'primary.main',
+                                            color: 'white',
+                                            borderColor: 'primary.main',
+                                        },
+                                    }}
                                     disabled={!validateForm(_.get(context.formData, 'error'))}
                                     onClick={(_) => context.notificationTestHandler()}
                                 >
