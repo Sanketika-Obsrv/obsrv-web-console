@@ -221,22 +221,22 @@ export const metricsMetadata = [
               {
                 id: "apiHealth",
                 description: "Shows the Http Requests Health. If the API failure percentage is above 1%, then it's Unhealthy",
-                chart: (<MetricsCard label="Api health" query={_.get(chartMeta, 'api_health_data_in.query')} />)
+                chart: (<MetricsCard label="API health" query={_.get(chartMeta, 'api_health_data_in.query')} />)
               },
               {
                 id: "apiResponseTime",
                 description: "Shows the API Response time for today",
-                chart: <MetricsCard label="Api Response Time" query={_.get(chartMeta, 'node_query_response_time_avg_data_in.query')} />
+                chart: <MetricsCard label="API Response Time" query={_.get(chartMeta, 'node_query_response_time_avg_data_in.query')} />
               },
               {
                 id: "apiMaxResponseTime",
                 description: "Shows the max API Response time for today",
-                chart: <MetricsCard label="Api Response Time (Max)" query={_.get(chartMeta, 'node_query_response_time_max_data_in.query')} />
+                chart: <MetricsCard label="API Response Time (Max)" query={_.get(chartMeta, 'node_query_response_time_max_data_in.query')} />
               },
               {
                 id: "apiFailurePercentage",
                 description: "Shows the api failure percentage for today",
-                chart: <MetricsCard label="Api Failure Percentage" query={_.get(chartMeta, 'api_failure_percent_data_in.query')} suffix="%" />
+                chart: <MetricsCard label="API Failure Percentage" query={_.get(chartMeta, 'api_failure_percent_data_in.query')} suffix="%" />
               },
               {
                 id: "apiFiftyPercentile",
@@ -305,22 +305,22 @@ export const metricsMetadata = [
               {
                 id: "apiHealth",
                 description: "Shows the Http Requests Health. If the API failure percentage is above 1%, then it's Unhealthy",
-                chart: <MetricsCard label="Api Health" query={_.get(chartMeta, 'api_health_data_out.query')} />
+                chart: <MetricsCard label="API Health" query={_.get(chartMeta, 'api_health_data_out.query')} />
               },
               {
                 id: "apiResponseTime",
                 description: "Shows the API Response time for today",
-                chart: <MetricsCard label="Api Response Time" query={_.get(chartMeta, 'node_query_response_time_avg_data_out.query')} />
+                chart: <MetricsCard label="API Response Time" query={_.get(chartMeta, 'node_query_response_time_avg_data_out.query')} />
               },
               {
                 id: "apiMaxResponseTime",
                 description: "Shows the max API Response time for today",
-                chart: <MetricsCard label="Api Response Time (Max)" query={_.get(chartMeta, 'node_query_response_time_max_data_out.query')} />
+                chart: <MetricsCard label="API Response Time (Max)" query={_.get(chartMeta, 'node_query_response_time_max_data_out.query')} />
               },
               {
                 id: "apiFailurePercentage",
                 description: "Shows the api failure percentage for today",
-                chart: <MetricsCard label="Api Failure Percentage" query={_.get(chartMeta, 'api_failure_percent_data_out.query')} suffix="%" />
+                chart: <MetricsCard label="API Failure Percentage" query={_.get(chartMeta, 'api_failure_percent_data_out.query')} suffix="%" />
               },
               {
                 id: "apiFiftyPercentile",
