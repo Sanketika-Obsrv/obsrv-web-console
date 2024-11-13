@@ -16,6 +16,7 @@ const QueryChart = ({ handleClose, open = false, context = {} }: any) => {
                             color="error"
                             sx={{ marginX: '0.5rem' }}
                             variant="contained"
+                            size="small"
                             onClick={(e) => handleClose()}
                         >
                             Close

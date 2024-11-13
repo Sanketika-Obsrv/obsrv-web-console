@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 
 const defaultFormatToDataTypeMapping: any = {
     text: 'string',
-    number: 'number'
+    number: 'double'
 };
 
 const updateDataType = (
@@ -134,7 +134,6 @@ const updateFormatType = (
     const typeValue = _.get(dataMappings, [val, 'store_format', newValue, 'jsonSchema']);
     const updatedValues = { ...row };
     const storeState = _.cloneDeep(pageData);
-
     if (!Array.isArray(storeState)) {
         console.error('storeState is not an array:', storeState);
         return;

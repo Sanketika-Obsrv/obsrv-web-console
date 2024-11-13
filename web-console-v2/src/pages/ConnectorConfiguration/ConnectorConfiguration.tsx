@@ -215,7 +215,7 @@ const ConnectorConfiguration: React.FC = () => {
                                 <li><strong>Periodic:</strong> Runs the connector at regular intervals, based on the specified polling frequency. Use this option if you need the connector to fetch data repeatedly.</li>
                                 <li><strong>Once:</strong> Runs the connector a single time. Use this option for a one-time data fetch.</li>
                             </ul>
-                            <p>Select the appropriate option based on your data requirements.</p>
+                            <p>Select the appropriate option based on your data requirements. For now only periodic is supported</p>
                         </div>
                     </section>
                     <section id="op_schedule" class="section">
@@ -395,7 +395,6 @@ const ConnectorConfiguration: React.FC = () => {
                                                 fullWidth
                                             >
                                                 <MenuItem value={'Periodic'}>Periodic</MenuItem>
-                                                <MenuItem value={'Once'}>Once</MenuItem>
                                             </Select>
                                         </FormControl>
                                     </Grid>

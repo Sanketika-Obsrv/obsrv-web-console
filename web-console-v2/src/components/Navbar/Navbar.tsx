@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Typography, Breadcrumbs, Grid, Box, Badge } from '@mui/material';
+import { Typography, Breadcrumbs, Grid, Box, Badge, BadgeProps } from '@mui/material';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import styles from './Navbar.module.css';
@@ -14,6 +14,7 @@ import { getBaseURL, getConfigValueV1 } from 'services/configData';
 import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
 import { routeConfigurations } from 'router';
+import { styled } from '@mui/material/styles';
 
 const OBSRV_WEB_CONSOLE = process.env.REACT_APP_OBSRV_WEB_CONSOLE as string || "/dashboard";
 
@@ -88,6 +89,15 @@ function BasicBreadcrumbs(): JSX.Element {
         return null;
     };
 
+    const StyledBadge = styled(Badge)<BadgeProps>(({ theme }) => ({
+        '& .MuiBadge-badge': {
+          right: -3,
+          top: 6,
+          border: `2px solid ${theme.palette.background.paper}`,
+          padding: '0 4px'
+        },
+      }));
+
     return (pathname !== '/login' ? (
         <Grid container className={styles.navMain} role="presentation" alignItems="center">
             <Grid item xs="auto" className={styles.logo}>
@@ -144,9 +154,9 @@ function BasicBreadcrumbs(): JSX.Element {
                     <Superset />
                 </div>
                 <div className={styles.icons} onClick={toggleNotification}>
-                    <Badge badgeContent={read} color="primary">
+                    <StyledBadge badgeContent={read} color="primary">
                         <NotificationsNoneOutlinedIcon />
-                    </Badge>
+                    </StyledBadge>
                 </div>
             </Grid>
             <Grid className={styles.alertNotification}>
