@@ -62,13 +62,13 @@ const AddPIIDialog = (props: any) => {
 
     useEffect(() => {
         const transformations = _.get(data, ['column'], '');
-
+        console.log({data})
         if (!_.isEmpty(data)) {
             const existingData = {
                 section: {
-                    transformations,
-                    transformationType: _.get(data, ['transformationType']),
-                    transformationMode: _.get(data, ['transformationMode'])
+                    transformations: transformations,
+                    transformationType: _.capitalize(_.get(data, ['transformationType'])),
+                    transformationMode: _.capitalize(_.get(data, ['transformationMode']))
                 }
             };
 

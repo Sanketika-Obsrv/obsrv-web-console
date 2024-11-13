@@ -47,6 +47,8 @@ const AddNewField = (props: any) => {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
+    const [transformationError, setTransformationError] = useState<string | null>(null);
+    const [transformationTypeError, setTransformationTypeError] = useState<string | null>(null);
 
     const open = Boolean(anchorEl);
 
@@ -74,6 +76,7 @@ const AddNewField = (props: any) => {
     }, [data]);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setEvaluationData(transformationType)
         setAnchorEl(event.currentTarget);
     };
 
@@ -92,6 +95,13 @@ const AddNewField = (props: any) => {
     };
 
     const closeTransformations = () => {
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                transformationType: ''
+            }
+        }));
         setAnchorEl(null);
     };
 
@@ -130,9 +140,6 @@ const AddNewField = (props: any) => {
 
         onClose();
     };
-
-    const [transformationError, setTransformationError] = useState<string | null>(null);
-    const [transformationTypeError, setTransformationTypeError] = useState<string | null>(null);
 
     const transformation = _.get(formData, ['section', 'transformations']);
     const transformationType = _.get(formData, ['section', 'transformationType']);
