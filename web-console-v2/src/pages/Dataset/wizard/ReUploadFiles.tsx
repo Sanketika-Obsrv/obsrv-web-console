@@ -97,10 +97,11 @@ const ReUploadFiles = (props: any) => {
 
     useEffect(() => {
         if (generateJsonSchemaMutate.data) {
+            console.log(`data`, data)
             const { schema, configurations, dataMappings, ...restGenerateData } =
                 generateJsonSchemaMutate.data;
             const { ...restSchema } = schema;
-            const data = {
+            const payload = {
                 dataset_config: {
                     file_upload_path: filePaths
                 },
@@ -110,7 +111,7 @@ const ReUploadFiles = (props: any) => {
 
             updateDatasetMutate.mutate(
                 {
-                    data
+                    data: payload
                 },
                 {
                     onError: () => {
