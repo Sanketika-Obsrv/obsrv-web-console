@@ -136,7 +136,7 @@ const ConnectorConfiguration: React.FC = () => {
                     const apiSchema = connectorData.ui_spec;
                     if (apiSchema) {
                         setSchema(transformSchema(apiSchema));
-                        setHelpSectionContent(apiSchema);
+                        setHelpSectionContent(apiSchema, _.toLower(connectorData.category));
                         setErrorMessage(null);
                         setFormErrors([])
                         setFormData(_.get(dataset.data.connectors_config[0], 'connector_config'));
@@ -151,7 +151,7 @@ const ConnectorConfiguration: React.FC = () => {
             const apiSchema = readConnector.data.ui_spec;
             if (apiSchema) {
                 setSchema(transformSchema(apiSchema));
-                setHelpSectionContent(apiSchema);
+                setHelpSectionContent(apiSchema, _.toLower(readConnector.data.category));
                 setErrorMessage(null);
             } else {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
@@ -174,7 +174,7 @@ const ConnectorConfiguration: React.FC = () => {
         }
     };
 
-    const setHelpSectionContent = (schema: any): string[] => {
+    const setHelpSectionContent = (schema: any, connectorType: string): string[] => {
 
         const combinedHelp: string[] = [];
         if (schema?.properties) {
