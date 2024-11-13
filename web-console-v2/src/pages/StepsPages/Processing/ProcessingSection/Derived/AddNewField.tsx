@@ -242,7 +242,7 @@ const AddNewField = (props: any) => {
                                 onChange={handleInputChange}
                                 error={Boolean(!_.isEmpty(transformationTypeError))}
                                 helperText={
-                                    transformationTypeError || ''
+                                    transformationTypeError || `Ex: $sum(Product.(Price * Quantity)) FirstName & " " & Surname` 
                                 }
                             />
                         </Grid>
