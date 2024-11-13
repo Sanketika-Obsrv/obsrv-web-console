@@ -88,7 +88,8 @@ const LabelComponent = (props: any) => {
                 }
             }
         })
-        subscribe({ label: "", value: "" })
+        subscribe({})
+        setFormErrors(true)
         setIsEdit(false);
     }
 
@@ -109,7 +110,8 @@ const LabelComponent = (props: any) => {
                 }
             }
         })
-        subscribe({ label: "", value: "" })
+        subscribe({})
+        setFormErrors(true)
         setIsEdit(false);
     }
 
