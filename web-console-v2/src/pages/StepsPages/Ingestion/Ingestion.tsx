@@ -28,6 +28,7 @@ import {
 } from 'services/dataset';
 import { readJsonFileContents } from 'services/utils';
 import { theme } from 'theme';
+import Ajv from "ajv";
 import { default as ingestionStyle, default as localStyles } from './Ingestion.module.css';
 
 interface FormData {
@@ -40,18 +41,20 @@ interface Schema {
     uiSchema: UiSchema;
 }
 
-interface ConfigureConnectorFormProps {
-    schemas: Schema[];
-    formData: FormData;
-    setFormData: React.Dispatch<React.SetStateAction<FormData>>;
-    onChange: (formData: FormData, errors?: unknown[] | null) => void;
-}
-
 const GenericCard = styled(Card)(({ theme }) => ({
     outline: 'none',
     boxShadow: 'none',
     margin: theme.spacing(0, 6, 2, 2)
 }));
+const ajv = new Ajv({strict: false});
+const isJsonSchema = (jsonObject: any) => {
+    try {
+        ajv.compile(jsonObject);
+        return true; // If no errors, it's a valid JSON Schema
+    } catch (err) {
+        return false; // Not a valid JSON Schema
+    }
+}
 
 const MAX_FILES = 10;
 
@@ -287,9 +290,11 @@ const Ingestion = () => {
             const { schema } = generateData;
             const filePaths = _.map(uploadData, 'filePath');
             let mergedEvent = {};
-            if (data) {
-                _.map(data, (item: any) => {
-                    mergedEvent = _.merge(mergedEvent, item);
+            if (data.length > 0) {
+                _.forEach(data, (item: any) => {
+                    if(!isJsonSchema(item)) {
+                        mergedEvent = _.merge(mergedEvent, item);
+                    }
                 });
             }
             if (datasetIdParam === '<new>' && datasetId) {
@@ -430,7 +435,6 @@ const Ingestion = () => {
         } else {
             setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
         }
-        console.log("### datasetName", datasetName)
     };
 
     return (
