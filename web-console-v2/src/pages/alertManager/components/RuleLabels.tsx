@@ -164,7 +164,17 @@ const LabelComponent = (props: any) => {
                 {renderCreateLabelsForm()}
                 <Grid item xs={12}>
                     <Button
-                        variant="contained"
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                            borderColor: 'primary.main',
+                            color: 'primary.main',
+                            '&:hover': {
+                                backgroundColor: 'primary.main',
+                                color: 'white',
+                                borderColor: 'primary.main',
+                            },
+                        }}
                         color="primary"
                         disabled={formErrors}
                         onClick={() => {
