@@ -123,7 +123,7 @@ const IndividualMetricDashboards = (props: any) => {
   }
 
   return (
-    <Box sx={{padding: datasetId && 3}}>
+    <Box sx={{px: datasetId && 3, py: datasetId && 1 }}>
       {datasetId && <Box>
         <Button
           variant="back"
