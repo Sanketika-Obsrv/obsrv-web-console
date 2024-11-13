@@ -43,7 +43,7 @@ const AlertComponent: React.FC = () => {
         <div
             style={{
                 position: 'fixed',
-                top: 30,
+                top: 100,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 width: '100%',
