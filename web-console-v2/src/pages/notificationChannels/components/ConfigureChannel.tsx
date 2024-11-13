@@ -57,7 +57,7 @@ const ConfigureChannel = (props: any) => {
     const channelDescription = () => {
         const selectedChannelDescription = _.get(channelConfigurations, [selectedType, 'description']);
         if (!selectedChannelDescription) return null;
-        return <Alert severity="info" sx={{ lineHeight: 0 }}><Typography variant="caption">{selectedChannelDescription}</Typography></Alert>
+        return <Alert severity="info" sx={{ lineHeight: 0 }}><Typography variant="body1">{selectedChannelDescription}</Typography></Alert>
     }
 
     return <>

@@ -75,10 +75,10 @@ const SendTestMessage = (props: any) => {
                 </Grid>
             </DialogContent>
             <DialogActions>
-                <Button color="error" onClick={onClose}>
+                <Button size="small" color="error" onClick={onClose}>
                     Cancel
                 </Button>
-                <Button variant="contained" autoFocus onClick={_ => sendMessage()}>
+                <Button size="small" variant="contained" autoFocus onClick={_ => sendMessage()}>
                     Send Message
                 </Button>
             </DialogActions>

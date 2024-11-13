@@ -70,6 +70,7 @@ const Ingestion = () => {
     const [data, setData] = useState(dataState);
 
     const [files, setFiles] = useState(filesState);
+    const [isDatasetExistChecking, setIsDatasetExistChecking] = useState(false);
 
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
     const [fileErrors, setFileErrors] = useState<any>(null);
@@ -112,7 +113,7 @@ const Ingestion = () => {
         queryParams: readDatasetQueryParams
     });
     const { data: datasetExistsData, refetch: refetchExists } = useFetchDatasetExists({
-        datasetId: datasetId
+        datasetId
     });
 
     const {
@@ -212,21 +213,26 @@ const Ingestion = () => {
 
     const fetchDataset = (id: string) => {
         refetchExists().then(response => {
-            if (response.isSuccess) {
+            if (response.isSuccess && !_.startsWith(response.data, '<!doctype html>')) {
                 setNameError('Dataset already exists');
             } else {
                 setNameError('');
             }
         }).catch(error => {
             console.error('Error fetching dataset:', error);
+        }).finally(() =>{
+            setIsDatasetExistChecking(false)
         })
     }
     const debouncedFetchDataset = useMemo(
-        () => _.debounce(fetchDataset, 800), []
+        () => {
+            return _.debounce(fetchDataset, 800)
+        }, []
     );
 
     useEffect(() => {
         if (datasetIdParam === '<new>' && datasetId) {
+            setIsDatasetExistChecking(true);
             debouncedFetchDataset(datasetId);
         }
     }, [datasetId]);
@@ -415,7 +421,11 @@ const Ingestion = () => {
     }, [datasetName])
 
     const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
-    const handleNameChange = (newValue: any) => {
+    const handleNameChange = (newValue: any, isBlur=false) => {
+        if(isBlur && newValue) {
+            setIsDatasetExistChecking(true);
+            debouncedFetchDataset(newValue)
+        }
         if (nameRegex.test(newValue)) {
             setDatasetName(newValue);
             if(datasetIdParam === '<new>') {
@@ -501,7 +511,7 @@ const Ingestion = () => {
                                                         label={'Dataset Name'}
                                                         value={datasetName}
                                                         onChange={(e) => handleNameChange(e.target.value)}
-                                                        onBlur={(e) => handleNameChange(e.target.value)}
+                                                        onBlur={(e) => handleNameChange(e.target.value, true)}
                                                         required
                                                         variant="outlined"
                                                         fullWidth
@@ -587,7 +597,6 @@ const Ingestion = () => {
                                     expand={isHelpSectionOpen}
                                 />
                             </Box>
-
                             {/* Fixed action button at the bottom */}
                             <Box
                                 className={`${styles.actionContainer}`}
@@ -607,7 +616,7 @@ const Ingestion = () => {
                                             label: datasetId !== '' ? 'Proceed' : 'Create Schema',
                                             variant: 'contained',
                                             color: 'primary',
-                                            disabled: datasetIdParam === '<new>' && (!_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files) || (datasetName.length < 4 || datasetName.length > 100))
+                                            disabled: datasetIdParam === '<new>' && (!_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files) || (datasetName.length < 4 || datasetName.length > 100 || isDatasetExistChecking))
                                         }
                                     ]}
                                     onClick={onSubmit}

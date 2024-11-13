@@ -324,6 +324,7 @@ const Processing: React.FC = () => {
                         dialog={<AddPIIDialog />}
                         transformationOptions={transformationOptions}
                         addedSuggestions={piiSuggestions}
+                        setPiiSuggestions={setPiiSuggestions}
                         data={_.map(_.get(processingData, 'pii'), (obj1) => {
                             const matchingObj = _.find(piiSuggestions, {
                                 column: _.get(obj1, 'column')
