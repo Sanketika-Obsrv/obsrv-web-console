@@ -124,7 +124,16 @@ const ClusterHealth = () => {
         return <Button key={id}
             startIcon={icon}
             size="small" type="button" disabled={disabled} onClick={onClick}
-            sx={{ mx: 1 }} variant="outlined">{label}
+            sx={{
+                mx: 1,
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                '&:hover': {
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    borderColor: 'primary.main',
+                },
+            }} variant="outlined">{label}
         </Button>
     }
 

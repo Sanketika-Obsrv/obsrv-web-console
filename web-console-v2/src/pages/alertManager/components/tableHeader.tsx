@@ -56,7 +56,16 @@ const AlertTableHeader = (props: any) => {
                     setGlobalFilter={setGlobalFilter}
                     size="small"
                 />
-                {configuration?.list?.showAddAlertBtn && <Button sx={{ mx: 1 }} variant="contained" size="small" onClick={(e) => navigate('/alertRules/add')}>
+                {configuration?.list?.showAddAlertBtn && <Button variant="outlined" sx={{
+                    mx: 1,
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        borderColor: 'primary.main',
+                    },
+                }} size="small" onClick={(e) => navigate('/alertRules/add')}>
                     Add Alert Rule
                 </Button>}
             </>

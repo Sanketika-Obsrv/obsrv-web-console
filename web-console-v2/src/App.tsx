@@ -1,4 +1,4 @@
-import React, { useState, useCallback, FC, lazy, useEffect } from 'react';
+import React, { useState, useCallback, FC, useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import SideBar from 'components/Sidebar/Sidebar';
@@ -17,7 +17,7 @@ const useSidebarToggle = () => {
 
     const sidebarExpandValue = localStorage.getItem('sidebarExpand')
     const [isSidebarExpanded, setSidebarExpanded] = useState<boolean>(
-        _.isEqual(localStorage.getItem('sidebarExpand'), "true") && window.location.pathname !== '/console/login'
+        _.isEqual(sidebarExpandValue, "true")
     );
 
     const toggleSidebar = useCallback(() => {
@@ -35,7 +35,7 @@ const useSidebarToggle = () => {
 
 const App: FC = () => {
     const { isSidebarExpanded, toggleSidebar } = useSidebarToggle();
-
+    const isLoginRoute = window.location.pathname.includes("/login")
     useEffect(() => {
         fetchSystemSettings();
     }, []);
@@ -45,13 +45,11 @@ const App: FC = () => {
             <Locales>
                 <BrowserRouter basename={getBaseURL()}>
                     <Navbar />
-                    <div
-                        className={`${styles.appContainer} ${isSidebarExpanded ? styles.expanded : styles.collapsed}`}
-                    >
-                        <SideBar onExpandToggle={toggleSidebar} expand={isSidebarExpanded} />
+                    <div className={`${styles.appContainer} ${isSidebarExpanded ? styles.expanded : styles.collapsed}`}>
+                        {!isLoginRoute && (<SideBar onExpandToggle={toggleSidebar} expand={isSidebarExpanded} />)}
                         <AlertContextProvider>
                             <AlertComponent />
-                            <main className={styles.mainContainer}>
+                            <main className={isLoginRoute ? styles.mainLoginContainer : styles.mainContainer}>
                                 <AppRouter />
                             </main>
                         </AlertContextProvider>
