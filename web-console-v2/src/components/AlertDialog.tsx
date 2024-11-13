@@ -22,10 +22,10 @@ const AlertDialog = ({ handleClose, action = null, open = false, context = {} }:
                     </DialogContent>
                     {context.show === true && (
                         <DialogActions>
-                            <Button data-edataid={interactIds.alert_dialog_cancel} color="error" onClick={(e) => handleClose()}>
+                            <Button size='small' data-edataid={interactIds.alert_dialog_cancel} color="error" onClick={(e) => handleClose()}>
                                 Cancel
                             </Button>
-                            <Button data-edataid={interactIds.alert_dialog_agree} variant="contained" onClick={handleAction} autoFocus>
+                            <Button size='small' data-edataid={interactIds.alert_dialog_agree} variant="contained" onClick={handleAction} autoFocus>
                                 Agree
                             </Button>
                         </DialogActions>

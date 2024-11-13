@@ -59,7 +59,7 @@ const schema: FormSchema =
             },
             expression: {
                 'ui:widget': 'text',
-                'ui:help': 'Ex: $sum(Product.(Price * Quantity)) \n FirstName & " " & Surname'
+                'ui:help': 'Ex: "$sum(Product.(Price * Quantity))"'
             },
             transformationMode: {
                 'ui:widget': 'radio',
