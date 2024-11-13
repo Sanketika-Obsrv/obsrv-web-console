@@ -14,6 +14,9 @@ import { druidQueries } from 'services/druid';
 import { useParams } from 'react-router-dom';
 import { useAlert } from 'contexts/AlertContextProvider';
 import { DatasetStatus, DatasetType } from 'types/datasets';
+import ApexWithFilters from 'sections/dashboard/analytics/ChartFilters';
+import ApexChart from 'sections/dashboard/analytics/apex';
+import filters from 'data/chartFilters';
 
 const getQueryByType = (queryType: string, datasetId: any, isMasterDataset: boolean, interval: string) => {
     const dateFormat = 'YYYY-MM-DDT00:00:00+05:30'
@@ -63,7 +66,7 @@ const getQueryByType = (queryType: string, datasetId: any, isMasterDataset: bool
         };
 
         case 'total_duplicate_events': {
-            const endDate = interval === 'today' ? dayjs().endOf('day').unix() : dayjs().format(dateFormat) ;            ;
+            const endDate = interval === 'today' ? dayjs().endOf('day').unix() : dayjs().format(dateFormat);;
             return { ..._.get(chartMeta, 'duplicate_events_summary.query'), time: endDate, dataset: datasetId, }
         };
 
@@ -72,6 +75,22 @@ const getQueryByType = (queryType: string, datasetId: any, isMasterDataset: bool
             const metadata = isMasterDataset ?
                 _.cloneDeep({ ..._.get(chartMeta, 'failed_events_summary_master_datasets.query'), time: endDate, dataset: datasetId, }) :
                 _.cloneDeep({ ..._.get(chartMeta, 'failed_events_summary.query'), time: endDate, dataset: datasetId, });
+            return metadata;
+        };
+
+        case 'total_events_processed_apex_charts': {
+            const metadata = isMasterDataset ?
+                _.cloneDeep(_.get(chartMeta, 'totalEventsProcessedTimeSeriesPerMasterDataset')) :
+                _.cloneDeep(_.get(chartMeta, 'totalEventsProcessedTimeSeriesPerDataset'));
+            _.set(metadata, 'query.body.query.filter.fields[1].value', datasetId);
+            return metadata;
+        };
+
+        case 'events_processing_time_apex_charts': {
+            const metadata = isMasterDataset ?
+                _.cloneDeep(_.get(chartMeta, 'minProcessingTimeSeriesPerMasterDataset')) :
+                _.cloneDeep(_.get(chartMeta, 'minProcessingTimeSeriesPerDataset'));
+            _.set(metadata, 'query.body.query.filter.fields[1].value', datasetId);
             return metadata;
         };
 
@@ -87,7 +106,7 @@ const DatasetMetricsCard: React.FC<any> = (props: any) => {
     const { showAlert } = useAlert();
     const isMasterDataset = useMemo(() => _.get(datasetDetails, 'data.type') === DatasetType.MasterDataset, [datasetDetails]);
     const hasBatchConfig = useMemo(() => _.get(datasetDetails, ['data', 'extraction_config', 'is_batch_event',]), [datasetDetails]);
-    const { label, icon, queryType, uuid, transformer, description, refresh, interval } = props;
+    const { label, icon, queryType, uuid, transformer, description, refresh, interval, isApexChart } = props;
     const query = getQueryByType(queryType, datasetId, isMasterDataset, interval);
     const [value, setValue] = useState<any>('');
     const [loading, setLoading] = useState(false);
@@ -117,39 +136,44 @@ const DatasetMetricsCard: React.FC<any> = (props: any) => {
     }, [refresh?.api]);
 
     return (
-        <Tooltip title={description}>
-            <Box className={styles.cardContainer}>
-                <Card
-                    elevation={0}
-                    className={styles.card}
-                >
-                    <CardContent
-                        className={styles.cardContent}
+        !isApexChart ?
+            <Tooltip title={description}>
+                <Box className={styles.cardContainer}>
+                    <Card
+                        elevation={0}
+                        className={styles.card}
                     >
-                        <span>{icon}</span>
-                        <Typography variant="bodyBold" className={styles.loadingText}>
-                            {loading ? 'Loading...' : _.isArray(value) ? value[0] : value}
-                        </Typography>
-
-                        <Grid
-                            container
-                            className={styles.labelContainer}
+                        <CardContent
+                            className={styles.cardContent}
                         >
-                            <Typography variant="captionMedium" className={styles.label}>
-                                {label}
+                            <span>{icon}</span>
+                            <Typography variant="bodyBold" className={styles.loadingText}>
+                                {loading ? 'Loading...' : _.isArray(value) ? value[0] : value}
                             </Typography>
 
-                            {/* <Typography
+                            <Grid
+                                container
+                                className={styles.labelContainer}
+                            >
+                                <Typography variant="captionMedium" className={styles.label}>
+                                    {label}
+                                </Typography>
+
+                                {/* <Typography
                 color={isPositive ? 'success.main' : 'error.main'}
                 className={styles.symbol}
               >
                 {symbol} {_.trimStart(change, '+-')}
               </Typography> */}
-                        </Grid>
-                    </CardContent>
-                </Card>
-            </Box>
-        </Tooltip>
+                            </Grid>
+                        </CardContent>
+                    </Card>
+                </Box>
+            </Tooltip>
+            :
+            <ApexWithFilters title={label} filters={_.get(filters, 'variant1')}>
+                <ApexChart metadata={getQueryByType(queryType, datasetId, isMasterDataset, interval)} interval={1140}></ApexChart>
+            </ApexWithFilters>
     );
 };
 
