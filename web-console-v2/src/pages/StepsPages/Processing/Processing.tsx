@@ -261,7 +261,6 @@ const Processing: React.FC = () => {
 
     const columnsToExcludeInTransformation = _.union(piiColumns, derivedColumns);
     const columnsToExcludeInDerived = _.union(piiColumns, transformationColumns);
-    const columnsToExcludeInPii = _.union(derivedColumns, transformationColumns);
 
     function filterTransformationOptions(
         transformationOptions: any[],
