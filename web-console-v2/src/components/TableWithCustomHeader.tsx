@@ -41,7 +41,7 @@ function TableWithCustomHeader({ columns, data, renderHeader }: any) {
     return (
         <Stack spacing={2}>
             {renderHeader ? renderHeader({ preGlobalFilteredRows, setGlobalFilter, toggleRowExpanded, state }) : null}
-            <Table {...getTableProps()}>
+            <Table {...getTableProps()} size='small'>
                 <TableHead sx={{ borderTopWidth: 2 }}>
                     {headerGroups.map((headerGroup) => (
                         <TableRow {...headerGroup.getHeaderGroupProps()}>
@@ -55,15 +55,6 @@ function TableWithCustomHeader({ columns, data, renderHeader }: any) {
                     ))}
                 </TableHead>
                 <TableBody {...getTableBodyProps()}>
-                    {headerGroups.map((group: any) => (
-                        <TableRow {...group.getHeaderGroupProps()}>
-                            {group.headers.map((column: any) => (
-                                <TableCell {...column.getHeaderProps([{ className: column.className }])}>
-                                    {column.canFilter ? column.render('Filter') : null}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    ))}
                     {rows.map((row: any) => {
                         prepareRow(row);
                         return (

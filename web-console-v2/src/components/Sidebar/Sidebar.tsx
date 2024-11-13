@@ -77,6 +77,16 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
             setSelectedChildItem(null);
             return
         }
+        if (pathSegments[0] === 'dataset') {
+            setSelectedItem(mainRoute);
+            setOpenParent(mainRoute);
+            if (mainRoute.match(subRoute)?.index === 0) {
+                navigate(`${mainRoute}/create`);
+            } else {
+                navigate(subRoute);
+            }
+            return
+        } 
 
         if (pathSegments[0] === 'alertRules') {
             setSelectedItem(mainRoute);
