@@ -14,6 +14,7 @@ import MetricsCard from "components/Cards/MetricsCard/MetricsCard";
 import IngestionCharts from "sections/dashboard/analytics/IngestionCharts";
 import HoursSinceLastBackup from "sections/widgets/HoursSinceLastBackup";
 import StorageMetricsCard from "components/Cards/StorageMetricCard";
+import DatasetMetricsCard from "components/Cards/DatasetMetricsCard/DatasetMetricsCard";
 
 export const metricsMetadata = [
   {
@@ -713,6 +714,132 @@ export const metricsMetadata = [
           // }
         ]
       }
+    }
+  },
+  {
+    id: "individualDataset",
+    primaryLabel: "Dataset",
+    secondaryLabel: "Metrics",
+    description: "This page shows the metrics of datasets processing. With this information you can monitor the processing time and throughput of the events.",
+    icon: DotChartOutlined,
+    menuIcon: SettingOutlined,
+    color: 'main',
+    charts: {
+      xs: {
+        size: {
+          xs: 12,
+          sm: 6,
+          md: 4,
+          lg: 4
+        },
+        metadata: [
+        ]
+      },
+      small: {
+        size: {
+          xs: 12,
+          sm: 6,
+          md: 4,
+          lg: 4
+        },
+        groups: [
+          {
+            title: "Dataset Status",
+            metadata: [
+              {
+                id: "Status",
+                description: "Status",
+                chart: <DatasetMetricsCard label="Status" queryType={'status'} />
+              },
+              {
+                id: "Last Synced Time",
+                description: "Last Synced Time",
+                chart: <DatasetMetricsCard label="Last Synced Time" queryType={'last_synced_time'} />
+              }
+            ]
+          },
+          {
+            title: "Today",
+            metadata: [
+              {
+                id: "Total Events Processed",
+                description: "Total Events Processed",
+                chart: <DatasetMetricsCard label="Total Events Processed" queryType={'total_events_processed'} interval={'today'} />
+              },
+              {
+                id: "Min Processing Time",
+                description: "Min Processing Time",
+                chart: <DatasetMetricsCard label="Min Processing Time" queryType={'min_processing_time'} interval={'today'} />
+              },
+              {
+                id: "Average Processing Time",
+                description: "Average Processing Time",
+                chart: <DatasetMetricsCard label="Average Processing Time" queryType={'average_processing_time'} interval={'today'}/>
+              },
+              {
+                id: "Max Processing Time",
+                description: "Max Processing Time",
+                chart: <DatasetMetricsCard label="Max Processing Time" queryType={'max_processing_time'} interval={'today'}/>
+              },
+              {
+                id: "Total Duplicate Batches",
+                description: "Total Duplicate Batches",
+                chart: <DatasetMetricsCard label="Total Duplicate Batches" queryType={'total_duplicate_batches'} interval={'today'}/>
+              },
+              {
+                id: "Total Duplicate Events",
+                description: "Total Duplicate Events",
+                chart: <DatasetMetricsCard label="Total Duplicate Events" queryType={'total_duplicate_events'} interval={'today'}/>
+              },
+              {
+                id: "Total Failed Events",
+                description: "Total Failed Events",
+                chart: <DatasetMetricsCard label="Total Failed Events" queryType={'total_failed_events'} interval={'today'}/>
+              },
+            ]
+          },
+          {
+            title: "Yesterday",
+            metadata: [
+              {
+                id: "Total Events Processed",
+                description: "Total Events Processed",
+                chart: <DatasetMetricsCard label="Total Events Processed" queryType={'total_events_processed'} interval={'yesterday'}/>
+              },
+              {
+                id: "Min Processing Time",
+                description: "Min Processing Time",
+                chart: <DatasetMetricsCard label="Min Processing Time" queryType={'min_processing_time'} interval={'yesterday'}/>
+              },
+              {
+                id: "Average Processing Time",
+                description: "Average Processing Time",
+                chart: <DatasetMetricsCard label="Average Processing Time" queryType={'average_processing_time'} interval={'yesterday'}/>
+              },
+              {
+                id: "Max Processing Time",
+                description: "Max Processing Time",
+                chart: <DatasetMetricsCard label="Max Processing Time" queryType={'max_processing_time'} interval={'yesterday'}/>
+              },
+              {
+                id: "Total Duplicate Batches",
+                description: "Total Duplicate Batches",
+                chart: <DatasetMetricsCard label="Total Duplicate Batches" queryType={'total_duplicate_batches'} interval={'yesterday'}/>
+              },
+              {
+                id: "Total Duplicate Events",
+                description: "Total Duplicate Events",
+                chart: <DatasetMetricsCard label="Total Duplicate Events" queryType={'total_duplicate_events'} interval={'yesterday'}/>
+              },
+              {
+                id: "Total Failed Events",
+                description: "Total Failed Events",
+                chart: <DatasetMetricsCard label="Total Failed Events" queryType={'total_failed_events'} interval={'yesterday'}/>
+              },
+            ]
+          }
+        ],
+      },
     }
   }
 ]
