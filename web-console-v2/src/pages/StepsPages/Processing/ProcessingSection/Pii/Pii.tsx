@@ -17,7 +17,6 @@ import {
     InputLabel,
     MenuItem
 } from '@mui/material';
-import schema from './Schema';
 import React, { useEffect, useState } from 'react';
 import * as _ from 'lodash';
 import { Stack } from '@mui/material';
@@ -61,13 +60,6 @@ const AddPIIDialog = (props: any) => {
         }
     });
 
-    if (!_.isEmpty(transformationOptions))
-        _.set(
-            schema,
-            ['schema', 'properties', 'section', 'properties', 'transformations', 'enum'],
-            transformationOptions
-        );
-
     useEffect(() => {
         const transformations = _.get(data, ['column'], '');
 
@@ -83,11 +75,6 @@ const AddPIIDialog = (props: any) => {
             setFormData(existingData);
         }
 
-        _.set(
-            schema,
-            ['uiSchema', 'section', 'transformations', 'ui:disabled'],
-            _.includes(_.map(addedSuggestions, 'column'), transformations)
-        );
     }, [data, addedSuggestions]);
 
     const onHandleClick = async () => {
