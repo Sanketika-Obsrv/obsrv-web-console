@@ -22,7 +22,7 @@ const actions = [
     {
         label: "View",
         color: "primary",
-        size: "large",
+        size: "small",
         isDisabled: (context: Record<string, any>) => false,
         icon: <EyeOutlined />,
         onClick: (context: Record<string, any>) => {
@@ -34,7 +34,7 @@ const actions = [
     {
         label: "Publish",
         color: "primary",
-        size: "large",
+        size: "small",
         icon: <PlayCircleOutlined />,
         isDisabled: (context: Record<string, any>) => {
             const { payload } = context;
@@ -71,7 +71,7 @@ const actions = [
     {
         label: "Edit",
         color: "primary",
-        size: "large",
+        size: "small",
         isDisabled: (context: Record<string, any>) => false,
         icon: <EditOutlined />,
         onClick: (context: Record<string, any>) => {
@@ -83,7 +83,7 @@ const actions = [
     {
         label: "Retire",
         color: "error",
-        size: "large",
+        size: "small",
         isDisabled: (context: Record<string, any>) => {
             const { payload } = context;
             const { status } = payload;
@@ -175,7 +175,7 @@ const NotificationChannelsTable = (props: any) => {
                         <Box minWidth={'7.5rem'}>
                             <Chip
                                 size="small"
-                                variant="filled"
+                                variant="outlined"
                                 color={alertStatusColor(status)}
                                 label={status.toUpperCase()}
                             />

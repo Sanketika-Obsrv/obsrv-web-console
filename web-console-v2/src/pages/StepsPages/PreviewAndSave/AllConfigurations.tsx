@@ -13,6 +13,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { endpoints, useFetchDatasetsById } from 'services/dataset';
 import { http } from 'services/http';
+import { datasetRead } from 'services/datasetV1';
+import IconButton from '@mui/material/IconButton';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import Collapse from '@mui/material/Collapse';
 
 interface TransformationRow {
     field_key: string;
@@ -27,6 +32,58 @@ const datasetTypeMapping = {
     'transaction': 'Data Changes (Updates or Transactions)',
     'master': 'Master Data'
 }
+
+const DenormRow = ({ value }: any) => {
+    const [open, setOpen] = useState(false);
+    return (
+        <>
+            <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                <TableCell align="left">{value?.denorm_key}</TableCell>
+                <TableCell align="left">{value?.name}</TableCell>
+                <TableCell>
+                    Show Fields
+                    <IconButton
+                        aria-label="expand row"
+                        size="small"
+                        onClick={() => setOpen(!open)}
+                    >
+                        {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                    </IconButton>
+                </TableCell>
+            </TableRow>
+            <TableRow>
+                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+                    <Collapse in={open} timeout="auto" unmountOnExit>
+                        <Box sx={{ margin: 1 }}>
+                            <Table stickyHeader size="small" aria-label="a dense table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell align="left" width={'50%'}>Field</TableCell>
+                                        <TableCell align="left" width={'20%'}>Arrival Format</TableCell>
+                                        <TableCell align="left" width={'15%'}>Data Type</TableCell>
+                                        <TableCell align="left" width={'15%'}>Required</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {value.data_schema.properties && _.entries(value.data_schema.properties).map(([key, value]) => (
+                                        <>
+                                        <TableRow key={key} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                            <TableCell align="left">{key}</TableCell>
+                                            <TableCell align="left">{(value as any).arrival_format}</TableCell>
+                                            <TableCell align="left">{(value as any).data_type}</TableCell>
+                                            <TableCell align="left"><Switch disabled checked={(value as any).isRequired}/></TableCell>
+                                        </TableRow>
+                                        </>
+                                    ))} 
+                                </TableBody>
+                            </Table>
+                        </Box>
+                    </Collapse>
+                </TableCell>
+            </TableRow>
+        </>
+    );
+};
 
 const AllConfigurations = () => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -43,7 +100,8 @@ const AllConfigurations = () => {
     const [sensitiveFields, setSensitiveFields] = useState<any[]>([]);
     const [derivedFields, setDerivedFields] = useState<any[]>([]);
     const [transformFields, setTransformFields] = useState<any[]>([]);
-    const [dataDenormalizations, setDataDenormalizations] = useState<any[]>([]);
+    const [dataDenormalizations, setDataDenormalizations] = useState<any[]>([])
+    const [openRows, setOpenRows] = useState<any>({});;
 
     const response = useFetchDatasetsById({
         datasetId,
@@ -97,8 +155,14 @@ const AllConfigurations = () => {
                 setTransformFields(transformations);
             }
             if(denormData.length > 0) {
-                _.forEach(denormData, (denorm) => {
-                    dataDenormalizations.push(denorm);
+                _.forEach(denormData, async (denorm) => {
+                    const datasetResponse = await datasetRead({ datasetId: `${denorm.dataset_id}?fields=data_schema,name` }).then(response => _.get(response, 'data.result'));
+                    const denormData = {
+                        ...denorm,
+                        name: _.get(datasetResponse, 'name'),
+                        data_schema: _.get(datasetResponse, 'data_schema')
+                    }
+                    dataDenormalizations.push(denormData);
                 })
                 setDataDenormalizations(dataDenormalizations)
             }
@@ -323,9 +387,9 @@ const AllConfigurations = () => {
                                         <TableCell align="left" colSpan={3}>Data Denormalization</TableCell>
                                     </StyledTableRow>
                                     <TableRow>
-                                        <TableCell align="left" width={'30%'} sx={{ borderRight: '1px solid #ddd !important' }}>Dataset Field</TableCell>
-                                        <TableCell align="left" width={'30%'} sx={{ borderRight: '1px solid #ddd !important' }}>Master Dataset</TableCell>
-                                        <TableCell align="left" width={'40%'}>Input Field (to store the data)</TableCell>
+                                        <TableCell align="left" width={'40%'} sx={{ borderRight: '1px solid #ddd !important' }}>Dataset Field</TableCell>
+                                        <TableCell align="left" width={'40%'} sx={{ borderRight: '1px solid #ddd !important' }}>Master Dataset</TableCell>
+                                        <TableCell align="left" width={'20%'} sx={{ borderRight: '1px solid #ddd !important' }}></TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -335,11 +399,9 @@ const AllConfigurations = () => {
                                         </StyledTableRow>)
                                     }
                                     {dataDenormalizations.length > 0 && dataDenormalizations.map((value) => (
-                                         <StyledTableRow key={value.field} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                            <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{value?.denorm_key}</TableCell>
-                                            <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{value?.dataset_id}</TableCell>
-                                            <TableCell align="left">{value?.denorm_out_field}</TableCell>
-                                        </StyledTableRow>
+                                        <React.Fragment key={value.field}>
+                                            <DenormRow value={value} />
+                                        </React.Fragment>
                                     ))}
                                 </TableBody>
                             </Table>

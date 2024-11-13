@@ -22,7 +22,7 @@
 }
 
 .loadingText {
-    font-size: 2.125rem !important;
+    font-size: 1.7rem !important;
 }
 
 .labelContainer {
@@ -36,10 +36,22 @@
 
 .label {
     font-size: 1rem !important;
+    word-wrap: break-word;
+    white-space: normal;
 }
 
 .symbol {
     margin-left: auto;
     text-align: center;
     font-size: 1rem !important;
+}
+
+.linearProgressContainer{
+    display: flex;
+    align-items: center;
+}
+
+.linearProgress{
+    width: 100%;
+    margin-right: 0.5rem;
 }

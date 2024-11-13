@@ -215,5 +215,9 @@ export default {
     },
     "num_api_calls": {
         "query": "sum(sum_over_time(objectdiscoveryjob_num_api_calls{datasetId=$dataset}[1d])) + sum(sum_over_time(objectprocessorjob_num_api_calls{datasetId=$dataset}[1d]))"
-    }
+    },
+    "cluster_last_backup_time": {
+        query:
+            'time() - s3_last_modified_object_date{job="s3-common-backups", bucket=~"velero.*"}',
+    },
 }

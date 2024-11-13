@@ -161,6 +161,29 @@ export default {
       },
     },
   },
+  cluster_last_backup_time: {
+    query: {
+      id: 'clusterLastBackupTime',
+      type: 'api',
+      url: endpoints.prometheusRead,
+      method: 'GET',
+      headers: {},
+      body: {},
+      params: {
+        query: promql.cluster_last_backup_time.query,
+      },
+      parse: (response: any) => {
+        const result = _.get(response, 'data.result[0].value[1]');
+        if (!result) throw new Error();
+        const date = dayjs().subtract(result * 1000, 'milliseconds');
+        const timeAgo = date.fromNow();
+        return timeAgo
+      },
+      error() {
+        return prettyMilliseconds(0);
+      },
+    },
+  },
   pv_total_size: {
     query: {
       id: 'pvTotalSize',
