@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Grid, Stack, Typography } from '@mui/material';
+import { Box, Alert, Grid, Stack, Typography } from '@mui/material';
 import AdditionSummary from './AdditionSummary';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import _ from 'lodash';
@@ -9,11 +9,19 @@ import { renderSections } from 'pages/alertManager/services/utils';
 import UpdateSummary from './UpdateSummary';
 import DeletionSummary from './DeletionSummary';
 import { useParams } from 'react-router-dom';
+import Loader from 'components/Loader';
+import MuiAccordion, { AccordionProps } from '@mui/material/Accordion';
+import MuiAccordionDetails from '@mui/material/AccordionDetails';
+import MuiAccordionSummary, {
+    AccordionSummaryProps,
+} from '@mui/material/AccordionSummary';
+import ArrowForwardIosSharpIcon from '@mui/icons-material/ArrowForwardIosSharp';
+import { styled } from '@mui/material/styles';
 
 const ReviewDataset = () => {
     const { datasetId }:any = useParams();
 
-    const { data } = useFetchDatasetDiff({
+    const { data, isPending } = useFetchDatasetDiff({
         datasetId
     });
 
@@ -32,75 +40,93 @@ const ReviewDataset = () => {
         );
     };
 
-    const sections = [
-        ...(additions?.length
-            ? [
-                  {
-                      id: 'additions',
-                      componentType: 'box',
-                      title: (
-                          <Stack direction="row" spacing={2}>
-                              <Typography variant="inherit">Additional Parameters</Typography>
-                          </Stack>
-                      ),
-                      description: 'Lists down all the additions in the configurations',
-                      component: <AdditionSummary diff={additions} transform={transform} />
-                  }
-              ]
-            : []),
-        ...(modifications?.length
-            ? [
-                  {
-                      id: 'updates',
-                      componentType: 'box',
-                      title: (
-                          <Stack direction="row" spacing={2}>
-                              <Typography variant="inherit">Modified Parameters</Typography>
-                          </Stack>
-                      ),
-                      description:
-                          'Lists down all the modifications in the configuration along with new and old value',
-                      component: <UpdateSummary diff={modifications} transform={transform} />
-                  }
-              ]
-            : []),
-        ...(deletions?.length
-            ? [
-                  {
-                      id: 'deletion',
-                      componentType: 'box',
-                      title: (
-                          <Stack direction="row" spacing={2}>
-                              <RemoveCircleIcon color="error" />{' '}
-                              <Typography variant="inherit">Deleted Parameters</Typography>
-                          </Stack>
-                      ),
-                      description: 'Lists down all the deletions in the configurations',
-                      component: <DeletionSummary diff={deletions} transform={transform} />
-                  }
-              ]
-            : [])
-    ];
+    const [expanded, setExpanded] = React.useState<string | false>('added');
 
-    const render = () => {
-        if (noModifications) {
-            return (
-                <Grid item xs={12}>
-                    <Alert severity="info">{en['no-summary-modifications']}</Alert>
-                </Grid>
-            );
-        }
-        return (
-            <Grid item xs={12}>
-                {renderSections({ sections: sections })}
-                <Alert severity="error">{en['dataset-summary-review-warning']}</Alert>
-            </Grid>
-        );
+    const handleChange = (panel: string) => (event: React.SyntheticEvent, newExpanded: boolean) => {
+        setExpanded(newExpanded ? panel : false);
     };
 
+    const Accordion = styled((props: AccordionProps) => (
+        <MuiAccordion disableGutters elevation={0} square {...props} />
+    ))(({ theme }) => ({
+        border: `1px solid ${theme.palette.divider}`,
+        '&:not(:last-child)': {
+            borderBottom: 0,
+        },
+        '&::before': {
+            display: 'none',
+        },
+    }));
+
+    const AccordionSummary = styled((props: AccordionSummaryProps) => (
+        <MuiAccordionSummary
+            expandIcon={<ArrowForwardIosSharpIcon sx={{ fontSize: '0.9rem' }} />}
+            {...props}
+        />
+    ))(({ theme }) => ({
+        backgroundColor:
+            theme.palette.mode === 'dark'
+                ? 'rgba(255, 255, 255, .05)'
+                : 'rgba(0, 0, 0, .03)',
+        flexDirection: 'row-reverse',
+        '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
+            transform: 'rotate(90deg)',
+        },
+        '& .MuiAccordionSummary-content': {
+            marginLeft: theme.spacing(1),
+        },
+    }));
+
+    const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
+        padding: theme.spacing(2),
+        borderTop: '1px solid rgba(0, 0, 0, .125)',
+    }));
+
+    
     return (
         <>
-            <Grid container>{render()}</Grid>
+            {(isPending) ? <Loader loading={isPending} descriptionText="Please wait while we process your request." /> : 
+                <>
+                {noModifications && (
+                    <Grid item xs={12}>
+                        <Alert severity="info">{en['no-summary-modifications']}</Alert>
+                    </Grid>
+                )}
+                {!noModifications && (
+                    <>
+                        <Box>
+                            <Accordion expanded={expanded === 'added'} onChange={handleChange('added')}>
+                                <AccordionSummary aria-controls="panel1d-content" id="panel1d-header" disabled={additions.length === 0}>
+                                    <Typography variant='h6'>Added</Typography>
+                                </AccordionSummary>
+                                {additions?.length && (<AccordionDetails>
+                                    <AdditionSummary diff={additions} transform={transform} />
+                                </AccordionDetails>)}
+                            </Accordion>
+                            <Accordion expanded={expanded === 'modified'} onChange={handleChange('modified')}>
+                                <AccordionSummary aria-controls="panel1d-content" id="panel1d-header" disabled={modifications.length === 0}>
+                                    <Typography variant='h6'>Modified</Typography>
+                                </AccordionSummary>
+                                {modifications?.length && (<AccordionDetails>
+                                    <UpdateSummary diff={modifications} transform={transform} />
+                                </AccordionDetails>)}
+                            </Accordion>
+                            <Accordion expanded={expanded === 'deleted'} onChange={handleChange('deleted')}>
+                                <AccordionSummary aria-controls="panel1d-content" id="panel1d-header" disabled={deletions.length === 0}>
+                                    <Typography variant='h6'>Deleted</Typography>
+                                </AccordionSummary>
+                                {deletions?.length && (<AccordionDetails>
+                                    <DeletionSummary diff={deletions} transform={transform} />
+                                </AccordionDetails>)}
+                            </Accordion>
+                        </Box>
+                        <Grid item xs={12}>
+                            <Alert severity="error">{en['dataset-summary-review-warning']}</Alert>
+                        </Grid>
+                    </>
+                )}
+                </>
+            }
         </>
     );
 };

@@ -17,6 +17,7 @@ import UploadFiles from 'pages/Dataset/wizard/UploadFiles';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
+    isJsonSchema,
     useCreateDataset,
     useFetchDatasetExists,
     useFetchDatasetsById,
@@ -28,7 +29,6 @@ import {
 } from 'services/dataset';
 import { readJsonFileContents } from 'services/utils';
 import { theme } from 'theme';
-import Ajv from "ajv";
 import { default as ingestionStyle, default as localStyles } from './Ingestion.module.css';
 
 interface FormData {
@@ -46,15 +46,6 @@ const GenericCard = styled(Card)(({ theme }) => ({
     boxShadow: 'none',
     margin: theme.spacing(0, 6, 2, 2)
 }));
-const ajv = new Ajv({strict: false});
-const isJsonSchema = (jsonObject: any) => {
-    try {
-        ajv.compile(jsonObject);
-        return true; // If no errors, it's a valid JSON Schema
-    } catch (err) {
-        return false; // Not a valid JSON Schema
-    }
-}
 
 const MAX_FILES = 10;
 
@@ -452,7 +443,7 @@ const Ingestion = () => {
                     isGenerateLoading ||
                     isUpdateLoading
                 }
-                descriptionText="Loading the page"
+                descriptionText="Please wait while we process your request."
             />
 
             {!(

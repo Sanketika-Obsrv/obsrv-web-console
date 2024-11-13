@@ -1,162 +1,98 @@
 export const dataMappings = {
-    text: {
-        arrival_format: ['string'],
-        store_format: {
-            string: {
-                jsonSchema: 'string',
-                datasource: 'string'
+    "text": {
+        "arrival_format": ["string"],
+        "store_format": {
+            "string": {
+                "jsonSchema": "string",
+                "datasource": "string"
+            }, 
+            "date-time": {
+                "jsonSchema": "string",
+                "datasource": "string"
             },
-            'date-time': {
-                jsonSchema: 'string',
-                datasource: 'string'
+            "date": {
+                "jsonSchema": "string",
+                "datasource": "string"
+            }, 
+            "boolean": {
+                "jsonSchema": "string",
+                "datasource": "boolean"
+            }, 
+            "epoch": {
+                "jsonSchema": "string",
+                "datasource": "integer"
             },
-            date: {
-                jsonSchema: 'string',
-                datasource: 'string'
+            "long": {
+                "jsonSchema": "string",
+                "datasource": "long"
             },
-            boolean: {
-                jsonSchema: 'string',
-                datasource: 'boolean'
+            "double": {
+                "jsonSchema": "string",
+                "datasource": "double"
             },
-            epoch: {
-                jsonSchema: 'string',
-                datasource: 'integer'
+            "bigdecimal": {
+                "jsonSchema": "string",
+                "datasource": "double"
             },
-            long: {
-                jsonSchema: 'string',
-                datasource: 'long'
-            },
-            double: {
-                jsonSchema: 'string',
-                datasource: 'double'
-            },
-            bigdecimal: {
-                jsonSchema: 'string',
-                datasource: 'double'
-            },
-            integer: {
-                jsonSchema: 'string',
-                datasource: 'long'
+            "integer": {
+                "jsonSchema": "string",
+                "datasource": "long"
             }
         }
     },
-    string: {
-        arrival_format: ['string'],
-        store_format: {
-            string: {
-                jsonSchema: 'string',
-                datasource: 'string'
+    "number": {
+        "arrival_format": ["number", "integer"],
+        "store_format": {
+            "integer": {
+                "jsonSchema": "integer",
+                "datasource": "long"
             },
-            'date-time': {
-                jsonSchema: 'string',
-                datasource: 'string'
+            "float": {
+                "jsonSchema": "number",
+                "datasource": "double"
             },
-            date: {
-                jsonSchema: 'string',
-                datasource: 'string'
+            "long": {
+                "jsonSchema": "integer",
+                "datasource": "long"
             },
-            boolean: {
-                jsonSchema: 'string',
-                datasource: 'boolean'
+            "double": {
+                "jsonSchema": "number",
+                "datasource": "double"
             },
-            epoch: {
-                jsonSchema: 'string',
-                datasource: 'integer'
+            "bigdecimal": {
+                "jsonSchema": "number",
+                "datasource": "double"
             },
-            long: {
-                jsonSchema: 'string',
-                datasource: 'long'
-            },
-            double: {
-                jsonSchema: 'string',
-                datasource: 'double'
-            },
-            bigdecimal: {
-                jsonSchema: 'string',
-                datasource: 'double'
-            },
-            integer: {
-                jsonSchema: 'string',
-                datasource: 'long'
+            "epoch":{
+                "jsonSchema": "integer",
+                "datasource": "long"
             }
         }
     },
-    number: {
-        arrival_format: ['number', 'integer'],
-        store_format: {
-            integer: {
-                jsonSchema: 'integer',
-                datasource: 'long'
-            },
-            float: {
-                jsonSchema: 'number',
-                datasource: 'double'
-            },
-            long: {
-                jsonSchema: 'integer',
-                datasource: 'long'
-            },
-            double: {
-                jsonSchema: 'number',
-                datasource: 'double'
-            },
-            bigdecimal: {
-                jsonSchema: 'number',
-                datasource: 'double'
-            },
-            epoch: {
-                jsonSchema: 'integer',
-                datasource: 'long'
-            },
-            number: {
-                jsonSchema: 'number',
-                datasource: 'double'
+    "object": {
+        "arrival_format": ["object"],
+        "store_format": {
+            "object": {
+                "jsonSchema": "object",
+                "datasource": "json"
             }
         }
     },
-    integer: {
-        arrival_format: ['integer'],
-        store_format: {
-            number: {
-                jsonSchema: 'integer',
-                datasource: 'double'
+    "array": {
+        "arrival_format": ["array"],
+        "store_format": {
+            "array": {
+                "jsonSchema": "array",
+                "datasource": "array"
             }
         }
     },
-    object: {
-        arrival_format: ['object'],
-        store_format: {
-            object: {
-                jsonSchema: 'object',
-                datasource: 'json'
-            }
-        }
-    },
-
-    array: {
-        arrival_format: ['array'],
-        store_format: {
-            array: {
-                jsonSchema: 'array',
-                datasource: 'array'
-            }
-        }
-    },
-    boolean: {
-        arrival_format: ['boolean'],
-        store_format: {
-            boolean: {
-                jsonSchema: 'boolean',
-                datasource: 'boolean'
-            }
-        }
-    },
-    'date-time': {
-        arrival_format: ['date-time'],
-        store_format: {
-            'date-time': {
-                jsonSchema: 'date-time',
-                datasource: 'date-time'
+    "boolean": {
+        "arrival_format": ["boolean"],
+        "store_format": {
+            "boolean": {
+                "jsonSchema": "boolean",
+                "datasource": "boolean"
             }
         }
     }

@@ -5,7 +5,6 @@ import _ from 'lodash';
 import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
 import { generateRequestBody, setDatasetId, setVersionKey, transformResponse } from './utils';
 import { queryClient } from 'queryClient';
-import apiEndpoints from 'data/apiEndpoints';
 
 // const ENDPOINTS = {
 //     DATASETS_READ: '/console/config/v2/datasets/read',
@@ -257,3 +256,32 @@ export const getConfigValue = (variable: string) => {
     const config: string | any = sessionStorage.getItem('systemSettings');
     return _.get(JSON.parse(config), variable);
 };
+
+export const isJsonSchema = (jsonObject: any) => {
+    if (typeof jsonObject !== "object" || jsonObject === null) {
+        return false;
+    }
+    const schemaKeywords = [
+        "$schema",
+        "type",
+        "properties",
+        "required",
+        "additionalProperties",
+        "definitions",
+        "items",
+        "allOf",
+        "oneOf",
+        "anyOf",
+        "not",
+    ];
+
+    const hasSchemaKeyword = schemaKeywords.some((keyword) =>
+        Object.prototype.hasOwnProperty.call(jsonObject, keyword)
+    );
+
+    if (!hasSchemaKeyword) {
+        return false;
+    } else {
+        return true;
+    }
+}
