@@ -1,0 +1,563 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "filter": {
+      "$ref": "#/definitions/filter"
+    },
+    "transforms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "filter"
+      ]
+    },
+    {
+      "required": [
+        "transforms"
+      ]
+    }
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "filter": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "and",
+            "or",
+            "selector",
+            "columnComparison",
+            "regex",
+            "not",
+            "javascript",
+            "extraction",
+            "search",
+            "in",
+            "like",
+            "bound",
+            "interval",
+            "true",
+            "expression"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "if": {
+        "properties": {
+          "type": {
+            "const": "and"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/definitions/and"
+      },
+      "else": {
+        "if": {
+          "properties": {
+            "type": {
+              "const": "or"
+            }
+          }
+        },
+        "then": {
+          "$ref": "#/definitions/or"
+        },
+        "else": {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "selector"
+              }
+            }
+          },
+          "then": {
+            "$ref": "#/definitions/selector"
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "columnComparison"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/definitions/columnComparison"
+            },
+            "else": {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "regex"
+                  }
+                }
+              },
+              "then": {
+                "$ref": "#/definitions/regex"
+              },
+              "else": {
+                "if": {
+                  "properties": {
+                    "type": {
+                      "const": "not"
+                    }
+                  }
+                },
+                "then": {
+                  "$ref": "#/definitions/not"
+                },
+                "else": {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "javascript"
+                      }
+                    }
+                  },
+                  "then": {
+                    "$ref": "#/definitions/javascript"
+                  },
+                  "else": {
+                    "if": {
+                      "properties": {
+                        "type": {
+                          "const": "extraction"
+                        }
+                      }
+                    },
+                    "then": {
+                      "$ref": "#/definitions/extraction"
+                    },
+                    "else": {
+                      "if": {
+                        "properties": {
+                          "type": {
+                            "const": "search"
+                          }
+                        }
+                      },
+                      "then": {
+                        "$ref": "#/definitions/search"
+                      },
+                      "else": {
+                        "if": {
+                          "properties": {
+                            "type": {
+                              "const": "in"
+                            }
+                          }
+                        },
+                        "then": {
+                          "$ref": "#/definitions/in"
+                        },
+                        "else": {
+                          "if": {
+                            "properties": {
+                              "type": {
+                                "const": "like"
+                              }
+                            }
+                          },
+                          "then": {
+                            "$ref": "#/definitions/like"
+                          },
+                          "else": {
+                            "if": {
+                              "properties": {
+                                "type": {
+                                  "const": "bound"
+                                }
+                              }
+                            },
+                            "then": {
+                              "$ref": "#/definitions/bound"
+                            },
+                            "else": {
+                              "if": {
+                                "properties": {
+                                  "type": {
+                                    "const": "interval"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "$ref": "#/definitions/interval"
+                              },
+                              "else": {
+                                "if": {
+                                  "properties": {
+                                    "type": {
+                                      "const": "true"
+                                    }
+                                  }
+                                },
+                                "then": {
+                                  "$ref": "#/definitions/true"
+                                },
+                                "else": {
+                                  "if": {
+                                    "properties": {
+                                      "type": {
+                                        "const": "expression"
+                                      }
+                                    }
+                                  },
+                                  "then": {
+                                    "$ref": "#/definitions/expression"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "and": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "and"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/filter"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "fields"
+      ]
+    },
+    "or": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "or"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/filter"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "fields"
+      ]
+    },
+    "selector": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "selector"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "value"
+      ]
+    },
+    "columnComparison": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "columnComparison"
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number",
+              "integer",
+              "object",
+              "array",
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "dimensions"
+      ]
+    },
+    "regex": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "regex"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "extractionFn": {
+          "$ref": "#/definitions/extraction"
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "pattern"
+      ]
+    },
+    "not": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "not"
+        },
+        "field": {
+          "$ref": "#/definitions/filter"
+        }
+      },
+      "required": [
+        "type",
+        "field"
+      ]
+    },
+    "javascript": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "javascript"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "function": {
+          "type": "string"
+        },
+        "extractionFn": {
+          "$ref": "#/definitions/extraction"
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "function"
+      ]
+    },
+    "extraction": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "extraction"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "extractionFn": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "value",
+        "extractionFn"
+      ]
+    },
+    "search": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "search"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "query": {
+          "type": "object"
+        },
+        "extractionFn": {
+          "$ref": "#/definitions/extraction"
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "query"
+      ]
+    },
+    "in": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "in"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number",
+              "integer",
+              "object",
+              "array",
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "values"
+      ]
+    },
+    "like": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "like"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "pattern": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "pattern"
+      ]
+    },
+    "bound": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "bound"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "lower": {
+          "type": "string"
+        },
+        "lowerStrict": {
+          "type": "boolean"
+        },
+        "upper": {
+          "type": "string"
+        },
+        "upperStrict": {
+          "type": "boolean"
+        },
+        "ordering": {
+          "type": "string"
+        },
+        "extractionFn": {
+          "$ref": "#/definitions/extraction"
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "lower",
+        "lowerStrict",
+        "upper",
+        "upperStrict",
+        "ordering"
+      ]
+    },
+    "interval": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "interval"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "intervals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "dimension",
+        "intervals"
+      ]
+    },
+    "true": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "true"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "expression": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "expression"
+        },
+        "expression": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "expression"
+      ]
+    }
+  }
+}

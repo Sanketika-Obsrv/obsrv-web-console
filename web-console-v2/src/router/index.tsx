@@ -18,7 +18,6 @@ import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/
 import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
 import ClusterHealth from 'pages/dashboardV1/datasets';
-
 import StepperPage from 'pages/StepsPages/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
@@ -29,8 +28,10 @@ import ListChannels from 'pages/notificationChannels/ListChannels';
 import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
-import DatasetManagement from 'pages/datasetManagement/components/DatasetManagement';
 import Loadable from 'pages/auth/components/Loadable';
+
+import RollupConfig from 'pages/Rollup/components';
+import DatasetManagement from 'pages/DatasetManagement/DatasetManagement';
 
 // Type definition for the route configuration
 interface RouteConfig {
@@ -88,7 +89,9 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/datasets`, label: "Datasets", element: <ClusterHealth /> },
     { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <IndividualMetricDashboards id="individualDataset" /> },
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
-    { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> }
+    { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
+    { path: `/datasets/rollups/:datasetId`, element: <RollupConfig />},
+    { path: `/datasets/management/:datasetId`, label: "Rollups", element: <DatasetManagement /> }
 ];
 
 const AppRouter = () => (

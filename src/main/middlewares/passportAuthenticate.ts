@@ -4,6 +4,7 @@ import _ from 'lodash';
 import passport from 'passport';
 import appConfig from '../../shared/resources/appConfig';
 import { User } from '../types';
+import { logger } from '../../shared/utils/logger';
 
 const baseURL = appConfig.BASE_URL;
 const private_key: string = appConfig.USER_TOKEN_PRIVATE_KEY;
@@ -24,6 +25,7 @@ export default {
     handler: () => (req: Request, res: Response, next: NextFunction) => {
         passport.authenticate('local', (err: Error, user: User) => {
             if (err) {
+                logger.error("err:", err)
                 return next(err);
             }
             if (!user) {
@@ -31,6 +33,7 @@ export default {
             }
             return req.login(user, (loginErr) => {
                 if (loginErr) {
+                    logger.error("loginErr: ", loginErr)
                     return next(loginErr);
                 }
                 return generateToken(user)
@@ -41,6 +44,7 @@ export default {
                         return res.redirect(baseURL || '/');
                     })
                     .catch((tokenError) => {
+                        logger.error("tokenError: ", tokenError)
                         return next(tokenError);
                     });
             });

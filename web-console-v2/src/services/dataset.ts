@@ -5,21 +5,8 @@ import _ from 'lodash';
 import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
 import { generateRequestBody, setDatasetId, setVersionKey, transformResponse } from './utils';
 import { queryClient } from 'queryClient';
-
-// const ENDPOINTS = {
-//     DATASETS_READ: '/console/config/v2/datasets/read',
-//     CREATE_DATASET: '/console/config/v2/datasets/create',
-//     UPLOAD_FILES: '/console/config/v2/files/generate-url',
-//     GENERATE_JSON_SCHEMA: '/console/config/v2/datasets/dataschema',
-//     UPDATE_DATASCHEMA: '/console/config/v2/datasets/update',
-//     LIST_DATASET: '/console/config/v2/datasets/list',
-//     DATASETS_DIFF: '/console/api/dataset/diff',
-//     PUBLISH_DATASET: '/console/config/v2/datasets/status-transition',
-//     LIST_CONNECTORS: '/console/config/v2/connectors/list',
-//     READ_CONNECTORS: '/console/config/v2/connectors/read'
-// };
-
-//USE THESE ROUTES FOR LOCAL TESTING
+import { DatasetStatus } from 'types/datasets';
+import { generateDatasetState } from './datasetState';
 
 const ENDPOINTS = {
     DATASETS_READ: '/config/v2/datasets/read',
@@ -257,6 +244,71 @@ export const getConfigValue = (variable: string) => {
     return _.get(JSON.parse(config), variable);
 };
 
+export const datasetRead = ({ datasetId, config = {} }: any) => {
+    return http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}`, {
+        ...config
+    })
+}
+
+export const formatNewFields = (newFields: Record<string, any>, dataMappings: any) => {
+    if (newFields.length > 0) {
+        const final = _.map(newFields, (item: any) => {
+            const columnKey = _.join(_.map(_.split(_.get(item, "column"), '.'), payload => `properties.${payload}`), '.')
+            return {
+                ...item,
+                "column": item.column,
+                "type": _.get(item, 'datatype') || "string",
+                "key": columnKey,
+                "ref": columnKey,
+                "isModified": true,
+                "required": false,
+                "data_type": _.get(item, 'datatype'),
+                ...(dataMappings && { "arrival_format": getArrivalFormat(_.get(item, '_transformedFieldSchemaType'), dataMappings) || _.get(item, 'arrival_format') })
+            }
+        });
+        return final;
+    }
+    else return [];
+}
+
+const getArrivalFormat = (data_type: string | undefined, dataMappings: Record<string, any>) => {
+    let result = null;
+    if (data_type) {
+        _.forEach(dataMappings, (value, key) => {
+            if (_.includes(_.get(value, 'arrival_format'), data_type)) {
+                result = key;
+            }
+        });
+    }
+    return result;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-inferrable-types
+export const getDatasetState = async (datasetId: string, status: string = DatasetStatus.Draft, createAction: boolean = false) => {
+    const dataset = await fetchDataset(datasetId, status);
+    return await generateDatasetState(dataset, createAction);
+}
+
+
+export const fieldsByStatus: { [key: string]: string } = {
+    Draft: 'name,type,id,dataset_id,version,validation_config,extraction_config,dedup_config,data_schema,denorm_config,router_config,dataset_config,tags,status,created_by,updated_by,created_date,updated_date,version_key,api_version,entry_topic,transformations_config,connectors_config,sample_data',
+    default: 'name,type,id,dataset_id,version,validation_config,extraction_config,dedup_config,data_schema,denorm_config,router_config,dataset_config,tags,status,created_by,updated_by,created_date,updated_date,api_version,entry_topic,sample_data'
+};
+
+export const fetchDataset = (datasetId: string, status: string) => {
+    const fields = fieldsByStatus[status] || fieldsByStatus.default;
+    const params = status === 'Draft' ? `mode=edit&fields=${fields}` : `fields=${fields}`;
+    const url = `${ENDPOINTS.DATASETS_READ}/${datasetId}?${params}`;
+    return http.get(url).then(transform);
+};
+
+export const transform = (response: any) => _.get(response, 'data.result')
+
+export const generateJsonSchema = (payload: any) => {
+    const transitionRequest = generateRequestBody({ request: payload?.data, apiId: "api.datasets.dataschema" })
+    return http.post(`${ENDPOINTS.GENERATE_JSON_SCHEMA}`, transitionRequest)
+        .then(transform);
+}        
 export const isJsonSchema = (jsonObject: any) => {
     if (typeof jsonObject !== "object" || jsonObject === null) {
         return false;
