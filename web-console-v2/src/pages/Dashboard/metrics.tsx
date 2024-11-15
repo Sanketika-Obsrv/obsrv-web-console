@@ -686,6 +686,7 @@ export const metricsMetadata = [
           },
           {
             id: "storageDeepStorageDataGrowth",
+            description: "This is a graphical representation of the deep storage data growth",
             chart: <ApexWithFilters title="Deep Storage Usage Growth" filters={_.get(filters, 'default')} id="deepStorageDataGrowth">
               <ApexChart metadata={_.get(chartMeta, 'data_growth_over_time')} interval={1440}></ApexChart>
             </ApexWithFilters>
@@ -853,6 +854,7 @@ export const metricsMetadata = [
           },
           {
             id: "Events Processing Time (ms)",
+            description: "This is a graphical representation of the processing time of events in milliseconds",
             chart: <DatasetMetricsCard label="Events Processing Time (ms)" queryType={'events_processing_time_apex_charts'} isApexChart={true}/>
           }
         ]
