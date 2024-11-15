@@ -89,7 +89,15 @@ const NotificationComponent = (props: any) => {
                 />
             </Grid>
             <Grid item xs={6}>
-                <Button variant="contained" onClick={() => navigate("/alertChannels")}>Create Notification Channel</Button>
+                <Button size="small" variant="outlined" sx={{
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                '&:hover': {
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    borderColor: 'primary.main',
+                },
+            }} onClick={() => navigate("/alertChannels")}>Create Notification Channel</Button>
             </Grid>
         </Grid>
     }
@@ -101,17 +109,15 @@ const NotificationComponent = (props: any) => {
                     There are no live notification channels yet. Please create/publish one to proceed further
                 </Typography>
                 <Box>
-                    <StandardWidthButton
-                        data-edataid={interactIds.add_notification_channel}
-                        onClick={() => navigate('/alertChannels/new')}
-                        variant="contained"
-                        size="large"
-                        sx={{ width: 'auto' }}
-                    >
-                        <Typography variant="button">
-                            Create Notification Channel
-                        </Typography>
-                    </StandardWidthButton>
+                    <Button size="small" variant="outlined" sx={{
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        borderColor: 'primary.main',
+                    },
+                }} data-edataid={interactIds.add_notification_channel} onClick={() => navigate("/alertChannels/new")}>Create Notification Channel</Button>
                 </Box>
             </Stack>
         </Grid>

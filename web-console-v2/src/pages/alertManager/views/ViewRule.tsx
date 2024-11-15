@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Chip, Grid, Typography } from '@mui/material';
+import { Box, Button, Chip, Grid, Typography, Paper, TableContainer, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import MainCard from 'components/MainCard';
 import _ from 'lodash';
 import { useEffect, useState } from 'react';
@@ -20,6 +20,7 @@ import { renderSkeleton } from 'services/skeleton';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useAlert } from 'contexts/AlertContextProvider';
+import { styled } from '@mui/material/styles';
 dayjs.extend(relativeTime);
 
 const getChipVariant = (value: string) => {
@@ -98,8 +99,7 @@ const ViewRule = () => {
         sx={{ marginRight: '0.5rem' }}
     />
 
-    const renderCell = (context: Record<string, any>) => {
-        const row = context?.cell?.row?.original || {};
+    const renderCell = (row: any) => {
         const key = row?.key;
         let value = row?.value;
 
@@ -161,34 +161,6 @@ const ViewRule = () => {
         }
     };
 
-    const columns = [
-        {
-            Header: 'Labels',
-            accessor: 'key',
-            disableFilters: true,
-            style: {
-                width: '20vw'
-            },
-            Cell: (value: any) => {
-                const row = value?.cell?.row?.original || {};
-                const rowValue = row?.key;
-                return (
-                    <Box>
-                        <Typography variant='h6'>{_.capitalize(getKeyAlias(rowValue))}</Typography>
-                    </Box>)
-            }
-        },
-        {
-            Header: 'Value',
-            accessor: 'value',
-            style: {
-                width: 'auto'
-            },
-            disableFilters: true,
-            Cell: renderCell
-        }
-    ];
-
     const renderHeader = () => {
         return (
             <Box sx={{ p: 2, pb: 0 }} textAlign="end">
@@ -210,17 +182,51 @@ const ViewRule = () => {
         content: renderQueryChart()
     }
 
+    const StyledTableRow = styled(TableRow)(({ theme }) => ({
+        '&:nth-of-type(odd)': {
+            backgroundColor: theme.palette.action.hover,
+        },
+        // hide last border
+        '&:last-child td, &:last-child th': {
+            border: 0,
+        },
+    }));
+
     const handleClose = () => { setRunQuery(false) }
 
     const renderAlerts = () => {
         return (
             <Box>
-                <Grid>
-                    <MainCard content={false} boxShadow>
-                        <ScrollX>
-                            <TableWithCustomHeader renderHeader={renderHeader} columns={columns} data={data || []} />
-                        </ScrollX>
-                    </MainCard>
+                <Grid item xs={14} sm={7} lg={7}>
+                    {renderHeader && renderHeader()}
+                </Grid>
+                <Grid justifyContent={'flex-start'} p={3}>
+                    <Grid item xs={14} sm={7} lg={7}>
+                        <TableContainer component={Paper} >
+                            <Table size="small" aria-label="a dense table">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell align="left" colSpan={2}>
+                                        Configuration
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell align="left" width={'50%'} sx={{ borderRight: '1px solid #ddd !important' }}>Labels</TableCell>
+                                    <TableCell align="left" width={'50%'} >Value</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                            {data && data.map( (record:any) => (
+                                <StyledTableRow key={_.get(record,'key')} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                    <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{_.capitalize(_.get(record,'key'))}</TableCell>
+                                    <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{renderCell(record)}</TableCell>
+                                </StyledTableRow>
+                            ))}
+                                
+                            </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Grid>
                 </Grid>
                 <QueryChart open={runQuery} handleClose={handleClose} context={dialogContext}></QueryChart>
             </Box>

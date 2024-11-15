@@ -259,9 +259,10 @@ const RuleHeader = (props: any) => {
                         if (!configuration?.allowedActions?.includes(button.name)) return null;
                         return (
                             <Button
+                                size="small"
                                 id={button.id}
                                 key={button.name}
-                                variant={button.variant}
+                                variant="outlined"
                                 startIcon={button.icon}
                                 onClick={button.onClick}
                                 color={button.color}

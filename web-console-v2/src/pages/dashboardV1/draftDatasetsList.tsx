@@ -71,7 +71,7 @@ const DraftDatasetsList = (props: any) => {
             setIsLoading(true);
             try {
                 await deleteDataset({ id: _.get(selection, "dataset_id") })
-                showAlert("Dataset retired successfully", 'success');
+                showAlert("Dataset deleted successfully", 'success');
             } catch (err: any) {
                 const errMessage = _.get(err, 'response.data.params.errmsg') || en["dataset-delete-failure"];
                 showAlert(errMessage, 'error');
@@ -205,7 +205,7 @@ const DraftDatasetsList = (props: any) => {
             },
             {
                 Header: 'Created',
-                accessor: 'createdOn',
+                accessor: 'created_date',
                 disableFilters: true,
                 enableGlobalFilter: true,
                 

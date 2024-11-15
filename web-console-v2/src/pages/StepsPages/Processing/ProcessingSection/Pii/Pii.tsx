@@ -6,10 +6,17 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    Alert
+    Alert,
+    Grid,
+    FormControl,
+    FormLabel,
+    RadioGroup,
+    FormControlLabel,
+    Radio,
+    Select,
+    InputLabel,
+    MenuItem
 } from '@mui/material';
-import AddPii from 'components/Form/DynamicForm';
-import schema from './Schema';
 import React, { useEffect, useState } from 'react';
 import * as _ from 'lodash';
 import { Stack } from '@mui/material';
@@ -45,36 +52,28 @@ const AddPIIDialog = (props: any) => {
     } = props;
 
     const [formErrors, setFormErrors] = useState<unknown[]>([]);
-    const [formData, setFormData] = useState<{ [key: string]: any }>({});
-
-    if (!_.isEmpty(transformationOptions))
-        _.set(
-            schema,
-            ['schema', 'properties', 'section', 'properties', 'transformations', 'enum'],
-            transformationOptions
-        );
+    const [formData, setFormData] = useState<any>({
+        section: {
+            transformations: '',
+            transformationType: 'Mask',
+            transformationMode: 'Strict',
+        }
+    });
 
     useEffect(() => {
         const transformations = _.get(data, ['column'], '');
-
         if (!_.isEmpty(data)) {
             const existingData = {
                 section: {
-                    transformations,
-                    transformationType: _.get(data, ['transformationType']),
-                    transformationMode: _.get(data, ['transformationMode']),
-                    expression: _.get(data, ['transformation'])
+                    transformations: transformations,
+                    transformationType: _.capitalize(_.get(data, ['transformationType'])),
+                    transformationMode: _.capitalize(_.get(data, ['transformationMode']))
                 }
             };
 
             setFormData(existingData);
         }
 
-        _.set(
-            schema,
-            ['uiSchema', 'section', 'transformations', 'ui:disabled'],
-            _.includes(_.map(addedSuggestions, 'column'), transformations)
-        );
     }, [data, addedSuggestions]);
 
     const onHandleClick = async () => {
@@ -115,6 +114,28 @@ const AddPIIDialog = (props: any) => {
         }
     };
 
+    const handleRadioChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = event.target;
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                [name]: value
+            }
+        }));
+    };
+
+    const handleInputChange: any = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = event.target;
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                [name]: value
+            }
+        }));
+    };
+
     return (
         <Box sx={{ p: 1, py: 1.5, width: '28vw', height: 'auto', maxWidth: '100%' }}>
             <DialogTitle
@@ -137,23 +158,61 @@ const AddPIIDialog = (props: any) => {
                 ) : null}
             </DialogTitle>
             <DialogContent>
-                <Stack mt={-4} width="auto">
-                    <AddPii
-                        schema={schema}
-                        formData={formData}
-                        setFormData={setFormData}
-                        onChange={handleChange}
-                        customClassNames={{
-                            container: 'customContainerClass',
-                            sectionContainer: 'customSectionContainerClass',
-                            connectorName: 'customConnectorNameClass',
-                            sectionContainers: 'customSectionContainersClass'
-                        }}
-                    />
-                </Stack>
-                <Alert severity="info" sx={{ background: '#f1fcf9' }}>
+                <Stack mt={2} spacing={2} width="auto">
+                    <Grid>
+                        <FormControl fullWidth >
+                            <InputLabel>Select Sensitive Field</InputLabel>
+                            <Select
+                                name='transformations'
+                                labelId="dedupKey-select-label"
+                                id="dedupKey-select"
+                                label="Select Sensitive Field"
+                                value={formData.section.transformations}
+                                onChange={handleInputChange}
+                                required
+                            >
+                                {transformationOptions.map((option: string) => (
+                                    <MenuItem key={option} value={option}>
+                                        {option}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid>
+                        <FormControl>
+                            <FormLabel required>Select Action</FormLabel>
+                            <RadioGroup
+                                name="transformationType"
+                                value={formData.section.transformationType}
+                                onChange={handleRadioChange}
+                            >
+                                <Box display="flex">
+                                    <FormControlLabel value="Mask" control={<Radio />} label="Mask" />
+                                    <FormControlLabel value="Encrypt" control={<Radio />} label="Encrypt" />
+                                </Box>
+                            </RadioGroup>
+                        </FormControl>
+                    </Grid>
+                    <Grid>
+                        <FormControl>
+                            <FormLabel required>Skip On Transformation Failure?</FormLabel>
+                            <RadioGroup
+                                name="transformationMode"
+                                value={formData.section.transformationMode}
+                                onChange={handleRadioChange}
+                            >
+                                <Box display="flex">
+                                    <FormControlLabel value="Strict" control={<Radio />} label="Yes" />
+                                    <FormControlLabel value="Lenient" control={<Radio />} label="No" />
+                                </Box>
+                            </RadioGroup>
+                        </FormControl>
+                    </Grid>
+                    <Alert severity="info" sx={{ background: '#f1fcf9' }}>
                     {en.transformationNotSupported}
                 </Alert>
+                </Stack>
             </DialogContent>
             <DialogActions sx={{ px: 4 }}>
                 <Button

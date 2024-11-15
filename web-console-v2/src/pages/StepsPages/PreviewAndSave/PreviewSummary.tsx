@@ -85,7 +85,7 @@ const ReviewDataset = () => {
     
     return (
         <>
-            {(isPending) ? <Loader loading={isPending} descriptionText="Loading the page" /> : 
+            {(isPending) ? <Loader loading={isPending} descriptionText="Please wait while we process your request." /> : 
                 <>
                 {noModifications && (
                     <Grid item xs={12}>

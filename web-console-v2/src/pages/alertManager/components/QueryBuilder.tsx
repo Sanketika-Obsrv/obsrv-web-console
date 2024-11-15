@@ -262,7 +262,15 @@ const QueryBuilder = (props: any) => {
         return (
             <>
                 <Grid item xs={12}>
-                    <Button disabled={!validQuery} startIcon={<PlayArrowOutlined />} variant="contained" onClick={(_) => updateRunQuery()}>
+                    <Button size="small" sx={{
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        borderColor: 'primary.main',
+                    },
+                }} disabled={!validQuery} startIcon={<PlayArrowOutlined />} variant="outlined" onClick={(_) => updateRunQuery()}>
                         Run Query
                     </Button>
                 </Grid>

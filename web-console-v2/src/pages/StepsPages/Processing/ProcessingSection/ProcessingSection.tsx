@@ -19,7 +19,8 @@ const ProcessingSection = (props: any) => {
         dialog,
         transformationOptions,
         jsonData,
-        addedSuggestions
+        addedSuggestions,
+        setPiiSuggestions
     } = props;
 
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -180,43 +181,41 @@ const ProcessingSection = (props: any) => {
     const renderSuggestedFields = () => {
         const suggestedFields = _.differenceBy(addedSuggestions, data, 'column');
 
-        if (!_.isEmpty(suggestedFields))
+        const handleRemoveSuggestion = (suggestion: any) => {
+            setPiiSuggestions((prevSuggestions:any) =>
+              prevSuggestions.filter((item:any) => !_.isEqual(_.get(item, 'column'), _.get(suggestion, 'column')))
+            );
+          };
+
+          if (!_.isEmpty(suggestedFields))
             return (
-                <Grid>
-                    <Box sx={{ pt: 1, textAlign: 'start' }}>
-                        <Typography variant="body2" fontWeight="500">
-                            Add suggested fields :
-                        </Typography>
-                    </Box>
-                    <Box
-                        sx={{
-                            textAlign: 'start',
-                            overflowY: 'scroll',
-                            scrollbarWidth: 'none',
-                            height: '5rem',
-                            mt: 2
-                        }}
-                    >
-                        {_.map(suggestedFields, (ele: any) => (
-                            <Chip
-                                onDelete={() => {
-                                    addedSuggestions.filter(
-                                        (item: any) =>
-                                            !_.isEqual(
-                                                _.get(item, ['column']),
-                                                _.get(ele, ['column'])
-                                            )
-                                    );
-                                }}
-                                key={_.get(ele, ['column'])}
-                                label={_.get(ele, ['column'])}
-                                onClick={() => handleEditValues(ele)}
-                                sx={{ ml: 1, mb: 1 }}
-                                variant="outlined"
-                            />
-                        ))}
-                    </Box>
-                </Grid>
+              <Grid>
+                <Box sx={{ pt: 1, textAlign: 'start' }}>
+                  <Typography variant="body2" fontWeight="500">
+                    Add suggested fields:
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    textAlign: 'start',
+                    overflowY: 'scroll',
+                    scrollbarWidth: 'none',
+                    height: '5rem',
+                    mt: 2
+                  }}
+                >
+                  {_.map(suggestedFields, (ele: any) => (
+                    <Chip
+                      onDelete={() => handleRemoveSuggestion(ele)}
+                      key={_.get(ele, ['column'])}
+                      label={_.get(ele, ['column'])}
+                      onClick={() => handleEditValues(ele)}
+                      sx={{ ml: 1, mb: 1 }}
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              </Grid>
             );
     };
 

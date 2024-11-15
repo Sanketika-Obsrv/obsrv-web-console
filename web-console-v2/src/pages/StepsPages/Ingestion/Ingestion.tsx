@@ -17,6 +17,7 @@ import UploadFiles from 'pages/Dataset/wizard/UploadFiles';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
+    isJsonSchema,
     useCreateDataset,
     useFetchDatasetExists,
     useFetchDatasetsById,
@@ -28,7 +29,6 @@ import {
 } from 'services/dataset';
 import { readJsonFileContents } from 'services/utils';
 import { theme } from 'theme';
-import Ajv from "ajv";
 import { default as ingestionStyle, default as localStyles } from './Ingestion.module.css';
 
 interface FormData {
@@ -46,15 +46,6 @@ const GenericCard = styled(Card)(({ theme }) => ({
     boxShadow: 'none',
     margin: theme.spacing(0, 6, 2, 2)
 }));
-const ajv = new Ajv({strict: false});
-const isJsonSchema = (jsonObject: any) => {
-    try {
-        ajv.compile(jsonObject);
-        return true; // If no errors, it's a valid JSON Schema
-    } catch (err) {
-        return false; // Not a valid JSON Schema
-    }
-}
 
 const MAX_FILES = 10;
 
@@ -79,6 +70,7 @@ const Ingestion = () => {
     const [data, setData] = useState(dataState);
 
     const [files, setFiles] = useState(filesState);
+    const [isDatasetExistChecking, setIsDatasetExistChecking] = useState(false);
 
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
     const [fileErrors, setFileErrors] = useState<any>(null);
@@ -121,7 +113,7 @@ const Ingestion = () => {
         queryParams: readDatasetQueryParams
     });
     const { data: datasetExistsData, refetch: refetchExists } = useFetchDatasetExists({
-        datasetId: datasetId
+        datasetId
     });
 
     const {
@@ -221,21 +213,26 @@ const Ingestion = () => {
 
     const fetchDataset = (id: string) => {
         refetchExists().then(response => {
-            if (response.isSuccess) {
+            if (response.isSuccess && !_.startsWith(response.data, '<!doctype html>')) {
                 setNameError('Dataset already exists');
             } else {
                 setNameError('');
             }
         }).catch(error => {
             console.error('Error fetching dataset:', error);
+        }).finally(() =>{
+            setIsDatasetExistChecking(false)
         })
     }
     const debouncedFetchDataset = useMemo(
-        () => _.debounce(fetchDataset, 800), []
+        () => {
+            return _.debounce(fetchDataset, 800)
+        }, []
     );
 
     useEffect(() => {
         if (datasetIdParam === '<new>' && datasetId) {
+            setIsDatasetExistChecking(true);
             debouncedFetchDataset(datasetId);
         }
     }, [datasetId]);
@@ -326,6 +323,7 @@ const Ingestion = () => {
                                 (fetchData && fetchData.dataset_config?.indexing_config) || {},
                             file_upload_path: filePaths
                         },
+                        name: datasetName,
                         data_schema: schema,
                         dataset_id: datasetId,
                         type: datasetType,
@@ -415,7 +413,7 @@ const Ingestion = () => {
     useEffect(() => {
         if(datasetIdParam === '<new>') {
             if (nameRegex.test(datasetName)) {
-                const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
+                const generatedId = datasetName.toLowerCase().replace(/[^a-z0-9\s]+/g, '-').replace(/\s+/g, '-');
                 setDatasetId(generatedId);
             } else {
                 setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
@@ -424,12 +422,12 @@ const Ingestion = () => {
     }, [datasetName])
 
     const nameRegex = /^[^!@#$%^&*()+{}[\]:;<>,?~\\|]*$/;
-    const handleNameChange = (newValue: any) => {
+    const handleNameChange = (newValue: any, isBlur=false) => {
         if (nameRegex.test(newValue)) {
             setDatasetName(newValue);
-            if(datasetIdParam === '<new>') {
-                const generatedId = datasetName.toLowerCase().replace(/\s+/g, '-');
-                setDatasetId(generatedId);
+            if(datasetIdParam === '<new>' && isBlur) {
+                    setIsDatasetExistChecking(true);
+                    debouncedFetchDataset(newValue.toLowerCase().replace(/[^a-z0-9\s]+/g, '-').replace(/\s+/g, '-'))
             }
             setNameError('');
         } else {
@@ -452,7 +450,7 @@ const Ingestion = () => {
                     isGenerateLoading ||
                     isUpdateLoading
                 }
-                descriptionText="Loading the page"
+                descriptionText="Please wait while we process your request."
             />
 
             {!(
@@ -510,7 +508,7 @@ const Ingestion = () => {
                                                         label={'Dataset Name'}
                                                         value={datasetName}
                                                         onChange={(e) => handleNameChange(e.target.value)}
-                                                        onBlur={(e) => handleNameChange(e.target.value)}
+                                                        onBlur={(e) => handleNameChange(e.target.value, true)}
                                                         required
                                                         variant="outlined"
                                                         fullWidth
@@ -596,7 +594,6 @@ const Ingestion = () => {
                                     expand={isHelpSectionOpen}
                                 />
                             </Box>
-
                             {/* Fixed action button at the bottom */}
                             <Box
                                 className={`${styles.actionContainer}`}
@@ -616,7 +613,7 @@ const Ingestion = () => {
                                             label: datasetId !== '' ? 'Proceed' : 'Create Schema',
                                             variant: 'contained',
                                             color: 'primary',
-                                            disabled: datasetIdParam === '<new>' && (!_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files) || (datasetName.length < 4 || datasetName.length > 100))
+                                            disabled: datasetIdParam === '<new>' && (!_.isEmpty(nameError) || isEmpty(datasetId) || isEmpty(files) || (datasetName.length < 4 || datasetName.length > 100 || isDatasetExistChecking))
                                         }
                                     ]}
                                     onClick={onSubmit}

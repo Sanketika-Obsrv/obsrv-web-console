@@ -59,10 +59,7 @@ export const validFormatTypes = [
     'number',
     'boolean',
     'object',
-    'array',
-    'string',
-    'date-time',
-    'integer'
+    'array'
 ];
 const alertDialogContext = {
     title: 'Delete Column',
@@ -633,7 +630,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
         >
             <Loader
                 loading={fetchDatasetById.isPending || fetchDatasetById.isFetching || uploadLoading}
-                descriptionText="Loading the page"
+                descriptionText="Please wait while we process your request."
             />
 
             {!(

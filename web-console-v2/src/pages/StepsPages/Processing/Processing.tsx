@@ -324,6 +324,7 @@ const Processing: React.FC = () => {
                         dialog={<AddPIIDialog />}
                         transformationOptions={transformationOptions}
                         addedSuggestions={piiSuggestions}
+                        setPiiSuggestions={setPiiSuggestions}
                         data={_.map(_.get(processingData, 'pii'), (obj1) => {
                             const matchingObj = _.find(piiSuggestions, {
                                 column: _.get(obj1, 'column')
@@ -449,7 +450,7 @@ const Processing: React.FC = () => {
                     {
                         (datasetList.isPending)
                             ?
-                            <Loader loading={datasetList.isPending} descriptionText="Loading the page" />
+                            <Loader loading={datasetList.isPending} descriptionText="Please wait while we process your request." />
                             :
                             <Box
                                 className={`${styles.formContainer} ${isHelpSectionOpen ? styles.expanded : styles.collapsed}`}
