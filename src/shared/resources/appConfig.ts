@@ -61,4 +61,12 @@ export default {
     },
     BASE_URL: env.BASE_URL || '/console',
     USER_TOKEN_PRIVATE_KEY: env.USER_TOKEN_PRIVATE_KEY || '',
+    AUTHENTICATION_TYPE: env.AUTHENTICATION_TYPE || 'basic',
+    KEYCLOAK: {
+        URL: env.KEYCLOAK_SERVER_URL || 'http://localhost:8080',
+        REALM: env.KEYCLOAK_REALM || 'obsrvWebConsole',
+        CLIENT_ID: env.KEYCLOAK_CLIENT_ID || 'webConsole',
+        PUBLIC_CLIENT: env.KEYCLOAK_PUBLIC_CLIENT || 'false',
+        SSL_REQUIRED: env.KEYCLOAK_SSL_REQUIRED || 'external',
+    },
 };

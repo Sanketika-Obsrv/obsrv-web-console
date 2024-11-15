@@ -1,3 +1,4 @@
+import {Request, Response, NextFunction, RequestHandler} from 'express';
 export interface User {
     id: string;
     user_name: string;
@@ -28,4 +29,9 @@ export enum ValidationMode {
 export enum DatasetType {
     Dataset = 'event',
     MasterDataset = 'master',
+}
+export interface BaseAuthProvider {
+    init(): RequestHandler[] | ((req: Request, res: Response, next: NextFunction) => void);
+    authenticate(): (req: Request, res: Response, next: NextFunction) => void;
+    logout: (req: Request, res: Response) => Promise<void>;
 }
