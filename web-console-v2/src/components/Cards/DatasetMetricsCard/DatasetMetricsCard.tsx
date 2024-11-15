@@ -171,7 +171,7 @@ const DatasetMetricsCard: React.FC<any> = (props: any) => {
                 </Box>
             </Tooltip>
             :
-            <ApexWithFilters title={label} filters={_.get(filters, 'variant1')}>
+            <ApexWithFilters title={label} filters={_.get(filters, 'variant1')} description={description}>
                 <ApexChart metadata={getQueryByType(queryType, datasetId, isMasterDataset, interval)} interval={1140}></ApexChart>
             </ApexWithFilters>
     );

@@ -204,7 +204,7 @@ export default {
             parse: (response: any) => {
                 const result = _.get(response, 'data.result[0].value[1]');
                 if (!result) throw new Error();
-                const date = dayjs().subtract(result * 1000, 'milliseconds');
+                const date = dayjs(result * 1000);
                 const timeAgo = date.fromNow();
                 return timeAgo
             },
@@ -227,7 +227,7 @@ export default {
             parse: (response: any) => {
                 const result = _.get(response, 'data.result[0].value[1]');
                 if (!result) throw new Error();
-                const date = dayjs().subtract(result * 1000, 'milliseconds');
+                const date = dayjs(result * 1000);
                 const timeAgo = date.fromNow();
                 return timeAgo
             },

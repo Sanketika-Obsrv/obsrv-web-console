@@ -138,31 +138,33 @@ const DatasetCreateEvents = () => {
                 </Grid>
             </MainCard >
         }
-        {files && _.size(files) > 0 &&
+        {!loading && (files && _.size(files) > 0 &&
             <GenericCard elevation={1}>
                 <Box display="flex" justifyContent="space-between">
                     <Typography variant="h5" gutterBottom>Files Uploaded</Typography>
                     <Button onClick={onRemoveAll}>Remove all</Button>
                 </Box>
                 <FilesPreview files={files} showList={false} onRemove={onFileRemove} />
-            </GenericCard>
+            </GenericCard>)
         }
         {formErrors?.length > 0 && <RejectionFiles fileRejections={formErrors} />}
-        <Box display="flex" justifyContent="flex-end">
-            <AnimateButton>
-                <Button
-                    data-edataid={`${interactIds.create_events}${params.datasetName}`}
-                    data-objectid={params.datasetId}
-                    data-objecttype="dataset"
-                    disabled={_.isEmpty(data) ? true : loading}
-                    variant="contained"
-                    sx={{ my: 2, ml: 1, mr: 2.5 }}
-                    onClick={(e: any) => pushEvents()}
-                >
-                    Send Events
-                </Button>
-            </AnimateButton>
-        </Box>
+        {!loading &&
+            <Box display="flex" justifyContent="flex-end">
+                <AnimateButton>
+                    <Button
+                        data-edataid={`${interactIds.create_events}${params.datasetName}`}
+                        data-objectid={params.datasetId}
+                        data-objecttype="dataset"
+                        disabled={_.isEmpty(data) ? true : loading}
+                        variant="contained"
+                        sx={{ my: 2, ml: 1, mr: 2.5 }}
+                        onClick={(e: any) => pushEvents()}
+                    >
+                        Send Events
+                    </Button>
+                </AnimateButton>
+            </Box>
+        }
     </>
 };
 
