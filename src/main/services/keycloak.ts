@@ -9,29 +9,32 @@ const keycloakRealm = appConfig.KEYCLOAK.REALM;
 
 export const authenticated = async (request: any) => {
     try {
-        const userId = request.kauth.grant.access_token.content.sub.split(':');
-        const email_address = request.kauth.grant.access_token.content.email;
-        const preferred_username = request.kauth.grant.access_token.content.preferred_username;
-        request.session.userId = userId[userId.length - 1];
+        const userId = request?.kauth?.grant?.access_token?.content?.sub?.split(':');
+        const email_address = request?.kauth?.grant?.access_token?.content?.email;
+        const preferred_username = request?.kauth?.grant?.access_token?.content?.preferred_username;
+
+        request.session.userId = userId?.[userId.length - 1];
         request.session.email_address = email_address;
         request.session.preferred_username = preferred_username;
-        const user = await userService.find({ id: userId[0] });
-        request.session.roles = user.roles;
+
+        const user = await userService.find({ id: userId?.[0] });
+        request.session.roles = user?.roles;
     } catch (err) {
-        console.log('user not authenticated', request.kauth.grant.access_token.content.sub, err);
+        console.log('user not authenticated', request?.kauth?.grant?.access_token?.content?.sub, err);
     }
 };
 
 export const deauthenticated = function (request: any) {
-    delete request.session['roles'];
-    delete request.session.userId;
-    delete request.session.email_address;
-    delete request.session.preferred_username;
-    delete request.session.auth_redirect_uri;
-    delete request.session['keycloak-token'];
-    if (request.session) {
-        request.session.sessionEvents = request.session.sessionEvents || [];
-        delete request.session.sessionEvents;
+    delete request?.session?.roles;
+    delete request?.session?.userId;
+    delete request?.session?.email_address;
+    delete request?.session?.preferred_username;
+    delete request?.session?.auth_redirect_uri;
+    delete request?.session?.['keycloak-token'];
+    
+    if (request?.session) {
+        request.session.sessionEvents = request?.session?.sessionEvents || [];
+        delete request?.session?.sessionEvents;
     }
 };
 
@@ -50,6 +53,7 @@ export const userCreate = async (access_token: any, userRequest: any) => {
             },
         ],
     };
+
     return keycloakHTTPClient
         .post(`/admin/realms/${keycloakRealm}/users`, payload, {
             headers: {
@@ -59,7 +63,7 @@ export const userCreate = async (access_token: any, userRequest: any) => {
         .then((response) => {
             const location = _.get(response, 'headers.location');
             const userId = location ? _.last(location.split('/')) : null;
-            console.log('keyuser',userId);
+            console.log('keyuser', userId);
             if (!userId) {
                 throw new Error('UserId not found');
             }
@@ -80,13 +84,15 @@ export const userCreateWithKeycloak = async (access_token: any, userRequest: any
 };
 
 export const keycloakLogout = async (req: any) => {
-    const userId = req.session.userId;
-    const access_token = req.kauth.grant.access_token.token;
-    const refresh_token = req.kauth.grant.refresh_token.token;
+    const userId = req?.session?.userId;
+    const access_token = req?.kauth?.grant?.access_token?.token;
+    const refresh_token = req?.kauth?.grant?.refresh_token?.token;
+
     const data = new URLSearchParams({
-        client_id: req.kauth.grant.access_token.clientId,
+        client_id: req?.kauth?.grant?.access_token?.clientId,
         refresh_token: refresh_token,
     });
+
     return keycloakHTTPClient
         .post(`admin/realms/${keycloakRealm}/users/${userId}/logout`, data, {
             headers: {
