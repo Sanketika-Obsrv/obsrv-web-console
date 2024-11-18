@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getBaseURL } from './configData';
+import { getBaseURL, getConfigValueV1 } from './configData';
 
 axios.defaults.headers.common['Cache-Control'] = 'no-store';
 axios.defaults.headers.common['Pragma'] = 'no-store';
@@ -10,8 +10,12 @@ const responseInterceptor = (response: any) => response;
 const checkForSessionExpiry = (config: any) => {
     const { navigate, status } = config;
     if (status === 401) {
-        // alert('Unauthorized access !!');
-        navigate(`/login`);
+        if (getConfigValueV1("AUTHENTICATION_TYPE") === 'keycloak') {
+            window.location.href = '/console/logout';
+        } else {
+            // alert('Unauthorized access !!');
+            navigate(`/login`);
+        }
     }
 }
 
