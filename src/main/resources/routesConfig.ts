@@ -24,13 +24,6 @@ export default [
                         middlewares: [passportAuthenticateCallback.handler()],
                     },
                     {
-                        path: 'logout',
-                        method: 'GET',
-                        middlewares: [
-                            controllers.get('auth:logout')?.handler({}),
-                        ],
-                    },
-                    {
                         path: 'authorize',
                         method: 'GET',
                         middlewares: [

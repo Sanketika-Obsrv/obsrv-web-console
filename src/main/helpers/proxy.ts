@@ -1,6 +1,10 @@
+/* eslint-disable prettier/prettier */
 import { Request, Response } from "express";
 import _ from 'lodash'
 import { incrementApiCalls, incrementFailedApiCalls, setQueryResponseTime } from "./prometheus";
+import appConfig from "../../shared/resources/appConfig";
+
+const authenticationType = appConfig.AUTHENTICATION_TYPE;
 
 export const onError = ({ entity }: any) => (err: any, req: Request, res: Response) => {
     incrementFailedApiCalls({ entity, endpoint: req.url });
@@ -19,9 +23,14 @@ export const onProxyRes = ({ entity }: any) => (proxyReq: any, req: any, res: Re
 export const onProxyReq = ({ entity }: any) => (proxyReq: any, req: any, res: Response) => {
     const startTime = Date.now();
     req.startTime = startTime;
-    const jwtToken: string = req.session?.token;
-    if (jwtToken) {
+    if(authenticationType === 'keycloak'){
+        const keycloakToken = JSON.parse(req?.session['keycloak-token']);
+        const access_token: string = keycloakToken.access_token;
+        proxyReq.setHeader('x-user-token', `${access_token}`);
+    }else if(authenticationType === 'basic'){
+        const jwtToken: string = req.session?.token;
         proxyReq.setHeader('x-user-token', `${jwtToken}`);
+
     }
     incrementApiCalls({ entity, endpoint: req.url });
 }

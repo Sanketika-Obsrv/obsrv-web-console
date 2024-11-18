@@ -39,7 +39,7 @@ export default {
                                 properties: {
                                     value: {
                                         type: 'string',
-                                        enum: ['admin', 'dataset_manager', 'viewer', 'dataset_creator', 'ingestor'],
+                                        enum: ['admin', 'dataset_manager', 'viewer', 'dataset_creator', 'ingestor', 'operations_admin'],
                                         minLength: 1,
                                     },
                                     action: {

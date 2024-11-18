@@ -7,8 +7,6 @@ const keycloakUrl = appConfig.KEYCLOAK.URL;
 const keycloakHTTPClient = axios.create({ baseURL: keycloakUrl });
 const keycloakRealm = appConfig.KEYCLOAK.REALM;
 
-
-
 export const authenticated = async (request: any) => {
     try {
         const userId = request.kauth.grant.access_token.content.sub.split(':');
@@ -78,7 +76,6 @@ export const userCreateWithKeycloak = async (access_token: any, userRequest: any
     const created_on = new Date().toISOString();
     const userInfo = { id, user_name, email_address, created_on, roles };
     const result = await userService.save(userInfo);
-    console.log('usercreate',result);
     return result;
 };
 
