@@ -10,7 +10,7 @@ const responseInterceptor = (response: any) => response;
 const checkForSessionExpiry = (config: any) => {
     const { navigate, status } = config;
     if (status === 401) {
-        if (getConfigValueV1("AUTHENTICATION_TYPE") === 'keycloak') {
+        if (getConfigValueV1("AUTHENTICATION_TYPE") !== 'basic') {
             window.location.href = '/console/logout';
         } else {
             // alert('Unauthorized access !!');
