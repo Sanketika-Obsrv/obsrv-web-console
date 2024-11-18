@@ -55,7 +55,7 @@ const AddPIIDialog = (props: any) => {
     const [formData, setFormData] = useState<any>({
         section: {
             transformations: '',
-            transformationType: 'Mask',
+            transformationType: 'mask',
             transformationMode: 'Strict',
         }
     });
@@ -66,8 +66,8 @@ const AddPIIDialog = (props: any) => {
             const existingData = {
                 section: {
                     transformations: transformations,
-                    transformationType: _.capitalize(_.get(data, ['transformationType'])),
-                    transformationMode: _.capitalize(_.get(data, ['transformationMode']))
+                    transformationType: (_.get(data, ['transformationType'])),
+                    transformationMode: (_.get(data, ['transformationMode']))
                 }
             };
 
@@ -188,8 +188,8 @@ const AddPIIDialog = (props: any) => {
                                 onChange={handleRadioChange}
                             >
                                 <Box display="flex">
-                                    <FormControlLabel value="Mask" control={<Radio />} label="Mask" />
-                                    <FormControlLabel value="Encrypt" control={<Radio />} label="Encrypt" />
+                                    <FormControlLabel value="mask" control={<Radio />} label="Mask" />
+                                    <FormControlLabel value="encrypt" control={<Radio />} label="Encrypt" />
                                 </Box>
                             </RadioGroup>
                         </FormControl>
