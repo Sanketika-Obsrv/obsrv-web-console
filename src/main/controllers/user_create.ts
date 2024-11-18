@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import userService from '../services/oauthUsers';
-import { v4 } from 'uuid';
-import bcrypt from 'bcryptjs';
 import { transform } from '../../shared/utils/transformResponse';
 import _ from 'lodash';
+import appConfig from '../../shared/resources/appConfig';
+import { userCreateWithKeycloak } from '../services/keycloak';
+import { userCreateAsBasic } from '../services/basic';
+
+const authenticationType = appConfig.AUTHENTICATION_TYPE;
 
 export default {
     name: 'user:create',
@@ -11,16 +13,15 @@ export default {
         try {
             const userRequest = _.get(req, ['body', 'request']);
             userRequest.user_name = userRequest.user_name.trim().replace(/\s+/g, '_');
-            const { password } = userRequest;
-            userRequest.password = await bcrypt.hash(password, 12);
-            if (userRequest.mobile_number) {
-                const { country_code, number } = userRequest.mobile_number;
-                userRequest.mobile_number = `${String(country_code).trim()}_${String(number).trim()}`;
+            if (authenticationType === 'keycloak') {
+                const keycloakToken = JSON.parse(req?.session['keycloak-token']);
+                const access_token = keycloakToken.access_token;
+                const result = await userCreateWithKeycloak(access_token, userRequest);
+                res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name, email_address: result.email_address } }));
+            } else if (authenticationType === 'basic') {
+                const result = await userCreateAsBasic(userRequest);
+                res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name, email_address: result.email_address } }));
             }
-            const userIdentifier = { id: v4(), created_on: new Date().toISOString() };
-            const userInfo = { ...userRequest, ...userIdentifier };
-            const result = await userService.save(userInfo);
-            res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name, email_address: result.email_address } }));
         } catch (error) {
             next(error);
         }
