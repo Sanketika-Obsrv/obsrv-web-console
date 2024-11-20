@@ -1,11 +1,10 @@
 /* eslint-disable */
 import { Grid, Typography } from '@mui/material';
-import MainCard from 'components/MainCard';
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router';
 import { datasetRead } from 'services/datasetV1';
 import * as _ from 'lodash';
-import ReportCard from 'components/cardsV1/statistics/ReportCard';
+import ReportCard from 'components/ReportCard';
 import { BarChartOutlined } from '@ant-design/icons';
 import { druidQueries } from 'services/druid';
 import dayjs from 'dayjs';

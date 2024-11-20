@@ -2,18 +2,6 @@ import { v4 as uuidv4 } from 'uuid';
 import _ from 'lodash';
 import axios from 'axios';
 import { Dataset, CopyDatasetRequest, FilterCriteria } from '../types/dataset';
-import {
-  DATASETS_LIST_ENDPOINT,
-  DATASET_READ_ENDPOINT,
-  DATASET_HEALTH_ENDPOINT,
-  DATASET_STATUS_TRANSITION_ENDPOINT,
-  DATASET_UPDATE_ENDPOINT,
-  DATASET_EXPORT_ENDPOINT,
-  DATASET_COPY_ENDPOINT,
-  DATASET_READ,
-} from './../constants/endpoints';
-import { response } from 'express';
-import { useFetchDatasetsById } from './dataset';
 
 enum datasetStatus {
   Live = 'Live',
@@ -29,7 +17,7 @@ const axiosInstance = axios.create({
 export const fetchDatasets = (): Promise<{ datasets: Dataset[] }> => {
   const msgId = uuidv4();
   return axiosInstance
-    .post(DATASETS_LIST_ENDPOINT, {
+    .post('/datasets/list', {
       id: 'api.datasets.list',
       ver: 'v2',
       ts: new Date().toISOString(),
@@ -52,7 +40,7 @@ export const fetchDatasets = (): Promise<{ datasets: Dataset[] }> => {
 };
 export const fetchVersionKey = (datasetId: string): Promise<Dataset> => {
   return axiosInstance
-    .get(DATASET_READ_ENDPOINT(datasetId))
+    .get(`/datasets/read/${datasetId}?fields=version_key&mode=edit`)
     .then((response) => {
       const versionKey = response.data.result.version_key;
       return versionKey;
@@ -62,7 +50,7 @@ export const fetchVersionKey = (datasetId: string): Promise<Dataset> => {
 export const getDatasetHealth = (datasetId: string): Promise<string> => {
   const msgId = uuidv4();
   return axiosInstance
-    .post(DATASET_HEALTH_ENDPOINT, {
+    .post('/datasets/health', {
       id: 'api.datasets.health',
       ver: '2',
       ts: new Date().toISOString(),
@@ -93,7 +81,7 @@ export const combineDatasetWithHealth = async (): Promise<{
     const datasetRead = await Promise.all(datasets.map((dataset: Dataset) => {
       const defaultFields = ["dataset_id", "name", "type", "status", "tags", "version", "api_version", "dataset_config", "created_date", "updated_date",'data_schema','validation_config','dedup_config','denorm_config'];
       const params = (dataset.status === "Draft") ? `fields=${[...defaultFields, "connectors_config"]}&mode=edit` : `fields=${defaultFields}`;
-      return axiosInstance.get(DATASET_READ(dataset.dataset_id, params)).then((response) => {return (response.data.result)});
+      return axiosInstance.get(`/datasets/read/${dataset?.dataset_id}?${params}`).then((response) => {return (response.data.result)});
     }));
     console.log('datasetRead',datasetRead);
     const datasetHealthPromises = datasetRead.map((dataset: Dataset) => {
@@ -140,7 +128,7 @@ export const datasetTransition = (
 ): Promise<void> => {
   const msgId = uuidv4();
   return axiosInstance
-    .post(DATASET_STATUS_TRANSITION_ENDPOINT, {
+    .post('/datasets/status-transition', {
       id: 'api.datasets.status-transition',
       ver: 'v2',
       ts: new Date().toISOString(),
@@ -203,7 +191,7 @@ export const editTags = async (
     };
 
     const response = await axiosInstance.patch(
-      DATASET_UPDATE_ENDPOINT,
+      '/datasets/update',
       requestBody,
     );
     return response.data;
@@ -215,7 +203,7 @@ export const editTags = async (
 export const exportDataset = async (dataset: Dataset) => {
   try {
     const response = await axiosInstance.get(
-      DATASET_EXPORT_ENDPOINT(dataset.dataset_id, dataset.status),
+      `/datasets/export/${dataset?.dataset_id}?status=${dataset?.status}`,
       {
         responseType: 'blob',
       },
@@ -263,7 +251,7 @@ export const copyDataset = async (
 
   try {
     const response = await axiosInstance.post(
-      DATASET_COPY_ENDPOINT,
+      '/datasets/copy',
       requestBody,
     );
     if (response.data.responseCode !== 'OK') {

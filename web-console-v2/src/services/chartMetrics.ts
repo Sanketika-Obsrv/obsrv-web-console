@@ -1,4 +1,4 @@
-import endpoints from '../constants/Enpoints';
+import endpoints from '../constants/Endpoints';
 
 import { IChartFetchRequest } from '../types/metadata';
 import { http } from './http';
