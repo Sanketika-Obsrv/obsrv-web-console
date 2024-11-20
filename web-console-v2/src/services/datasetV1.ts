@@ -9,7 +9,6 @@ import { generateRequestBody } from './utils';
 import { fetchDataset, generateDatasetState } from './datasetState';
 import moment from 'moment';
 import { v4 as uuid } from 'uuid';
-import { useAlert } from 'contexts/AlertContextProvider';
 
 export const DEFAULT_TIMESTAMP = {
     indexValue: "obsrv_meta.syncts",
@@ -410,7 +409,6 @@ export const updateDatasetStatus = async (id: string, dataset_id: string, status
 export const createDraftversion = async ({ selection, navigateToPath, rollupRedirect, showAlert }: any) => {
     try {
         const datasetResponse = await editLiveDataset({ datasetId: selection });
-        sessionStorage.setItem(`${selection}_activePage`, "0");
         if (rollupRedirect) {
             const transitionRequest = generateRequestBody({ request: { dataset_id: datasetResponse?.data?.result?.dataset_id, status: "ReadyToPublish" }, apiId: "api.datasets.status-transition" })
             await http.post(`${apiEndpoints.statusTransition}`, transitionRequest);

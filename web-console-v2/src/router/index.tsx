@@ -12,13 +12,10 @@ import SchemaDetailsPage from 'pages/StepsPages/Ingestion/SchemaDetails/SchemaDe
 import ConnectorConfigurationPage from 'pages/ConnectorConfiguration/ConnectorConfiguration';
 import SelectConnectorPage from 'pages/SelectConnector/SelectConnector';
 import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
-import SettingsPage from 'pages/Settings/Settings';
 import Dashboard from 'pages/Dashboard/Dashboard';
 import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/IndividualDashboardPage';
-import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
 import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
 import ClusterHealth from 'pages/dashboardV1/datasets';
-
 import StepperPage from 'pages/StepsPages/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
@@ -68,7 +65,6 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/dashboard/storage`, label: "Storage", element: <IndividualMetricDashboards id="storage" /> },
     { path: `/connector-management`, label: "Connector Management", element: <ConnectorConfigurationPage /> },
     { path: `/connector-management/manage`, label: "Manage", element: <ManageConnectorsPage /> },
-    { path: `/settings`, label: "Settings", element: <SettingsPage /> },
     {
         path: `/alertRules`,
         label: "Alert Rules", 

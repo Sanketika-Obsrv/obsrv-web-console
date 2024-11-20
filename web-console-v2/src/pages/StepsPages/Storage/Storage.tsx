@@ -43,7 +43,6 @@ const Storage = () => {
     const [datasetType, setDatasetType] = useState<string>('event');
 
     const updateDatasetMutate = useUpdateDataset();
-    const sessionData = sessionStorage.getItem('configDetails');
     const { datasetId } : any = useParams();
 
     const navigate = useNavigate();

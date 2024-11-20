@@ -14,7 +14,7 @@ import { Chip } from '@mui/material';
 import { publishChannel, retireChannel } from 'services/notificationChannels';
 import NotificationChannelsHeader from './NotificationChannelsHeader';
 import { alertStatusColor, dialogBoxContext } from 'pages/alertManager/services/utils';
-import AlertDialog from 'components/AlertDialog';
+import AlertDialog from 'components/AlertDialog/AlertDialog';
 import { renderSkeleton } from 'services/skeleton';
 import { useAlert } from 'contexts/AlertContextProvider';
 

@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Action from 'components/ActionButtons/Actions';
 import { Box, Button } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import HelpSection from 'components/HelpSection/HelpSection';
 import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
 import processingStyle from './Processing.module.css';
-import _ from 'lodash';
+import _, { mapKeys } from 'lodash';
 import AccordionSection from 'components/Accordian/AccordionSection';
 import { theme } from 'theme';
 import ProcessingSection from './ProcessingSection/ProcessingSection';
@@ -20,7 +20,6 @@ import { TransformationMode } from 'types/datasets';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from 'components/Loader';
 import { useDetectPiiFields } from 'services/system';
-import { fetchSessionStorageValue } from 'utils/sessionStorage';
 import { flattenObject, setAdditionalProperties } from 'services/json-schema';
 import ProcessingHelpText from 'assets/help/processing';
 export const extractTransformationOptions = (schema: any, path: string[] = []): string[] => {
@@ -205,7 +204,7 @@ const Processing: React.FC = () => {
         setCanProceed(value);
     };
 
-    const handleAddOrEdit = (data: any, mapKey: string) => {
+    const handleAddOrEdit = useCallback((data: any, mapKey: string) => {
         const keyName = keyMapping[mapKey];
         if (mapKey === 'validation') {
 
@@ -219,7 +218,7 @@ const Processing: React.FC = () => {
         } else {
             updateDataset({ data: { [keyName]: data, dataset_id: datasetId } });
         }
-    };
+    }, []);
 
     const handleDelete = (fieldKey: string, data: any) => {
         let newData = {

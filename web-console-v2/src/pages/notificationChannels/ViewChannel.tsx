@@ -16,7 +16,7 @@ import { DeleteOutlined, EditOutlined, MessageOutlined, PlayCircleOutlined } fro
 import SendTestMessage from "./components/SendTestMessage";
 import { getKeyAlias } from "services/keysAlias";
 import { dialogBoxContext } from "pages/alertManager/services/utils";
-import AlertDialog from "components/AlertDialog";
+import AlertDialog from "components/AlertDialog/AlertDialog";
 import { renderSkeleton } from "services/skeleton";
 import { useAlert } from "contexts/AlertContextProvider";
 import { styled } from '@mui/material/styles';

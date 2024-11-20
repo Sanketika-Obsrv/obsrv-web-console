@@ -6,25 +6,20 @@ import ScrollX from 'components/ScrollX';
 import { IconButton, Box } from '@mui/material';
 import { PlayCircleOutlined, EditOutlined, DeleteFilled, ExportOutlined } from '@ant-design/icons';
 import FilteringTable from 'components/filtering-table';
-import AlertDialog from 'components/AlertDialog';
+import AlertDialog from 'components/AlertDialog/AlertDialog';
 import { useNavigate } from 'react-router';
 import { publishDataset } from 'services/systemV1';
 import dayjs from 'dayjs';
 import * as _ from 'lodash';
 import interactIds from 'data/telemetry/interact.json';
-import { exportDataset, fetchDatasets, deleteDataset, updateDataset, getDraftTagsPayload, versionKeyMap, setVersionKey } from 'services/datasetV1';
+import { exportDataset, fetchDatasets, deleteDataset, updateDataset, getDraftTagsPayload, setVersionKey } from 'services/datasetV1';
 import EditDatasetTags from 'components/EditDatasetTags';
 import StyleIcon from '@mui/icons-material/Style';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { v4 } from 'uuid';
-import Loader from 'components/Loader';
 import { renderSkeleton } from 'services/skeleton';
 import PostAddIcon from '@mui/icons-material/PostAdd';
 import en from 'utils/locales/en.json';
 import { DatasetStatus, DatasetType } from 'types/datasets';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import { downloadJSONSchemaV1, flattenSchema } from 'services/json-schema';
 import { downloadJsonFile } from 'utils/downloadUtils';
 import { alertDialogContext } from './draftDatasetsList';
 import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasets';
@@ -292,6 +287,7 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                     const fileName = `${row?.name}_${row?.status}_${row?.version}`;
                     if (row?.onlyTag) return null;
                     const status = _.toLower(row?.status)
+                    const isOlapEnabled = _.get(row,"dataset_config.indexing_config.olap_store_enabled");
                     const publishDataset: boolean = _.toLower(status) !== _.toLower(DatasetStatus.ReadyToPublish) || isLoading
                     return <Stack direction="row" justifyContent="flex-start" alignItems="center">
                         <Tooltip title="Publish Dataset" onClick={(e: any) => publish(row)}>
@@ -335,18 +331,18 @@ const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {
                                 <EditOutlined />
                             </IconButton>
                         </Tooltip>
-                        {/* <Tooltip title="Rollup Management" onClick={(e: any) => navigateToPath(`/datasets/management/${row?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)}>
+                        <Tooltip title="Rollup Management" onClick={(e: any) => navigateToPath(`/datasets/management/${row?.dataset_id}?status=${DatasetStatus.ReadyToPublish}`)}>
                             <IconButton
                                 color="primary"
                                 size="large"
                                 data-edataid={interactIds.add_dataset_rollup}
                                 data-objectid={row?.dataset_id}
                                 data-objecttype={row?.type === DatasetType.MasterDataset ? 'masterDataset' : 'dataset'}
-                                disabled={row?.type === DatasetType.MasterDataset || publishDataset}
+                                disabled={(row?.type === DatasetType.MasterDataset || publishDataset) || !isOlapEnabled}
                             >
                                 <PostAddIcon />
                             </IconButton>
-                        </Tooltip> */}
+                        </Tooltip>
                         <Tooltip title="Export Dataset">
                             <IconButton
                                 color="primary"

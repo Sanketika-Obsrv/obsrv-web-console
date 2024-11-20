@@ -6,7 +6,7 @@ import ScrollX from 'components/ScrollX';
 import { IconButton } from '@mui/material';
 import { DashboardOutlined, EyeOutlined } from '@ant-design/icons';
 import FilteringTable from 'components/filtering-table';
-import AlertDialog from 'components/AlertDialog';
+import AlertDialog from 'components/AlertDialog/AlertDialog';
 import { useNavigate } from 'react-router';
 import { fetchChartData } from 'services/clusterMetrics';
 import { druidQueries } from 'services/druid';
