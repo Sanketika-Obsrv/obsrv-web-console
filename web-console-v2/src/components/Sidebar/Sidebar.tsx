@@ -12,7 +12,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import { useTheme } from '@mui/material/styles';
 import Tooltip from '@mui/material/Tooltip';
 import { useAlert } from 'contexts/AlertContextProvider';
-import apiEndpoints from 'data/apiEndpoints';
+import apiEndpoints from 'constants/Endpoints';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';

@@ -2,7 +2,7 @@
 import * as _ from 'lodash';
 import { http } from 'services/http';
 import { flattenSchema, setAdditionalProperties, updateDenormDerived, updateJSONSchema } from './json-schema';
-import apiEndpoints from 'data/apiEndpoints';
+import apiEndpoints from 'constants/Endpoints';
 import { DatasetStatus, DatasetType } from 'types/datasets';
 import { aggregationFunctions, allowedSegmentGranurality } from './commonUtils';
 import { generateRequestBody } from './utils';

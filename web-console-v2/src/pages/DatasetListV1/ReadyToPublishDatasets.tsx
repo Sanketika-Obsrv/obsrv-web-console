@@ -24,7 +24,7 @@ import { downloadJsonFile } from 'utils/downloadUtils';
 import { alertDialogContext } from './draftDatasetsList';
 import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasets';
 import { http } from 'services/http';
-import apiEndpoints from 'data/apiEndpoints';
+import apiEndpoints from 'constants/Endpoints';
 import { useAlert } from 'contexts/AlertContextProvider';
 
 const ReadyToPublishDatasetsList = ({ setDatasetType, sourceConfigs }: any) => {

@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 import dayjs from 'dayjs';
 import promql from '../promql';
 import defaultConf from './common'
-import endpoints from 'data/apiEndpoints';
+import endpoints from 'constants/Endpoints';
 import prettyBytes from 'pretty-bytes';
 
 export default {

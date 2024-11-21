@@ -3,7 +3,7 @@ import prettyMilliseconds from 'pretty-ms';
 import dayjs from 'dayjs';
 import promql from '../promql';
 import defaultConf from './common';
-import endpoints from 'data/apiEndpoints';
+import endpoints from 'constants/Endpoints';
 import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(relativeTime);
 

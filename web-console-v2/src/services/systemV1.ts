@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import { http } from 'services/http';
 import { v4 } from 'uuid';
-import apiEndpoints from 'data/apiEndpoints';
+import apiEndpoints from 'constants/Endpoints';
 import { generateRequestBody } from './utils';
 
 export const publishDataset = ({ data, config = {} }: any) => {
