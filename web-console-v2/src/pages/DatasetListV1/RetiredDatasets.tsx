@@ -14,7 +14,7 @@ import { renderSkeleton } from 'services/skeleton';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { fetchDatasets } from 'services/datasetV1';
 import { DatasetStatus } from 'types/datasets';
-import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasets';
+import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasetsList';
 import en from 'utils/locales/en.json';
 import { useAlert } from 'contexts/AlertContextProvider';
 

@@ -14,8 +14,8 @@ import SelectConnectorPage from 'pages/SelectConnector/SelectConnector';
 import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
 import Dashboard from 'pages/Dashboard/Dashboard';
 import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/IndividualDashboardPage';
-import DatasetCreateEvents from 'pages/DatasetListV1/createEvents';
-import ClusterHealth from 'pages/DatasetListV1/datasets';
+import DatasetCreateEvents from 'pages/DatasetListV1/DatasetCreateEvents';
+import DatasetListV1 from 'pages/DatasetListV1/datasetsList';
 import StepperPage from 'pages/StepsPages/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
@@ -81,7 +81,7 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/alertChannels/new`, label: "New", element: <AddChannel /> },
     { path: `/alertChannels/edit/:id`, label: "Edit", element: <UpdateChannel /> },
     { path: `/alertChannels/view/:id`, label: "View", element: <ViewChannel /> },
-    { path: `/datasets`, label: "Datasets", element: <ClusterHealth /> },
+    { path: `/datasets`, label: "Datasets", element: <DatasetListV1 /> },
     { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <IndividualMetricDashboards id="individualDataset" /> },
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
     { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> }

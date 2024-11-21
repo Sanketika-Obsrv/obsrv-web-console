@@ -24,7 +24,7 @@ import { FormattedMessage } from 'react-intl';
 import en from 'utils/locales/en.json';
 import { DatasetStatus, DatasetType } from 'types/datasets';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasets';
+import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasetsList';
 import { useAlert } from 'contexts/AlertContextProvider';
 
 export const alertDialogContext = (datasetName: string = "") => ({ title: <FormattedMessage id="delete-dataset-title" />, content: <FormattedMessage id="delete-dataset-context" values={{ id: datasetName }} /> })

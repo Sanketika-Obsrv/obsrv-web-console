@@ -22,7 +22,7 @@ import en from 'utils/locales/en.json';
 import { DatasetStatus, DatasetType } from 'types/datasets';
 import { downloadJsonFile } from 'utils/downloadUtils';
 import { alertDialogContext } from './draftDatasetsList';
-import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasets';
+import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasetsList';
 import { http } from 'services/http';
 import apiEndpoints from 'constants/Endpoints';
 import { useAlert } from 'contexts/AlertContextProvider';
