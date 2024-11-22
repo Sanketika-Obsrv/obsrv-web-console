@@ -1,6 +1,6 @@
 import { Card, Stack, Typography, Breadcrumbs, } from '@mui/material';
-import chartMeta from '../../data/chartsComponents'
-import ApexChart from 'sections/dashboard/analytics/apex';
+import chartMeta from '../../../data/chartsComponents'
+import ApexChart from 'pages/Dashboard/analytics/apex';
 import ClusterMetrics from './ClusterMetrics';
 import globalConfig from 'data/initialConfig'
 import ClusterNodes from './ClusterNodes';

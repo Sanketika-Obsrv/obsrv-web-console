@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import * as _ from 'lodash';
-import chartMeta from '../../data/chartsComponents'
+import chartMeta from '../../../data/chartsComponents'
 import { fetchChartData } from "services/clusterMetrics";
 import globalConfig from 'data/initialConfig';
-import GaugeChart from "sections/dashboard/analytics/guageChart";
+import GaugeChart from "pages/Dashboard/analytics/guageChart";
 import { Stack } from "@mui/material";
 import AsyncLabel from "components/AsyncLabel";
 

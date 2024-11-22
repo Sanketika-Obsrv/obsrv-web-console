@@ -3,7 +3,7 @@ import { Grid, Stack } from "@mui/material";
 import _ from 'lodash';
 import dayjs from 'dayjs';
 import endpoints from 'constants/Endpoints';
-import ApexChart from "sections/dashboard/analytics/apex";
+import ApexChart from "pages/Dashboard/analytics/apex";
 import { Button } from "@mui/material";
 import { CloseOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
