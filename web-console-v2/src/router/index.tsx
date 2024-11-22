@@ -3,20 +3,20 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 
 // Import pages for different routes
-import NewDatasetPage from 'pages/NewDataset/NewDataset';
-import IngestionPage from 'pages/StepsPages/Ingestion/Ingestion';
-import ProcessingPage from 'pages/StepsPages/Processing/Processing';
-import StoragePage from 'pages/StepsPages/Storage/Storage';
-import PreviewPage from 'pages/StepsPages/Preview';
-import SchemaDetailsPage from 'pages/StepsPages/Ingestion/SchemaDetails/SchemaDetails';
-import ConnectorConfigurationPage from 'pages/ConnectorConfiguration/ConnectorConfiguration';
-import SelectConnectorPage from 'pages/SelectConnector/SelectConnector';
+import NewDatasetPage from 'pages/DatasetCreation/NewDataset/NewDataset';
+import IngestionPage from 'pages/DatasetCreation/Ingestion/Ingestion';
+import ProcessingPage from 'pages/DatasetCreation/Processing/Processing';
+import StoragePage from 'pages/DatasetCreation/Storage/Storage';
+import PreviewPage from 'pages/DatasetCreation/Preview';
+import SchemaDetailsPage from 'pages/DatasetCreation/Ingestion/SchemaDetails/SchemaDetails';
+import ConnectorConfigurationPage from 'pages/DatasetCreation/ConnectorConfiguration/ConnectorConfiguration';
+import SelectConnectorPage from 'pages/DatasetCreation/SelectConnector/SelectConnector';
 import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
 import Dashboard from 'pages/Dashboard/Dashboard';
 import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/IndividualDashboardPage';
 import DatasetCreateEvents from 'pages/DatasetListV1/DatasetCreateEvents';
 import DatasetListV1 from 'pages/DatasetListV1/DatasetsList';
-import StepperPage from 'pages/StepsPages/StepperPage';
+import StepperPage from 'pages/DatasetCreation/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
 import AddAlert from 'pages/alertManager/views/AddRule';

@@ -25,7 +25,7 @@ import Loader from 'components/Loader';
 import Retry from 'components/Retry/Retry';
 import IconButtonWithTips from 'components/ToolTip/IconButtonWithTips';
 import { useAlert } from 'contexts/AlertContextProvider';
-import ReUploadFiles from 'pages/Dataset/wizard/ReUploadFiles';
+import ReUploadFiles from 'pages/DatasetCreation/ReUploadFiles';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
 import { dataMappings } from 'utils/dataMappings';

@@ -9,10 +9,10 @@ import {
     useUploadToUrl,
     useGenerateJsonSchema,
     useUpdateDataset
-} from '../../../services/dataset';
-import { readJsonFileContents } from '../../../services/utils';
-import AlertDialog from '../../../components/AlertDialog/AlertDialog';
-import { useAlert } from '../../../contexts/AlertContextProvider';
+} from '../../services/dataset';
+import { readJsonFileContents } from '../../services/utils';
+import AlertDialog from '../../components/AlertDialog/AlertDialog';
+import { useAlert } from '../../contexts/AlertContextProvider';
 import UploadFiles from './UploadFiles';
 import { useParams } from 'react-router-dom';
 

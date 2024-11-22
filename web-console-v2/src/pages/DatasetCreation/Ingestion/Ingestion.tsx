@@ -13,7 +13,7 @@ import { useAlert } from 'contexts/AlertContextProvider';
 import { useFormik } from 'formik';
 import _, { isEmpty } from 'lodash';
 import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
-import UploadFiles from 'pages/Dataset/wizard/UploadFiles';
+import UploadFiles from 'pages/DatasetCreation/UploadFiles';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {

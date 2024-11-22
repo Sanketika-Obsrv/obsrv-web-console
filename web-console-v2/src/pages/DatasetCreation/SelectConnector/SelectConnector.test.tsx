@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import SelectConnector from './SelectConnector';
-import { connectorList } from '../../components/connectorList';
+import { connectorList } from '../../../components/connectorList';
 import { BrowserRouter } from 'react-router-dom';
 
 test('renders the SelectConnector component', () => {
