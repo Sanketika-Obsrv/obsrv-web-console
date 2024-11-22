@@ -25,7 +25,7 @@ import { Stack } from '@mui/material';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import JSONataPlayground from 'components/JsonPlay/JSONataPlayground';
-import { evaluateDataType } from 'pages/StepsPages/Processing/utils/dataTypeUtil';
+import { evaluateDataType } from 'pages/DatasetCreation/Processing/utils/dataTypeUtil';
 import { Alert } from '@mui/material';
 import en from 'utils/locales/en.json';
 

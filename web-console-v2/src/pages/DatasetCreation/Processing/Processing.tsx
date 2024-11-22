@@ -3,7 +3,7 @@ import Action from 'components/ActionButtons/Actions';
 import { Box, Button } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import HelpSection from 'components/HelpSection/HelpSection';
-import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
+import styles from 'pages/DatasetCreation/ConnectorConfiguration/ConnectorConfiguration.module.css';
 import processingStyle from './Processing.module.css';
 import _, { mapKeys } from 'lodash';
 import AccordionSection from 'components/Accordian/AccordionSection';

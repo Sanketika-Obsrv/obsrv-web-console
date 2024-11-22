@@ -7,7 +7,7 @@ import Loader from 'components/Loader';
 import { GenericCard } from 'components/Styled/Cards';
 import { useAlert } from 'contexts/AlertContextProvider';
 import _ from 'lodash';
-import styles from 'pages/ConnectorConfiguration/ConnectorConfiguration.module.css';
+import styles from 'pages/DatasetCreation/ConnectorConfiguration/ConnectorConfiguration.module.css';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';

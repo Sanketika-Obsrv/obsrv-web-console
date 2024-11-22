@@ -4,7 +4,7 @@ import { downloadJSONSchemaV1 } from 'services/json-schema';
 import { downloadJsonFileV1 } from 'utils/downloadUtils';
 import { DownloadOutlined } from '@ant-design/icons';
 import { Button, Grid, Stack, Typography, Box } from '@mui/material';
-import AllConfigurations from "pages/StepsPages/PreviewAndSave/AllConfigurations";
+import AllConfigurations from "pages/DatasetCreation/PreviewAndSave/AllConfigurations";
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import { useNavigate } from 'react-router-dom';
 
