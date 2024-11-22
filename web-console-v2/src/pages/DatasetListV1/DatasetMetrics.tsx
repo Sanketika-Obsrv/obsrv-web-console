@@ -4,7 +4,7 @@ import { useState, cloneElement, useEffect } from "react";
 import { useParams } from "react-router";
 import _ from 'lodash';
 import { DotChartOutlined } from "@ant-design/icons";
-import DatasetDetails from "./datasetsDetails";
+import DatasetDetails from "./DatasetsDetails";
 import MainCard from "components/MainCard";
 import { Typography } from "@mui/material";
 import Skeleton from "components/Skeleton";

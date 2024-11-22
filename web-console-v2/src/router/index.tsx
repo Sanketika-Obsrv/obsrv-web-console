@@ -15,7 +15,7 @@ import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
 import Dashboard from 'pages/Dashboard/Dashboard';
 import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/IndividualDashboardPage';
 import DatasetCreateEvents from 'pages/DatasetListV1/DatasetCreateEvents';
-import DatasetListV1 from 'pages/DatasetListV1/datasetsList';
+import DatasetListV1 from 'pages/DatasetListV1/DatasetsList';
 import StepperPage from 'pages/StepsPages/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';

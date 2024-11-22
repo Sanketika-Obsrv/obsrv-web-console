@@ -9,12 +9,11 @@ import dayjs from 'dayjs';
 import * as _ from 'lodash';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import Loader from 'components/Loader';
 import { renderSkeleton } from 'services/skeleton';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { fetchDatasets } from 'services/datasetV1';
 import { DatasetStatus } from 'types/datasets';
-import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasetsList';
+import { getDraftSourceConfig, renderNoDatasetsMessage } from './DatasetsList';
 import en from 'utils/locales/en.json';
 import { useAlert } from 'contexts/AlertContextProvider';
 

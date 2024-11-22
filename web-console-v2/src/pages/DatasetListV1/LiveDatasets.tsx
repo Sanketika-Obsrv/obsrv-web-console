@@ -28,7 +28,7 @@ import { downloadJSONSchemaV1, flattenSchema } from 'services/json-schema';
 import { downloadJsonFile } from 'utils/downloadUtils';
 import MoreOptions from './MoreOptions';
 import StyleIcon from '@mui/icons-material/Style';
-import { getLiveSourceConfig, renderNoDatasetsMessage } from './datasetsList';
+import { getLiveSourceConfig, renderNoDatasetsMessage } from './DatasetsList';
 import { useAlert } from 'contexts/AlertContextProvider';
 
 const dateFormat = 'YYYY-MM-DDT00:00:00+05:30'

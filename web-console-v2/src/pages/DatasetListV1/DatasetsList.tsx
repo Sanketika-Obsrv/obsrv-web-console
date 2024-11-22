@@ -1,9 +1,9 @@
-/* eslint-disable */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import  React from 'react';
 import { Alert, Box, Grid, Stack, Tab, Tooltip, Typography, useTheme } from '@mui/material';
 import * as _ from 'lodash';
 import LiveDatasets from './LiveDatasets';
-import DraftDatasetsList from './draftDatasetsList';
+import DraftDatasetsList from './DraftDatasetsList';
 import useImpression from 'hooks/useImpression';
 import pageIds from 'data/telemetry/pageIds';
 import RetiredDatasets from './RetiredDatasets';
@@ -16,7 +16,6 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import ReadyToPublishDatasetsList from './ReadyToPublishDatasets';
 import { FormattedMessage } from 'react-intl';
 import { useSearchParams } from 'react-router-dom';
-import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import ImportDataset from 'pages/datasetV1/ImportDataset';
 
 export const getLiveSourceConfig: any = (liveDataset: any, liveSourceConfigs: any) => {

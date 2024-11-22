@@ -15,17 +15,13 @@ import interactIds from 'data/telemetry/interact.json';
 import { fetchDatasets, deleteDataset, updateDataset, getDraftTagsPayload, setVersionKey } from 'services/datasetV1';
 import EditDatasetTags from 'components/EditDatasetTags';
 import StyleIcon from '@mui/icons-material/Style';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { v4 } from 'uuid';
-import Loader from 'components/Loader';
 import { renderSkeleton } from 'services/skeleton';
 import { FormattedMessage } from 'react-intl';
 import en from 'utils/locales/en.json';
 import { DatasetStatus, DatasetType } from 'types/datasets';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import { getDraftSourceConfig, renderNoDatasetsMessage } from './datasetsList';
 import { useAlert } from 'contexts/AlertContextProvider';
+import { getDraftSourceConfig, renderNoDatasetsMessage } from './DatasetsList';
 
 export const alertDialogContext = (datasetName: string = "") => ({ title: <FormattedMessage id="delete-dataset-title" />, content: <FormattedMessage id="delete-dataset-context" values={{ id: datasetName }} /> })
 
