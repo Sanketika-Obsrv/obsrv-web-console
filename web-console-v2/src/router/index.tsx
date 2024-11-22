@@ -26,7 +26,7 @@ import ListChannels from 'pages/notificationChannels/ListChannels';
 import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
-import DatasetManagement from 'pages/datasetManagement/components/DatasetManagement';
+import DatasetManagement from 'pages/datasetManagement/DatasetManagement';
 import Loadable from 'pages/auth/components/Loadable';
 
 // Type definition for the route configuration

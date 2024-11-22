@@ -3,7 +3,7 @@ import { QuestionCircleFilled } from '@ant-design/icons';
 import { Alert, Grid, Button, Box, Typography, } from '@mui/material';
 import MainCard from 'components/MainCard';
 import interactIds from 'data/telemetry/interact.json';
-import UploadFiles from 'pages/datasetV1/UploadFiles';
+import UploadFiles from 'pages/datasetView/UploadFiles';
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { datasetRead, sendEvents } from 'services/datasetV1';

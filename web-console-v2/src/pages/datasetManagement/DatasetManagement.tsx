@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { DatasetStatus } from "types/datasets";
 import Loader from "components/Loader";
-import ReviewAllCongurations from "pages/datasetV1/ReviewAllConfigurations";
+import ReviewAllCongurations from "pages/datasetView/ReviewAllConfigurations";
 import { useAlert } from "contexts/AlertContextProvider";
 import { getDatasetState } from "services/datasetV1";
 import { margin } from "@mui/system";

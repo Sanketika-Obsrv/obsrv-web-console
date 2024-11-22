@@ -16,7 +16,7 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import ReadyToPublishDatasetsList from './ReadyToPublishDatasets';
 import { FormattedMessage } from 'react-intl';
 import { useSearchParams } from 'react-router-dom';
-import ImportDataset from 'pages/datasetV1/ImportDataset';
+import ImportDataset from 'pages/datasetView/ImportDataset';
 
 export const getLiveSourceConfig: any = (liveDataset: any, liveSourceConfigs: any) => {
     const condition = (config: any) => {
