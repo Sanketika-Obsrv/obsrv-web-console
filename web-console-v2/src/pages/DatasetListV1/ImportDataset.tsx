@@ -7,7 +7,7 @@ import AnimateButton from 'components/@extended/AnimateButton';
 import PlaceholderContent from 'components/Dropzone/PlaceholderContent';
 import uploadIcon from 'assets/upload/upload_icon.svg';
 import { datasetRead, fetchDatasets, importDataset } from 'services/datasetV1';
-import ImportDialog from './ImportDialog'; // Import your dialog component
+import ImportDialog from './ImportDialog';
 import HtmlTooltip from 'components/HtmlTooltip';
 import _ from 'lodash';
 import { DatasetStatus } from 'types/datasets';

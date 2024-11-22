@@ -12,7 +12,7 @@ import { readJsonFileContents } from 'services/utils';
 import interactIds from 'data/telemetry/interact.json';
 import Loader from 'components/Loader';
 import { useAlert } from 'contexts/AlertContextProvider';
-import PasteData from './utils/PasteData';
+import PasteData from './PasteData';
 
 const tabProps = (index: number) => ({ id: `tab-${index}`, 'aria-controls': `tabpanel-${index}` });
 
