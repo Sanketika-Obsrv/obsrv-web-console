@@ -106,7 +106,6 @@ function SuggestionsIcon(props: SvgIconProps) {
     );
 }
 
-const configDetailKey = 'configDetails';
 
 const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     const { showTableOnly } = props;

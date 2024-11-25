@@ -8,9 +8,6 @@ import datasetImg from 'assets/images/DatasetLaunch.svg';
 const NewDataset: React.FC = () => {
     const navigate = useNavigate();
     const handleClick = () => {
-        sessionStorage.removeItem('configDetails');
-        sessionStorage.removeItem('connectorConfigDetails');
-
         navigate('/dataset/edit/connector/list/<new>');
     };
     return (

@@ -112,26 +112,14 @@ export const setVersionKey = (value: number) => {
     if(!value) {
         return;
     }
-    const configDetailKey = 'configDetails';
-
-    const configDetail = fetchLocalStorageItem(configDetailKey) || {};
-
-    _.set(configDetail, 'version_key', String(value));
-
-    storeLocalStorageItem(configDetailKey, configDetail);
+    storeLocalStorageItem('version_key', String(value));
 };
 
 export const setDatasetId = (value: number) => {
     if(!value) {
         return;
     }
-    const configDetailKey = 'configDetails';
-
-    const configDetail = fetchLocalStorageItem(configDetailKey) || {};
-
-    _.set(configDetail, 'dataset_id', String(value));
-
-    storeLocalStorageItem(configDetailKey, configDetail);
+    storeLocalStorageItem('dataset_id', String(value));
 };
 
 export const transformResponse = (response: AxiosResponse) => _.get(response, ['data', 'result']);

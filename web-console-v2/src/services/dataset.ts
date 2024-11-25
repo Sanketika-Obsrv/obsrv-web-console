@@ -24,8 +24,6 @@ const ENDPOINTS = {
 
 export const endpoints = ENDPOINTS
 
-const configDetailKey = 'configDetails';
-
 export const useFetchDatasetsById = ({
         datasetId,
         queryParams
@@ -114,12 +112,8 @@ export const useCreateDataset = () =>
             return http.post(ENDPOINTS.CREATE_DATASET, request, config).then(transformResponse);
         },
         onSuccess: (response, variables) => {
-            const configDetail = {
-                version_key: _.get(response, 'version_key'),
-                dataset_id: _.get(response, 'id')
-            };
-
-            storeLocalStorageItem(configDetailKey, configDetail);
+            setVersionKey(_.get(response, 'version_key'));
+            setDatasetId(_.get(response, 'id'));
         }
     });
 
@@ -144,11 +138,11 @@ export const useUpdateDataset = () =>
             if(data?.data_schema) {
                 data['data_schema'] = omitSuggestions(data?.data_schema)
             }
-            const configDetail = fetchLocalStorageItem('configDetails') || {};
+            const version_key = fetchLocalStorageItem('version_key') || {};
             const request = generateRequestBody({
                 request: {
                     ...data,
-                    ..._.pick(configDetail, ['version_key'])
+                    version_key
                 },
                 apiId: 'api.datasets.update'
             });
@@ -237,11 +231,6 @@ const omitSuggestions = (schema: any): any => {
     }
     return schema;
 }
-
-export const getConfigValue = (variable: string) => {
-    const config: string | any = fetchLocalStorageItem('systemSettings');
-    return _.get(config, variable);
-};
 
 export const datasetRead = ({ datasetId, config = {} }: any) => {
     return http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}`, {

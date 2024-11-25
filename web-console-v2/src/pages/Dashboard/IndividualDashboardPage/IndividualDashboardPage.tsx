@@ -5,13 +5,12 @@ import React, { useEffect, useState } from 'react';
 import MainCard from 'components/MainCard';
 import { useNavigate, useParams } from 'react-router-dom';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { navigateToGrafana } from 'services/grafana';
 import Grafana from 'assets/icons/Grafana';
 import intereactIds from 'data/telemetry/interact.json'
 import { v4 } from 'uuid';
 import Health from '../health';
 import { metricsMetadata } from '../metrics';
-import { getConfigValueV1 } from 'services/configData';
+import { getSystemSetting } from 'services/configData';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 
 const IndividualMetricDashboards = (props: any) => {
@@ -86,7 +85,7 @@ const IndividualMetricDashboards = (props: any) => {
     const link = _.get(metadata, 'links.grafana.link')
     if (!link) return null;
     return (
-      <Tooltip title="Navigate to Grafana Dashboard" onClick={() => { navigateToGrafana(getConfigValueV1("GRAFANA_URL")) }}>
+      <Tooltip title="Navigate to Grafana Dashboard" onClick={() => { navigateToGrafana(getSystemSetting("GRAFANA_URL")) }}>
         <IconButton
           data-edataid={`${intereactIds.grafana_navigate}:${metricId}`}
           color="secondary" variant="light" sx={{ color: 'text.primary', bgcolor: 'transparent', ml: 0.75 }}>

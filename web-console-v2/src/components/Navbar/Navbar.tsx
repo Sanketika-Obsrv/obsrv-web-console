@@ -10,7 +10,7 @@ import Notification from 'components/NotificationBar/AlertNotification';
 import { useEffect, useState } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
 import logoIcon from 'assets/images/obsrv-logo.svg';
-import { getBaseURL, getConfigValueV1 } from 'services/configData';
+import { getBaseURL, getSystemSetting } from 'services/configData';
 import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
 import { routeConfigurations } from 'router';
@@ -147,10 +147,10 @@ function BasicBreadcrumbs(): JSX.Element {
             </Grid>
             <Grid item xs className={styles.navIcons} justifyContent={'right'}>
                 <div className={styles.icons}
-                    onClick={() => { navigate(getConfigValueV1("GRAFANA_URL")) }}>
+                    onClick={() => { navigate(getSystemSetting("GRAFANA_URL")) }}>
                     <Grafana color="secondary" />
                 </div>
-                <div className={styles.icons} onClick={() => { navigate(getConfigValueV1("SUPERSET_URL")) }}>
+                <div className={styles.icons} onClick={() => { navigate(getSystemSetting("SUPERSET_URL")) }}>
                     <Superset />
                 </div>
                 <div className={styles.icons} onClick={toggleNotification}>

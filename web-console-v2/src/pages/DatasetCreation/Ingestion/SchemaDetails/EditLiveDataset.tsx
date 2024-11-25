@@ -11,7 +11,7 @@ import { inputFields } from '../../../../components/EditDataset/EditDataset';
 import {
     renderFieldsOnConditionForEditDataset,
     validateFormValues
-} from '../../../../services/connector-utils';
+} from '../../../../services/connectorUtils';
 import { useAlert } from '../../../../contexts/AlertContextProvider';
 
 export interface RowType {
