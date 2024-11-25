@@ -74,6 +74,7 @@ function BasicBreadcrumbs(): JSX.Element {
     // Recursive function to find a matching route, including support for nested routes and dynamic segments
     const findRoute = (routes: any, path: string) => {
         for (const route of routes) {
+            if (route.path === '*') return route;
             // Check for an exact match or a dynamic match
             const dynamicRegex = getDynamicRegex(route.path);
             if (dynamicRegex.test(path)) return { ...route, path: path };

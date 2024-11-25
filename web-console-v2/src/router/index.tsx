@@ -28,6 +28,7 @@ import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
 import DatasetManagement from 'pages/datasetManagement/DatasetManagement';
 import Loadable from 'pages/auth/components/Loadable';
+import { NotFound } from 'pages/NotFound/NotFound';
 
 // Type definition for the route configuration
 interface RouteConfig {
@@ -84,7 +85,9 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/datasets`, label: "Datasets", element: <DatasetListV1 /> },
     { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <IndividualMetricDashboards id="individualDataset" /> },
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
-    { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> }
+    { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
+    { path: '*', element: <NotFound /> }
+    
 ];
 
 const AppRouter = () => (
