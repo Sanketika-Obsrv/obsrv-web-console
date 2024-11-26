@@ -26,7 +26,8 @@ export default {
                 "transformationFieldMaxLen":100,
                 "denormInputFieldMaxLen":100,
                 "alertsPerPage":10
-            }
+            },
+            "AUTHENTICATION_TYPE": appConfig.AUTHENTICATION_TYPE
         })
     },
 };

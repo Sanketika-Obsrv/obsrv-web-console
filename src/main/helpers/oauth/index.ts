@@ -12,6 +12,7 @@ import appConfig from "../../../shared/resources/appConfig";
 
 const server = oauth2orize.createServer();
 const baseURL = appConfig.BASE_URL;
+const authenticationType = appConfig.AUTHENTICATION_TYPE;
 
 server.serializeClient((client, done) => {
   return done(null, client.id)
@@ -165,14 +166,26 @@ export const token = [
 ];
 
 export const ensureLoggedInMiddleware = (request: Request, response: Response, next: NextFunction) => {
-  if (!request?.session?.passport?.user) {
-    const errorObj = {
-      status: 401,
-      message: "You don't have access to view this resource",
-      responseCode: 'UNAUTHORIZED',
-      errorCode: 'UNAUTHORIZED',
-    };
-    return next(errorObj)
+  if(authenticationType === 'basic'){
+    if (!request?.session?.passport?.user) {
+      const errorObj = {
+        status: 401,
+        message: "You don't have access to view this resource",
+        responseCode: 'UNAUTHORIZED',
+        errorCode: 'UNAUTHORIZED',
+      };
+      return next(errorObj);
+    }
+  } else if(authenticationType === 'keycloak'){
+    if (!request?.session['keycloak-token']) {
+      const errorObj = {
+        status: 401,
+        message: "You don't have access to view this resource",
+        responseCode: 'UNAUTHORIZED',
+        errorCode: 'UNAUTHORIZED',
+      };
+      return next(errorObj);
+    }
   }
   return next();
-}
+};
