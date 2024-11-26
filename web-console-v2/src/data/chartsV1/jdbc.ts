@@ -1,11 +1,11 @@
 import promql from 'data/promql';
-import endpoints from 'data/apiEndpoints';
 import _ from 'lodash';
 import defaultConf from './common';
 import prettyMilliseconds from 'pretty-ms';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import apiEndpoints from 'data/apiEndpoints';
+import apiEndpoints from 'constants/Endpoints';
+import api from 'data/chartsComponents/api';
 
 dayjs.extend(utc)
 
@@ -75,7 +75,7 @@ export default {
         query: {
             id: 'jdbcNumberOfEventsProcessed',
             type: 'api',
-            url: endpoints.prometheusRead,
+            url: apiEndpoints.prometheusRead,
             method: 'GET',
             headers: {},
             body: {},
@@ -100,7 +100,7 @@ export default {
         query: {
             id: 'jdbcNumberOfFailedEvents',
             type: 'api',
-            url: endpoints.prometheusRead,
+            url: apiEndpoints.prometheusRead,
             method: 'GET',
             headers: {},
             body: {},
@@ -124,7 +124,7 @@ export default {
         query: {
             id: 'jdbcAvgProcessingTime',
             type: 'api',
-            url: endpoints.prometheusRead,
+            url: apiEndpoints.prometheusRead,
             method: 'GET',
             headers: {},
             body: {},
@@ -214,7 +214,7 @@ export default {
         query: {
             id: 'jdbcNumberOfEventsProcessed',
             type: 'api',
-            url: endpoints.prometheusReadRange,
+            url: apiEndpoints.prometheusReadRange,
             method: 'GET',
             headers: {},
             body: {},
@@ -305,7 +305,7 @@ export default {
         query: {
             id: 'jdbcNumberOfFailedEvents',
             type: 'api',
-            url: endpoints.prometheusReadRange,
+            url: apiEndpoints.prometheusReadRange,
             method: 'GET',
             headers: {},
             body: {},

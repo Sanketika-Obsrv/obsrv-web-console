@@ -5,7 +5,7 @@ import { Box, Button, Grid, Stack, Tooltip, Typography } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { addSilence, deleteAlert, deleteSilence, publishAlert } from 'services/alerts';
 import { useMemo, useState } from 'react';
-import AlertDialog from 'components/AlertDialog';
+import AlertDialog from 'components/AlertDialog/AlertDialog';
 import { alertHealthStatus, dialogBoxContext, SilenceDialog } from '../services/utils';
 import { NotificationsActiveOutlined, NotificationsOff, RefreshOutlined } from '@mui/icons-material';
 import dayjs from 'dayjs';

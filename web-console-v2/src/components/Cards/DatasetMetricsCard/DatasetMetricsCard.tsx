@@ -14,8 +14,8 @@ import { druidQueries } from 'services/druid';
 import { useParams } from 'react-router-dom';
 import { useAlert } from 'contexts/AlertContextProvider';
 import { DatasetStatus, DatasetType } from 'types/datasets';
-import ApexWithFilters from 'sections/dashboard/analytics/ChartFilters';
-import ApexChart from 'sections/dashboard/analytics/apex';
+import ApexWithFilters from 'pages/Dashboard/analytics/ChartFilters';
+import ApexChart from 'pages/Dashboard/analytics/apex';
 import filters from 'data/chartFilters';
 
 const getQueryByType = (queryType: string, datasetId: any, isMasterDataset: boolean, interval: string) => {

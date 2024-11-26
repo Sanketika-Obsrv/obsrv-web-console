@@ -1,25 +1,12 @@
-import { useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { skipToken, useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { http } from './http';
 import { AxiosResponse } from 'axios';
 import _ from 'lodash';
-import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
+import { fetchLocalStorageItem, storeLocalStorageItem } from 'utils/localStorage';
 import { generateRequestBody, setDatasetId, setVersionKey, transformResponse } from './utils';
 import { queryClient } from 'queryClient';
-
-// const ENDPOINTS = {
-//     DATASETS_READ: '/console/config/v2/datasets/read',
-//     CREATE_DATASET: '/console/config/v2/datasets/create',
-//     UPLOAD_FILES: '/console/config/v2/files/generate-url',
-//     GENERATE_JSON_SCHEMA: '/console/config/v2/datasets/dataschema',
-//     UPDATE_DATASCHEMA: '/console/config/v2/datasets/update',
-//     LIST_DATASET: '/console/config/v2/datasets/list',
-//     DATASETS_DIFF: '/console/api/dataset/diff',
-//     PUBLISH_DATASET: '/console/config/v2/datasets/status-transition',
-//     LIST_CONNECTORS: '/console/config/v2/connectors/list',
-//     READ_CONNECTORS: '/console/config/v2/connectors/read'
-// };
-
-//USE THESE ROUTES FOR LOCAL TESTING
+import { DatasetStatus } from 'types/datasets';
+import { generateDatasetState } from './datasetState';
 
 const ENDPOINTS = {
     DATASETS_READ: '/config/v2/datasets/read',
@@ -36,8 +23,6 @@ const ENDPOINTS = {
 };
 
 export const endpoints = ENDPOINTS
-
-const configDetailKey = 'configDetails';
 
 export const useFetchDatasetsById = ({
         datasetId,
@@ -127,12 +112,8 @@ export const useCreateDataset = () =>
             return http.post(ENDPOINTS.CREATE_DATASET, request, config).then(transformResponse);
         },
         onSuccess: (response, variables) => {
-            const configDetail = {
-                version_key: _.get(response, 'version_key'),
-                dataset_id: _.get(response, 'id')
-            };
-
-            storeSessionStorageItem(configDetailKey, configDetail);
+            setVersionKey(_.get(response, 'version_key'));
+            setDatasetId(_.get(response, 'id'));
         }
     });
 
@@ -157,11 +138,11 @@ export const useUpdateDataset = () =>
             if(data?.data_schema) {
                 data['data_schema'] = omitSuggestions(data?.data_schema)
             }
-            const configDetail = fetchSessionStorageItem('configDetails') || {};
+            const version_key = fetchLocalStorageItem('version_key') || {};
             const request = generateRequestBody({
                 request: {
                     ...data,
-                    ..._.pick(configDetail, ['version_key'])
+                    version_key
                 },
                 apiId: 'api.datasets.update'
             });
@@ -199,9 +180,8 @@ export const useFetchDatasetDiff = ({ datasetId }: { datasetId: string }) => {
 
 export const useFetchDatasetExists = ({ datasetId }: { datasetId: string }) => {
     return useQuery({
-        queryKey: ['fetchDatasetExists', 'datasetId'],
-        queryFn: () => http.get(`${ENDPOINTS.DATASET_EXISTS}/${datasetId}`).then((res) => res.data),
-        enabled: !!datasetId
+        queryKey: ['fetchDatasetExists'],
+        queryFn: () =>  datasetId ? http.get(`${ENDPOINTS.DATASET_EXISTS}/${datasetId}`).then((res) => res.data): skipToken,
     });
 };
 
@@ -252,11 +232,71 @@ const omitSuggestions = (schema: any): any => {
     return schema;
 }
 
-export const getConfigValue = (variable: string) => {
-    const config: string | any = sessionStorage.getItem('systemSettings');
-    return _.get(JSON.parse(config), variable);
+export const datasetRead = ({ datasetId, config = {} }: any) => {
+    return http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}`, {
+        ...config
+    })
+}
+
+export const formatNewFields = (newFields: Record<string, any>, dataMappings: any) => {
+    if (newFields.length > 0) {
+        const final = _.map(newFields, (item: any) => {
+            const columnKey = _.join(_.map(_.split(_.get(item, "column"), '.'), payload => `properties.${payload}`), '.')
+            return {
+                ...item,
+                "column": item.column,
+                "type": _.get(item, 'datatype') || "string",
+                "key": columnKey,
+                "ref": columnKey,
+                "isModified": true,
+                "required": false,
+                "data_type": _.get(item, 'datatype'),
+                ...(dataMappings && { "arrival_format": getArrivalFormat(_.get(item, '_transformedFieldSchemaType'), dataMappings) || _.get(item, 'arrival_format') })
+            }
+        });
+        return final;
+    }
+    else return [];
+}
+
+const getArrivalFormat = (data_type: string | undefined, dataMappings: Record<string, any>) => {
+    let result = null;
+    if (data_type) {
+        _.forEach(dataMappings, (value, key) => {
+            if (_.includes(_.get(value, 'arrival_format'), data_type)) {
+                result = key;
+            }
+        });
+    }
+    return result;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-inferrable-types
+export const getDatasetState = async (datasetId: string, status: string = DatasetStatus.Draft, createAction: boolean = false) => {
+    const dataset = await fetchDataset(datasetId, status);
+    return await generateDatasetState(dataset, createAction);
+}
+
+
+export const fieldsByStatus: { [key: string]: string } = {
+    Draft: 'name,type,id,dataset_id,version,validation_config,extraction_config,dedup_config,data_schema,denorm_config,router_config,dataset_config,tags,status,created_by,updated_by,created_date,updated_date,version_key,api_version,entry_topic,transformations_config,connectors_config,sample_data',
+    default: 'name,type,id,dataset_id,version,validation_config,extraction_config,dedup_config,data_schema,denorm_config,router_config,dataset_config,tags,status,created_by,updated_by,created_date,updated_date,api_version,entry_topic,sample_data'
 };
 
+export const fetchDataset = (datasetId: string, status: string) => {
+    const fields = fieldsByStatus[status] || fieldsByStatus.default;
+    const params = status === 'Draft' ? `mode=edit&fields=${fields}` : `fields=${fields}`;
+    const url = `${ENDPOINTS.DATASETS_READ}/${datasetId}?${params}`;
+    return http.get(url).then(transform);
+};
+
+export const transform = (response: any) => _.get(response, 'data.result')
+
+export const generateJsonSchema = (payload: any) => {
+    const transitionRequest = generateRequestBody({ request: payload?.data, apiId: "api.datasets.dataschema" })
+    return http.post(`${ENDPOINTS.GENERATE_JSON_SCHEMA}`, transitionRequest)
+        .then(transform);
+}        
 export const isJsonSchema = (jsonObject: any) => {
     if (typeof jsonObject !== "object" || jsonObject === null) {
         return false;

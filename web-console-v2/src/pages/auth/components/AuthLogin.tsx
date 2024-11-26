@@ -6,10 +6,10 @@ import LoginForm from './LoginForm';
 import { TabPanel } from './TabPanel';
 import pageIds from 'data/telemetry/pageIds';
 import useImpression from 'hooks/useImpression';
-import { getConfigValue } from 'services/configData';
+import { getSystemSetting } from 'services/configData';
 
 const AuthLogin = () => {
-  const allowedAuthTypes = getConfigValue("AUTHENTICATION_ALLOWED_TYPES") || 'obsrv';
+  const allowedAuthTypes = getSystemSetting("AUTHENTICATION_ALLOWED_TYPES") || 'obsrv';
   const [showPassword, setShowPassword] = React.useState(false);
   const [searchParams] = useSearchParams();
   const [tabIndex, setTabIndex] = useState(0);

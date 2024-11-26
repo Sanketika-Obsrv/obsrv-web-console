@@ -1,11 +1,9 @@
 /* eslint-disable */
-import { Link } from 'react-router-dom';
 import { To } from 'history';
 import { ButtonBase } from '@mui/material';
 import { SxProps } from '@mui/system';
 import Logo from './LogoMain';
 import LogoIcon from './LogoIcon';
-import config from 'config';
 
 interface Props {
   reverse?: boolean;

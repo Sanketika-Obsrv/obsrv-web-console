@@ -2,7 +2,7 @@ import moment from 'moment';
 import _ from 'lodash';
 import { v4 as uuid } from 'uuid';
 import { AxiosResponse } from 'axios';
-import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
+import { fetchLocalStorageItem, storeLocalStorageItem } from 'utils/localStorage';
 import { DatasetType } from 'types/datasets';
 export const charsRegEx = /[!@#$%^&*()+{}\\[\]:;<>,?~\\|]/;
 
@@ -109,23 +109,17 @@ export const getDatasetType = (type: boolean) => {
 };
 
 export const setVersionKey = (value: number) => {
-    const configDetailKey = 'configDetails';
-
-    const configDetail = fetchSessionStorageItem(configDetailKey) || {};
-
-    _.set(configDetail, 'version_key', String(value));
-
-    storeSessionStorageItem(configDetailKey, configDetail);
+    if(!value) {
+        return;
+    }
+    storeLocalStorageItem('version_key', String(value));
 };
 
 export const setDatasetId = (value: number) => {
-    const configDetailKey = 'configDetails';
-
-    const configDetail = fetchSessionStorageItem(configDetailKey) || {};
-
-    _.set(configDetail, 'dataset_id', String(value));
-
-    storeSessionStorageItem(configDetailKey, configDetail);
+    if(!value) {
+        return;
+    }
+    storeLocalStorageItem('dataset_id', String(value));
 };
 
 export const transformResponse = (response: AxiosResponse) => _.get(response, ['data', 'result']);

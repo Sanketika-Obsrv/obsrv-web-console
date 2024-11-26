@@ -3,7 +3,7 @@ import { DatasetType } from "types/datasets";
 import moment from "moment";
 import { v4 as uuid } from 'uuid';
 import { http } from "./http";
-import apiEndpoints from "data/apiEndpoints";
+import apiEndpoints from "constants/Endpoints";
 type Payload = Record<string, any>;
 
 export const generateJsonSchema = (payload: Payload) => {

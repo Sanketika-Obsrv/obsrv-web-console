@@ -1,11 +1,10 @@
 import promql from 'data/promql';
-import endpoints from 'data/apiEndpoints';
+import endpoints from 'constants/Endpoints';
 import _ from 'lodash';
 import defaultConf from './common';
 import prettyMilliseconds from 'pretty-ms';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import apiEndpoints from 'data/apiEndpoints';
 
 dayjs.extend(utc)
 
@@ -14,7 +13,7 @@ export default {
         query: {
             id: 'jdbcStatus',
             type: 'api',
-            url: apiEndpoints.sourceConfig,
+            url: endpoints.sourceConfig,
             method: 'POST',
             headers: {},
             body: {
@@ -49,7 +48,7 @@ export default {
         query: {
             id: 'jdbcLastRunTime',
             type: 'api',
-            url: apiEndpoints.sourceConfig,
+            url: endpoints.sourceConfig,
             method: 'POST',
             headers: {},
             body: {

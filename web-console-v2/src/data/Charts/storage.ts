@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 import prettyBytes from 'pretty-bytes';
 import dayjs from 'dayjs';
 import promql from '../../constants/Queries';
-import endpoints from '../../constants/Enpoints';
+import endpoints from '../../constants/Endpoints';
 import prettyMilliseconds from 'pretty-ms';
 import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(relativeTime);

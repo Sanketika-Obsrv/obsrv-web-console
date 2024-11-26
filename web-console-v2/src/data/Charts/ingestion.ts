@@ -1,4 +1,4 @@
-import endpoints from '../../constants/Enpoints';
+import endpoints from '../../constants/Endpoints';
 import _ from 'lodash';
 import dayjs from 'dayjs';
 const dateFormat = 'YYYY-MM-DDT00:00:00+05:30';
