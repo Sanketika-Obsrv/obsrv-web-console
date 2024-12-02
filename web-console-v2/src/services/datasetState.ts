@@ -1,5 +1,4 @@
 import { DatasetType } from "types/datasets";
-import { generateJsonSchema } from "./dataset";
 import _ from "lodash";
 import moment from "moment";
 import { v4 as uuid } from 'uuid';
@@ -258,3 +257,5 @@ export const generateDatasetState = async (state: Record<string, any>, createAct
         }
     }
 }
+
+const transform = (response: any) => _.get(response, 'data.result')

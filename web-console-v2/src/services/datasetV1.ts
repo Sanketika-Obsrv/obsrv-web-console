@@ -6,9 +6,10 @@ import apiEndpoints from 'constants/Endpoints';
 import { DatasetStatus, DatasetType } from 'types/datasets';
 import { aggregationFunctions, allowedSegmentGranurality } from './commonUtils';
 import { generateRequestBody } from './utils';
-import { fetchDataset, generateDatasetState } from './datasetState';
+import { generateDatasetState } from './datasetState';
 import moment from 'moment';
 import { v4 as uuid } from 'uuid';
+import { fetchDataset } from './dataset';
 
 export const DEFAULT_TIMESTAMP = {
     indexValue: "obsrv_meta.syncts",
