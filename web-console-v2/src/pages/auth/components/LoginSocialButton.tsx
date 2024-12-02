@@ -4,13 +4,13 @@ import { useTheme } from '@mui/material/styles';
 import { useMediaQuery, Button, Stack } from '@mui/material';
 import socialbuttons from './socialbuttons';
 import interactIds from 'data/telemetry/interact.json'
-import { getConfigValueV1 } from 'services/configData';
+import { getSystemSetting } from 'services/configData';
 
 const LoginSocialButton = () => {
 
     const theme = useTheme();
     const matchDownSM = useMediaQuery(theme.breakpoints.down('sm'));
-    const allowedAuthTypes = getConfigValueV1("AUTHENTICATION_ALLOWED_TYPES")  || ""
+    const allowedAuthTypes = getSystemSetting("AUTHENTICATION_ALLOWED_TYPES")  || ""
 
     const renderSocialButtons = (option: any) => {
         return (

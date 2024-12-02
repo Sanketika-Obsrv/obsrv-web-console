@@ -3,22 +3,20 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 
 // Import pages for different routes
-import NewDatasetPage from 'pages/NewDataset/NewDataset';
-import IngestionPage from 'pages/StepsPages/Ingestion/Ingestion';
-import ProcessingPage from 'pages/StepsPages/Processing/Processing';
-import StoragePage from 'pages/StepsPages/Storage/Storage';
-import PreviewPage from 'pages/StepsPages/Preview';
-import SchemaDetailsPage from 'pages/StepsPages/Ingestion/SchemaDetails/SchemaDetails';
-import ConnectorConfigurationPage from 'pages/ConnectorConfiguration/ConnectorConfiguration';
-import SelectConnectorPage from 'pages/SelectConnector/SelectConnector';
+import NewDatasetPage from 'pages/DatasetCreation/NewDataset/NewDataset';
+import IngestionPage from 'pages/DatasetCreation/Ingestion/Ingestion';
+import ProcessingPage from 'pages/DatasetCreation/Processing/Processing';
+import StoragePage from 'pages/DatasetCreation/Storage/Storage';
+import PreviewPage from 'pages/DatasetCreation/Preview';
+import SchemaDetailsPage from 'pages/DatasetCreation/Ingestion/SchemaDetails/SchemaDetails';
+import ConnectorConfigurationPage from 'pages/DatasetCreation/ConnectorConfiguration/ConnectorConfiguration';
+import SelectConnectorPage from 'pages/DatasetCreation/SelectConnector/SelectConnector';
 import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
-import SettingsPage from 'pages/Settings/Settings';
 import Dashboard from 'pages/Dashboard/Dashboard';
 import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/IndividualDashboardPage';
-import DatasetMetrics from 'pages/dashboardV1/DatasetMetrics';
-import DatasetCreateEvents from 'pages/dashboardV1/createEvents';
-import ClusterHealth from 'pages/dashboardV1/datasets';
-import StepperPage from 'pages/StepsPages/StepperPage';
+import DatasetCreateEvents from 'pages/DatasetListV1/DatasetCreateEvents';
+import DatasetListV1 from 'pages/DatasetListV1/DatasetsList';
+import StepperPage from 'pages/DatasetCreation/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
 import AddAlert from 'pages/alertManager/views/AddRule';
@@ -29,6 +27,7 @@ import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
 import Loadable from 'pages/auth/components/Loadable';
+import { NotFound } from 'pages/NotFound/NotFound';
 
 import RollupConfig from 'pages/Rollup/components';
 import DatasetManagement from 'pages/DatasetManagement/DatasetManagement';
@@ -69,7 +68,6 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/dashboard/storage`, label: "Storage", element: <IndividualMetricDashboards id="storage" /> },
     { path: `/connector-management`, label: "Connector Management", element: <ConnectorConfigurationPage /> },
     { path: `/connector-management/manage`, label: "Manage", element: <ManageConnectorsPage /> },
-    { path: `/settings`, label: "Settings", element: <SettingsPage /> },
     {
         path: `/alertRules`,
         label: "Alert Rules", 
@@ -86,12 +84,14 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/alertChannels/new`, label: "New", element: <AddChannel /> },
     { path: `/alertChannels/edit/:id`, label: "Edit", element: <UpdateChannel /> },
     { path: `/alertChannels/view/:id`, label: "View", element: <ViewChannel /> },
-    { path: `/datasets`, label: "Datasets", element: <ClusterHealth /> },
+    { path: `/datasets`, label: "Datasets", element: <DatasetListV1 /> },
     { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <IndividualMetricDashboards id="individualDataset" /> },
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
     { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
     { path: `/datasets/rollups/:datasetId`, element: <RollupConfig />},
-    { path: `/datasets/management/:datasetId`, label: "Rollups", element: <DatasetManagement /> }
+    { path: `/datasets/management/:datasetId`, label: "Rollups", element: <DatasetManagement /> },
+    { path: '*', element: <NotFound /> }
+    
 ];
 
 const AppRouter = () => (

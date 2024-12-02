@@ -1,6 +1,30 @@
 import { DatasetType } from "types/datasets";
 import { generateJsonSchema } from "./dataset";
 import _ from "lodash";
+import moment from "moment";
+import { v4 as uuid } from 'uuid';
+import { http } from "./http";
+import apiEndpoints from "constants/Endpoints";
+type Payload = Record<string, any>;
+
+export const generateJsonSchema = (payload: Payload) => {
+    const transitionRequest = generateRequestBody({ request: payload?.data, apiId: "api.datasets.dataschema" })
+    return http.post(`${apiEndpoints.generateJsonSchema}`, transitionRequest)
+        .then(transform);
+}
+
+export const generateRequestBody = (configs: Record<string, any>) => {
+    const { apiId, request } = configs;
+    return {
+        "id": apiId,
+        "ver": "v2",
+        "ts": moment().format(),
+        "params": {
+            "msgid": uuid()
+        },
+        "request": request
+    }
+}
 
 const getDedupeState = (dataset: Record<string, any>, createAction?: boolean) => {
     const dedupeConfig = _.get(dataset, 'dedup_config') || {};

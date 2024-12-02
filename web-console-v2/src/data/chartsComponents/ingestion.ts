@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import dayjs from 'dayjs';
 import defaultConf from './common';
-import endpoints from 'data/apiEndpoints';
+import endpoints from 'constants/Endpoints';
 
 const dateFormat = 'YYYY-MM-DDT00:00:00+05:30'
 

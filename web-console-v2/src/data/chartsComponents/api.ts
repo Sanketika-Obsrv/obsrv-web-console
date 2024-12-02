@@ -4,7 +4,7 @@ import prettyMilliseconds from 'pretty-ms';
 import promql from 'data/promql';
 
 import defaultConf from './common';
-import endpoints from 'data/apiEndpoints';
+import endpoints from 'constants/Endpoints';
 
 const labelsMapping = {
     "alert-manager": "Alerts",

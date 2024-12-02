@@ -1,8 +1,8 @@
-import { useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { skipToken, useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { http } from './http';
 import { AxiosResponse } from 'axios';
 import _ from 'lodash';
-import { fetchSessionStorageItem, storeSessionStorageItem } from 'utils/sessionStorage';
+import { fetchLocalStorageItem, storeLocalStorageItem } from 'utils/localStorage';
 import { generateRequestBody, setDatasetId, setVersionKey, transformResponse } from './utils';
 import { queryClient } from 'queryClient';
 import { DatasetStatus } from 'types/datasets';
@@ -23,8 +23,6 @@ const ENDPOINTS = {
 };
 
 export const endpoints = ENDPOINTS
-
-const configDetailKey = 'configDetails';
 
 export const useFetchDatasetsById = ({
         datasetId,
@@ -114,12 +112,8 @@ export const useCreateDataset = () =>
             return http.post(ENDPOINTS.CREATE_DATASET, request, config).then(transformResponse);
         },
         onSuccess: (response, variables) => {
-            const configDetail = {
-                version_key: _.get(response, 'version_key'),
-                dataset_id: _.get(response, 'id')
-            };
-
-            storeSessionStorageItem(configDetailKey, configDetail);
+            setVersionKey(_.get(response, 'version_key'));
+            setDatasetId(_.get(response, 'id'));
         }
     });
 
@@ -144,11 +138,11 @@ export const useUpdateDataset = () =>
             if(data?.data_schema) {
                 data['data_schema'] = omitSuggestions(data?.data_schema)
             }
-            const configDetail = fetchSessionStorageItem('configDetails') || {};
+            const version_key = fetchLocalStorageItem('version_key') || {};
             const request = generateRequestBody({
                 request: {
                     ...data,
-                    ..._.pick(configDetail, ['version_key'])
+                    version_key
                 },
                 apiId: 'api.datasets.update'
             });
@@ -186,9 +180,8 @@ export const useFetchDatasetDiff = ({ datasetId }: { datasetId: string }) => {
 
 export const useFetchDatasetExists = ({ datasetId }: { datasetId: string }) => {
     return useQuery({
-        queryKey: ['fetchDatasetExists', 'datasetId'],
-        queryFn: () => http.get(`${ENDPOINTS.DATASET_EXISTS}/${datasetId}`).then((res) => res.data),
-        enabled: !!datasetId
+        queryKey: ['fetchDatasetExists'],
+        queryFn: () =>  datasetId ? http.get(`${ENDPOINTS.DATASET_EXISTS}/${datasetId}`).then((res) => res.data): skipToken,
     });
 };
 
@@ -238,11 +231,6 @@ const omitSuggestions = (schema: any): any => {
     }
     return schema;
 }
-
-export const getConfigValue = (variable: string) => {
-    const config: string | any = sessionStorage.getItem('systemSettings');
-    return _.get(JSON.parse(config), variable);
-};
 
 export const datasetRead = ({ datasetId, config = {} }: any) => {
     return http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}`, {

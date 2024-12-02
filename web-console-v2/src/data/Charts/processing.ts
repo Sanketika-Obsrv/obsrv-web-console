@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import dayjs from 'dayjs';
 import prettyMilliseconds from 'pretty-ms';
-import endpoints from '../../constants/Enpoints';
+import endpoints from '../../constants/Endpoints';
 
 const dateFormat = 'YYYY-MM-DDT00:00:00+05:30';
 

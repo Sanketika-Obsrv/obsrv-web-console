@@ -59,7 +59,7 @@ export default {
                             type: 'array',
                             items: {
                                 type: 'string',
-                                enum: ['admin', 'dataset_manager', 'viewer', 'dataset_creator', 'ingestor'],
+                                enum: ['admin', 'dataset_manager', 'viewer', 'dataset_creator', 'ingestor', 'operations_admin'],
                             },
                             minItems: 1,
                             uniqueItems: true,

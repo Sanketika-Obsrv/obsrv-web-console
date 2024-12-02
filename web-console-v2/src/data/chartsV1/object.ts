@@ -1,11 +1,11 @@
 import promql from 'data/promql';
-import endpoints from 'data/apiEndpoints';
+import endpoints from 'constants/Endpoints';
 import _ from 'lodash';
 import defaultConf from './common';
 import prettyMilliseconds from 'pretty-ms';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc'
-import apiEndpoints from 'data/apiEndpoints';
+import apiEndpoints from 'constants/Endpoints';
 import chartMeta from 'data/chartsV1';
 import { fetchChartData } from 'services/clusterMetrics';
 import { IChartFetchRequest } from 'types/metadata';

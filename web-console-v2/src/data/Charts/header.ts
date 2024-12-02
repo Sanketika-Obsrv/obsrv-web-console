@@ -2,7 +2,7 @@ import defaultConf from './common';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 import promql from '../../constants/Queries';
-import endpoints from '../../constants/Enpoints';
+import endpoints from '../../constants/Endpoints';
 
 export default {
   node_memory: {

@@ -1,6 +1,6 @@
 import promql from '../../constants/Queries';
 import _ from 'lodash';
-import endpoints from '../../constants/Enpoints';
+import endpoints from '../../constants/Endpoints';
 import prettyMilliseconds from 'pretty-ms';
 import dayjs from 'dayjs';
 

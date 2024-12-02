@@ -2,7 +2,7 @@ import * as yup from 'yup';
 import en from '../../utils/locales/en.json';
 import * as _ from 'lodash';
 import { hasSpacesInField, hasSpecialCharacters, invalidNewFieldRegex, validFieldName, nameRegex } from '../../services/utils';
-import { validFormatTypes } from 'pages/StepsPages/Ingestion/SchemaDetails/SchemaDetails';
+import { validFormatTypes } from 'pages/DatasetCreation/Ingestion/SchemaDetails/SchemaDetails';
 export const filterForObjectArrivalFormat = (data: any[]) => {
     const result: any[] = [];
 
@@ -64,12 +64,12 @@ export const inputFields = (
         }));
     }
 
-    const defaultDatatypeOptions = validFormatTypes.map((item) => ({
+    const defaultDatatypeOptions: any[] = validFormatTypes.map((item: any) => ({
         label: item,
         value: item
     }));
 
-    const arrivalType: any[] = extractMainKeys(datamappings).map((item) => item);
+    const arrivalType: any[] = extractMainKeys(datamappings).map((item: any) => item);
     const dataTypeOptions: any[] = dataTypeStoreFormat.filter(
         (option: any) => option.arrivalType === arrivalFormat
     );

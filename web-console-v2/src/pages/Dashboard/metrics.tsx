@@ -1,18 +1,16 @@
 /* eslint-disable */
 import { CloudServerOutlined, BarChartOutlined, DotChartOutlined, ApiOutlined, DatabaseOutlined, SettingOutlined, PartitionOutlined } from "@ant-design/icons";
 import * as _ from 'lodash';
-import ApexChart from "sections/dashboard/analytics/apex";
+import ApexChart from "pages/Dashboard/analytics/apex";
 import chartMeta from 'data/chartsComponents';
-// import AlertsMessages from "components/cardsComponent/statistics/Alerts";
-import ApexWithFilters from "sections/dashboard/analytics/ChartFilters";
+import ApexWithFilters from "pages/Dashboard/analytics/ChartFilters";
 import filters from 'data/chartFilters';
 import { totalVsRunningNodes, percentageUsage, cpuPercentageUsage, alertsFilterByLabels, pvUsage, checkHealthStatus, toPercentage } from 'services/transformers';
 import BasicCard2 from "components/Cards/BasicCard2/BasicCard2";
 import GaugeChart from "components/Charts/GaugeChart";
 import AsyncLabel from "components/AsyncLabel";
 import MetricsCard from "components/Cards/MetricsCard/MetricsCard";
-import IngestionCharts from "sections/dashboard/analytics/IngestionCharts";
-import HoursSinceLastBackup from "sections/widgets/HoursSinceLastBackup";
+import IngestionCharts from "pages/Dashboard/analytics/IngestionCharts";
 import StorageMetricsCard from "components/Cards/StorageMetricCard";
 import DatasetMetricsCard from "components/Cards/DatasetMetricsCard/DatasetMetricsCard";
 
