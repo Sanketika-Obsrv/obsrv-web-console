@@ -13,7 +13,6 @@ const checkForSessionExpiry = (config: any) => {
         if (getSystemSetting("AUTHENTICATION_TYPE") !== 'basic') {
             window.location.href = '/console/logout';
         } else {
-            // alert('Unauthorized access !!');
             navigate(`/login`);
         }
     }

@@ -11,7 +11,7 @@ const private_key: string = appConfig.USER_TOKEN_PRIVATE_KEY;
 const generateToken = (user: User) => {
     const payload = _.pick(user, ['id', 'user_name', 'email_address', 'roles']);
     return new Promise((resolve, reject) => {
-        jwt.sign(payload, private_key, { algorithm: 'RS512' }, (err, token) => {
+        jwt.sign(payload, private_key, { algorithm: 'RS256' }, (err, token) => {
             if (err) {
                 return reject(err);
             }
