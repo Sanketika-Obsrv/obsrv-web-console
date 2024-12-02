@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getBaseURL, getConfigValueV1 } from './configData';
+import { getBaseURL, getSystemSetting } from './configData';
 
 axios.defaults.headers.common['Cache-Control'] = 'no-store';
 axios.defaults.headers.common['Pragma'] = 'no-store';
@@ -10,7 +10,7 @@ const responseInterceptor = (response: any) => response;
 const checkForSessionExpiry = (config: any) => {
     const { navigate, status } = config;
     if (status === 401) {
-        if (getConfigValueV1("AUTHENTICATION_TYPE") !== 'basic') {
+        if (getSystemSetting("AUTHENTICATION_TYPE") !== 'basic') {
             window.location.href = '/console/logout';
         } else {
             // alert('Unauthorized access !!');
