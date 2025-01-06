@@ -5,7 +5,7 @@ import { Collapse, Fade, Box, Grow, Slide, Zoom } from '@mui/material';
 
 
 interface Props {
-  children?: ReactElement;
+  children?: ReactElement<any>;
   position?: string;
   sx?: CSSProperties;
   in?: boolean;

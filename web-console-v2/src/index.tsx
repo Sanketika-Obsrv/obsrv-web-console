@@ -7,7 +7,11 @@ import { ThemeProvider } from '@mui/material';
 import { theme } from './theme';
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement,
+  (document.getElementById('root') as HTMLElement), {
+  onRecoverableError: (error: any) => {
+    console.log(error);
+  }
+}
 );
 root.render(
   <React.StrictMode>

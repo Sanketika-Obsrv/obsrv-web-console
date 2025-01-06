@@ -1,0 +1,139 @@
+.menu {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.menuItem {
+    box-shadow: none !important;
+}
+
+.menuIcons {
+    padding-right: 1rem;
+}
+
+.gridItem {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    margin-top: 4px !important;
+    border-right: 1px solid #DDDCDC !important;
+    padding-right: 0.5rem !important;
+    padding-left: 0.5rem !important;
+    flex: 1 1 auto;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.gridItemNoBorder {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    margin-top: 4px !important;
+    padding-right: 0.5rem !important;
+    padding-left: 0.5rem !important;
+    flex: 1 1 auto;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.progressRoot {
+    display: flex;
+    align-items: center;
+    margin-left: 0.5rem;
+    width: 100%;
+}
+
+.progressBar {
+    flex-grow: 1;
+    max-width: 100%;
+    margin-right: 0.5rem;
+}
+
+.unchecked {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 0.125rem;
+    color: var(--light-grey);
+    background-color: var(--light-grey);
+    margin-right: 0.75rem;
+    margin-left: 0.75rem;
+}
+
+.draftStatusGroup {
+    display: flex;
+    align-items: center;
+    width: 100%;  
+}
+
+.hyphen {
+    padding: 0rem 0.2rem 0rem 0.2rem;
+}
+
+.cardContainerRetired {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #d6d6d6;
+    border-radius: 6px;
+    background: #ebebeb;
+    width: 100%; 
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.cardContainerActive {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #d6d6d6;
+    border-radius: 6px;
+    background: #ffffff;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.statusGridItem {
+    display: flex !important;
+    flex-direction: column !important;
+    margin-top: 0.25rem !important;
+    align-items: flex-start !important;
+    border-right: 1px solid #DDDCDC !important;
+    padding: 0 0.5rem !important;
+    flex: 1 1 auto;
+}
+
+.draftStatusContainer {
+    border-right: 1px solid #DDDCDC;
+    padding: 0 0.5rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.completionContainer {
+    padding: 0 0.5rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    white-space: nowrap;
+    width: auto;
+    flex-shrink: 1;
+}
+
+.formGroup {
+    margin: 0 0.5rem;
+    width: 100%;
+}
+
+.checkBoxContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}

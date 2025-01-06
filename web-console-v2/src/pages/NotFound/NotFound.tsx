@@ -19,7 +19,7 @@ export const  NotFound = () => {
                 <Error className={styles.errorIcon}></Error>
             </svg>
             </Box>
-    
+
           <Typography variant="h2" sx={{ marginTop: 2 }}>
             Page not found
           </Typography>

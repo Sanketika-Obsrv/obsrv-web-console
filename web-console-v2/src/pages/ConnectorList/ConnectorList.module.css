@@ -1,0 +1,62 @@
+.headerBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.gridItem {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  border-right: 1px solid #DDDCDC !important;
+  padding-right: 0.5rem !important;
+  padding-left: 0.5rem !important;
+}
+
+.gridItemNoBorder {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding-right: 0.5rem !important;
+  padding-left: 0.5rem !important;
+}
+
+.cardContainerActive {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #d6d6d6;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.mainContainer {
+  padding: 1rem;
+  padding-right: 1.5rem;
+  padding-left: 1.5rem;
+  padding-bottom: 3rem;
+}
+
+.fieldValues {
+  margin-left: 0.5rem !important;
+}
+
+.avatarIcon{
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.avatarIcon img{
+  width: 75%;
+  height: 90%;
+  object-fit: contain;
+}
+
+.avatarCharacter {
+  width: 2.25rem;
+  height: 2.25rem;
+  background-color: grey;
+}

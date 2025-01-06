@@ -3,5 +3,6 @@ export default {
     "dataset": "obsrv-dataset",
     "system": "command",
     "alerts": "alert-manager",
-    "config": "obsrv-config"
+    "config": "obsrv-config",
+    "management": "obsrv-management"
 }

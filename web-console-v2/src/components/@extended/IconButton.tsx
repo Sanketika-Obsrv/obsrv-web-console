@@ -1,4 +1,4 @@
-import React, { forwardRef, ReactNode, ReactChild, ReactFragment, ReactPortal, Ref } from 'react';
+import React, { forwardRef, ReactNode, ReactElement, ReactPortal, Ref } from 'react';
 
 import MuiIconButton from '@mui/material/IconButton';
 import { alpha, styled, useTheme } from '@mui/material/styles';
@@ -7,13 +7,14 @@ import { IconButtonProps } from '@mui/material';
 import getColors from 'utils/getColors';
 
 import { ButtonVariantProps, ExtendedStyleProps, IconButtonShapeProps } from 'types/extended';
+import { theme } from 'theme';
 
 interface IconButtonStyleProps extends ExtendedStyleProps {
     variant?: ButtonVariantProps;
 }
 
-function getColorStyle({ variant, theme, color }: IconButtonStyleProps) {
-    const colors = getColors(theme, color);
+function getColorStyle({ variant, color }: IconButtonStyleProps) {
+    const colors = getColors(color);
     const { lighter, light, dark, main, contrastText } = colors;
 
     const buttonShadow = `${color}Button`;
@@ -98,7 +99,7 @@ interface StyleProps extends IconButtonStyleProps {
 
 const IconButtonStyle = styled(MuiIconButton, {
     shouldForwardProp: (prop) => prop !== 'variant' && prop !== 'shape'
-})(({ theme, variant, shape, color }: StyleProps) => ({
+})(({ variant, shape, color }: StyleProps) => ({
     position: 'relative',
     '::after': {
         content: '""',
@@ -137,14 +138,14 @@ const IconButtonStyle = styled(MuiIconButton, {
             backgroundColor: theme.palette.grey[200]
         }
     }),
-    ...getColorStyle({ variant, theme, color })
+    ...getColorStyle({ variant, color })
 }));
 
 export interface Props extends IconButtonProps {
     shape?: IconButtonShapeProps;
     variant?: ButtonVariantProps;
     children: ReactNode;
-    tooltip?: boolean | ReactChild | ReactFragment | ReactPortal;
+    tooltip?: boolean | ReactElement<any> | number | string | Iterable<ReactNode> | ReactPortal;
 }
 
 const IconButton = forwardRef(
@@ -159,7 +160,6 @@ const IconButton = forwardRef(
         }: Props,
         ref: Ref<HTMLButtonElement>
     ) => {
-        const theme = useTheme();
 
         return (
             <IconButtonStyle
@@ -167,7 +167,6 @@ const IconButton = forwardRef(
                 disableRipple
                 variant={variant}
                 shape={shape}
-                theme={theme}
                 color={color}
                 {...others}
             >

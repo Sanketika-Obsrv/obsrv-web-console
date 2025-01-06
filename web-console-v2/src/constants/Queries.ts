@@ -75,4 +75,17 @@ export default {
   node_cpu: {
     query: '(cluster:node_cpu:ratio_rate5m{cluster=""}) * 100',
   },
+  total_memory: {
+    query: 'sum(node_memory_MemTotal_bytes{cluster=""}) / 1024^3'
+  },
+  total_used_memory: {
+    query:
+      'sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".+"}) /sum(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".+"}) * 100'
+  },
+  total_disk: {
+    query: 'sum(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".+"}) / 1024^3'
+  },
+  total_used_disk: {
+    query: 'sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".+"}) / 1024^3'
+  },
 };

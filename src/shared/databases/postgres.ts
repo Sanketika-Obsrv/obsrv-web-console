@@ -25,6 +25,15 @@ const find = async (table: string, conditions: IPostgres, jsonbType: Array<strin
 
     const values = Object.values(conditions);
 
+    if (columns.length === 0) {
+        const query = {
+            text: `SELECT * FROM ${table}`,
+            values: [],
+        };
+        const result = await pool.query<IPostgres>(query);
+        return result.rows;
+    }
+
     const whereClause = columns
         .map((column, i) => {
             if (arrayType.includes(column)) {

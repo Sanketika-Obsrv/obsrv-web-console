@@ -48,7 +48,7 @@ const FieldSection = (props: any) => {
                             <Typography sx={{ width: '100%', flexShrink: 0 }} variant="h1">
                                 {title}
                             </Typography>
-                            <Typography variant="body1" sx={{ pt: '2px' }}>
+                            <Typography component="span" variant="body1" sx={{ pt: '2px' }}>
                                 {description}
                             </Typography>
                         </Stack>

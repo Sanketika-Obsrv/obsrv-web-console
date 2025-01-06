@@ -196,7 +196,7 @@ export default [
         path: 'user',
         routes: [
             {
-                path: 'read/:user_name',
+                path: 'read',
                 method: 'GET',
                 middlewares: [setContext.handler(permissions.ReadUser), ensureLoggedInMiddleware, controllers.get('user:read')?.handler({})],
             },

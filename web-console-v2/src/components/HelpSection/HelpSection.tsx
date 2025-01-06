@@ -5,6 +5,8 @@ import KeyboardDoubleArrowRightOutlinedIcon from '@mui/icons-material/KeyboardDo
 import { theme } from 'theme';
 import styles from './HelpSection.module.css';
 
+import type { JSX } from "react";
+
 interface HelpSectionProps {
     title?: string | "Setup Guide";
     contents?: string | "";

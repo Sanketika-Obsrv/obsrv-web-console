@@ -30,6 +30,7 @@ import {
 import { readJsonFileContents } from 'services/utils';
 import { theme } from 'theme';
 import { default as ingestionStyle, default as localStyles } from './Ingestion.module.css';
+import { DatasetType } from 'types/datasets';
 
 interface FormData {
     [key: string]: unknown;
@@ -53,9 +54,18 @@ const Ingestion = () => {
     const { showAlert } = useAlert();
     const location = useLocation();
     const navigate = useNavigate();
+    const searchParams = new URLSearchParams(location.search);
+    const datasetTypeSearchParam = searchParams.get('datasetType');
     const { connectorConfig, datasetType: datasetTypeParam, selectedConnectorId } = location.state || {};
     const { datasetId: datasetIdParam }: any = useParams();
-    const [datasetType, setDatasetType] = useState<string>(datasetTypeParam || 'event');
+    const [datasetType, setDatasetType] = useState(datasetTypeParam || datasetTypeSearchParam === 'master' ? DatasetType.MasterDataset : 'event');
+
+    useEffect(() => {
+        if (datasetTypeSearchParam === DatasetType.MasterDataset) {
+            setDatasetType('master');
+        }
+    }, [datasetTypeSearchParam]);
+
     const [datasetName, setDatasetName] = useState('');
     const [connectorConfigState, setConnectorConfigState] = useState<any>(undefined);
     const [datasetId, setDatasetId] = useState(datasetIdParam === '<new>'? null : datasetIdParam);
@@ -63,7 +73,7 @@ const Ingestion = () => {
 
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
 
-    const formikRef = useRef<any>();
+    const formikRef = useRef<any>(undefined);
 
     const { data: dataState, files: filesState, config: configState } = {} as any;
 
@@ -301,7 +311,7 @@ const Ingestion = () => {
                     version: 'v2'
                 }] : []
                 const config = {
-                    name: datasetName,
+                    name: datasetName.trim(),
                     dataset_id: datasetId,
                     dataset_config: {
                         keys_config: {},
@@ -323,7 +333,7 @@ const Ingestion = () => {
                                 (fetchData && fetchData.dataset_config?.indexing_config) || {},
                             file_upload_path: filePaths
                         },
-                        name: datasetName,
+                        name: datasetName.trim(),
                         data_schema: schema,
                         dataset_id: datasetId,
                         type: datasetType,
@@ -374,7 +384,7 @@ const Ingestion = () => {
             } else {
                 updateDatasetMutate({
                     data: {
-                        name: datasetName,
+                        name: datasetName.trim(),
                         dataset_id: datasetIdParam,
                         type: datasetType
                     }
@@ -413,7 +423,7 @@ const Ingestion = () => {
     useEffect(() => {
         if(datasetIdParam === '<new>') {
             if (nameRegex.test(datasetName)) {
-                const generatedId = datasetName.toLowerCase().replace(/[^a-z0-9\s]+/g, '-').replace(/\s+/g, '-');
+                const generatedId = formatDatasetDetails(datasetName);
                 setDatasetId(generatedId);
             } else {
                 setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
@@ -427,12 +437,18 @@ const Ingestion = () => {
             setDatasetName(newValue);
             if(datasetIdParam === '<new>' && isBlur) {
                     setIsDatasetExistChecking(true);
-                    debouncedFetchDataset(newValue.toLowerCase().replace(/[^a-z0-9\s]+/g, '-').replace(/\s+/g, '-'))
+                    debouncedFetchDataset(formatDatasetDetails(newValue));
             }
             setNameError('');
         } else {
             setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
         }
+    };
+
+    const formatDatasetDetails = (name: string) => {
+        const trimmedName = name.trimStart();
+        const id = trimmedName.replace(/\s+/g, '-');
+        return id.endsWith('-') && name.endsWith(' ') ? id.slice(0, -1) : id;
     };
 
     return (

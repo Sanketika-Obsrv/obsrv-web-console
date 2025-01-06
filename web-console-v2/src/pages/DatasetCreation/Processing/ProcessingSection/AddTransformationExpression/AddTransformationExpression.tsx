@@ -49,7 +49,7 @@ interface TransformationFormProps {
 const AddTransformationExpression = (props: any) => {
     const { data, handleAddOrEdit, onClose, edit = false, transformationOptions, jsonData, } = props;
 
-    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | HTMLElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
     const [stateId, setStateId] = useState<string>(uuidv4())
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
@@ -81,7 +81,7 @@ const AddTransformationExpression = (props: any) => {
         }
     }, [data]);
 
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleSelect = (event: React.SyntheticEvent<HTMLDivElement>) => {
         setEvaluationData(transformationType)
         setAnchorEl(event.currentTarget);
     };
@@ -247,6 +247,7 @@ const AddTransformationExpression = (props: any) => {
                                 variant="outlined"
                                 fullWidth
                                 value={formData.section.transformationType}
+                                onSelect={handleSelect}
                                 onChange={handleInputChange}
                                 error={Boolean(!_.isEmpty(transformationTypeError))}
                                 helperText={
@@ -276,11 +277,6 @@ const AddTransformationExpression = (props: any) => {
                     </Alert>
                 </DialogContent>
                 <DialogActions sx={{ px: 4 }}>
-                    <Box mx={2}>
-                        <Button onClick={handleClick} sx={{ width: 'auto' }}>
-                            Try Out
-                        </Button>
-                    </Box>
                     <Button
                         variant="contained"
                         autoFocus

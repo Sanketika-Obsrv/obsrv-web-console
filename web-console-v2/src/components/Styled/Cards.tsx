@@ -1,3 +1,4 @@
+import React from 'react';
 import { styled } from '@mui/material/styles';
 import { Card, Typography } from '@mui/material';
 
@@ -5,6 +6,7 @@ const GenericCard = styled(Card)(({ theme }) => ({
     outline: 'none',
     padding: theme.spacing(3, 3),
     margin: theme.spacing(1, 0),
+    boxShadow: 'none'
 }));
 
 const CardTitle = styled(Typography)(({ theme }) => ({

@@ -31,6 +31,11 @@ interface FilterdropDownProps {
     values: string[],
   ) => void;
   onSearchChange: (value: string) => void;
+  statusLabelMap: Record<string, string>;
+  connectorLabelMap: Record<string, string>;
+  tagLabelMap: Record<string, string>;
+  onSortChange: (value: string) => void;
+  sortCriteria: string;
 }
 
 const FilterdropDown: React.FC<FilterdropDownProps> = ({
@@ -38,13 +43,18 @@ const FilterdropDown: React.FC<FilterdropDownProps> = ({
   filterCriteria,
   onFilterChange,
   onSearchChange,
+  statusLabelMap,
+  connectorLabelMap,
+  tagLabelMap,
+  onSortChange,
+  sortCriteria
 }) => {
   const handleMultiSelectChange =
     (filterName: keyof FilterdropDownProps['filters']) =>
-    (event: SelectChangeEvent<string[]>) => {
-      const selectedValues = event.target.value as string[];
-      onFilterChange(filterName, selectedValues);
-    };
+      (event: SelectChangeEvent<string[]>) => {
+        const selectedValues = event.target.value as string[];
+        onFilterChange(filterName, selectedValues);
+      };
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onSearchChange(event.target.value);
@@ -57,14 +67,25 @@ const FilterdropDown: React.FC<FilterdropDownProps> = ({
     const displayText =
       selected.length === 0 || selected.length === filters[placeholder].length
         ? _.startCase(placeholder)
-        : selected.map((item) => _.startCase(_.toLower(item))).join(', ');
+        : selected.map((item) => {
+          if (placeholder === 'status' && statusLabelMap[item]) {
+            return statusLabelMap[item];
+          }
+          if (placeholder === 'connector' && connectorLabelMap[item]) {
+            return connectorLabelMap[item];
+          }
+          if (placeholder === 'tag' && tagLabelMap[item]) {
+            return tagLabelMap[item];
+          }
+          return _.startCase(_.toLower(item));
+        }).join(', ');
 
     return displayText;
   };
 
   return (
     <Box className={styles.filtersContainer}>
-      <Box>
+      <Box className={styles.filters}>
         <Typography className={styles.heading} variant="bodyBold">
           Filter by
         </Typography>
@@ -110,7 +131,17 @@ const FilterdropDown: React.FC<FilterdropDownProps> = ({
                       ].indexOf(item) > -1
                     }
                   />
-                  <ListItemText primary={_.startCase(_.toLower(item))} />
+                  <ListItemText
+                    primary={
+                      filterName === 'status' && statusLabelMap[item]
+                        ? statusLabelMap[item]
+                        : filterName === 'connector' && connectorLabelMap[item]
+                          ? connectorLabelMap[item]
+                          : filterName === 'tag' && tagLabelMap[item]
+                            ? tagLabelMap[item]
+                            : _.startCase(_.toLower(item))
+                    }
+                  />
                 </MenuItem>
               ),
             )}
@@ -118,7 +149,27 @@ const FilterdropDown: React.FC<FilterdropDownProps> = ({
         ))}
       </Box>
 
+
       <div className={styles.search}>
+        {/* <Select
+          value={sortCriteria}
+          onChange={(event: SelectChangeEvent<string>) =>
+            onSortChange(event.target.value)
+          }
+          displayEmpty
+          IconComponent={KeyboardArrowDownIcon}
+          className={styles.filterSelect}
+          sx={{
+            '& .MuiSelect-icon': {
+              color: 'black',
+            },
+            '& .MuiSelect-select': {
+              color: 'black',
+            },
+          }}
+        >
+          <MenuItem value="last_updated_on">Last Updated On</MenuItem>
+        </Select> */}
         <TextField
           placeholder="Search Dataset"
           onChange={handleSearchChange}

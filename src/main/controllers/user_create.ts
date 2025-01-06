@@ -12,6 +12,14 @@ export default {
     handler: () => async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userRequest = _.get(req, ['body', 'request']);
+            const isOwner = _.get(req, ['session', 'userDetails', 'is_owner']);
+
+            if (!isOwner && userRequest?.roles?.includes('admin')) {
+                return res.status(403).json({
+                    error: 'Only an owner can assign the admin role'
+                });
+            }
+
             userRequest.user_name = userRequest.user_name.trim().replace(/\s+/g, '_');
             if (authenticationType === 'keycloak') {
                 const keycloakToken = JSON.parse(req?.session['keycloak-token']);

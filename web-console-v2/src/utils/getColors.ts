@@ -1,8 +1,7 @@
-import { Theme } from '@mui/material/styles';
-
+import {theme} from 'theme';
 import { ColorProps } from 'types/extended';
 
-const getColors = (theme: Theme, color?: ColorProps) => {
+const getColors = (color?: ColorProps) => {
     switch (color) {
         case 'secondary':
             return theme.palette.secondary;

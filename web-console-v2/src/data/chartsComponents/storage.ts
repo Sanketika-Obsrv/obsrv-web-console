@@ -315,7 +315,7 @@ export default {
             parse: (response: any) => {
                 const result = _.get(response, 'data.result[0].value[1]');
                 if (!result) throw new Error();
-                return `${_.floor(result, 0)}%`;
+                return `${_.floor(result, 0)}`;
             },
             error() {
                 return '0%';

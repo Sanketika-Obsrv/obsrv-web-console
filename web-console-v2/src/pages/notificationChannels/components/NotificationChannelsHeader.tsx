@@ -46,7 +46,16 @@ const NotificationChannelsHeader = (props: any) => {
                     globalFilter={state.globalFilter}
                     setGlobalFilter={setGlobalFilter}
                 />
-                <Button sx={{ mx: 1 }} size='small' variant="contained" onClick={(e) => navigate('/alertChannels/new')}>
+                <Button variant="outlined" sx={{
+                    mx: 1,
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        borderColor: 'primary.main',
+                    },
+                }} size="small" onClick={(e) => navigate('/alertChannels/new')}>
                     Add Channel
                 </Button>
             </>

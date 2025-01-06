@@ -25,4 +25,3 @@ export const fetchLocalStorageValue = (key: string, path: string) => {
 
 export const storeLocalStorageItem = <T>(key: string, value: T): void =>
     localStorage.setItem(key, JSON.stringify(value));
-

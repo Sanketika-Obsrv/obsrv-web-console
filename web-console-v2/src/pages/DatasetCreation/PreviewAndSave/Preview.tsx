@@ -8,29 +8,15 @@ import PreviewSummary from './PreviewSummary';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import styles from './Preview.module.css';
 import Actions from 'components/ActionButtons/Actions';
-import { useFetchDatasetsById, usePublishDataset } from 'services/dataset';
+import { useFetchDatasetsById, usePublishDataset, useDatasetList } from 'services/dataset';
 import AlertDialog from 'components/AlertDialog/AlertDialog';
 import en from 'utils/locales/en.json';
 import Loader from 'components/Loader';
 import Retry from 'components/Retry/Retry';
 
-const tabData = ['All Configurations', 'Summary of changes'];
-
-const renderContent = (selectedTab: number) => {
-    switch (selectedTab) {
-        case 0:
-            return <AllConfigurations />;
-        case 1:
-            return <PreviewSummary />;
-        default:
-            return null;
-    }
-};
-
-const Preview: FC = (): ReactElement => {
+const Preview: FC = (): ReactElement<any> => {
     const navigate = useNavigate();
     const { datasetId }: any = useParams();
-
     const { search, state } = useLocation();
     const [selectedTab, setSelectedTab] = useState(0);
     const [open, setOpen] = useState<boolean>(false);
@@ -44,9 +30,25 @@ const Preview: FC = (): ReactElement => {
         queryParams: 'mode=edit&fields=status,dataset_id'
     });
 
+    const { data: liveDatasets } = useDatasetList({ status: ['Live'] });
+    const isInLive = _.some(liveDatasets?.data, { dataset_id: datasetId });
+
     const dialogContext = {
         title: en['save-dataset-title'],
         content: en['save-dataset-context']
+    };
+
+    const tabData = isInLive ? ['All Configurations', 'Summary of changes'] : ['All Configurations'];
+
+    const renderContent = (selectedTab: number) => {
+        switch (selectedTab) {
+            case 0:
+                return <AllConfigurations />;
+            case 1:
+                return isInLive ? <PreviewSummary /> : null;
+            default:
+                return null;
+        }
     };
 
     useEffect(() => {

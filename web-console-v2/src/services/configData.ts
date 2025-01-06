@@ -27,6 +27,6 @@ export const setVersionKey = (value: string) => {
 };
 
 export const getBaseURL = () => {
-    const baseUrl = getSystemSetting('BASE_URL') || process.env.REACT_APP_BASE_URL || '/console';
+    const baseUrl = getSystemSetting('BASE_URL') || '/console';
     return baseUrl;
 };
