@@ -20,14 +20,8 @@ export default {
     CONFIG_API: {
         URL: env.CONFIG_API_URL || 'http://localhost:4000',
     },
-    CONFIG_API_EXT: {
-        URL: env.CONFIG_API_EXT_URL || 'http://localhost:4001',
-    },
     SYSTEM_API: {
         URL: env.SYSTEM_API_URL || 'http://localhost:4002',
-    },
-    MANAGEMENT_API: {
-        URL: env.MANAGEMENT_API_URL || 'http://localhost:8000',
     },
     ALERT_MANAGER: {
         URL: env.ALERT_MANAGER_URL || 'http://localhost:9093',

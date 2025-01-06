@@ -9,7 +9,7 @@ import Loader from "components/Loader";
 import ReviewAllCongurations from "pages/DatasetView";
 import { useAlert } from "contexts/AlertContextProvider";
 import { getDatasetState } from "services/datasetV1";
-import ListRollups from "pages/Rollup/components/ListRollups";
+import { NotFound } from "pages/NotFound/NotFound";
 
 const DatasetManagement = () => {
     const { datasetId } = useParams();
@@ -50,7 +50,7 @@ const DatasetManagement = () => {
         {
             id: 'rollups',
             title: 'Rollup Datasources',
-            component: <ListRollups />,
+            component: <NotFound />,
             componentType: 'box'
         }
     ]
@@ -66,7 +66,7 @@ const DatasetManagement = () => {
     }
 
     return <>
-        {loading ? <Loader loading={loading} /> : <Box sx={{padding: '2rem'}}><AccordionSection sections={datasetSection()} /></Box>}
+        {loading ? <Loader loading={loading} /> : <Box sx={{ padding: '2rem' }}><AccordionSection sections={datasetSection()} /></Box>}
     </>
 }
 

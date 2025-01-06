@@ -27,17 +27,13 @@ import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
 import Loadable from 'pages/auth/components/Loadable';
 
-import RollupConfig from 'pages/Rollup/components';
 import DatasetManagement from 'pages/DatasetManagement/DatasetManagement';
 import { ConnectorList } from 'pages/ConnectorList/ConnectorList';
 import { Connectors } from 'pages/Connectors/Connector';
 import DatasetList from 'pages/DatasetList/DatasetList';
 import { NotFound } from 'pages/NotFound/NotFound';
-import ManageRollups from 'pages/RollupManagement/ManageRollups';
-import RollupsList from 'pages/RollupManagement/ManageRollups/components/RollupsList/RollupsList';
 import UserManagement from 'pages/UserManagement/UserManagement';
 import { useUserRead } from 'services/user';
-import ViewRollup from 'pages/RollupManagement/ViewRollup';
 
 // Type definition for the route configuration
 interface RouteConfig {
