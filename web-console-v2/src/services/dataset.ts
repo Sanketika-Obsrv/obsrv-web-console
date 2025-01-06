@@ -1,12 +1,19 @@
-import { skipToken, useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query';
+import {skipToken, useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { http } from './http';
-import { AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import _ from 'lodash';
 import { fetchLocalStorageItem, storeLocalStorageItem } from 'utils/localStorage';
 import { generateRequestBody, setDatasetId, setVersionKey, transformResponse } from './utils';
 import { queryClient } from 'queryClient';
 import { DatasetStatus } from 'types/datasets';
 import { generateDatasetState } from './datasetState';
+import { downloadJsonFile } from 'utils/downloadUtils';
+import { Dataset, FilterCriteria } from 'types/dataset';
+import { fetchChartData } from './clusterMetrics';
+import chartMeta from 'data/chartsComponents';
+import { druidQueries } from 'services/druid';
+import dayjs from 'dayjs';
+import useLocalStorage from 'hooks/useLocalStorage';
 
 const ENDPOINTS = {
     DATASETS_READ: '/config/v2/datasets/read',
@@ -19,10 +26,15 @@ const ENDPOINTS = {
     PUBLISH_DATASET: '/config/v2/datasets/status-transition',
     LIST_CONNECTORS: '/config/v2/connectors/list',
     READ_CONNECTORS: '/config/v2/connectors/read',
-    DATASET_EXISTS: '/api/dataset/exists'
+    DATASET_EXISTS: '/api/dataset/exists',
+    DATASET_EXPORT: '/config/v2/datasets/export',
+    DATASET_HEALTH: '/config/v2/datasets/health',
+    DRUID_DATASOURCE: '/config/druid/coordinator/v1/datasources?simple'
 };
 
 export const endpoints = ENDPOINTS
+
+const metricsStaleTime = 60000;
 
 export const useFetchDatasetsById = ({
         datasetId,
@@ -122,7 +134,7 @@ export const useGenerateJsonSchema = () =>
         mutationFn: ({ _data, payload }: any) => {
             const request = generateRequestBody({
                 request: payload,
-                apiId: 'api.datasets.dataschema'
+                apiId: "api.datasets.dataschema"
             });
 
             return http.post(ENDPOINTS.GENERATE_JSON_SCHEMA, request).then(transformResponse);
@@ -138,7 +150,7 @@ export const useUpdateDataset = () =>
             if(data?.data_schema) {
                 data['data_schema'] = omitSuggestions(data?.data_schema)
             }
-            const version_key = fetchLocalStorageItem('version_key') || {};
+            const version_key = data.version_key || fetchLocalStorageItem('version_key');
             const request = generateRequestBody({
                 request: {
                     ...data,
@@ -209,7 +221,7 @@ export const useConnectorsList = () =>
         }
     });
 
-export const useReadConnectors = ({ connectorId }: { connectorId: string }) => {
+export const useReadConnectors = ({ connectorId }: { connectorId: string | null }) => {
     return useQuery({
         queryKey: ['connectorId'],
         queryFn: () =>
@@ -324,4 +336,284 @@ export const isJsonSchema = (jsonObject: any) => {
     } else {
         return true;
     }
+}
+
+export const useDatasetExport = () => 
+     useMutation({
+        mutationFn: async ({dataset_id, status, fileName}: any) => {
+            const response = await http.get(`${ENDPOINTS.DATASET_EXPORT}/${dataset_id}?status=${status}`);
+            return transformResponse(response);
+        },
+        onSuccess: (response, fileName) => {
+            if (response) {
+                downloadJsonFile(response, fileName.fileName);
+            }
+        }
+    });
+
+export const useDatasetHealth = () => 
+    useMutation({
+        mutationFn: async ({ payload = {} }: any) => {
+            const request = generateRequestBody({
+                request: payload,
+                apiId: 'api.datasets.health'
+            });
+            const response = await http.post(`${ENDPOINTS.DATASET_HEALTH}`, request);
+            return response?.data?.result?.status;
+        },
+    });
+      
+export const combineDatasetWithHealth = async (): Promise<{ datasets: Dataset[] }> => {
+    try {
+        const request = generateRequestBody({
+            request: { filters: { status: [] } },
+            apiId: 'api.datasets.list'
+        });
+    
+        const datasets = await http.post(`${ENDPOINTS.LIST_DATASET}`, request).then(transformResponse);
+        
+        const datasetHealthPromises = datasets.data.map(async (dataset: Dataset) => {
+            if (dataset.status === 'Live') {
+                const request = generateRequestBody({
+                    request: {
+                        dataset_id: dataset?.dataset_id,
+                        categories: ['infra', 'processing'],
+                    },
+                    apiId: 'api.datasets.health'
+                });
+                const health = await http.post(`${ENDPOINTS.DATASET_HEALTH}`, request).then(transformResponse);
+                return {
+                    ...dataset,
+                    current_health: health?.status
+                };
+            }
+            return dataset;
+        });
+        const datasetsWithHealth = await Promise.all(datasetHealthPromises);
+        return { datasets: datasetsWithHealth };
+    } catch (error) {
+        console.error('Error combining dataset with health:', error);
+        throw error;
+    }
+};
+
+export const filterDatasets = (
+    datasets: Dataset[],
+    criteria: FilterCriteria,
+    search: string,
+): Dataset[] => {
+    return datasets.filter((dataset) => {
+        const statusMatch =
+            criteria.status.length === 0 || criteria.status.includes(dataset.status);
+
+        const connectorMatch =
+            criteria.connector.length === 0 ||
+            (dataset.connector && criteria.connector.includes(dataset.connector));
+
+        const tagMatch =
+            criteria.tag.length === 0 ||
+            (dataset.tags &&
+                dataset.tags.some((tag) =>
+                    criteria.tag.some((ctag) => _.toLower(ctag).includes(_.toLower(tag))),
+                ));
+
+        const searchMatch =
+            !search || _.includes(_.toLower(dataset.name ?? ''), _.toLower(search));
+
+        return statusMatch && connectorMatch && tagMatch && searchMatch;
+    });
+};
+
+ export const datasetConfigStatus = (dataset: Dataset) => {
+    let isConnectorFilled = false;
+    const connectorRequiredFields = ['id', 'connector_id', 'connector_config', 'version'];
+    if (!_.isEmpty(dataset?.connectors_config)) {
+      isConnectorFilled = _.every(dataset.connectors_config, connector => {
+        const allFieldsFilled = _.every(connectorRequiredFields, key => !_.isEmpty((connector as any)[key]));
+        // const operationsConfigFilled = connector?.operations_config ? !_.isEmpty(connector.operations_config) : true;
+        return allFieldsFilled;
+      });
+    }
+
+    const requiredFields = ['name', 'dataset_id', 'data_schema', 'type'];
+    const isIngestionFilled = _.every(requiredFields, key => !_.isEmpty((dataset as any)[key]));
+
+    const isValidationValid = _.get(dataset,'validation_config.validate') && _.get(dataset, 'validation_config.mode');
+    const hasDenormFields = _.isArray(_.get(dataset, 'denorm_config.denorm_fields')) && !_.isEmpty(_.get(dataset, 'denorm_config.denorm_fields'));
+    const isDedupChecked = _.get(dataset, 'dedup_config.drop_duplicates');
+    const dedupValuesProvided = !_.isEmpty(_.get(dataset, 'dedup_config.dedup_key'));
+    const isProcessingFilled = (
+      isValidationValid &&
+      (hasDenormFields || _.isEmpty(_.get(dataset, 'denorm_config.denorm_fields'))) &&
+      (!isDedupChecked || (isDedupChecked && dedupValuesProvided))
+    ) ? true : false;
+
+    const olapStoreEnabled = _.get(dataset, 'dataset_config.indexing_config.olap_store_enabled');
+    const lakehouseEnabled = _.get(dataset, 'dataset_config.indexing_config.lakehouse_enabled');
+    const cacheEnabled = _.get(dataset, 'dataset_config.indexing_config.cache_enabled');
+
+    const timestampKeyProvided = !!_.get(dataset, 'dataset_config.keys_config.timestamp_key');
+    const dataKeyProvided = !!_.get(dataset, 'dataset_config.keys_config.data_key');
+    const partitionKeyProvided = !!_.get(dataset, 'dataset_config.keys_config.partition_key');
+
+    const isStorageFilled = (
+      (!olapStoreEnabled || timestampKeyProvided) &&
+      (!lakehouseEnabled || (dataKeyProvided && partitionKeyProvided)) &&
+      (!cacheEnabled || dataKeyProvided)
+    );
+
+    let progress = 0;
+    if (!_.isEmpty(dataset?.connectors_config)) {
+      progress = (isIngestionFilled ? 25 : 0) +
+        (isProcessingFilled ? 25 : 0) +
+        (isStorageFilled ? 25 : 0) +
+        (isConnectorFilled ? 25 : 0);
+    } else {
+      if (isIngestionFilled && isProcessingFilled && isStorageFilled) {
+        progress = 100;
+      } else {
+        progress = (isIngestionFilled ? 33.33 : 0) +
+                   (isProcessingFilled ? 33.33 : 0) +
+                   (isStorageFilled ? 33.33 : 0);
+      }
+    }
+    return { isIngestionFilled, isProcessingFilled, isStorageFilled, progress, isConnectorFilled };
+  }
+
+  export function useQueryWithLocalStorageFallback<T>(
+    key: string[], 
+    queryFn: () => Promise<T>, 
+    defaultValue: T
+  ) {
+    const [storedValue, setStoredValue] = useLocalStorage(key.join('-'), defaultValue);
+  
+    return useQuery<T, Error>({
+      queryKey: key,
+      queryFn: async () => {
+        try {
+          const data = await queryFn();
+          
+          if (_.isArray(data) && data[1] === 'error') {
+            return storedValue;
+          }
+
+          if (_.isPlainObject(data) && _.isEmpty(data)) {
+            return storedValue;
+          }
+          
+          setStoredValue(data);
+          return data;
+        } catch (error) {
+          console.error('API call failed, using stored value', error);
+          return storedValue;
+        }
+      },
+      staleTime: metricsStaleTime,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      gcTime: metricsStaleTime * 5,
+      placeholderData: storedValue
+    });
+  }
+
+export const useTotalEvents = (datasetId: string, isMasterDataset: boolean) => {
+    const dateFormat = 'YYYY-MM-DDT00:00:00+05:30';
+    const startDate = '2000-01-01';
+    const endDate = dayjs().add(1, 'day').format(dateFormat);
+  
+    return useQueryWithLocalStorageFallback(
+      ['totalEvents', datasetId],
+      () => fetchChartData({
+        ..._.get(chartMeta, 'total_events_processed.query'),
+        body: druidQueries.total_events_processed({
+          datasetId,
+          intervals: `${startDate}/${endDate}`,
+          master: isMasterDataset
+        })
+      } as any),
+      []
+    );
+
+  };
+  
+  export const useTotalEventsToday = (datasetId: string, isMasterDataset: boolean) => {
+    const dateFormat = 'YYYY-MM-DDT00:00:00+05:30';
+    const startDate = dayjs().format(dateFormat);
+    const endDate = dayjs().add(1, 'day').format(dateFormat);
+  
+    return useQueryWithLocalStorageFallback(
+      ['totalEventsToday', datasetId],
+      () => fetchChartData({ 
+        ..._.get(chartMeta, 'total_events_processed.query'), 
+        body: druidQueries.total_events_processed({
+          datasetId: datasetId,
+          intervals: `${startDate}/${endDate}`,
+          master: isMasterDataset
+        })
+      } as any),
+      []
+    );
+
+  };
+  
+  export const useTotalEventsYesterday = (datasetId: string, isMasterDataset: boolean) => {
+    const dateFormat = 'YYYY-MM-DDT00:00:00+05:30';
+    const startDate = dayjs().subtract(1, 'day').format(dateFormat);
+    const endDate = dayjs().format(dateFormat);
+  
+    return useQueryWithLocalStorageFallback(
+      ['totalEventsYesterday', datasetId],
+      () => fetchChartData({ 
+        ..._.get(chartMeta, 'total_events_processed.query'), 
+        body: druidQueries.total_events_processed({
+          datasetId: datasetId,
+          intervals: `${startDate}/${endDate}`,
+          master: isMasterDataset
+        })
+      } as any),
+      []
+    );
+
+  };
+  
+  export const useEventsFailedToday = (datasetId: string, isMasterDataset: boolean) => {
+    return useQueryWithLocalStorageFallback(
+      ['eventsFailedToday', datasetId],
+      () => fetchChartData({
+        ...(isMasterDataset 
+          ? _.get(chartMeta, 'failed_events_summary_master_datasets.query')
+          : _.get(chartMeta, 'failed_events_summary.query')),
+        time: dayjs().endOf('day').unix(),
+        dataset: datasetId,
+        master: isMasterDataset,
+      } as any),
+      [0]
+    );
+  };
+
+export const useDruidDatasource = () => {
+    return useQueryWithLocalStorageFallback(
+        ['druidDatasource'],
+        async () => {
+            try {
+                const response = await http.get(ENDPOINTS.DRUID_DATASOURCE);
+                if (!_.isArray(response.data)) return {};
+
+                return response.data.reduce((acc: Record<string, number>, datasource: any) => {
+                    const dataset_id = datasource.name.replace(/_events$/, '');
+                    const size = datasource.properties?.segments?.replicatedSize || 0;
+                    acc[dataset_id] = size;
+                    return acc;
+                }, {});
+            } catch (error) {
+                console.error('Error fetching druid datasource:', error);
+                return {};
+            }
+        },
+        {}
+    );
+}
+
+export const getAllFields = async (datasetId: string, status: string = DatasetStatus.Draft) => {
+    return http.get(`/api/web-console/generate-fields/${datasetId}?status=${status}`)
 }

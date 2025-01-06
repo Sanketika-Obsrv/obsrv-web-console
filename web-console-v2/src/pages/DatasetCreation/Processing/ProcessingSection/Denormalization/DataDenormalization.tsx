@@ -2,7 +2,6 @@ import {
     Stack,
     Box,
     Grid,
-    Typography,
     Button,
     Popover,
     Chip,
@@ -12,7 +11,7 @@ import {
     Alert
 } from '@mui/material';
 import BasicReactTable from 'components/CustomeTable/CustomTable';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import config from 'data/initialConfig';
 import * as _ from 'lodash';
 import { useNavigate } from 'react-router-dom';
@@ -92,7 +91,7 @@ const DataDenorm = (props: any) => {
     );
 
     const openCreateMasterDataset = () => {
-        navigate(`/dataset/create`, {
+        navigate(`/dataset/create?datasetType=master`, {
             state: { replace: true, refreshMaster: true }
         });
     };
@@ -322,6 +321,16 @@ const DataDenorm = (props: any) => {
                             </Button> */}
                         </Box>
 
+                        <Button
+                            data-objectid="createMasterDataset"
+                            data-objecttype="masterDataset"
+                            onClick={(_) => openCreateMasterDataset()}
+                            variant="outlined"
+                            size="large"
+                            sx={{ width: 'auto', mr: 1 }}
+                        >
+                            Create Master Dataset
+                        </Button>
                         <Button
                             variant="contained"
                             autoFocus

@@ -2,6 +2,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { transform } from '../utils/transformResponse';
 import appConfig from '../resources/appConfig';
+import { logger } from '../utils/logger';
 
 export default {
     name: 'globalErrorHandler',
@@ -14,11 +15,10 @@ export default {
         } = error;
 
         const { id = 'api' } = request.responsePayload || {};
-
+        logger.error(error)
         if (request.url.includes("oauth/v1/login")) {
             return response.redirect(`${appConfig.BASE_URL}/login?err=Invalid Credentials`);
         }
-
         response.status(status).json(transform({ id, responseCode, params: { err: errorCode, errmsg: message } }));
     },
 };

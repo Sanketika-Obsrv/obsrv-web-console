@@ -64,12 +64,12 @@ export const inputFields = (
         }));
     }
 
-    const defaultDatatypeOptions: any[] = validFormatTypes.map((item: any) => ({
+    const defaultDatatypeOptions = validFormatTypes.map((item: any) => ({
         label: item,
         value: item
     }));
 
-    const arrivalType: any[] = extractMainKeys(datamappings).map((item: any) => item);
+    const arrivalType: any[] = extractMainKeys(datamappings).map((item) => item);
     const dataTypeOptions: any[] = dataTypeStoreFormat.filter(
         (option: any) => option.arrivalType === arrivalFormat
     );
@@ -113,7 +113,7 @@ export const inputFields = (
                                     hasSpacesInField(value)
                                 )
                                 .max(100, en.maxLen)
-                                .min(4, en.minLen)
+                                .min(2, en.minLen)
                                 .test('validCharacters', "The field should exclude any special characters, permitting only alphabets, numbers, '.', '-', '_'", (value: any) =>
                                     validFieldName(value, nameRegex)
                                 )

@@ -1,4 +1,4 @@
-/* eslint-disable */
+import React from 'react';
 import { ReactNode } from 'react';
 
 import { motion, useCycle } from 'framer-motion';

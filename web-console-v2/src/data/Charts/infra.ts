@@ -262,4 +262,96 @@ export default {
       },
     },
   },
+  total_memory: {
+    query: {
+      id: 'totalMemory',
+      type: 'api',
+      url: endpoints.prometheusRead,
+      method: 'GET',
+      headers: {},
+      body: {},
+      params: {
+        query: promql.total_memory.query,
+      },
+      parse: (response: any) => {
+        const value = _.get(response, 'data.result[0].value[1]') || 0;
+        return `${_.floor(value, 0)} GB`;
+      },
+      error() {
+        return ['0 GB'];
+      },
+      context: (payload: any) => {
+        return payloadStartOfDay(payload);
+      },
+    },
+  },
+  total_used_memory: {
+    query: {
+      id: 'totalUsedMemory',
+      type: 'api',
+      url: endpoints.prometheusRead,
+      method: 'GET',
+      headers: {},
+      body: {},
+      params: {
+        query: promql.total_used_memory.query,
+      },
+      parse: (response: any) => {
+        const value = _.get(response, 'data.result[0].value[1]') || 0;
+        return `${_.floor(value, 0)}`;
+      },
+      error() {
+        return ['0 GB'];
+      },
+      context: (payload: any) => {
+        return payloadStartOfDay(payload);
+      },
+    },
+  },
+  total_disk :{
+    query: {
+      id: 'totalDisk',
+      type: 'api',
+      url: endpoints.prometheusRead,
+      method: 'GET',
+      headers: {},
+      body: {},
+      params: {
+        query: promql.total_disk.query,
+      },
+      parse: (response: any) => {
+        const value = _.get(response, 'data.result[0].value[1]') || 0;
+        return `${_.floor(value, 0)}`;
+      },
+      error() {
+        return ['0 GB'];
+      },
+      context: (payload: any) => {
+        return payloadStartOfDay(payload);
+      },
+    },
+  },
+  total_used_disk :{
+    query: {
+      id: 'totalUsedDisk',
+      type: 'api',
+      url: endpoints.prometheusRead,
+      method: 'GET',
+      headers: {},
+      body: {},
+      params: {
+        query: promql.total_used_disk.query,
+      },
+      parse: (response: any) => {
+        const value = _.get(response, 'data.result[0].value[1]') || 0;
+        return `${_.floor(value, 0)}`;
+      },
+      error() {
+        return ['0 GB'];
+      },
+      context: (payload: any) => {
+        return payloadStartOfDay(payload);
+      },
+    },
+  }
 };

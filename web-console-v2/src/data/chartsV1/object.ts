@@ -5,7 +5,6 @@ import defaultConf from './common';
 import prettyMilliseconds from 'pretty-ms';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc'
-import apiEndpoints from 'constants/Endpoints';
 import chartMeta from 'data/chartsV1';
 import { fetchChartData } from 'services/clusterMetrics';
 import { IChartFetchRequest } from 'types/metadata';
@@ -17,7 +16,7 @@ export default {
         query: {
             id: 'objectStatus',
             type: 'api',
-            url: apiEndpoints.sourceConfig,
+            url: endpoints.sourceConfig,
             method: 'POST',
             headers: {},
             body: {
@@ -68,7 +67,7 @@ export default {
         query: {
             id: 'objectLastRunTime',
             type: 'api',
-            url: apiEndpoints.sourceConfig,
+            url: endpoints.sourceConfig,
             method: 'POST',
             headers: {},
             body: {

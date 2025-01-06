@@ -1,0 +1,161 @@
+:root {
+    --mui-divider-color: #e0e0e0;
+    --mui-border-radius: 4px;
+    --mui-spacing-3: 24px;
+    --mui-primary-main: #1976d2;
+    --mui-action-hover: rgba(25, 118, 210, 0.04);
+    --mui-error-main: #d32f2f;
+    --mui-background-paper: #fff;
+    --mui-text-primary: rgba(0, 0, 0, 0.87);
+    --mui-text-secondary: rgba(0, 0, 0, 0.6);
+    --linear-progress-height: 0.3125rem;
+    --linear-progress-border-radius: 0.625rem;
+    --linear-progress-warning-color: var(--mui-palette-warning-dark);
+  }
+
+.dropzoneWrapper {
+    border: 2px dashed var(--mui-divider-color); 
+    border-radius: var(--mui-border-radius);
+    padding: var(--mui-spacing-3);
+    text-align: center;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .dropzoneWrapper:hover {
+    border-color: var(--mui-primary-main);
+    background-color: var(--mui-action-hover);
+  }
+  
+  .dropzoneWrapperError {
+    border-color: var(--mui-error-main);
+    background-color: var(--mui-background-paper);
+  }
+  
+  .dropzoneWrapperDragActive {
+    background-color: var(--mui-action-hover);
+  }
+  
+  /* Icon styles */
+  .cloudUploadIcon {
+    font-size: 3rem;
+    color: blue;
+  }
+  
+  .cloudUploadIconError {
+    color: var(--mui-error-main);
+  }
+  
+  .cloudUploadIconPrimary {
+    color: var(--mui-primary-main);
+  }
+  
+
+  .textPrimary {
+    color: var(--mui-text-primary);
+  }
+  
+  .textSecondary {
+    color: var(--mui-text-secondary);
+  }
+  
+  .textError {
+    color: var(--mui-error-main);
+  }
+  
+  .textCaption {
+    color: var(--mui-error-main);
+  }
+  
+  .fileCountText {
+    color: var(--mui-primary-main);
+    
+  }
+  
+  .dropzoneContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--mui-spacing-4);
+  }
+
+  .linearProgressWithLabelBox1 {
+    display: flex;
+    align-items: center;
+    max-width: 22rem;
+    margin: 2;
+  }
+  
+  .linearProgressWithLabelBox2 {
+    width: 20rem;
+    margin-right: 1;
+  }
+  
+  .linearProgressWithLabel {
+    height: 0.3125rem;
+    border-radius: 1rem;
+    color: #f3970d;
+  }
+  
+  .listWithFile {
+    margin: rem 0;
+  }
+  
+  .standardList {
+    width: 100%;
+  }
+  
+  .listItem {
+    border: 1px solid;
+    border-color: var(--mui-divider-color);
+    border-radius: 9;
+    margin-bottom: 10;
+    
+   
+  }
+  
+  .fileIcon {
+    width: 1.875rem; 
+    font-size: 1.15rem;
+    margin-right: 8;
+    color: var(--mui-text-secondary);
+  }
+  
+  .deleteIcon {
+    width: 1.875rem;
+    font-size: 1.15rem;
+    margin-right: 6;
+    color: var(--mui-error-main);
+  }
+
+  .connectorCardPlaceholder {
+    min-width: 21rem;
+    height: 11rem;
+    margin: 1rem;
+    box-shadow: 0.625rem 0.625rem 2.75rem 0 rgba(0, 0, 0, 0.1);
+    text-align: -webkit-center;
+}
+
+.connectorCardPlaceholderMedia {
+    width: 64px;
+    height: 4rem;
+    margin-top: 1.5rem;
+}
+
+.connectorCardPlaceholderStack {
+    width: 100%;
+    text-align: center;
+}
+
+.connectorCardPlaceholderText {
+    text-align: center;
+}
+
+.connectorCardPlaceholderLink {
+    text-decoration: underline;
+    cursor: pointer;
+}
+

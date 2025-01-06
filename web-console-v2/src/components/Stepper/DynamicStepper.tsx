@@ -66,7 +66,7 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
             case 'connector': {
                 const connectorStep = steps.find((step) => step.route === 'connector');
                 if(connectorStep?.completed) 
-                    navigate(`/dataset/edit/connector/configure/${datasetId}`);
+                    navigate(`/dataset/edit/connector/configure/${datasetId}`,{ state: location.state });
                 else 
                     navigate(`/dataset/edit/connector/list/${datasetId}`);
                 break;
@@ -76,7 +76,7 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
                 if(ingestionStep?.completed) 
                     navigate(`/dataset/edit/ingestion/schema/${datasetId}`);
                 else 
-                    navigate(`/dataset/edit/ingestion/meta/${datasetId}`);
+                    navigate(`/dataset/edit/ingestion/meta/${datasetId}`,{ state: location.state });
                 break;
             }       
             case 'processing': {

@@ -1,9 +1,9 @@
 import axios from 'axios';
-import { getBaseURL, getSystemSetting } from './configData';
+import { getSystemSetting } from './configData';
 
 axios.defaults.headers.common['Cache-Control'] = 'no-store';
 axios.defaults.headers.common['Pragma'] = 'no-store';
-const http = axios.create({ baseURL: getBaseURL() });
+const http = axios.create({ baseURL: '/console'});
 
 const responseInterceptor = (response: any) => response;
 

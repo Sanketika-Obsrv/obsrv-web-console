@@ -1,0 +1,7 @@
+.searchField {
+    height: 2rem;
+}
+.searchField input {
+    height: 0.21rem;
+    min-width: 12.5rem;
+}

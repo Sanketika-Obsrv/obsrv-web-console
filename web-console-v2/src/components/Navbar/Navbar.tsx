@@ -7,10 +7,10 @@ import Grafana from 'assets/icons/Grafana';
 import Superset from 'assets/icons/Superset';
 import _ from 'lodash';
 import Notification from 'components/NotificationBar/AlertNotification';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import { fetchFiringAlerts } from 'services/alerts';
 import logoIcon from 'assets/images/obsrv-logo.svg';
-import { getBaseURL, getSystemSetting } from 'services/configData';
+import { getSystemSetting } from 'services/configData';
 import { errorInterceptor, responseInterceptor } from 'services/http';
 import { addHttpRequestsInterceptor } from 'services/http';
 import { routeConfigurations } from 'router';
@@ -48,7 +48,7 @@ function BasicBreadcrumbs(): JSX.Element {
     useEffect(() => {
         const fetchAlerts = async () => {
             try {
-                const alertsData: any = await fetchFiringAlerts({});
+                const alertsData: any = await fetchFiringAlerts();
                 setAlerts(alertsData);
                 setRead(_.size(alertsData));
             } catch {
@@ -75,7 +75,6 @@ function BasicBreadcrumbs(): JSX.Element {
     const findRoute = (routes: any, path: string) => {
         for (const route of routes) {
             if (route.path === '*') return route;
-            // Check for an exact match or a dynamic match
             const dynamicRegex = getDynamicRegex(route.path);
             if (dynamicRegex.test(path)) return { ...route, path: path };
 

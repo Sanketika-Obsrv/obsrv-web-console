@@ -3,13 +3,20 @@ import userService from '../services/oauthUsers';
 import { transform } from '../../shared/utils/transformResponse';
 import _ from 'lodash';
 
-const mergeRoles = (currentRoles: any, newConfigs: any) => {
+const mergeRoles = (currentRoles: any, newConfigs: any, isOwner: boolean) => {
     const rolesToRemove = _.map(_.filter(newConfigs, { action: 'remove' }), 'value');
     const rolesToAdd = _.map(_.filter(newConfigs, { action: 'upsert' }), 'value');
     const conflictRoles = _.intersection(rolesToRemove, rolesToAdd);
     if (conflictRoles.length > 0) {
         throw new Error(`Can not upsert and remove the same role(s) at the same time: ${conflictRoles.join(', ')}`);
     }
+
+    if (!isOwner) {
+        if (rolesToAdd.includes('admin') || rolesToRemove.includes('admin')) {
+            throw new Error('Only the owner can modify the admin role');
+        }
+    }
+
     return _.union(_.pullAll(currentRoles, rolesToRemove), rolesToAdd);
 };
 
@@ -19,8 +26,9 @@ export default {
         try {
             const { user_name, roles } = _.get(req, ['body', 'request']);
 
+            const isOwner = _.get(req, ['session', 'userDetails', 'is_owner']);
             const user = await userService.find({ user_name });
-            const updatedRoles = mergeRoles(_.get(user, ['roles']), roles);
+            const updatedRoles = mergeRoles(_.get(user, ['roles']), roles, isOwner);
             const result = await userService.update(
                 { user_name },
                 {
@@ -35,6 +43,10 @@ export default {
                 const extendedError = Object.assign(err, { message: error, status: 404, responseCode: 'NOT_FOUND', errorCode: 'NOT_FOUND' });
                 next(extendedError);
             } else {
+                const e = error as Error;
+                if (e.message && (e.message.includes('Only the owner can modify the admin role'))) {
+                    return res.status(403).json({ error: e.message });
+                }
                 next(error);
             }
         }

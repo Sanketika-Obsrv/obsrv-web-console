@@ -17,8 +17,12 @@ export const percentageUsage = (response: any) => {
   return `${percentage} % Usage on ${nodes} Nodes`;
 };
 
+export const totalMemoryUsage = (response: any) => {
+  const [used, total] = response;
+  return `${used} / ${total}`;
+};
+
 export const cpuPercentageUsage = (response: any) => {
-  console.log({ response })
   const [percentage, nodes, totalCpu] = response;
   return `${percentage}% Usage on ${nodes} Nodes, ${totalCpu} Cores`;
 };

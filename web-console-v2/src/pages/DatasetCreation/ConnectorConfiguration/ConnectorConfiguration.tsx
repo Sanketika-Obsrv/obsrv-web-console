@@ -13,6 +13,9 @@ import styles from './ConnectorConfiguration.module.css';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { http } from 'services/http';
+import { v4 } from "uuid";
+import { DatasetType } from 'types/datasets';
+import Loader from 'components/Loader';
 
 interface FormData {
     [key: string]: unknown;
@@ -33,11 +36,11 @@ const GenericCard = styled(Card)(({ theme }) => ({
 }));
 
 const ConnectorConfiguration: React.FC = () => {
-
-    
     const location = useLocation();
     const { datasetId }: any = useParams();
     const { selectedConnectorId, connectorConfig } = location.state || {};
+    const searchParams = new URLSearchParams(location.search);
+    const datasetType = searchParams.get('datasetType');
     const defaultFormData = connectorConfig ? _.get(connectorConfig, 'connector_config') : {}
     const defaultOpFormData = connectorConfig ? _.get(connectorConfig, 'operations_config') : {
         interval: 'Periodic',
@@ -52,6 +55,7 @@ const ConnectorConfiguration: React.FC = () => {
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
     const [schema, setSchema] = useState<Schema | null>(null);
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
+    const [primaryConnectorId, setPrimaryConnectorId] = useState<string | null>(null);
 
     const navigate = useNavigate();
 
@@ -124,18 +128,18 @@ const ConnectorConfiguration: React.FC = () => {
         }
     }
     const readConnector = useReadConnectors({ connectorId: selectedConnectorId });
-    
     const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config,version_key'});
     useEffect(() => {
         if (dataset.data && dataset.data.connectors_config[0]) {
             const connectorId = _.get(dataset.data.connectors_config[0], 'connector_id')
+            setPrimaryConnectorId(connectorId)
             http.get(`${endpoints.READ_CONNECTORS}/${connectorId}`).then((response: any) => {
                 const connectorData = _.get(response, ['data', 'result'])
                 if(connectorData) {
                     setConnectorType(_.toLower(connectorData.category));
                     const apiSchema = connectorData.ui_spec;
                     if (apiSchema) {
-                        setSchema(transformSchema(apiSchema));
+                        setSchema(transformSchema(apiSchema,_.toLower(connectorData.connector_id)));
                         setHelpSectionContent(apiSchema, _.toLower(connectorData.category));
                         setErrorMessage(null);
                         setFormErrors([])
@@ -150,28 +154,42 @@ const ConnectorConfiguration: React.FC = () => {
             setConnectorType(_.toLower(readConnector.data.category));
             const apiSchema = readConnector.data.ui_spec;
             if (apiSchema) {
-                setSchema(transformSchema(apiSchema));
+                setSchema(transformSchema(apiSchema,readConnector.data.connector_id));
                 setHelpSectionContent(apiSchema, _.toLower(readConnector.data.category));
                 setErrorMessage(null);
             } else {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
         }
-    }, [dataset.data, readConnector.data]);
+    }, [dataset.data, readConnector.data,selectedConnectorId]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);
     };
 
-    const transformSchema = (apiSchema: any): Schema => {
-        return {
-            title: _.get(apiSchema, 'description'),
+    const transformSchema = (apiSchema: any,connector_id:string): Schema => {
+        const schema:any = {
+            title: apiSchema.title,
+            description: apiSchema.description,
             schema: {
                 type: 'object',
-                ...apiSchema
+                properties: apiSchema.properties,
+                required: apiSchema.required
             },
             uiSchema: {}
+        };
+
+        // If this is a Kafka connector and has consumer_id field
+        if (schema.schema.properties.source_kafka_consumer_id) {
+            schema.schema.properties.source_kafka_consumer_id = {
+                ...schema.schema.properties.source_kafka_consumer_id,
+                default:datasetId === '<new>' ? `${connector_id}_${v4().slice(0,6)}` :  `${datasetId}_${connector_id}_${v4().slice(0,6)}`
+            };
+            schema.uiSchema.source_kafka_consumer_id = {
+                'ui:disabled': true
+            };
         }
+        return schema;
     };
 
     const setHelpSectionContent = (schema: any, connectorType: string): string[] => {
@@ -248,13 +266,14 @@ const ConnectorConfiguration: React.FC = () => {
     const handleButtonClick = () => {
 
         if(datasetId === '<new>') {
-            navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=false&completed=true`, {
+            const queryParams = `?step=connector&skipped=false&completed=true${datasetType === DatasetType.MasterDataset ? '&datasetType=master' : ''}`;
+            navigate(`/dataset/edit/ingestion/meta/${datasetId}${queryParams}`, {
                 state: {
                     connectorConfig: {
                         id: selectedConnectorId,
                         connector_id: selectedConnectorId,
                         connector_config: formData || {},
-                        operations_config: opFormData || {}
+                        operations_config: connectorType === 'stream' ? {} : opFormData || {},
                     },
                     selectedConnectorId
                 }
@@ -266,10 +285,10 @@ const ConnectorConfiguration: React.FC = () => {
                         dataset_id: datasetId,
                         connectors_config: [{
                             value: {
-                                id: `${datasetId}_${selectedConnectorId}`,
-                                connector_id: selectedConnectorId,
+                                id: `${datasetId}_${primaryConnectorId || selectedConnectorId}`,
+                                connector_id: primaryConnectorId || selectedConnectorId,
                                 connector_config: formData || {},
-                                operations_config: opFormData || {},
+                                operations_config: connectorType === 'stream' ? {} : opFormData || {},
                                 version: 'v2'
                             },
                             action: "upsert"
@@ -278,7 +297,8 @@ const ConnectorConfiguration: React.FC = () => {
                 },
                 {
                     onSuccess: () => {
-                        navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=false&completed=true`);
+                        const queryParams = `?step=connector&skipped=false&completed=true${ datasetType=== DatasetType.MasterDataset ? '&datasetType=master' : ''}`;
+                        navigate(`/dataset/edit/ingestion/meta/${datasetId}${queryParams}`);
                     }
                 }
             );
@@ -290,7 +310,8 @@ const ConnectorConfiguration: React.FC = () => {
     };
 
     const handleBack = () => {
-        navigate(`/dataset/edit/connector/list/${datasetId}`);
+        const queryParams = datasetType === DatasetType.MasterDataset ? '?datasetType=master' : '';
+        navigate(`/dataset/edit/connector/list/${datasetId}${queryParams}`);
     };
 
     const handleIntervalChange = (e: SelectChangeEvent) => {
@@ -308,9 +329,10 @@ const ConnectorConfiguration: React.FC = () => {
         newOpFormData.schedule = e.target.value;
         setOpFormData(newOpFormData);
     };
-
+    
     return (
-        <Box ml={1}>
+        <>
+        {readConnector.isLoading ? <Loader loading={true} /> : <Box ml={1}>
             {datasetId && datasetId === '<new>' && (
                 <Box mx={2}>
                     <Button
@@ -459,7 +481,8 @@ const ConnectorConfiguration: React.FC = () => {
                 onExpandToggle={handleHelpSectionToggle}
                 expand={isHelpSectionOpen}
             />
-        </Box>
+        </Box>}
+        </>
     );
 };
 

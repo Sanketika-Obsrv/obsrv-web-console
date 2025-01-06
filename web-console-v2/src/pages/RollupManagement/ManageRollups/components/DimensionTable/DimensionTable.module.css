@@ -1,0 +1,21 @@
+.tableContainer {
+    display: flex;
+    gap: 0.5rem
+}
+
+.item1Width {
+    width: 50%;
+}
+
+.item2Width {
+    width: 49%;
+}
+
+.tableBottom {
+    margin-inline: 1rem;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem
+}

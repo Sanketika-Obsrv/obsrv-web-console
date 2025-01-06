@@ -5,9 +5,17 @@ import ConnectorManagement from 'assets/icons/ConnectorManagement';
 import { AlertOutlined, MailOutlined } from '@ant-design/icons';
 import DatasetManagementIcon from 'assets/icons/DatasetManagement';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
+import CableIcon from '@mui/icons-material/Cable';
+import PeopleOutlineOutlinedIcon from '@mui/icons-material/PeopleOutlineOutlined';
 import { theme } from 'theme';
+import { useUserRead } from 'services/user';
 
 const SidebarElements = () => {
+  const { data: currentUser } = useUserRead();
+
+  const isAdminOrOwner = currentUser && (
+    currentUser?.roles.includes('admin') || currentUser?.is_owner
+  );
   const elements = [
     {
       id: 'dashboard',
@@ -126,7 +134,19 @@ const SidebarElements = () => {
       title: 'Notification Channels',
       route: '/alertChannels',
     },
-  ];
+    {
+      id: 'connectors',
+      icon:React.createElement(CableIcon),
+      title: 'Connectors',
+      route: '/connectors',
+    },
+    isAdminOrOwner && {
+      id: 'usermanagement',
+      icon: React.createElement(PeopleOutlineOutlinedIcon),
+      title: 'User Management',
+      route: '/userManagement',
+    }
+  ].filter(Boolean);
 
   return elements;
 };

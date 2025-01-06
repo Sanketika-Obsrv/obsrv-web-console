@@ -1,12 +1,12 @@
 import _ from "lodash";
 import { http } from "./http";
 
-const fetchGrafanaRules = ({ rules = [] }) => {
+export const fetchGrafanaRules = () => {
     return http.get("/alertmanager/api/prometheus/grafana/api/v1/rules").then((response) => _.get(response, 'data.data.groups'));
 };
 
-export const fetchFiringAlerts = async ({ groups = [] }) => {
-    const alerts = await fetchGrafanaRules({});
+export const fetchFiringAlerts = async () => {
+    const alerts = await fetchGrafanaRules();
     const rules = _.flatten(_.map(alerts, (group) => _.get(group, 'rules') || []));
     const firingRules = _.filter(rules, ['state', 'firing']);
     const activeAlerts = _.flatten(_.map(firingRules, (firingRule) => _.get(firingRule, 'alerts') || []));

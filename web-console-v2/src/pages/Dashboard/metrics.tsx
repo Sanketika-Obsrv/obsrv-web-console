@@ -1,11 +1,12 @@
 /* eslint-disable */
-import { CloudServerOutlined, BarChartOutlined, DotChartOutlined, ApiOutlined, DatabaseOutlined, SettingOutlined, PartitionOutlined } from "@ant-design/icons";
+import { CloudServerOutlined, DotChartOutlined, ApiOutlined, DatabaseOutlined, SettingOutlined, PartitionOutlined } from "@ant-design/icons";
 import * as _ from 'lodash';
 import ApexChart from "pages/Dashboard/analytics/apex";
 import chartMeta from 'data/chartsComponents';
+import chartMetaInfra from '../../data/Charts/infra';
 import ApexWithFilters from "pages/Dashboard/analytics/ChartFilters";
 import filters from 'data/chartFilters';
-import { totalVsRunningNodes, percentageUsage, cpuPercentageUsage, alertsFilterByLabels, pvUsage, checkHealthStatus, toPercentage } from 'services/transformers';
+import { totalVsRunningNodes, percentageUsage, cpuPercentageUsage, checkHealthStatus, toPercentage, totalMemoryUsage } from 'services/transformers';
 import BasicCard2 from "components/Cards/BasicCard2/BasicCard2";
 import GaugeChart from "components/Charts/GaugeChart";
 import AsyncLabel from "components/AsyncLabel";
@@ -47,8 +48,8 @@ export const metricsMetadata = [
                 content={
                   <AsyncLabel
                     query={[
-                      _.get(chartMeta, 'total_running_nodes_count.query'),
-                      _.get(chartMeta, 'total_nodes_count.query'),
+                      _.get(chartMetaInfra, 'total_running_nodes_count.query'),
+                      _.get(chartMetaInfra, 'total_nodes_count.query'),
                     ]}
                     transformer={totalVsRunningNodes}
                   />
@@ -67,16 +68,16 @@ export const metricsMetadata = [
                 content={
                   <GaugeChart
                     caption={false}
-                    query={_.get(chartMeta, 'cpu_percentage.query')}
+                    query={_.get(chartMetaInfra, 'cpu_percentage.query')}
                     transformer2={toPercentage}
                   />
                 }
                 footer={
                   <AsyncLabel
                     query={[
-                      _.get(chartMeta, 'cpu_percentage.query'),
-                      _.get(chartMeta, 'total_running_nodes_count.query'),
-                      _.get(chartMeta, 'totalCPU.query'),
+                      _.get(chartMetaInfra, 'cpu_percentage.query'),
+                      _.get(chartMetaInfra, 'total_running_nodes_count.query'),
+                      _.get(chartMetaInfra, 'totalCpuCores.query'),
                     ]}
                     transformer={cpuPercentageUsage}
                   />
@@ -94,16 +95,21 @@ export const metricsMetadata = [
                 content={
                   <GaugeChart
                     caption={false}
-                    query={_.get(chartMeta, 'memory_percentage.query')}
+                    query={_.get(chartMetaInfra, 'memory_percentage.query')}
                     transformer2={toPercentage}
                   />
                 }
                 footer={
                   <AsyncLabel
                     query={[
-                      _.get(chartMeta, 'memory_percentage.query'),
-                      _.get(chartMeta, 'total_running_nodes_count.query'),
+                      _.get(chartMetaInfra, 'memory_percentage.query'),
+                      _.get(chartMetaInfra, 'total_running_nodes_count.query'),
                     ]}
+                    totalMemory={[
+                      _.get(chartMetaInfra, 'total_memory.query'),
+                      _.get(chartMetaInfra, 'total_used_memory.query')
+                    ]}
+                    memoryTransformer={totalMemoryUsage}
                     transformer={percentageUsage}
                   />
                 }
@@ -120,16 +126,21 @@ export const metricsMetadata = [
                 content={
                   <GaugeChart
                     caption={false}
-                    query={_.get(chartMeta, 'pv_usage_percent.query')}
+                    query={_.get(chartMetaInfra, 'pv_usage_percent.query')}
                     transformer2={toPercentage}
                   />
                 }
                 footer={
                   <AsyncLabel
                     query={[
-                      _.get(chartMeta, 'pv_usage_percent.query'),
-                      _.get(chartMeta, 'total_running_nodes_count.query'),
+                      _.get(chartMetaInfra, 'pv_usage_percent.query'),
+                      _.get(chartMetaInfra, 'total_running_nodes_count.query'),
                     ]}
+                    totalDisk={[
+                      _.get(chartMetaInfra, 'total_memory.query'),
+                      _.get(chartMetaInfra, 'total_used_memory.query')
+                    ]}
+                    diskTransformer={totalMemoryUsage}
                     transformer={percentageUsage}
                   />
                 }
@@ -761,37 +772,37 @@ export const metricsMetadata = [
               {
                 id: "Total Events Processed",
                 description: "Total Events Processed",
-                chart: <DatasetMetricsCard label="Total Events Processed" queryType={'total_events_processed'} interval={'today'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Total Events Processed" queryType={'total_events_processed'} interval={'today'} isApexChart={false} />
               },
               {
                 id: "Min Processing Time",
                 description: "Min Processing Time",
-                chart: <DatasetMetricsCard label="Min Processing Time" queryType={'min_processing_time'} interval={'today'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Min Processing Time" queryType={'min_processing_time'} interval={'today'} isApexChart={false} />
               },
               {
                 id: "Average Processing Time",
                 description: "Average Processing Time",
-                chart: <DatasetMetricsCard label="Average Processing Time" queryType={'average_processing_time'} interval={'today'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Average Processing Time" queryType={'average_processing_time'} interval={'today'} isApexChart={false} />
               },
               {
                 id: "Max Processing Time",
                 description: "Max Processing Time",
-                chart: <DatasetMetricsCard label="Max Processing Time" queryType={'max_processing_time'} interval={'today'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Max Processing Time" queryType={'max_processing_time'} interval={'today'} isApexChart={false} />
               },
               {
                 id: "Total Duplicate Batches",
                 description: "Total Duplicate Batches",
-                chart: <DatasetMetricsCard label="Total Duplicate Batches" queryType={'total_duplicate_batches'} interval={'today'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Total Duplicate Batches" queryType={'total_duplicate_batches'} interval={'today'} isApexChart={false} />
               },
               {
                 id: "Total Duplicate Events",
                 description: "Total Duplicate Events",
-                chart: <DatasetMetricsCard label="Total Duplicate Events" queryType={'total_duplicate_events'} interval={'today'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Total Duplicate Events" queryType={'total_duplicate_events'} interval={'today'} isApexChart={false} />
               },
               {
                 id: "Total Failed Events",
                 description: "Total Failed Events",
-                chart: <DatasetMetricsCard label="Total Failed Events" queryType={'total_failed_events'} interval={'today'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Total Failed Events" queryType={'total_failed_events'} interval={'today'} isApexChart={false} />
               },
             ]
           },
@@ -801,37 +812,37 @@ export const metricsMetadata = [
               {
                 id: "Total Events Processed",
                 description: "Total Events Processed",
-                chart: <DatasetMetricsCard label="Total Events Processed" queryType={'total_events_processed'} interval={'yesterday'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Total Events Processed" queryType={'total_events_processed'} interval={'yesterday'} isApexChart={false} />
               },
               {
                 id: "Min Processing Time",
                 description: "Min Processing Time",
-                chart: <DatasetMetricsCard label="Min Processing Time" queryType={'min_processing_time'} interval={'yesterday'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Min Processing Time" queryType={'min_processing_time'} interval={'yesterday'} isApexChart={false} />
               },
               {
                 id: "Average Processing Time",
                 description: "Average Processing Time",
-                chart: <DatasetMetricsCard label="Average Processing Time" queryType={'average_processing_time'} interval={'yesterday'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Average Processing Time" queryType={'average_processing_time'} interval={'yesterday'} isApexChart={false} />
               },
               {
                 id: "Max Processing Time",
                 description: "Max Processing Time",
-                chart: <DatasetMetricsCard label="Max Processing Time" queryType={'max_processing_time'} interval={'yesterday'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Max Processing Time" queryType={'max_processing_time'} interval={'yesterday'} isApexChart={false} />
               },
               {
                 id: "Total Duplicate Batches",
                 description: "Total Duplicate Batches",
-                chart: <DatasetMetricsCard label="Total Duplicate Batches" queryType={'total_duplicate_batches'} interval={'yesterday'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Total Duplicate Batches" queryType={'total_duplicate_batches'} interval={'yesterday'} isApexChart={false} />
               },
               {
                 id: "Total Duplicate Events",
                 description: "Total Duplicate Events",
-                chart: <DatasetMetricsCard label="Total Duplicate Events" queryType={'total_duplicate_events'} interval={'yesterday'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Total Duplicate Events" queryType={'total_duplicate_events'} interval={'yesterday'} isApexChart={false} />
               },
               {
                 id: "Total Failed Events",
                 description: "Total Failed Events",
-                chart: <DatasetMetricsCard label="Total Failed Events" queryType={'total_failed_events'} interval={'yesterday'} isApexChart={false}/>
+                chart: <DatasetMetricsCard label="Total Failed Events" queryType={'total_failed_events'} interval={'yesterday'} isApexChart={false} />
               },
             ]
           }
@@ -848,12 +859,12 @@ export const metricsMetadata = [
           {
             id: "Total Events Processed",
             description: "This is a graphical representation of the total events processed by the dataset",
-            chart: <DatasetMetricsCard label="Total Events Processed" queryType={'total_events_processed_apex_charts'} isApexChart={true}/>
+            chart: <DatasetMetricsCard label="Total Events Processed" queryType={'total_events_processed_apex_charts'} isApexChart={true} />
           },
           {
             id: "Events Processing Time (ms)",
             description: "This is a graphical representation of the processing time of events in milliseconds",
-            chart: <DatasetMetricsCard label="Events Processing Time (ms)" queryType={'events_processing_time_apex_charts'} isApexChart={true}/>
+            chart: <DatasetMetricsCard label="Events Processing Time (ms)" queryType={'events_processing_time_apex_charts'} isApexChart={true} />
           }
         ]
       },

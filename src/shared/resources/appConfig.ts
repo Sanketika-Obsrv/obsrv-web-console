@@ -7,6 +7,10 @@ export default {
     ENV: env.ENV || 'development',
     AUTHENTICATION_ALLOWED_TYPES: env.AUTHENTICATION_ALLOWED_TYPES || 'obsrv,ad,google',
     DEFAULT_ALERT_MANAGER: env.ALERT_MANAGER || 'grafana',
+    OBSRV_NLQ_CONFIG: {
+        URL: env.OBSRV_NLQ_URL || 'http://localhost:8501',
+        IS_ENABLED: env.IS_NLQ_ENABLED || 'false'
+    },
     PROMETHEUS: {
         URL: env.PROMETHEUS_URL || 'http://localhost:9090',
     },
@@ -16,8 +20,14 @@ export default {
     CONFIG_API: {
         URL: env.CONFIG_API_URL || 'http://localhost:4000',
     },
+    CONFIG_API_EXT: {
+        URL: env.CONFIG_API_EXT_URL || 'http://localhost:4001',
+    },
     SYSTEM_API: {
         URL: env.SYSTEM_API_URL || 'http://localhost:4002',
+    },
+    MANAGEMENT_API: {
+        URL: env.MANAGEMENT_API_URL || 'http://localhost:8000',
     },
     ALERT_MANAGER: {
         URL: env.ALERT_MANAGER_URL || 'http://localhost:9093',
@@ -69,4 +79,6 @@ export default {
         PUBLIC_CLIENT: env.KEYCLOAK_PUBLIC_CLIENT || 'false',
         SSL_REQUIRED: env.KEYCLOAK_SSL_REQUIRED || 'external',
     },
+    USER_TOKEN_EXPIRY: env.USER_TOKEN_EXPIRY || '1d',
+    STORAGE_TYPES: env.STORAGE_TYPES || '{"lake_house":true,"realtime_store":true}'
 };

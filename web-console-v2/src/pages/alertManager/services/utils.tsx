@@ -220,7 +220,11 @@ const DatePicker = (props: any) => {
             onChange={(newValue: any) => {
                 setDate(newValue, alertId);
             }}
-            renderInput={(params: any) => <TextField {...params} />}
+            slotProps={{
+                textField: {
+                    fullWidth: true
+                }
+            }}
         />
     );
 };

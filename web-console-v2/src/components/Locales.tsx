@@ -1,12 +1,10 @@
 /* eslint-disable */
-import { ReactNode, useEffect, useState } from 'react';
-
-
-import { IntlProvider, MessageFormatElement } from 'react-intl';
+import React, { ReactNode, useEffect, useState } from 'react';
 
 
 import useConfig from 'hooks/useConfig';
 import { I18n } from 'types/config';
+import { MessageFormatElement, IntlProvider } from 'react-intl';
 
 
 const loadLocaleData = (locale: I18n) => {
@@ -31,9 +29,11 @@ const Locales = ({ children }: Props) => {
   return (
     <>
       {messages && (
+        <>
         <IntlProvider locale={i18n} defaultLocale="en" messages={messages}>
-          {children}
+         <> {children}</>
         </IntlProvider>
+        </>
       )}
     </>
   );

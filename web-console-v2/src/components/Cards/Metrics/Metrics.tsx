@@ -55,7 +55,7 @@ const Metrics: React.FC<MetricsProps> = ({
         <div className={styles.header}>
           <div className={` ${nested ? styles.heading2 : styles.heading}`}>
             <div className={styles.grafana}>{logoIcon}</div>
-            <Typography variant="caption" className={styles.title}>
+            <Typography variant="h1" className={styles.title}>
               {title}
             </Typography>
             <Typography variant="body2" color="textSecondary">

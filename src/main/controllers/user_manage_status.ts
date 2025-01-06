@@ -8,7 +8,18 @@ export default {
     handler: () => async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { user_name, status } = _.get(req, ['body', 'request']);
+            const isOwner = _.get(req, ['session', 'userDetails', 'is_owner']);
+
             const user = await userService.find({ user_name });
+
+            const hasAdminRole = user?.roles.includes('admin');
+
+            if (hasAdminRole && !isOwner) {
+                return res.status(403).json({
+                    error: 'Only the owner can change the status of an admin user'
+                });
+            }
+
             const result = await userService.update(
                 { user_name },
                 {

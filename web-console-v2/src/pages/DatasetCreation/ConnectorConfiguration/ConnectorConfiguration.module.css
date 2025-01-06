@@ -21,6 +21,7 @@
 [class*='MuiTypography-root'][class*='MuiTypography-h5'] {
     font-size: 1.125rem;
     margin-bottom: -0.375rem;
+    font-weight: 600;
 }
 
 .button {

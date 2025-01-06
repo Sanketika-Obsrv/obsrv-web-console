@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, fireEvent, cleanup } from '@testing-library/react';
+import { screen } from '@testing-library/dom';
 import '@testing-library/jest-dom/extend-expect';
 import ConnectorCard from './ConnectorCard';
 import { connectorList } from '../connectorList';

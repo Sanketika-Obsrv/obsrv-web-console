@@ -11,8 +11,9 @@ import styles from 'pages/DatasetCreation/ConnectorConfiguration/ConnectorConfig
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFetchDatasetsById, useUpdateDataset } from 'services/dataset';
-import { extractTransformationOptions } from '../Processing/Processing';
+import { extractTransformationOptionsWithType } from '../Processing/Processing';
 import storageStyle from './Storage.module.css';
+import { getSystemSetting } from 'services/configData';
 
 export const getDatasetType = (type: string) => {
     if (type === 'event') {
@@ -41,6 +42,8 @@ const Storage = () => {
     const [timestampKey, setTimestampKey] = useState<string>('');
     const [partitionKey, setPartitionKey] = useState<string>('');
     const [datasetType, setDatasetType] = useState<string>('event');
+    const [dataSchema, setDataSchema] = useState<any>({});
+    const storageTypes = JSON.parse(getSystemSetting("STORAGE_TYPES"))
 
     const updateDatasetMutate = useUpdateDataset();
     const { datasetId } : any = useParams();
@@ -61,30 +64,77 @@ const Storage = () => {
     const datasetConfig = _.get(fetchData, 'dataset_config', {});
     const datasetConfig_indexing = _.get(fetchData, 'dataset_config.indexing_config', {});
     const datasetConfig_keys = _.get(fetchData, 'dataset_config.keys_config', {});
-    const timeStampTypes = ['date', 'timestamp', 'datetime'];
+    const timeStampTypes = ['date', 'timestamp', 'datetime', 'epoch'];
 
     useEffect(() => {
         if(fetchDatasetType) {
             setDatasetType(fetchDatasetType)
-            const getColumns = extractTransformationOptions(fetchData?.data_schema || {});
-            const timestampKeys = getColumns.filter((option) =>
-                timeStampTypes.some((keyword) => option.toLowerCase().includes(keyword))
-            );
-
-            const nonTimestampKeys = getColumns.filter((key) => !timestampKeys.includes(key));
+            const getColumns: any = extractTransformationOptionsWithType(fetchData?.data_schema || {});
+            const timestampKeys: any = _.compact(getColumns.map((option: any) =>{
+                if (timeStampTypes.includes(option.data_type)) {
+                    return option.field
+                }
+            }  
+            ));
+            const nonTimestampKeys: any =  _.compact(getColumns.map((option: any) =>{
+                if (!timeStampTypes.includes(option.data_type)) {
+                    return option.field
+                }
+            }  
+            ));
             setTimestampFields([...timestampKeys, 'Event Arrival Time']);
             setNonTimestampFields(nonTimestampKeys)
 
             const { data_key, partition_key, timestamp_key } = datasetConfig_keys;
             const { olap_store_enabled, lakehouse_enabled, cache_enabled } = datasetConfig_indexing;
-            setRealtimeStoreEnabled(olap_store_enabled);
-            setLakehouseEnabled(lakehouse_enabled);
-            setCacheStoreEnabled(cache_enabled);
+            setRealtimeStoreEnabled(_.get(storageTypes, "realtime_store") === true ? olap_store_enabled : false);
+            setLakehouseEnabled(_.get(storageTypes, "lake_house") === true ? lakehouse_enabled : false);
+            setCacheStoreEnabled(fetchDatasetType === 'master' ? true : cache_enabled);
             setPrimaryKey(data_key);
             setTimestampKey('obsrv_meta.syncts' === timestamp_key ? 'Event Arrival Time' : timestamp_key);
             setPartitionKey(partition_key)
+            setDataSchema(fetchData?.data_schema || {});
         }
     }, [fetchDatasetType]);
+
+    useEffect(() => {
+        if (dataSchema && (primaryKey || timestampKey || partitionKey)) {
+            const updatedSchema = updateRequiredFields(dataSchema, primaryKey, partitionKey, timestampKey);
+            setDataSchema(updatedSchema);
+        }
+    }, [primaryKey, partitionKey, timestampKey]);
+
+    const updateRequiredFields = (schema: any, primaryKey: string, partitionKey?: string, timestampKey?: string) => {
+        const updateField = (obj: any, path: string) => {
+            const keys = path.split('.');
+            let current = obj;
+            
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (current.properties && current.properties[keys[i]]) {
+                    current = current.properties[keys[i]];
+                }
+            }
+            
+            const lastKey = keys[keys.length - 1];
+            if (current.properties && current.properties[lastKey]) {
+                current.properties[lastKey].isRequired = true;
+            }
+        };
+
+        const newSchema = _.cloneDeep(schema);
+
+        if (primaryKey) {
+            updateField(newSchema, primaryKey);
+        }
+        if (partitionKey) {
+            updateField(newSchema, partitionKey);
+        }
+        if (timestampKey) {
+            updateField(newSchema, timestampKey);
+        }
+
+        return newSchema;
+    };
 
     const handleButtonClick = () => {
 
@@ -94,7 +144,7 @@ const Storage = () => {
                 indexing_config: {
                     olap_store_enabled: realtimeStoreEnabled,
                     lakehouse_enabled: lakehouseEnabled,
-                    cache_enabled: cacheStoreEnabled
+                    cache_enabled: datasetType === 'master' ? true : cacheStoreEnabled
                 },
                 keys_config: {
                     data_key: primaryKey,
@@ -102,7 +152,8 @@ const Storage = () => {
                     timestamp_key: timestampKey === 'Event Arrival Time' ? 'obsrv_meta.syncts' : timestampKey
                 }
             },
-            dataset_id: datasetId
+            dataset_id: datasetId,
+            data_schema: dataSchema
         };
 
         updateDatasetMutate.mutate(
@@ -211,10 +262,18 @@ const Storage = () => {
                                     <Grid container spacing={3} className={styles?.gridContainer}>
                                         <Grid item xs={24} sm={12} lg={12}>
                                             <FormGroup row >
-                                                <FormControlLabel control={<Checkbox checked={lakehouseEnabled} onChange={(event) => handleIndexingConfigChange(event, 'lakehouse')} />} label="Data Lakehouse (Hudi)" />
-                                                <FormControlLabel control={<Checkbox checked={realtimeStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'realtimeStore')} />} label="Real-time Store (Druid)" />
+                                                {_.get(storageTypes, "lake_house") === true && (<FormControlLabel control={<Checkbox checked={lakehouseEnabled} onChange={(event) => handleIndexingConfigChange(event, 'lakehouse')} />} label="Data Lakehouse (Hudi)" />)}
+                                                {_.get(storageTypes, "realtime_store") === true && (<FormControlLabel control={<Checkbox checked={realtimeStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'realtimeStore')} />} label="Real-time Store (Druid)" />)}
                                                 {datasetType === 'master' && (
-                                                    <FormControlLabel control={<Checkbox checked={cacheStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'cacheStore')}/>} label="Cache Store (Redis)"/>
+                                                    <FormControlLabel 
+                                                        control={
+                                                            <Checkbox 
+                                                                checked={true} 
+                                                                disabled={true}
+                                                            />
+                                                        } 
+                                                        label="Cache Store (Redis)"
+                                                    />
                                                 )}
                                             </FormGroup>
                                         </Grid>

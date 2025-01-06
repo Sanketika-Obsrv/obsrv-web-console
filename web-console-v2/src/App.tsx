@@ -12,6 +12,7 @@ import styles from 'App.module.css';
 import { queryClient } from 'queryClient';
 import Locales from 'components/Locales';
 import { fetchSystemSettings, getBaseURL } from 'services/configData';
+import Loader from 'components/Loader';
 
 const useSidebarToggle = () => {
 
@@ -35,13 +36,17 @@ const useSidebarToggle = () => {
 
 const App: FC = () => {
     const { isSidebarExpanded, toggleSidebar } = useSidebarToggle();
-    const isLoginRoute = window.location.pathname.includes("/login")
+    const isLoginRoute = window.location.pathname.includes("/login");
+    const [isLoading, setIsLoading] = useState(true);
     useEffect(() => {
-        fetchSystemSettings();
+        fetchSystemSettings().finally(() => {
+            setIsLoading(false)
+        })
     }, []);
 
     return (
-        <QueryClientProvider client={queryClient}>
+        (isLoading ? <Loader loading={true} /> 
+        : <QueryClientProvider client={queryClient}>
             <Locales>
                 <BrowserRouter basename={getBaseURL()}>
                     <Navbar />
@@ -57,7 +62,7 @@ const App: FC = () => {
                 </BrowserRouter>
                 <ReactQueryDevtools initialIsOpen={false} />
             </Locales>
-        </QueryClientProvider>
+        </QueryClientProvider> )
     );
 };
 

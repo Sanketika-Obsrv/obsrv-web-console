@@ -1,0 +1,17 @@
+.popUp{
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+.addMetricButton{
+    display: flex;
+    gap:1rem;
+    padding:8px;
+    justify-content: flex-start
+}
+
+.actions{
+    display: flex;
+    gap: 0.5rem;
+}
