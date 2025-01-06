@@ -5,7 +5,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import { ReactComponent as DeleteIcon } from 'assets/upload/Trash.svg';
 import { ReactComponent as EditIcon } from 'assets/upload/Edit.svg';
 import CustomTable from 'components/CustomeTable/CustomTable';
-import { minWidth, textAlign } from '@mui/system';
+import Loader from 'components/Loader';
 
 const ProcessingSection = (props: any) => {
     const {
@@ -28,6 +28,7 @@ const ProcessingSection = (props: any) => {
     const [selectedRow, setSelectedRow] = useState<any>(null);
 
     const [edit, setEdit] = useState<boolean>(false);
+    const [loading, setLoading] = useState(false);
 
     const handleEditValues = (editData: any) => {
         setSelectedRow(editData);
@@ -137,7 +138,16 @@ const ProcessingSection = (props: any) => {
                             <EditIcon/>
                         </Tooltip>
                     </Button>
-                    <Button onClick={() => handleDelete(_.get(cell, 'row.original.column'))} sx={{minWidth: '40px'}}>
+                    <Button 
+                        onClick={() => {
+                            setLoading(true);
+                            handleDelete(_.get(cell, 'row.original.column'));
+                            setTimeout(() => {
+                                setLoading(false);
+                            }, 200);
+                        }} 
+                        sx={{minWidth: '40px'}}
+                    >
                         <Tooltip title="Delete">
                             <DeleteIcon />
                         </Tooltip>
@@ -155,10 +165,22 @@ const ProcessingSection = (props: any) => {
         setEdit(false);
     };
 
+    const handleAddOrEditWithLoader = async (data: any) => {
+        setLoading(true);
+        try {
+            await handleAddOrEdit(data);
+        } finally {
+            setTimeout(() => {
+                setLoading(false);
+                setDialogOpen(false);
+            }, 200);
+        }
+    };
+
     const updateDialogProps = () =>
         React.cloneElement(dialog, {
             data: selectedRow,
-            handleAddOrEdit,
+            handleAddOrEdit: handleAddOrEditWithLoader,
             onClose: onDialogClose,
             edit,
             transformationOptions: !_.isEmpty(selectedRow)
@@ -221,7 +243,7 @@ const ProcessingSection = (props: any) => {
 
     return (
         <>
-            <Grid container>
+            {loading ? <Loader loading={loading} /> : <Grid container>
                 <Grid item xs={12} textAlign="end">
                     {_.isEqual(id, 'pii') && renderSuggestedFields()}
 
@@ -249,6 +271,7 @@ const ProcessingSection = (props: any) => {
                     </Dialog>
                 </Grid>
             </Grid>
+            }
         </>
     );
 };

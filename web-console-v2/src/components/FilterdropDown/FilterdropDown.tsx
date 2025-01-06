@@ -85,7 +85,7 @@ const FilterdropDown: React.FC<FilterdropDownProps> = ({
 
   return (
     <Box className={styles.filtersContainer}>
-      <Box>
+      <Box className={styles.filters}>
         <Typography className={styles.heading} variant="bodyBold">
           Filter by
         </Typography>

@@ -23,6 +23,7 @@ import { theme } from 'theme';
 import { FormControl } from '@mui/material';
 import { InputLabel } from '@mui/material';
 import { useParams } from 'react-router-dom';
+import Loader from 'components/Loader';
 
 const { spacing } = config;
 
@@ -129,20 +130,27 @@ const DataDenorm = (props: any) => {
         );
 
         const onHandleDelete = async (data: any) => {
-            const obj = {
-                denorm_config: {
-                    values: data,
-                    denorm_fields: [
-                        {
-                            value: data,
-                            action: 'remove'
-                        }
-                    ]
-                },
-                dataset_id: datasetId
-            };
-
-            handleDelete(obj);
+            setLoading(true);
+            try {
+                const obj = {
+                    denorm_config: {
+                        values: data,
+                        denorm_fields: [
+                            {
+                                value: data,
+                                action: 'remove'
+                            }
+                        ]
+                    },
+                    dataset_id: datasetId
+                };
+        
+                await handleDelete(obj);
+            } finally {
+                setTimeout(() => {
+                    setLoading(false);
+                }, 200);
+            }
         };
 
         const columns = [
@@ -234,150 +242,152 @@ const DataDenorm = (props: any) => {
         const isValidFrom = inputs.denorm_key && inputs.dataset_id && inputs.denorm_out_field;
         return (
             <>
-                {loading ? <></> : <>
-                    <Grid container spacing={2}>
-                        <Grid item lg={6}>
-                            <FormControl fullWidth required>
-                                <InputLabel
-                                    sx={{
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        top: '0.125rem'
-                                    }}
-                                >
-                                    Select Dataset Field
-                                </InputLabel>
-                                <Select
-                                    label="Select Dataset Field"
-                                    sx={{
-                                        backgroundColor: theme.palette.common.white
-                                    }}
-                                    name='denorm_key'
-                                    // value={filterByChip ? filterByChip.id : 'clear'}
-                                    onChange={(event: any) => {
-                                        handleOnChange(event)
-                                    }}
-                                >
-                                    <MenuItem value="">none</MenuItem>
-                                    {_.isEmpty(transformationOptions) ? <MenuItem disabled>
-                                        No filters available
-                                    </MenuItem> : transformationOptions?.map((menu: any) => {
-                                        return <MenuItem key={menu.id} value={menu}>
-                                            {menu}
-                                        </MenuItem>
-                                    })}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item lg={6}>
-                            <FormControl fullWidth required>
-                                <InputLabel
-                                    sx={{
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        top: '0.125rem'
-                                    }}
-                                >
-                                    Select Master Dataset
-                                </InputLabel>
-                                <Select
-                                    label="Select Master Dataset"
-                                    sx={{
-                                        backgroundColor: theme.palette.common.white
-                                    }}
-                                    name='dataset_id'
-                                    onChange={(event) => {
-                                        handleOnChange(event)
-                                    }}
-                                >
-                                    <MenuItem value="">none</MenuItem>
-                                    {_.isEmpty(masterDatasets) ? <MenuItem disabled>
-                                        No filters available
-                                    </MenuItem> : masterDatasets?.map((menu: any) => {
-                                        return <MenuItem key={menu?.dataset_id} value={menu?.dataset_id}>
-                                            {menu?.dataset_id}
-                                        </MenuItem>
-                                    })}
-                                </Select>
-                            </FormControl>
-                        </Grid>
+                <Grid container spacing={2}>
+                    <Grid item lg={6}>
+                        <FormControl fullWidth required>
+                            <InputLabel
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    top: '0.125rem'
+                                }}
+                            >
+                                Select Dataset Field
+                            </InputLabel>
+                            <Select
+                                label="Select Dataset Field"
+                                sx={{
+                                    backgroundColor: theme.palette.common.white
+                                }}
+                                name='denorm_key'
+                                // value={filterByChip ? filterByChip.id : 'clear'}
+                                onChange={(event: any) => {
+                                    handleOnChange(event)
+                                }}
+                            >
+                                <MenuItem value="">none</MenuItem>
+                                {_.isEmpty(transformationOptions) ? <MenuItem disabled>
+                                    No filters available
+                                </MenuItem> : transformationOptions?.map((menu: any) => {
+                                    return <MenuItem key={menu.id} value={menu}>
+                                        {menu}
+                                    </MenuItem>
+                                })}
+                            </Select>
+                        </FormControl>
                     </Grid>
-                    <Grid container spacing={2} mt={1}>
-                        <Grid item lg={6}>
-                            <FormControl fullWidth>
-                                <TextField
-                                    name='denorm_out_field'
-                                    required={true}
-                                    label="Input Field (to store the data)"
-                                    variant="outlined"
-                                    onChange={(event) => { handleOnChange(event) }} />
-                            </FormControl>
-                        </Grid>
+                    <Grid item lg={6}>
+                        <FormControl fullWidth required>
+                            <InputLabel
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    top: '0.125rem'
+                                }}
+                            >
+                                Select Master Dataset
+                            </InputLabel>
+                            <Select
+                                label="Select Master Dataset"
+                                sx={{
+                                    backgroundColor: theme.palette.common.white
+                                }}
+                                name='dataset_id'
+                                onChange={(event) => {
+                                    handleOnChange(event)
+                                }}
+                            >
+                                <MenuItem value="">none</MenuItem>
+                                {_.isEmpty(masterDatasets) ? <MenuItem disabled>
+                                    No filters available
+                                </MenuItem> : masterDatasets?.map((menu: any) => {
+                                    return <MenuItem key={menu?.dataset_id} value={menu?.dataset_id}>
+                                        {menu?.dataset_id}
+                                    </MenuItem>
+                                })}
+                            </Select>
+                        </FormControl>
                     </Grid>
-                    <Grid container mt={2} display={"flex"} justifyContent={"flex-end"}>
-                        <Box mx={2}>
-                            {/* <Button onClick={handleClick} sx={{ width: 'auto' }}>
+                </Grid>
+                <Grid container spacing={2} mt={1}>
+                    <Grid item lg={6}>
+                        <FormControl fullWidth>
+                            <TextField
+                                name='denorm_out_field'
+                                required={true}
+                                label="Input Field (to store the data)"
+                                variant="outlined"
+                                onChange={(event) => { handleOnChange(event) }} />
+                        </FormControl>
+                    </Grid>
+                </Grid>
+                <Grid container mt={2} display={"flex"} justifyContent={"flex-end"}>
+                    <Box mx={2}>
+                        {/* <Button onClick={handleClick} sx={{ width: 'auto' }}>
                                 Try Out
                             </Button> */}
-                        </Box>
+                    </Box>
 
-                        <Button
-                            data-objectid="createMasterDataset"
-                            data-objecttype="masterDataset"
-                            onClick={(_) => openCreateMasterDataset()}
-                            variant="outlined"
-                            size="large"
-                            sx={{ width: 'auto', mr: 1 }}
-                        >
-                            Create Master Dataset
-                        </Button>
-                        <Button
-                            variant="contained"
-                            autoFocus
-                            onClick={onHandleClick}
-                            disabled={
-                                _.isEmpty(inputs) ? true : !isValidFrom
-                            }
-                            size="large"
-                            sx={{ width: 'auto' }}
-                        >
-                            Add
-                        </Button>
-                    </Grid>
-                    <Popover
-                        open={open}
-                        anchorEl={anchorEl}
-                        onClose={handleClose}
-                        anchorOrigin={{
-                            vertical: 'top',
-                            horizontal: 'left'
-                        }}
-                        className='jsonata'
-                        PaperProps={{
-                            sx: { height: '100%', width: '100%', overflow: 'hidden' }
-                        }}
+                    <Button
+                        data-objectid="createMasterDataset"
+                        data-objecttype="masterDataset"
+                        onClick={(_) => openCreateMasterDataset()}
+                        variant="outlined"
+                        size="large"
+                        sx={{ width: 'auto', mr: 1 }}
                     >
-                        <JSONataPlayground
-                            sample_data={jsonData}
-                            handleClose={handleClose}
-                            evaluationData={evaluationData}
-                            setEvaluationData={setEvaluationData}
-                            setTransformErrors={setTransformErrors}
-                            transformErrors={transformErrors}
-                            closeTransformations={closeTransformations}
-                        />
-                    </Popover>
-                    {_.isEmpty(data) ? <></> : <Grid item xs={12}>
-                        <BasicReactTable columns={columns} data={data} striped={true} />
-                    </Grid>}
-                </>}
+                        Create Master Dataset
+                    </Button>
+                    <Button
+                        variant="contained"
+                        autoFocus
+                        onClick={onHandleClick}
+                        disabled={
+                            _.isEmpty(inputs) ? true : !isValidFrom
+                        }
+                        size="large"
+                        sx={{ width: 'auto' }}
+                    >
+                        Add
+                    </Button>
+                </Grid>
+                <Popover
+                    open={open}
+                    anchorEl={anchorEl}
+                    onClose={handleClose}
+                    anchorOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left'
+                    }}
+                    className='jsonata'
+                    PaperProps={{
+                        sx: { height: '100%', width: '100%', overflow: 'hidden' }
+                    }}
+                >
+                    <JSONataPlayground
+                        sample_data={jsonData}
+                        handleClose={handleClose}
+                        evaluationData={evaluationData}
+                        setEvaluationData={setEvaluationData}
+                        setTransformErrors={setTransformErrors}
+                        transformErrors={transformErrors}
+                        closeTransformations={closeTransformations}
+                    />
+                </Popover>
+                {_.isEmpty(data) ? <></> : <Grid item xs={12}>
+                    <BasicReactTable columns={columns} data={data} striped={true} />
+                </Grid>}
             </>
         );
     };
 
     return (
-        <Grid container rowSpacing={spacing}>
-            {!_.isEmpty(masterDatasets) ? masterDatasetFound() : masterDatasetNotFound()}
+        <Grid container rowSpacing={spacing} justifyContent="center">
+            {loading ? (
+                <Loader loading={loading} />
+            ) : (
+                !_.isEmpty(masterDatasets) ? masterDatasetFound() : masterDatasetNotFound()
+            )}
         </Grid>
     );
 };
