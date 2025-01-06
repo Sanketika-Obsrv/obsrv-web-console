@@ -210,7 +210,7 @@ const JSONataPlayground = ({
                 </Box>
             </Toolbar>
             <Box display="flex" alignItems="center">
-                <SplitPane split="vertical" minSize={100} defaultSize={'50%'} allowResize={true}>
+                <SplitPane split="vertical" minSize={100} defaultSize={'100%'} allowResize={true}>
                     <SplitPane
                         split="horizontal"
                         minSize={100}
@@ -233,7 +233,7 @@ const JSONataPlayground = ({
                         </Pane>
                     </SplitPane>
                 </SplitPane>
-                <SplitPane split="vertical" minSize={100} defaultSize={'50%'} allowResize={true}>
+                <SplitPane split="vertical" minSize={100} defaultSize={'100%'} allowResize={true}>
                     <SplitPane split="horizontal" minSize={50} defaultSize={350}>
                         <Pane>
                             <Typography variant="h5" px={3} py={1}>
