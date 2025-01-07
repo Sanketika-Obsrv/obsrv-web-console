@@ -424,7 +424,7 @@ const Ingestion = () => {
         if(datasetIdParam === '<new>') {
             if (nameRegex.test(datasetName)) {
                 const generatedId = formatDatasetDetails(datasetName);
-                setDatasetId(generatedId);
+                setDatasetId(_.toLower(generatedId));
             } else {
                 setNameError('The field should exclude any special characters, permitting only alphabets, numbers, ".", "-", and "_".');
             }
