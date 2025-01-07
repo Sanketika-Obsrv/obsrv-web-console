@@ -24,6 +24,7 @@ export const onProxyRes = ({ entity }: any) => (proxyReq: any, req: any, res: Re
 export const onProxyReq = ({ entity }: any) => (proxyReq: any, req: any, res: Response) => {
     const startTime = Date.now();
     req.startTime = startTime;
+
     if (entity !== promEntities.alerts) {
         if(authenticationType === 'keycloak'){
             const keycloakToken = JSON.parse(req?.session['keycloak-token']);
@@ -34,5 +35,6 @@ export const onProxyReq = ({ entity }: any) => (proxyReq: any, req: any, res: Re
             proxyReq.setHeader('Authorization', `Bearer ${jwtToken}`);
         }
     }
+    
     incrementApiCalls({ entity, endpoint: req.url });
 }

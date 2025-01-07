@@ -10,6 +10,7 @@ import { AvatarProps } from '@mui/material';
 import getColors from 'utils/getColors';
 
 import { AvatarTypeProps, ColorProps, ExtendedStyleProps, SizeProps } from 'types/extended';
+import { theme } from 'theme';
 
 
 interface AvatarStyleProps extends ExtendedStyleProps {
@@ -17,8 +18,8 @@ interface AvatarStyleProps extends ExtendedStyleProps {
   type?: AvatarTypeProps;
 }
 
-function getColorStyle({ variant, theme, color, type }: AvatarStyleProps) {
-  const colors = getColors(theme, color);
+function getColorStyle({ variant, color, type }: AvatarStyleProps) {
+  const colors = getColors(color);
   const { lighter, light, main, contrastText } = colors;
 
   switch (type) {
@@ -97,14 +98,13 @@ interface StyleProps {
   color: ColorProps;
   variant?: AvatarProps['variant'];
   type?: AvatarTypeProps;
-  theme: Theme;
   size?: SizeProps;
 }
 
 const AvatarStyle = styled(MuiAvatar, { shouldForwardProp: (prop) => prop !== 'color' && prop !== 'type' && prop !== 'size' })(
-  ({ theme, variant, color, type, size }: StyleProps) => ({
+  ({  variant, color, type, size }: StyleProps) => ({
     ...getSizeStyle(size),
-    ...getColorStyle({ variant, theme, color, type }),
+    ...getColorStyle({ variant, color, type }),
     ...(size === 'badge' && {
       borderColor: theme.palette.background.default
     })
@@ -120,10 +120,9 @@ export interface Props extends AvatarProps {
 }
 
 export default function Avatar({ variant = 'circular', children, color = 'primary', type, size = 'md', ...others }: Props) {
-  const theme = useTheme();
 
   return (
-    <AvatarStyle variant={variant} theme={theme} color={color} type={type} size={size} {...others}>
+    <AvatarStyle variant={variant} color={color} type={type} size={size} {...others}>
       {children}
     </AvatarStyle>
   );

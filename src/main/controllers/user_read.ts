@@ -34,18 +34,7 @@ export default {
             const { user_name } = _.get(request, ['params']);
             const sessionUserDetails = getUserDetails(request);
             const sessionUserName = sessionUserDetails?.sessionUserName;
-            if (user_name !== sessionUserName) {
-                response.status(403).json(
-                    transform({
-                        params: {
-                            err: 'FORBIDDEN',
-                            errmsg: 'Access denied',
-                        },
-                        responseCode: 'FORBIDDEN',
-                    }),
-                );
-            }
-            const user = await userService.find({ user_name });
+            const user = await userService.find({ user_name: sessionUserName });
             const { password, ...userInfo } = user;
             const responseData = {
                 id: 'api.user.read',

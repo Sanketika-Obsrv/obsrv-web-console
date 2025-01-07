@@ -15,5 +15,4 @@ export type SizeProps = 'badge' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 export type ExtendedStyleProps = {
     color: ColorProps;
-    theme: Theme;
 };

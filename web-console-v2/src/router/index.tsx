@@ -1,5 +1,5 @@
-import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 
 // Import pages for different routes
@@ -14,8 +14,7 @@ import SelectConnectorPage from 'pages/DatasetCreation/SelectConnector/SelectCon
 import ManageConnectorsPage from 'pages/ConnectorManagement/Manage/Manage';
 import Dashboard from 'pages/Dashboard/Dashboard';
 import IndividualMetricDashboards from 'pages/Dashboard/IndividualDashboardPage/IndividualDashboardPage';
-import DatasetCreateEvents from 'pages/DatasetListV1/DatasetCreateEvents';
-import DatasetListV1 from 'pages/DatasetListV1/DatasetsList';
+import DatasetCreateEvents from 'pages/DatasetList/DatasetCreateEvents';
 import StepperPage from 'pages/DatasetCreation/StepperPage';
 import AlertRules from 'pages/alertManager/views/AlertRules';
 import SystemAlerts from 'pages/alertManager/views/SystemRules';
@@ -26,16 +25,22 @@ import ListChannels from 'pages/notificationChannels/ListChannels';
 import AddChannel from 'pages/notificationChannels/AddChannel';
 import ViewChannel from 'pages/notificationChannels/ViewChannel';
 import UpdateChannel from 'pages/notificationChannels/UpdateChannel';
-import DatasetManagement from 'pages/DatasetManagement/DatasetManagement';
 import Loadable from 'pages/auth/components/Loadable';
+
+import DatasetManagement from 'pages/DatasetManagement/DatasetManagement';
+import { ConnectorList } from 'pages/ConnectorList/ConnectorList';
+import { Connectors } from 'pages/Connectors/Connector';
+import DatasetList from 'pages/DatasetList/DatasetList';
 import { NotFound } from 'pages/NotFound/NotFound';
+import UserManagement from 'pages/UserManagement/UserManagement';
+import { useUserRead } from 'services/user';
 
 // Type definition for the route configuration
 interface RouteConfig {
-    path: string;
-    element: React.ReactElement;
-    label?: string;
-    children?: RouteConfig[];
+  path: string;
+  element: React.ReactElement<any>;
+  label?: string;
+  children?: RouteConfig[];
 }
 const CustomAlerts = lazy(() => import('pages/alertManager/views/CustomRules'));
 const Login = Loadable(lazy(() => import('pages/auth/Login')));
@@ -75,6 +80,8 @@ export const routeConfigurations: RouteConfig[] = [
             { path: 'system', label: "System", element: <SystemAlerts /> }
         ],
     },
+    { path: `/connectors`, label: "Connectors", element: <ConnectorList /> },
+    { path: `/connectors/create`, label: "New Connector", element: <Connectors /> },
     { path: `/alertRules/add`, label: "Add", element: <AddAlert /> },
     { path: `/alertRules/view/:id`, label: "View", element: <ViewAlert /> },
     { path: `/alertRules/edit/:id`, label: "Edit", element: <EditAlert /> },
@@ -82,32 +89,52 @@ export const routeConfigurations: RouteConfig[] = [
     { path: `/alertChannels/new`, label: "New", element: <AddChannel /> },
     { path: `/alertChannels/edit/:id`, label: "Edit", element: <UpdateChannel /> },
     { path: `/alertChannels/view/:id`, label: "View", element: <ViewChannel /> },
-    { path: `/datasets`, label: "Datasets", element: <DatasetListV1 /> },
+    { path: `/datasets`, label: "Datasets", element: <DatasetList /> },
     { path: `/datasets/metrics/:datasetId`, label: "Metrics", element: <IndividualMetricDashboards id="individualDataset" /> },
     { path: `/datasets/addEvents/:datasetId`, label: "Add Events", element: <DatasetCreateEvents /> },
     { path: `/datasets/view/:datasetId`, label: "View", element: <DatasetManagement /> },
+    { path: `/userManagement`, label: "User Management", element: <UserManagement /> },
     { path: '*', element: <NotFound /> }
-    
 ];
 
-const AppRouter = () => (
-    <Routes>
-        {routeConfigurations.map(({ path, element, children }: RouteConfig) => (
-            <Route
-                key={`${path}-route`}
-                path={path}
-                element={<Suspense fallback={<div>Loading...</div>}>{element}</Suspense>}
-            >
-                {children && children.map(({ path: childPath, element: childElement }: RouteConfig) => (
-                    <Route
-                        key={`${path}-${childPath}`}
-                        path={childPath}
-                        element={<Suspense fallback={<div>Loading...</div>}>{childElement}</Suspense>}
-                    />
-                ))}
-            </Route>
-        ))}
-    </Routes>
-);
+const AppRouter = () => {
+    const location = useLocation();
+    const { data: currentUser } = useUserRead();
+    const isAdminOrOwner = currentUser && (
+      currentUser?.roles.includes('admin') || currentUser?.is_owner
+    );
+
+    const filteredRoutes = routeConfigurations.filter(route => {
+      if (route.path === '/userManagement' && !isAdminOrOwner) {
+        return false;
+      }
+      return true;
+    });
+
+    useEffect(() => {
+        if (!location.pathname.includes('/dataset/edit')) {
+            localStorage.removeItem('selectedConnectorId');
+        }
+    }, [location.pathname]);
+    return (
+        <Routes>
+            {filteredRoutes.map(({ path, element, children }: RouteConfig) => (
+                <Route
+                    key={`${path}-route`}
+                    path={path}
+                    element={<Suspense fallback={<>Loading...</>}>{element}</Suspense>}
+                >
+                    {children && children.map(({ path: childPath, element: childElement }: RouteConfig) => (
+                        <Route
+                            key={`${path}-${childPath}`}
+                            path={childPath}
+                            element={<Suspense fallback={<>Loading...</>}>{childElement}</Suspense>}
+                        />
+                    ))}
+                </Route>
+            ))}
+        </Routes>
+    );
+};
 
 export default AppRouter;

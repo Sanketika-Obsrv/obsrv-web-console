@@ -12,13 +12,14 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import { useTheme } from '@mui/material/styles';
 import Tooltip from '@mui/material/Tooltip';
 import { useAlert } from 'contexts/AlertContextProvider';
-import apiEndpoints from 'constants/Endpoints';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { http } from 'services/http';
 import styles from './Sidebar.module.css';
 import SidebarElements from './SidebarElements';
+import { ChatBubbleOutlineOutlined } from '@mui/icons-material';
+import { getSystemSetting } from 'services/configData';
 
 interface Props {
     onExpandToggle: () => void;
@@ -38,44 +39,53 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
     const [openParent, setOpenParent] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<string | null>(null);
     const [selectedChildItem, setSelectedChildItem] = useState<string | null>(null);
+    const [isNLQEnabled, setIsNLQEnabled] = useState(false);
 
     useEffect(() => {
         const pathSegments = location.pathname.split('/').filter(Boolean);
         const mainRoute = `/${pathSegments[0]}`;
         const subRoute = location.pathname;
 
-        if(subRoute === '/dashboard') {
+        if (subRoute === '/dashboard') {
             setSelectedItem(mainRoute);
             setOpenParent(mainRoute);
             setSelectedChildItem(null);
             return
         }
-        if(subRoute.startsWith('/dashboard')) {
+        if (subRoute.startsWith('/dashboard')) {
             setSelectedItem(mainRoute);
             setOpenParent(mainRoute);
             setSelectedChildItem(subRoute);
             return
-        } 
+        }
 
-        if(subRoute == '/dataset/create' || subRoute.startsWith('/dataset/edit')) {
+        if (subRoute == '/dataset/create' || subRoute.startsWith('/dataset/edit')) {
             setSelectedItem('/dataset/create');
             setOpenParent(null);
             setSelectedChildItem(null);
             return
         }
 
-        if(subRoute === '/datasets') {
+        if (subRoute === '/datasets') {
             setSelectedItem(mainRoute);
             setOpenParent(null);
             setSelectedChildItem(null);
             return
         }
 
-        if(subRoute === '/alertChannels' || subRoute.startsWith('/alertChannels')) {
+        if (subRoute === '/alertChannels' || subRoute.startsWith('/alertChannels')) {
             setSelectedItem(mainRoute);
             setOpenParent(null);
             setSelectedChildItem(null);
             return
+        }
+
+        if(subRoute === '/connectors' || subRoute.startsWith('/connectors'))
+        {
+            setSelectedItem(mainRoute);
+            setOpenParent(null);
+            setSelectedChildItem(null);
+            return;
         }
         if (pathSegments[0] === 'dataset') {
             setSelectedItem(mainRoute);
@@ -86,7 +96,7 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                 navigate(subRoute);
             }
             return
-        } 
+        }
 
         if (pathSegments[0] === 'alertRules') {
             setSelectedItem(mainRoute);
@@ -97,7 +107,13 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                 navigate(subRoute);
             }
             return
-        } 
+        }
+        if (subRoute === '/userManagement' || subRoute.startsWith('/userManagement')) {
+            setSelectedItem(mainRoute);
+            setOpenParent(null);
+            setSelectedChildItem(null);
+            return;
+        }
     }, [location.pathname, navigate]);
 
     const redirectToConsole = () => {
@@ -139,6 +155,16 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
             showAlert('Failed to logout', 'error');
         }
     };
+    const handleAIQuery = () => {
+        const { URL } = getSystemSetting("OBSRV_NLQ_CONFIG")
+        window.open(URL, "_blank")
+    }
+
+    useEffect(() => {
+        const OBSRV_NLQ_CONFIG = getSystemSetting("OBSRV_NLQ_CONFIG")
+        const  IS_ENABLED = OBSRV_NLQ_CONFIG?.IS_ENABLED
+        setIsNLQEnabled(IS_ENABLED === "true" ? true : false)
+    }, [])
 
 
     const DrawerList = (
@@ -283,6 +309,22 @@ const Sidebar: React.FC<Props> = ({ onExpandToggle, expand }) => {
                             </div>
                         );
                     })}
+                    {isNLQEnabled && <Tooltip title={'AI Query (Experimental)'} placement="right">
+                        <ListItemButton onClick={handleAIQuery}>
+                            <Icon>
+                                <ChatBubbleOutlineOutlined />
+                            </Icon>
+                            {expand && (
+                                <Typography
+                                    className={styles.bottomIcons}
+                                    variant="body1"
+                                    color={theme.palette.text.primary}
+                                >
+                                    AI Query (Experimental)
+                                </Typography>
+                            )}
+                        </ListItemButton>
+                    </Tooltip>}
                 </List>
 
                 <List sx={{ marginTop: 'auto' }}>

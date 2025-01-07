@@ -1,6 +1,5 @@
 /* eslint-disable */
 import react, { useEffect, useState } from "react";
-// import { fetchDatasets } from "services/dataset";
 import ApexWithFilters from "./ChartFilters";
 import * as _ from 'lodash';
 import filters from 'data/chartFilters';
@@ -9,7 +8,7 @@ import ApexChart from "./apex";
 import { Grid } from "@mui/material";
 import { v4 } from "uuid";
 import Loader from "components/Loader";
-import { DatasetStatus, DatasetType } from "types/datasets";
+import { DatasetType } from "types/datasets";
 
 const IngestionCharts = (props: any) => {
     const { chartName, title, size = { xs: 12, sm: 6, lg: 6, md: 6 }, master = false } = props;

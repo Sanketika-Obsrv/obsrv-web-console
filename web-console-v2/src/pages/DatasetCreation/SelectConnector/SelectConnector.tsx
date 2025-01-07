@@ -9,11 +9,12 @@ import InputBase from '@mui/material/InputBase';
 import IconButton from '@mui/material/IconButton';
 import { Box, Button, Grid, Typography } from '@mui/material';
 import ConnectorCard from 'components/ConnectorCard/ConnectorCard';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useConnectorsList } from 'services/dataset';
 import _ from 'lodash';
 import Loader from 'components/Loader';
 import { t } from 'utils/i18n';
+import { DatasetType } from 'types/datasets';
 
 interface ConnectorType {
     id: string;
@@ -36,6 +37,9 @@ const SelectConnector = () => {
     const [isSelected, setIsSelected] = useState<boolean>(false);
     const [filterOptions, setFilterOptions] = useState<FilterType[]>([]);
     const { datasetId }: any = useParams();
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const datasetType = searchParams.get('datasetType');
 
     const navigate = useNavigate();
 
@@ -98,14 +102,20 @@ const SelectConnector = () => {
 
         if (selectedCardData) {
             const { id: selectedConnectorId } = selectedCardData;
+            const url = `/dataset/edit/connector/configure/${datasetId}`;
+            const queryParams = datasetType === DatasetType.MasterDataset ? '?datasetType=master' : '';
 
-            navigate(`/dataset/edit/connector/configure/${datasetId}`, {
+            navigate(`${url}${queryParams}`, {
                 state: { selectedConnectorId }
             });
         }
     };
+
     const handleSkipClick = () => {
-        navigate(`/dataset/edit/ingestion/meta/${datasetId}?step=connector&skipped=true`);
+        const url = `/dataset/edit/ingestion/meta/${datasetId}`;
+        const queryParams = `?step=connector&skipped=true${datasetType === DatasetType.MasterDataset ? '&datasetType=master' : ''}`;
+        
+        navigate(`${url}${queryParams}`);
     };
 
     const handleCardClick = (id: string) => {

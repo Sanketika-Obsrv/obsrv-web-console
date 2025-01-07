@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useState } from 'react';
 import Action from 'components/ActionButtons/Actions';
 import { Box, Button } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import HelpSection from 'components/HelpSection/HelpSection';
 import styles from 'pages/DatasetCreation/ConnectorConfiguration/ConnectorConfiguration.module.css';
 import processingStyle from './Processing.module.css';
-import _, { mapKeys } from 'lodash';
+import _ from 'lodash';
 import AccordionSection from 'components/Accordian/AccordionSection';
 import { theme } from 'theme';
 import ProcessingSection from './ProcessingSection/ProcessingSection';
@@ -31,6 +31,29 @@ export const extractTransformationOptions = (schema: any, path: string[] = []): 
 
             if (!schema.properties[key].properties) {
                 options.push(currentPath);
+            }
+
+            if (schema.properties[key].properties) {
+                options.push(
+                    ...extractTransformationOptions(schema.properties[key], [...path, key])
+                );
+            }
+        }
+    }
+
+    return options;
+};
+
+export const extractTransformationOptionsWithType = (schema: any, path: string[] = []): string[] => {
+    const options: any[] = [];
+
+    if (schema?.properties) {
+        for (const key in schema.properties) {
+            const currentPath = [...path, key].join('.');
+            
+            if (!schema.properties[key].properties) {
+                const dataType =  _.get(schema, `properties[${key}][data_type]`)
+                options.push({field: currentPath, data_type: dataType});
             }
 
             if (schema.properties[key].properties) {
@@ -186,11 +209,16 @@ const Processing: React.FC = () => {
 
     const transformationOptions = extractTransformationOptions(datasetData?.data_schema || {});
 
-    const excludedKeywords = ['date', 'timestamp', 'datetime'];
+    const transformationOptionsWithType = extractTransformationOptionsWithType(datasetData?.data_schema || {}); 
 
-    const dedupeOptions = transformationOptions.filter(
-        (option) => !excludedKeywords.some((keyword) => option.toLowerCase().includes(keyword))
-    );
+    const excludedKeywords = ['date', 'timestamp', 'datetime', 'epoch'];
+
+    const dedupeOptions = _.compact(transformationOptionsWithType.map((option: any) =>{
+        if (!excludedKeywords.includes(option.data_type)) {
+            return option.field
+        }
+    }  
+    ));
 
     const jsonData = _.get(datasetData, ['sample_data']) || {};
     const [canProceed, setCanProceed] = useState(true);
@@ -220,7 +248,7 @@ const Processing: React.FC = () => {
         }
     }, []);
 
-    const handleDelete = (fieldKey: string, data: any) => {
+    const handleDelete = useCallback((fieldKey: string, data: any) => {
         let newData = {
             transformations_config: [
                 {
@@ -234,7 +262,7 @@ const Processing: React.FC = () => {
         if (!fieldKey && _.has(data, 'denorm_config')) newData = data;
 
         updateDataset({ data: newData });
-    };
+    }, []);
 
     const handleButtonClick = () => {
         navigate(`/dataset/edit/storage/${datasetId}`);

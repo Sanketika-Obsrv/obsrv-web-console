@@ -1,0 +1,50 @@
+.menu {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.menuItem {
+    box-shadow: none !important;
+}
+
+.menuIcons {
+    padding-right: 1rem;
+}
+
+.cardContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #d6d6d6;
+    border-radius: 6px;
+    background: #ffffff;
+}
+
+.gridItem {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    margin-top: 4px !important;
+    border-right: 1px solid #DDDCDC !important;
+    padding-right: 0.5rem !important;
+    padding-left: 0.5rem !important;
+}
+
+.gridItemNoBorder {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    margin-top: 4px !important;
+    padding-right: 0.5rem !important;
+    padding-left: 0.5rem !important;
+}
+
+.cardContainerCurrentUser {
+    background-color: #e8f5e9;
+}
+
+.cardContainerInactive {
+    background-color: #ebebeb;
+}

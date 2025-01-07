@@ -28,7 +28,7 @@ const LabelComponent = (props: any) => {
     const onSubmission = (value: any) => {
 
     };
-    const formikRef = useRef<any>();
+    const formikRef = useRef<any>(undefined);
     const [labels, setLabels] = useState<any[]>(transformLabels(existingState?.labels || {}));
     const [formErrors, setFormErrors] = useState<boolean>(true);
 

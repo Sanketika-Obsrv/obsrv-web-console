@@ -23,6 +23,7 @@
   --assessment-icon: #B8EAE6;
   --assessment-icon-2: #FAC280;
   --dashboard-card-box-shadow: 0.6rem 0.6rem 5.15rem 0rem rgba(0, 0, 0, 0.05);
+  --sample-filter-border: #e2e2e2;
 }
 
 :root {

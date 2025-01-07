@@ -11,6 +11,8 @@ export default {
             "AUTHENTICATION_ALLOWED_TYPES": appConfig.AUTHENTICATION_ALLOWED_TYPES,
             "ENV": appConfig.ENV,
             "BASE_URL": appConfig.BASE_URL,
+            "OBSRV_NLQ_CONFIG": appConfig.OBSRV_NLQ_CONFIG,
+            "STORAGE_TYPES": appConfig.STORAGE_TYPES,
             "validationLimit": {
                 "datasetMaxLen": 100,
                 "datasetMinLen": 4,
@@ -20,12 +22,12 @@ export default {
                 "brokerServerLen": 500,
                 "fieldDescriptionMaxLen": 200,
                 "maxTag": 5,
-                "alertRuleNameMaxLen":100,
-                "alertRuleLabelsMaxLen":100,
-                "notificationChannelNameMaxLen":100,
-                "transformationFieldMaxLen":100,
-                "denormInputFieldMaxLen":100,
-                "alertsPerPage":10
+                "alertRuleNameMaxLen": 100,
+                "alertRuleLabelsMaxLen": 100,
+                "notificationChannelNameMaxLen": 100,
+                "transformationFieldMaxLen": 100,
+                "denormInputFieldMaxLen": 100,
+                "alertsPerPage": 10
             },
             "AUTHENTICATION_TYPE": appConfig.AUTHENTICATION_TYPE
         })

@@ -10,6 +10,7 @@ import {
   totalVsRunningNodes,
   toB,
   toPercentage,
+  totalMemoryUsage,
 } from '../../services/transformers';
 export const getInfraMetaData = (refresh: any) => {
   return [
@@ -82,6 +83,11 @@ export const getInfraMetaData = (refresh: any) => {
                 _.get(chartMeta, 'memory_percentage.query'),
                 _.get(chartMeta, 'total_running_nodes_count.query'),
               ]}
+              totalMemory={[
+                  _.get(chartMeta, 'total_memory.query'),
+                  _.get(chartMeta, 'total_used_memory.query')
+                ]}
+              memoryTransformer={totalMemoryUsage}
               transformer={percentageUsage}
               refresh={refresh}
             />
@@ -109,6 +115,11 @@ export const getInfraMetaData = (refresh: any) => {
                 _.get(chartMeta, 'pv_usage_percent.query'),
                 _.get(chartMeta, 'total_running_nodes_count.query'),
               ]}
+              totalDisk={[
+                _.get(chartMeta, 'total_memory.query'),
+                _.get(chartMeta, 'total_used_memory.query')
+              ]}
+              diskTransformer={totalMemoryUsage}
               transformer={percentageUsage}
               refresh={refresh?.infrastructure}
             />

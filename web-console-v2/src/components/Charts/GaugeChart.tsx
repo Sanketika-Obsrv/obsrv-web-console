@@ -97,7 +97,7 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
             top: caption ? '' : '-1rem',
           }}
         >
-           {isHeaderData ? `${usage}%` : value}
+           {/* {isHeaderData ? `${usage}%` : value} */}
         </Typography>
       </Box>
 
@@ -108,15 +108,15 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
         sx={{
           textAlign: 'center',
           [`& .${gaugeClasses.valueText}`]: {
-            fontSize: 40,
-            transform: 'translate(0px, 0px)',
+            fontSize: 30,
+            transform: 'translate(0px, -19px)',
             zIndex: 3,
           },
           [`& .${gaugeClasses.valueArc}`]: {
             fill: '#64B656',
           },
         }}
-        text={() => ''}
+        text={({value}) => `${value}%`}
       />
 
       {nodesRunning && caption && (

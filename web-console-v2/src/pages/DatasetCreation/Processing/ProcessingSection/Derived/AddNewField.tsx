@@ -44,7 +44,7 @@ interface ConfigureConnectorFormProps {
 const AddNewField = (props: any) => {
     const { data, handleAddOrEdit, onClose, edit = false, jsonData, filteredTransformation } = props;
     const [stateId, setStateId] = useState<string>(uuidv4())
-    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | HTMLElement | null>(null);
     const [evaluationData, setEvaluationData] = useState<string>('');
     const [transformErrors, setTransformErrors] = useState<boolean>(false);
     const [transformationError, setTransformationError] = useState<string | null>(null);
@@ -75,7 +75,7 @@ const AddNewField = (props: any) => {
         }
     }, [data]);
 
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleSelect = (event: React.SyntheticEvent<HTMLDivElement>) => {
         setEvaluationData(transformationType)
         setAnchorEl(event.currentTarget);
     };
@@ -244,6 +244,7 @@ const AddNewField = (props: any) => {
                                 variant="outlined"
                                 fullWidth
                                 value={formData.section.transformationType}
+                                onSelect={handleSelect}
                                 onChange={handleInputChange}
                                 error={Boolean(!_.isEmpty(transformationTypeError))}
                                 helperText={
@@ -269,11 +270,6 @@ const AddNewField = (props: any) => {
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 4 }}>
-                    <Box mx={2}>
-                        <Button onClick={handleClick} sx={{ width: 'auto' }}>
-                            Try Out
-                        </Button>
-                    </Box>
                     <Button
                         variant="contained"
                         autoFocus

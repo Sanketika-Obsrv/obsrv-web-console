@@ -337,9 +337,9 @@ export const theme = createTheme({
                     h2Secondary: 'h2',
                     h2Tertiary: 'h2',
                     bodySecondary: 'body1',
-                    bodyBold: 'body1',
+                    bodyBold: 'div',
                     caption: 'caption',
-                    captionMedium: 'captionMedium',
+                    captionMedium: 'p',
                     textCTAPrimary: 'body1',
                     textCTASecondary: 'body2',
                     h5: 'h5'

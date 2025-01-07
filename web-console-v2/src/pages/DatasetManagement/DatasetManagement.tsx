@@ -6,10 +6,10 @@ import { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { DatasetStatus } from "types/datasets";
 import Loader from "components/Loader";
-import ReviewAllCongurations from "pages/datasetView";
+import ReviewAllCongurations from "pages/DatasetView";
 import { useAlert } from "contexts/AlertContextProvider";
 import { getDatasetState } from "services/datasetV1";
-import { margin } from "@mui/system";
+import { NotFound } from "pages/NotFound/NotFound";
 
 const DatasetManagement = () => {
     const { datasetId } = useParams();
@@ -24,8 +24,10 @@ const DatasetManagement = () => {
     const fetchDatasetDetails = async () => {
         setLoading(true)
         try {
-            const datasetState: Record<string, any> = await getDatasetState(datasetId!, datasetStatus);
-            setDataset(datasetState);
+            if (datasetStatus === DatasetStatus.Live) {
+                const datasetState: Record<string, any> = await getDatasetState(datasetId!, datasetStatus);
+                setDataset(datasetState);
+            }
         } catch (err) {
             showAlert("Dataset does not exists", "error")
         } finally {
@@ -48,7 +50,7 @@ const DatasetManagement = () => {
         {
             id: 'rollups',
             title: 'Rollup Datasources',
-            component: <></>,
+            component: <NotFound />,
             componentType: 'box'
         }
     ]
@@ -64,7 +66,7 @@ const DatasetManagement = () => {
     }
 
     return <>
-        {loading ? <Loader loading={loading} /> : <Box sx={{padding: '2rem'}}><AccordionSection sections={datasetSection()} /></Box>}
+        {loading ? <Loader loading={loading} /> : <Box sx={{ padding: '2rem' }}><AccordionSection sections={datasetSection()} /></Box>}
     </>
 }
 

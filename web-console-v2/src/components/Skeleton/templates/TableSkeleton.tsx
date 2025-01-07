@@ -1,6 +1,8 @@
 /* eslint-disable */
 import { Box, Skeleton } from "@mui/material"
 
+import type { JSX } from "react";
+
 const TableSkeleton = (props: any) => {
     const { config = {} } = props;
     const { totallines = 6, animation = "wave", variant = "rectangular", height = 60 } = config;

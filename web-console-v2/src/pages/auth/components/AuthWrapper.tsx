@@ -1,9 +1,14 @@
-/* eslint-disable */
-import PropTypes from 'prop-types';
+import React from 'react';
 import { Box, Grid } from '@mui/material';
 import AuthCard from './AuthCard';
 
-const AuthWrapper = ({ children }: any) => (
+interface AuthWrapperProps {
+    children?: React.ReactNode;
+}
+
+const AuthWrapper = ({
+    children
+}: AuthWrapperProps) => (
     <Box sx={{ minHeight: '100vh' }}>
         <Grid container direction="column" justifyContent="center" sx={{ minHeight: '100vh' }}>
             <Grid item xs={12}>
@@ -16,9 +21,5 @@ const AuthWrapper = ({ children }: any) => (
         </Grid>
     </Box>
 );
-
-AuthWrapper.propTypes = {
-    children: PropTypes.node
-};
 
 export default AuthWrapper;

@@ -1,14 +1,23 @@
 import React from 'react';
 import styles from './NewDataset.module.css';
 import { Grid, Typography, Box, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { t } from 'utils/i18n';
 import datasetImg from 'assets/images/DatasetLaunch.svg';
+import { DatasetType } from 'types/datasets';
 
 const NewDataset: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const datasetType = searchParams.get('datasetType');
+
     const handleClick = () => {
-        navigate('/dataset/edit/connector/list/<new>');
+        if (datasetType === DatasetType.MasterDataset) {
+            navigate('/dataset/edit/connector/list/<new>?datasetType=master');
+        } else {
+            navigate('/dataset/edit/connector/list/<new>');
+        }
     };
     return (
         <div className={styles.main}>

@@ -35,7 +35,7 @@ const AlertInfo = (props: any) => {
     const validationConfigs = { alertRuleNameMaxLen: 100 }
     const [value, subscribe] = useState<any>(transformExistingState(existingState));
     const onSubmission = (value: any) => { };
-    const formikRef = useRef<any>();
+    const formikRef = useRef<any>(undefined);
 
     const fields = useMemo(() => [
         {
