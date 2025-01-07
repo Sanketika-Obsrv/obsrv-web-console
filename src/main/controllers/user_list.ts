@@ -9,7 +9,13 @@ export default {
         try {
             const user = _.get(request, ['body', 'request']);
             const result = await userService.findAll(user);
-            const responseData = { data: result, count: _.size(result) };
+
+            const usersList = result.map((user: any) => {
+                const { password, provider, mobile_number, ...sanitizedUser } = user;
+                return sanitizedUser;
+            });
+
+            const responseData = { data: usersList, count: _.size(usersList) };
             response.status(200).json(transform({ id: request.body.id, result: responseData }));
         } catch (error) {
             if (error === 'user_not_found') {
