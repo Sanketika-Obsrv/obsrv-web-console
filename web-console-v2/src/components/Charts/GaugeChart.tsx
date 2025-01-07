@@ -111,6 +111,8 @@ const GaugeChart: React.FC<GaugeChartProps> = (props) => {
             fontSize: 30,
             transform: 'translate(0px, -19px)',
             zIndex: 3,
+            fontFamily: 'Montserrat',
+            fontWeight: 700,
           },
           [`& .${gaugeClasses.valueArc}`]: {
             fill: '#64B656',
