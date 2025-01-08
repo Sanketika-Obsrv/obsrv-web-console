@@ -58,7 +58,7 @@ const Ingestion = () => {
     const datasetTypeSearchParam = searchParams.get('datasetType');
     const { connectorConfig, datasetType: datasetTypeParam, selectedConnectorId } = location.state || {};
     const { datasetId: datasetIdParam }: any = useParams();
-    const [datasetType, setDatasetType] = useState(datasetTypeParam || datasetTypeSearchParam === 'master' ? DatasetType.MasterDataset : 'event');
+    const [datasetType, setDatasetType] = useState((datasetTypeParam || datasetTypeSearchParam) === 'master' ? DatasetType.MasterDataset : datasetTypeParam);
 
     useEffect(() => {
         if (datasetTypeSearchParam === DatasetType.MasterDataset) {
