@@ -87,16 +87,13 @@ const AddTransformationExpression = (props: any) => {
     };
 
     const handleClose = () => {
-        if (!transformationTypeError) {
-            setFormData((prevState: any) => ({
-                ...prevState,
-                section: {
-                    ...prevState.section,
-                    transformationType: evaluationData
-                }
-            }));
-        }
-
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                transformationType: evaluationData
+            }
+        }));
         setAnchorEl(null);
     };
 
@@ -105,7 +102,7 @@ const AddTransformationExpression = (props: any) => {
             ...prevState,
             section: {
                 ...prevState.section,
-                transformationType: ''
+                transformationType: _.get(data, "transformation") || ""
             }
         }));
         setAnchorEl(null);
@@ -251,7 +248,7 @@ const AddTransformationExpression = (props: any) => {
                                 onChange={handleInputChange}
                                 error={Boolean(!_.isEmpty(transformationTypeError))}
                                 helperText={
-                                    transformationTypeError || `Ex: $sum(Product.(Price * Quantity)) FirstName & " " & Surname` 
+                                    transformationTypeError || `Ex: $sum(Product.(Price * Quantity)) FirstName & " " & Surname`
                                 }
                             />
                         </Grid>

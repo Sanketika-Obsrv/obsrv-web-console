@@ -81,16 +81,13 @@ const AddNewField = (props: any) => {
     };
 
     const handleClose = () => {
-        if (!transformationTypeError) {
-            setFormData((prevState: any) => ({
-                ...prevState,
-                section: {
-                    ...prevState.section,
-                    transformationType: evaluationData
-                }
-            }));
-        }
-
+        setFormData((prevState: any) => ({
+            ...prevState,
+            section: {
+                ...prevState.section,
+                transformationType: evaluationData
+            }
+        }));
         setAnchorEl(null);
     };
 
@@ -99,7 +96,7 @@ const AddNewField = (props: any) => {
             ...prevState,
             section: {
                 ...prevState.section,
-                transformationType: ''
+                transformationType: _.get(data, "transformation") || ""
             }
         }));
         setAnchorEl(null);
@@ -169,7 +166,7 @@ const AddNewField = (props: any) => {
 
     useEffect(() => {
         handleErrors()
-        if(_.isEmpty(transformationType)){
+        if (_.isEmpty(transformationType)) {
             setTransformationTypeError(null)
         }
     }, [transformationType])
@@ -248,7 +245,7 @@ const AddNewField = (props: any) => {
                                 onChange={handleInputChange}
                                 error={Boolean(!_.isEmpty(transformationTypeError))}
                                 helperText={
-                                    transformationTypeError || `Ex: $sum(Product.(Price * Quantity)) FirstName & " " & Surname` 
+                                    transformationTypeError || `Ex: $sum(Product.(Price * Quantity)) FirstName & " " & Surname`
                                 }
                             />
                         </Grid>

@@ -68,7 +68,7 @@ const Ingestion = () => {
 
     const [datasetName, setDatasetName] = useState('');
     const [connectorConfigState, setConnectorConfigState] = useState<any>(undefined);
-    const [datasetId, setDatasetId] = useState(datasetIdParam === '<new>'? null : datasetIdParam);
+    const [datasetId, setDatasetId] = useState(datasetIdParam === '<new>' ? null : datasetIdParam);
     const [nameError, setNameError] = useState('');
 
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
@@ -116,7 +116,7 @@ const Ingestion = () => {
         isPending: isGenerateLoading
     } = useGenerateJsonSchema();
 
-    let readDatasetQueryParams = 'status=Draft&fields=dataset_config,name,version_key,connectors_config';
+    let readDatasetQueryParams = 'status=Draft&fields=dataset_config,name,version_key,connectors_config,type';
     if(datasetIdParam !== '<new>') readDatasetQueryParams += '&mode=edit'
     const { data: fetchData, refetch } = useFetchDatasetsById({
         datasetId: datasetId,
@@ -166,7 +166,8 @@ const Ingestion = () => {
         }
         if (datasetId !== '' && fetchData) {
             setDatasetName(_.get(fetchData, 'name'));
-            if(fetchData.connectors_config && fetchData.connectors_config[0]) {
+            setDatasetType(_.get(fetchData, "type") || "event")
+            if (fetchData.connectors_config && fetchData.connectors_config[0]) {
                 setConnectorConfigState(fetchData.connectors_config[0])
             }
             const filePathList = fetchData.dataset_config?.file_upload_path;
