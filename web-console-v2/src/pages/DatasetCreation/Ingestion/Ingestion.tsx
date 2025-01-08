@@ -58,7 +58,7 @@ const Ingestion = () => {
     const datasetTypeSearchParam = searchParams.get('datasetType');
     const { connectorConfig, datasetType: datasetTypeParam, selectedConnectorId } = location.state || {};
     const { datasetId: datasetIdParam }: any = useParams();
-    const [datasetType, setDatasetType] = useState((datasetTypeParam || datasetTypeSearchParam) === 'master' ? DatasetType.MasterDataset : datasetTypeParam);
+    const [datasetType, setDatasetType] = useState(datasetTypeParam || datasetTypeSearchParam === 'master' ? DatasetType.MasterDataset : 'event');
 
     useEffect(() => {
         if (datasetTypeSearchParam === DatasetType.MasterDataset) {
@@ -68,7 +68,7 @@ const Ingestion = () => {
 
     const [datasetName, setDatasetName] = useState('');
     const [connectorConfigState, setConnectorConfigState] = useState<any>(undefined);
-    const [datasetId, setDatasetId] = useState(datasetIdParam === '<new>'? null : datasetIdParam);
+    const [datasetId, setDatasetId] = useState(datasetIdParam === '<new>' ? null : datasetIdParam);
     const [nameError, setNameError] = useState('');
 
     const [isHelpSectionOpen, setIsHelpSectionOpen] = useState(true);
@@ -166,7 +166,8 @@ const Ingestion = () => {
         }
         if (datasetId !== '' && fetchData) {
             setDatasetName(_.get(fetchData, 'name'));
-            if(fetchData.connectors_config && fetchData.connectors_config[0]) {
+            setDatasetType(_.get(fetchData, "type") || "event")
+            if (fetchData.connectors_config && fetchData.connectors_config[0]) {
                 setConnectorConfigState(fetchData.connectors_config[0])
             }
             const filePathList = fetchData.dataset_config?.file_upload_path;
