@@ -211,7 +211,7 @@ const Processing: React.FC = () => {
 
     const transformationOptionsWithType = extractTransformationOptionsWithType(datasetData?.data_schema || {}); 
 
-    const excludedKeywords = ['date', 'timestamp', 'datetime', 'epoch'];
+    const excludedKeywords = ['date', 'timestamp', 'date-time', 'epoch'];
 
     const dedupeOptions = _.compact(transformationOptionsWithType.map((option: any) =>{
         if (!excludedKeywords.includes(option.data_type)) {
