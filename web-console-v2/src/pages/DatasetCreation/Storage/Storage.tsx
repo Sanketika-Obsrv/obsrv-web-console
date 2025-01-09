@@ -64,7 +64,7 @@ const Storage = () => {
     const datasetConfig = _.get(fetchData, 'dataset_config', {});
     const datasetConfig_indexing = _.get(fetchData, 'dataset_config.indexing_config', {});
     const datasetConfig_keys = _.get(fetchData, 'dataset_config.keys_config', {});
-    const timeStampTypes = ['date', 'timestamp', 'datetime', 'epoch'];
+    const timeStampTypes = ['date', 'timestamp', 'date-time', 'epoch'];
 
     useEffect(() => {
         if(fetchDatasetType) {
