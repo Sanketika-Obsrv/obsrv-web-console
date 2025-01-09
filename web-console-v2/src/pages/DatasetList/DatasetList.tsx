@@ -339,6 +339,7 @@ const DatasetList: React.FC = () => {
     setEditTagsAnchorEl(null);
     setSelectedDataset(null);
   };
+
   const handleEditTagsSave = async (
     dataset: Dataset,
     tags: string[],
@@ -367,13 +368,25 @@ const DatasetList: React.FC = () => {
       };
 
       await updateDataset({ data: payload });
+  
+      const updatedDatasets = datasets.map((ds) =>
+        ds.dataset_id === dataset.dataset_id ? { ...ds, tags } : ds
+      );
+      setDatasets(updatedDatasets);
+  
+      const allTags = Array.from(
+        new Set(updatedDatasets.flatMap((dataset) => dataset.tags || []))
+      );
+  
+      const updatedFilters = {
+        ...filters,
+        tag: _.union(defaultFilters.tag, allTags),
+      };
+      setFilters(updatedFilters);
+  
       setLoading(false);
       showAlertMessage(dataset.name, 'success', 'Edit Tags');
-      setDatasets((prevDatasets) =>
-        prevDatasets.map((ds) =>
-          ds.dataset_id === dataset.dataset_id ? { ...ds, tags } : ds,
-        ),
-      );
+      handleCloseEditTagsPopover();
     } catch (error) {
       showAlertMessage(dataset.name, 'error', 'Edit Tags');
       setLoading(false);

@@ -212,7 +212,7 @@ const DatasetlistCard: React.FC<DatasetlistCardProps> = ({
                                     Volume
                                 </Typography>
                                 <Typography variant="caption">
-                                    0
+                                    {eventCounts.totalEvents}
                                 </Typography>
                             </Grid>
                             <Grid item xs={1} className={styles.gridItemNoBorder}>
@@ -220,7 +220,7 @@ const DatasetlistCard: React.FC<DatasetlistCardProps> = ({
                                     Size
                                 </Typography>
                                 <Typography variant="caption">
-                                    0
+                                    {prettyBytes(datasetSize)}
                                 </Typography>
                             </Grid>
                         </>
