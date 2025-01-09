@@ -519,7 +519,7 @@ export const filterDatasets = (
 export const useTotalEvents = (datasetId: string, isMasterDataset: boolean) => {
     const dateFormat = 'YYYY-MM-DDT00:00:00+05:30';
     const startDate = '2000-01-01';
-    const endDate = dayjs().add(1, 'day').format(dateFormat);
+    const endDate = dayjs().format(dateFormat);
   
     return useQueryWithLocalStorageFallback(
       ['totalEvents', datasetId],
