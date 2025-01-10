@@ -160,7 +160,7 @@ const DatasetlistCard: React.FC<DatasetlistCardProps> = ({
                                     {label}
                                 </Typography>
                                 {key === 'status' ? (
-                                    <Typography variant="caption">
+                                    <Typography variant="caption" sx={{ textAlign: 'start' }}>
                                         {getStatusLabel(String(dataset[key as keyof Dataset]))}
                                     </Typography>
                                 ) : (
