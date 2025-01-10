@@ -10,6 +10,7 @@ import AddUser from './AddUser';
 import ChangeRoleDialog from './ChangeRoleDialog';
 import AlertDialog from 'components/AlertDialog/AlertDialog';
 import { useAlert } from 'contexts/AlertContextProvider';
+import _ from 'lodash';
 
 export interface User {
     id: string;
@@ -94,28 +95,28 @@ const UserManagement = () => {
         setOpenDialog(false);
     };
 
-    const handleAddUser = (newUser: UserRequest) => {
-        try {
+    const handleAddUser = (newUser: UserRequest): Promise<void> => {
+        return new Promise<void>((resolve, reject) => {
             setLoading(true);
+            const filteredPayload = _.pickBy(newUser, _.identity);
             createUser(
-                { payload: newUser },
+                { payload: filteredPayload },
                 {
                     onSuccess: () => {
                         refetch();
                         setOpenDialog(false);
                         setLoading(false);
                         showAlert('User created successfully', 'success');
+                        resolve();
                     },
                     onError: (error) => {
                         setLoading(false);
                         showAlert('Failed to create user', 'error');
+                        reject(error);
                     },
                 }
             );
-        }
-        catch (error) {
-            showAlert('Failed to create user', 'error');
-        }
+        });
     };
 
     const handleDeactivateUser = (userName: string) => {

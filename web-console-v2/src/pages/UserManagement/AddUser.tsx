@@ -4,11 +4,12 @@ import { UserRequest } from './UserManagement';
 import { useUserList } from 'services/user';
 import { User } from './UserManagement';
 import { useAlert } from 'contexts/AlertContextProvider';
+import Alert from '@mui/material/Alert';
 
 interface AddUserProps {
     open: boolean;
     onClose: () => void;
-    onSubmit: (newUser: UserRequest) => void;
+    onSubmit: (newUser: UserRequest) => Promise<void>;
     currentUser: User;
 }
 
@@ -35,6 +36,7 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
     const [isEmailTaken, setIsEmailTaken] = useState<boolean | null>(null);
     const { data: users } = useUserList();
     const { showAlert } = useAlert();
+    const [error, setError] = useState<boolean | null>(null);
 
     useEffect(() => {
         const userName = newUser?.user_name.replace(/\s+/g, '_');
@@ -70,16 +72,17 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
     };
 
     const handleSubmit = () => {
-        try {
-            setTimeout(() => {
-                onSubmit(newUser);
-                onClose();
-                resetForm();
-            }, 1000);
-        } catch (error) {
-            showAlert('Failed to create user', 'error');
-        }
+        onSubmit(newUser)
+            .then(() => {
+                onClose(); 
+                resetForm(); 
+            })
+            .catch(() => {
+                showAlert('Failed to create user', 'error');
+                setError(true);
+            });
     };
+    
 
     const resetForm = () => {
         setNewUser({
@@ -90,15 +93,18 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
         });
     };
 
-    const isEmailValid = newUser.email_address ? emailRegex.test(newUser.email_address) : true;
+    const isEmailValid = newUser?.email_address ? emailRegex.test(newUser?.email_address) : true;
+    const isFirstNameValid = !newUser.first_name || newUser.first_name.length >= 3;
+    const isLastNameValid = !newUser.last_name || newUser.last_name.length >= 3;
     const isFormValid =
-        newUser.user_name &&
-        newUser.email_address &&
-        newUser.password &&
-        newUser.roles.length > 0 &&
+        newUser?.user_name &&
+        newUser?.email_address &&
+        newUser?.password &&
+        newUser?.roles.length > 0 &&
         isUsernameTaken === false &&
-        isEmailTaken === false &&
-        isEmailValid;
+        isEmailValid &&
+        isFirstNameValid &&
+        isLastNameValid;
 
     const availableRoles = currentUser?.is_owner ? rolesOptions : rolesOptions.filter(role => role.value !== 'admin');
 
@@ -107,9 +113,19 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
         onClose();
     };
 
+    const handleDialogClose = (event: React.SyntheticEvent, reason: string) => {
+        if (reason && (reason !== 'backdropClick')) {
+            onClose();
+        }
+    };
+
     return (
-        <Dialog open={open} onClose={handleCancel}>
+        <Dialog
+            open={open}
+            onClose={handleDialogClose}
+        >
             <DialogTitle>Create New User</DialogTitle>
+            {error && <Alert severity="error">Failed to create User</Alert>}
             <DialogContent>
                 <TextField
                     label="User Name"
@@ -131,6 +147,8 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                     value={newUser.first_name}
                     onChange={handleChange}
                     margin="normal"
+                    error={ !isFirstNameValid}
+                    helperText={!isFirstNameValid ? 'If provided, first name must be at least 3 characters' : ''}
                 />
                 <TextField
                     label="Last Name"
@@ -140,6 +158,8 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                     value={newUser.last_name}
                     onChange={handleChange}
                     margin="normal"
+                    error={!isLastNameValid}
+                    helperText={!isLastNameValid ? 'If provided, last name must be at least 3 characters' : ''}
                 />
                 <TextField
                     label="Email"
