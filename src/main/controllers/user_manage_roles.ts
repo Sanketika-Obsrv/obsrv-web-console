@@ -27,6 +27,7 @@ export default {
             const { user_name, roles } = _.get(req, ['body', 'request']);
 
             const isOwner = _.get(req, ['session', 'userDetails', 'is_owner']);
+            const userId = _.get(req, ['session', 'userDetails', 'id']);
             const user = await userService.find({ user_name });
             const updatedRoles = mergeRoles(_.get(user, ['roles']), roles, isOwner);
             const result = await userService.update(
@@ -34,6 +35,7 @@ export default {
                 {
                     roles: updatedRoles,
                     last_updated_on: new Date().toISOString(),
+                    updated_by: userId,
                 },
             );
             res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name, roles: result.roles } }));

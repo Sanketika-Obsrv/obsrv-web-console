@@ -9,6 +9,7 @@ export default {
         try {
             const { user_name, status } = _.get(req, ['body', 'request']);
             const isOwner = _.get(req, ['session', 'userDetails', 'is_owner']);
+            const userId = _.get(req, ['session', 'userDetails', 'id']);
 
             const user = await userService.find({ user_name });
 
@@ -25,6 +26,7 @@ export default {
                 {
                     status: status,
                     last_updated_on: new Date().toISOString(),
+                    updated_by: userId,
                 },
             );
             res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name, status: result.status } }));

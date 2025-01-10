@@ -21,6 +21,9 @@ export default {
             }
 
             userRequest.user_name = userRequest.user_name.trim().replace(/\s+/g, '_');
+            const userId = _.get(req, ['session', 'userDetails', 'id']);
+            _.set(userRequest, 'created_by', userId);
+            _.set(userRequest, 'updated_by', userId);
             if (authenticationType === 'keycloak') {
                 const keycloakToken = JSON.parse(req?.session['keycloak-token']);
                 const access_token = keycloakToken.access_token;
