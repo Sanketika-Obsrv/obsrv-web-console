@@ -70,21 +70,24 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
     };
 
     const handleSubmit = () => {
-        try{
+        try {
             setTimeout(() => {
                 onSubmit(newUser);
                 onClose();
-                setNewUser({
-                    user_name: '',
-                    email_address: '',
-                    roles: ['viewer'],
-                    password: ''
-                });
+                resetForm();
             }, 1000);
-        }
-        catch (error) {
+        } catch (error) {
             showAlert('Failed to create user', 'error');
         }
+    };
+
+    const resetForm = () => {
+        setNewUser({
+            user_name: '',
+            email_address: '',
+            roles: ['viewer'],
+            password: '',
+        });
     };
 
     const isEmailValid = newUser.email_address ? emailRegex.test(newUser.email_address) : true;
@@ -99,8 +102,13 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
 
     const availableRoles = currentUser?.is_owner ? rolesOptions : rolesOptions.filter(role => role.value !== 'admin');
 
+    const handleCancel = () => {
+        resetForm();
+        onClose();
+    };
+
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog open={open} onClose={handleCancel}>
             <DialogTitle>Create New User</DialogTitle>
             <DialogContent>
                 <TextField
@@ -176,7 +184,7 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                 </FormControl>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} color="primary" variant='outlined' size='small'>
+                <Button onClick={handleCancel} color="primary" variant='outlined' size='small'>
                     Cancel
                 </Button>
                 <Button onClick={handleSubmit} color="primary" variant='contained' size='small' disabled={!isFormValid}>
