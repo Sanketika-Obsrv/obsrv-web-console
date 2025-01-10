@@ -20,8 +20,8 @@
     padding-right: 0.5rem !important;
     padding-left: 0.5rem !important;
     flex: 1 1 auto;
-    overflow: hidden;
     min-width: 0;
+    word-break: break-word !important;
 }
 
 .gridItemNoBorder {
@@ -136,4 +136,5 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    flex-wrap: wrap;
 }
