@@ -9,6 +9,8 @@ import Filters from './Filters';
 import AddUser from './AddUser';
 import ChangeRoleDialog from './ChangeRoleDialog';
 import AlertDialog from 'components/AlertDialog/AlertDialog';
+import { useAlert } from 'contexts/AlertContextProvider';
+import _ from 'lodash';
 
 export interface User {
     id: string;
@@ -28,12 +30,12 @@ export interface User {
 
 export type UserRequest = {
     user_name: string;
-    first_name: string;
-    last_name: string;
+    first_name?: string;
+    last_name?: string;
     email_address: string;
     password: string;
     roles: string[];
-    status: string;
+    status?: string;
 };
 
 const UserManagement = () => {
@@ -45,8 +47,9 @@ const UserManagement = () => {
     const { mutate: updateUserStatus } = useUserStatusManage();
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [openRoleChangeDialog, setOpenRoleChangeDialog] = useState<boolean>(false);
+    const { showAlert } = useAlert();
 
-    const { data, isLoading, refetch } = useUserList();
+    const { data, isLoading, refetch, isError } = useUserList();
     const { data: currentUser } = useUserRead();
     const [showModal, setShowModal] = useState<boolean>(false);
     const [pendingAction, setPendingAction] = useState<{ userName: string; } | null>(null);
@@ -92,21 +95,28 @@ const UserManagement = () => {
         setOpenDialog(false);
     };
 
-    const handleAddUser = (newUser: UserRequest) => {
-        setLoading(true);
-        createUser(
-            { payload: newUser },
-            {
-                onSuccess: () => {
-                    refetch();
-                    setOpenDialog(false);
-                    setLoading(false);
-                },
-                onError: (error) => {
-                    console.error('Error creating user:', error);
-                },
-            }
-        );
+    const handleAddUser = (newUser: UserRequest): Promise<void> => {
+        return new Promise<void>((resolve, reject) => {
+            setLoading(true);
+            const filteredPayload = _.pickBy(newUser, _.identity);
+            createUser(
+                { payload: filteredPayload },
+                {
+                    onSuccess: () => {
+                        refetch();
+                        setOpenDialog(false);
+                        setLoading(false);
+                        showAlert('User created successfully', 'success');
+                        resolve();
+                    },
+                    onError: (error) => {
+                        setLoading(false);
+                        showAlert('Failed to create user', 'error');
+                        reject(error);
+                    },
+                }
+            );
+        });
     };
 
     const handleDeactivateUser = (userName: string) => {
@@ -120,10 +130,12 @@ const UserManagement = () => {
             {
                 onSuccess: () => {
                     refetch();
+                    showAlert('User deactivated successfully', 'success');
                     setLoading(false);
                 },
                 onError: (error) => {
-                    console.error('Error deactivating user:', error);
+                    showAlert('Failed to deactivate user', 'error');
+                    setLoading(false);
                 },
             }
         );
@@ -140,19 +152,33 @@ const UserManagement = () => {
             {
                 onSuccess: () => {
                     refetch();
+                    showAlert('User activated successfully', 'success');
                     setLoading(false);
                 },
                 onError: (error) => {
-                    console.error('Error activating user:', error);
+                    showAlert('Failed to activate user', 'error');
+                    setLoading(false);
                 },
             }
         );
     };
 
-    const handleRoleChanged = () => {
+    const handleRoleChanged = async () => {
         setLoading(true);
-        refetch();
-        setLoading(false)
+
+        try {
+            await refetch();
+
+            if (isError) {
+                showAlert('Failed to change role', 'error');
+            } else if (data) {
+                showAlert('Role changed successfully', 'success');
+            }
+        } catch (error) {
+            showAlert('Failed to change role', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleMenu = async (

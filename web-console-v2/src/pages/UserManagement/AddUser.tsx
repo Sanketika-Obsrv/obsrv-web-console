@@ -3,11 +3,13 @@ import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, MenuItem,
 import { UserRequest } from './UserManagement';
 import { useUserList } from 'services/user';
 import { User } from './UserManagement';
+import { useAlert } from 'contexts/AlertContextProvider';
+import Alert from '@mui/material/Alert';
 
 interface AddUserProps {
     open: boolean;
     onClose: () => void;
-    onSubmit: (newUser: UserRequest) => void;
+    onSubmit: (newUser: UserRequest) => Promise<void>;
     currentUser: User;
 }
 
@@ -25,17 +27,16 @@ const emailRegex = /^[\w.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser }) => {
     const [newUser, setNewUser] = useState<UserRequest>({
         user_name: '',
-        first_name: '',
-        last_name: '',
         email_address: '',
         password: '',
         roles: ['viewer'],
-        status: 'active',
     });
 
     const [isUsernameTaken, setIsUsernameTaken] = useState<boolean | null>(null);
     const [isEmailTaken, setIsEmailTaken] = useState<boolean | null>(null);
     const { data: users } = useUserList();
+    const { showAlert } = useAlert();
+    const [error, setError] = useState<boolean | null>(null);
 
     useEffect(() => {
         const userName = newUser?.user_name.replace(/\s+/g, '_');
@@ -71,36 +72,61 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
     };
 
     const handleSubmit = () => {
-        setTimeout(() => {
-            onSubmit(newUser);
-            onClose();
-            setNewUser({
-                user_name: '',
-                first_name: '',
-                last_name: '',
-                email_address: '',
-                roles: ['viewer'],
-                status: 'active',
-                password: ''
+        onSubmit(newUser)
+            .then(() => {
+                onClose(); 
+                resetForm(); 
+            })
+            .catch(() => {
+                showAlert('Failed to create user', 'error');
+                setError(true);
             });
-        }, 1000);
+    };
+    
+
+    const resetForm = () => {
+        setNewUser({
+            user_name: '',
+            email_address: '',
+            roles: ['viewer'],
+            password: '',
+        });
     };
 
-    const isEmailValid = newUser.email_address ? emailRegex.test(newUser.email_address) : true;
+    const isEmailValid = newUser?.email_address ? emailRegex.test(newUser?.email_address) : true;
+    const isFirstNameValid = !newUser.first_name || newUser.first_name.length >= 3;
+    const isLastNameValid = !newUser.last_name || newUser.last_name.length >= 3;
     const isFormValid =
-        newUser.user_name &&
-        newUser.email_address &&
-        newUser.password &&
-        newUser.roles.length > 0 &&
+        newUser?.user_name &&
+        newUser?.email_address &&
+        newUser?.password &&
+        newUser?.roles.length > 0 &&
         isUsernameTaken === false &&
-        isEmailTaken === false &&
-        isEmailValid;
+        isEmailValid &&
+        isFirstNameValid &&
+        isLastNameValid;
 
     const availableRoles = currentUser?.is_owner ? rolesOptions : rolesOptions.filter(role => role.value !== 'admin');
 
+    const handleCancel = () => {
+        setError(null);
+        resetForm();
+        onClose();
+    };
+
+    const handleDialogClose = (event: React.SyntheticEvent, reason: string) => {
+        if (reason && (reason !== 'backdropClick')) {
+            onClose();
+        }
+    };
+
     return (
-        <Dialog open={open} onClose={onClose}>
+        <Dialog
+            open={open}
+            onClose={handleDialogClose}
+        >
             <DialogTitle>Create New User</DialogTitle>
+            {error && <Alert severity="error">Failed to create User</Alert>}
             <DialogContent>
                 <TextField
                     label="User Name"
@@ -122,6 +148,8 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                     value={newUser.first_name}
                     onChange={handleChange}
                     margin="normal"
+                    error={ !isFirstNameValid}
+                    helperText={!isFirstNameValid ? 'If provided, first name must be at least 3 characters' : ''}
                 />
                 <TextField
                     label="Last Name"
@@ -131,6 +159,8 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                     value={newUser.last_name}
                     onChange={handleChange}
                     margin="normal"
+                    error={!isLastNameValid}
+                    helperText={!isLastNameValid ? 'If provided, last name must be at least 3 characters' : ''}
                 />
                 <TextField
                     label="Email"
@@ -175,7 +205,7 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                 </FormControl>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} color="primary" variant='outlined' size='small'>
+                <Button onClick={handleCancel} color="primary" variant='outlined' size='small'>
                     Cancel
                 </Button>
                 <Button onClick={handleSubmit} color="primary" variant='contained' size='small' disabled={!isFormValid}>
