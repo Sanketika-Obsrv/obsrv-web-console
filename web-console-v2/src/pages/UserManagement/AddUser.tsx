@@ -3,6 +3,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, MenuItem,
 import { UserRequest } from './UserManagement';
 import { useUserList } from 'services/user';
 import { User } from './UserManagement';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 interface AddUserProps {
     open: boolean;
@@ -25,17 +26,15 @@ const emailRegex = /^[\w.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser }) => {
     const [newUser, setNewUser] = useState<UserRequest>({
         user_name: '',
-        first_name: '',
-        last_name: '',
         email_address: '',
         password: '',
         roles: ['viewer'],
-        status: 'active',
     });
 
     const [isUsernameTaken, setIsUsernameTaken] = useState<boolean | null>(null);
     const [isEmailTaken, setIsEmailTaken] = useState<boolean | null>(null);
     const { data: users } = useUserList();
+    const { showAlert } = useAlert();
 
     useEffect(() => {
         const userName = newUser?.user_name.replace(/\s+/g, '_');
@@ -71,19 +70,21 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
     };
 
     const handleSubmit = () => {
-        setTimeout(() => {
-            onSubmit(newUser);
-            onClose();
-            setNewUser({
-                user_name: '',
-                first_name: '',
-                last_name: '',
-                email_address: '',
-                roles: ['viewer'],
-                status: 'active',
-                password: ''
-            });
-        }, 1000);
+        try{
+            setTimeout(() => {
+                onSubmit(newUser);
+                onClose();
+                setNewUser({
+                    user_name: '',
+                    email_address: '',
+                    roles: ['viewer'],
+                    password: ''
+                });
+            }, 1000);
+        }
+        catch (error) {
+            showAlert('Failed to create user', 'error');
+        }
     };
 
     const isEmailValid = newUser.email_address ? emailRegex.test(newUser.email_address) : true;
