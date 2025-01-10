@@ -109,6 +109,7 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
     const availableRoles = currentUser?.is_owner ? rolesOptions : rolesOptions.filter(role => role.value !== 'admin');
 
     const handleCancel = () => {
+        setError(null);
         resetForm();
         onClose();
     };
