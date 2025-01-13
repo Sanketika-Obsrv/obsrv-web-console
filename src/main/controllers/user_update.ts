@@ -10,6 +10,7 @@ export default {
         try {
             const { user_name, ...updateInfo } = _.get(req, ['body', 'request']);
             const sessionUserName = _.get(req, ['session', 'userDetails', 'user_name']);
+            const userId = _.get(req, ['session', 'userDetails', 'id']);
             if (user_name !== sessionUserName) {
                 res.status(403).json(
                     transform({
@@ -35,6 +36,7 @@ export default {
                 {
                     ...updateInfo,
                     last_updated_on: new Date().toISOString(),
+                    updated_by: userId,
                 },
             );
             res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name } }));
