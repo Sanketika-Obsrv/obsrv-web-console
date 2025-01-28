@@ -18,13 +18,15 @@ export const authenticated = async (request: any) => {
         request.session.preferred_username = preferred_username;
 
         const user = await userService.find({ id: userId?.[0] });
-        request.session.roles = user?.roles;
+        request.session.userDetails = _.pick(user, ['id', 'user_name', 'email_address', 'roles', 'is_owner']);
+        request.session.roles = _.get(user, ['roles']);
     } catch (err) {
         console.log('user not authenticated', request?.kauth?.grant?.access_token?.content?.sub, err);
     }
 };
 
 export const deauthenticated = function (request: any) {
+    delete request?.session?.userDetails;
     delete request?.session?.roles;
     delete request?.session?.userId;
     delete request?.session?.email_address;
@@ -44,6 +46,8 @@ export const userCreate = async (access_token: any, userRequest: any) => {
     const payload = {
         email: email_address,
         username: user_name,
+        firstName: userRequest?.first_name,
+        lastName: userRequest?.last_name,
         enabled: true,
         credentials: [
             {
@@ -63,7 +67,6 @@ export const userCreate = async (access_token: any, userRequest: any) => {
         .then((response) => {
             const location = _.get(response, 'headers.location');
             const userId = location ? _.last(location.split('/')) : null;
-            console.log('keyuser', userId);
             if (!userId) {
                 throw new Error('UserId not found');
             }
