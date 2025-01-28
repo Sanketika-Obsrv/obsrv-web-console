@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, MenuItem, Select, InputLabel, FormControl, Button, SelectChangeEvent } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, MenuItem, Select, InputLabel, FormControl, Button, SelectChangeEvent, InputAdornment, IconButton } from '@mui/material';
 import { UserRequest } from './UserManagement';
 import { useUserList } from 'services/user';
 import { User } from './UserManagement';
 import { useAlert } from 'contexts/AlertContextProvider';
 import Alert from '@mui/material/Alert';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 interface AddUserProps {
     open: boolean;
@@ -37,12 +38,20 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
     const { data: users } = useUserList();
     const { showAlert } = useAlert();
     const [error, setError] = useState<boolean | null>(null);
+    const [passwordRequirements, setPasswordRequirements] = useState({
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        specialChar: false,
+    });
+    const [showPassword, setShowPassword] = useState<boolean>(false);
 
     useEffect(() => {
         const userName = newUser?.user_name.replace(/\s+/g, '_');
         const emailAddress = newUser?.email_address;
         if (userName || emailAddress) {
-            const usernameExists = users?.data?.some((user: { user_name: string; }) => user.user_name === userName);
+            const usernameExists = users?.data?.some((user: { user_name: string; }) => user.user_name.toLowerCase() === userName.toLowerCase());
             setIsUsernameTaken(usernameExists || false);
         } else {
             setIsUsernameTaken(null);
@@ -58,10 +67,53 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setNewUser({
-            ...newUser,
-            [name]: value,
-        });
+        
+        setNewUser(prev => ({
+            ...prev,
+            [name]: name === 'user_name' ? value.toLowerCase() : value
+        }));
+    
+        if (name === 'password') {
+            validatePassword(value);
+        }
+    };
+
+    const validatePassword = (password: string) => {
+        const updatedRequirements = {
+            length: password.length >= 8 && password.length <= 15,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /\d/.test(password),
+            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+        };
+
+        setPasswordRequirements(updatedRequirements);
+    };
+
+    const getPasswordHelperText = () => {
+        const requirements = [];
+
+        if (!passwordRequirements.length) {
+            requirements.push('8-15 characters');
+        }
+        if (!passwordRequirements.uppercase) {
+            requirements.push('at least one uppercase letter');
+        }
+        if (!passwordRequirements.lowercase) {
+            requirements.push('at least one lowercase letter');
+        }
+        if (!passwordRequirements.number) {
+            requirements.push('at least one number');
+        }
+        if (!passwordRequirements.specialChar) {
+            requirements.push('at least one special character');
+        }
+
+        if (requirements.length > 0) {
+            return `Password must contain: ${requirements.join(', ')}`;
+        } else {
+            return '';
+        }
     };
 
     const handleRoleChange = (e: SelectChangeEvent<string | string[]>) => {
@@ -74,15 +126,14 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
     const handleSubmit = () => {
         onSubmit(newUser)
             .then(() => {
-                onClose(); 
-                resetForm(); 
+                onClose();
+                resetForm();
             })
             .catch(() => {
                 showAlert('Failed to create user', 'error');
                 setError(true);
             });
     };
-    
 
     const resetForm = () => {
         setNewUser({
@@ -93,18 +144,20 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
         });
     };
 
+    const isUserNameValid = newUser?.user_name && newUser?.user_name.length >= 3;
     const isEmailValid = newUser?.email_address ? emailRegex.test(newUser?.email_address) : true;
-    const isFirstNameValid = !newUser.first_name || newUser.first_name.length >= 3;
-    const isLastNameValid = !newUser.last_name || newUser.last_name.length >= 3;
+    const isFirstNameValid = !newUser?.first_name || newUser?.first_name.length >= 3;
+    const isLastNameValid = !newUser?.last_name || newUser?.last_name.length >= 3;
+    const isPasswordValid = newUser?.password && getPasswordHelperText() === '';
     const isFormValid =
-        newUser?.user_name &&
         newUser?.email_address &&
-        newUser?.password &&
+        isPasswordValid &&
         newUser?.roles.length > 0 &&
         isUsernameTaken === false &&
         isEmailValid &&
         isFirstNameValid &&
-        isLastNameValid;
+        isLastNameValid &&
+        isUserNameValid;
 
     const availableRoles = currentUser?.is_owner ? rolesOptions : rolesOptions.filter(role => role.value !== 'admin');
 
@@ -137,8 +190,8 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                     onChange={handleChange}
                     required
                     margin="normal"
-                    error={isUsernameTaken === true}
-                    helperText={isUsernameTaken ? 'Username already exists' : ''}
+                    error={isUsernameTaken === true || isUserNameValid === false}
+                    helperText={isUsernameTaken ? 'Username already exists' : (isUserNameValid === false) ? 'Username must be at least 3 characters' : ''}
                 />
                 <TextField
                     label="First Name"
@@ -148,7 +201,7 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                     value={newUser.first_name}
                     onChange={handleChange}
                     margin="normal"
-                    error={ !isFirstNameValid}
+                    error={!isFirstNameValid}
                     helperText={!isFirstNameValid ? 'If provided, first name must be at least 3 characters' : ''}
                 />
                 <TextField
@@ -178,14 +231,28 @@ const AddUser: React.FC<AddUserProps> = ({ open, onClose, onSubmit, currentUser 
                 <TextField
                     label="Password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     fullWidth
                     variant="outlined"
                     value={newUser.password}
                     onChange={handleChange}
                     required
                     margin="normal"
+                    error={isPasswordValid === false}
+                    helperText={isPasswordValid === false && getPasswordHelperText()}
                     autoComplete="new-password"
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="end"
+                                >
+                                    {showPassword ? <Visibility /> : <VisibilityOff />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
                 <FormControl fullWidth margin="normal">
                     <InputLabel>Role</InputLabel>
