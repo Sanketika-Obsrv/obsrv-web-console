@@ -9,6 +9,7 @@ import passportAuthenticateCallback from '../middlewares/passportAuthenticate';
 import setContext from '../middlewares/setContext';
 import authorizationMiddleware from '../middlewares/authorization';
 import { permissions } from '../middlewares/authorization';
+import datasetAuthInjector from '../middlewares/datasetAuthInjector';
 
 const baseURL = appConfig.BASE_URL;
 export default [
@@ -146,6 +147,8 @@ export default [
                 path: 'state/:datasetId',
                 method: 'GET',
                 middlewares: [
+                    ensureLoggedInMiddleware,
+                    datasetAuthInjector.handler(),
                     controllers.get('dataset:state')?.handler({})
                 ]
             },
@@ -154,6 +157,7 @@ export default [
                 method: 'GET',
                 middlewares: [
                     ensureLoggedInMiddleware,
+                    datasetAuthInjector.handler(),
                     controllers.get('dataset:diff')?.handler({})
                 ]
             },
@@ -162,6 +166,7 @@ export default [
                 method: 'GET',
                 middlewares: [
                     ensureLoggedInMiddleware,
+                    datasetAuthInjector.handler(),
                     controllers.get('dataset:exists')?.handler({})
                 ]
             }
@@ -174,6 +179,8 @@ export default [
                 path: 'generate-fields/:dataset_id',
                 method: 'GET',
                 middlewares: [
+                    ensureLoggedInMiddleware,
+                    datasetAuthInjector.handler(),
                     controllers.get('get:all:fields')?.handler({})
                 ]
             }

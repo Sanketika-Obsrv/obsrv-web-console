@@ -4,7 +4,7 @@ import appConfig from '../../shared/resources/appConfig'
 import { fieldsByStatus } from '../controllers/dataset_diff';
 type Payload = Record<string, any>;
 
-const datasetServiceHttpInstance = axios.create({ baseURL: appConfig.OBS_API.URL});
+export const datasetServiceHttpInstance = axios.create({ baseURL: appConfig.OBS_API.URL});
 
 const transform = (response: any) => _.get(response, 'data.result')
 
