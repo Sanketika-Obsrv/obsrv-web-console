@@ -15,8 +15,21 @@ export class KeycloakAuthProvider implements BaseAuthProvider {
      return this.keycloak.middleware();
     }
 
-    authenticate(): (req: Request, res: Response, next: NextFunction) => void {
-        return this.keycloak.protect();
+    authenticate(): (req: any, res: Response, next: NextFunction) => void {
+        const protect = this.keycloak.protect();
+        
+        return async (req: any, res: Response, next: NextFunction) => {
+            protect(req, res, async () => {
+                try {
+                    if (req.kauth?.grant) {
+                        await authenticated(req);
+                    }
+                    next();
+                } catch (error) {
+                    next(error);
+                }
+            });
+        };
     }
 
     async logout(req: Request, res: Response): Promise<void> {
