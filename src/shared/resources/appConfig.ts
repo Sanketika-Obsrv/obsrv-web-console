@@ -73,6 +73,6 @@ export default {
         PUBLIC_CLIENT: env.KEYCLOAK_PUBLIC_CLIENT || 'false',
         SSL_REQUIRED: env.KEYCLOAK_SSL_REQUIRED || 'external',
     },
-    USER_TOKEN_EXPIRY: env.USER_TOKEN_EXPIRY || '1d',
+    USER_TOKEN_EXPIRY: env.USER_TOKEN_EXPIRY || '86400',
     STORAGE_TYPES: env.STORAGE_TYPES || '{"lake_house":true,"realtime_store":true}'
 };
