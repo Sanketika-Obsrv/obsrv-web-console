@@ -8,7 +8,7 @@ import { logger } from '../../shared/utils/logger';
 
 const baseURL = appConfig.BASE_URL;
 const private_key: string = appConfig.USER_TOKEN_PRIVATE_KEY;
-const expiresIn = appConfig.USER_TOKEN_EXPIRY;
+const expiresIn = parseInt(appConfig.USER_TOKEN_EXPIRY) || 86400;
 
 const generateToken = (user: User) => {
     const payload = _.pick(user, ['id', 'user_name', 'email_address', 'roles', 'is_owner']);
