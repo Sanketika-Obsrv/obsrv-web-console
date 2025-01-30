@@ -40,7 +40,6 @@ export default {
                 return generateToken(user)
                     .then((token: any) => {
                         req.session.token = token;
-                        console.log("token: ", token)
                         req.session.roles = _.get(user, ['roles']);
                         req.session.userDetails = _.pick(user, ['id', 'user_name', 'email_address', 'roles', 'is_owner']);
                         return res.redirect(baseURL || '/');
