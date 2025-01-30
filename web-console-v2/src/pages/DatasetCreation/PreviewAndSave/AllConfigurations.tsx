@@ -110,7 +110,7 @@ const AllConfigurations = () => {
     const status = params.get('status') || DatasetStatus.Draft;
 
     const defaultFields = ["dataset_id", "name", 'data_schema', 'validation_config', 'dedup_config', 'denorm_config', "dataset_config", "type"];
-    const queryParams = (status === "Draft") ? `status=${status}&fields=${[...defaultFields, "connectors_config", "transformations_config"]}&mode=edit` : `status=${status}&fields=${defaultFields}`;
+    const queryParams = (status === "Draft") ? `status=${status}&fields=${[...defaultFields, "connectors_config", "transformations_config"]}&mode=edit` : ``;
     const response = useFetchDatasetsById({
         datasetId,
         queryParams: queryParams
