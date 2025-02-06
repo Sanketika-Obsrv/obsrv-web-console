@@ -183,7 +183,7 @@ const ConnectorConfiguration: React.FC = () => {
         if (schema.schema.properties.source_kafka_consumer_id) {
             schema.schema.properties.source_kafka_consumer_id = {
                 ...schema.schema.properties.source_kafka_consumer_id,
-                default:datasetId === '<new>' ? `${connector_id}_${v4().slice(0,6)}` :  `${datasetId}_${connector_id}_${v4().slice(0,6)}`
+                default:datasetId === '<new>' ? `${connector_id}-${v4().slice(0,6)}` :  `${datasetId}-${connector_id}_${v4().slice(0,6)}`
             };
             schema.uiSchema.source_kafka_consumer_id = {
                 'ui:disabled': true
@@ -285,7 +285,7 @@ const ConnectorConfiguration: React.FC = () => {
                         dataset_id: datasetId,
                         connectors_config: [{
                             value: {
-                                id: `${datasetId}_${primaryConnectorId || selectedConnectorId}`,
+                                id: `${datasetId}-${primaryConnectorId || selectedConnectorId}`,
                                 connector_id: primaryConnectorId || selectedConnectorId,
                                 connector_config: formData || {},
                                 operations_config: connectorType === 'stream' ? {} : opFormData || {},
