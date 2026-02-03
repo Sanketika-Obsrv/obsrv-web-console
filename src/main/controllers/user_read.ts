@@ -16,7 +16,8 @@ const getUserDetails = function (request: Request) {
         };
         return userDetails;
     } else if (authenticationType === 'keycloak') {
-        const keycloakToken = JSON.parse(request?.session['keycloak-token']);
+        const sessionToken = request?.session['keycloak-token'];
+        const keycloakToken = typeof sessionToken === 'string' ? JSON.parse(sessionToken) : sessionToken;
         const access_token = keycloakToken?.access_token;
         const preferred_username = request?.session?.preferred_username;
         const userDetails = {

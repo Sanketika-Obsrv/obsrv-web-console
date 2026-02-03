@@ -11,6 +11,8 @@ export default {
     name: 'user:create',
     handler: () => async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const apiId = _.get(req, ['body', 'id']);
+            const sanitizedId = typeof apiId === 'string' ? apiId.replace(/[<>]/g, '') : apiId;
             const userRequest = _.get(req, ['body', 'request']);
             const isOwner = _.get(req, ['session', 'userDetails', 'is_owner']);
 
@@ -28,10 +30,10 @@ export default {
                 const keycloakToken = JSON.parse(req?.session['keycloak-token']);
                 const access_token = keycloakToken.access_token;
                 const result = await userCreateWithKeycloak(access_token, userRequest);
-                res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name, email_address: result.email_address } }));
+                res.status(200).json(transform({ id: sanitizedId, result: { id: result.id, user_name: result.user_name } }));
             } else if (authenticationType === 'basic') {
                 const result = await userCreateAsBasic(userRequest);
-                res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name, email_address: result.email_address } }));
+                res.status(200).json(transform({ id: sanitizedId, result: { id: result.id, user_name: result.user_name } }));
             }
         } catch (error) {
             next(error);

@@ -223,6 +223,8 @@ export default {
     handler: () => async (request: Request, response: Response, next: NextFunction) => {
         let { datasetId } = request.params;
         let { status } = request.query;
+        if (typeof datasetId === 'string') datasetId = datasetId.replace(/[^\w.-]/g, '');
+        if (typeof status === 'string') status = status.replace(/[^\w.-]/g, '');
         datasetId = status === "Live" ? _.split(datasetId, '.', 1)[0] : datasetId
         try {
             const dataset = await fetchDataset({ datasetId, status });
