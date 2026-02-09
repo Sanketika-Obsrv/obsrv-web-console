@@ -38,6 +38,7 @@ export default {
                     updated_by: userId,
                 },
             );
+            res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
             res.status(200).json(transform({ id: req.body.id, result: { id: result.id, user_name: result.user_name, roles: result.roles } }));
         } catch (error) {
             if (error === 'user_not_found') {
@@ -47,6 +48,7 @@ export default {
             } else {
                 const e = error as Error;
                 if (e.message && (e.message.includes('Only the owner can modify the admin role'))) {
+                    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
                     return res.status(403).json({ error: e.message });
                 }
                 next(error);

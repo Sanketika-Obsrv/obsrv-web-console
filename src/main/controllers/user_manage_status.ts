@@ -14,7 +14,7 @@ export default {
             const user = await userService.find({ user_name });
 
             const hasAdminRole = user?.roles.includes('admin');
-
+            res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
             if (hasAdminRole && !isOwner) {
                 return res.status(403).json({
                     error: 'Only the owner can change the status of an admin user'

@@ -30,6 +30,7 @@ export default {
             if (hasAccess) {
                 next();
             } else {
+                res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
                 res.status(403).json(
                     transform({
                         params: {
