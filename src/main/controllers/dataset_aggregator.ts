@@ -222,7 +222,7 @@ export default {
     name: 'dataset:state',
     handler: () => async (request: Request, response: Response, next: NextFunction) => {
         let datasetId = _.get(request, 'params.datasetId');
-        let status = _.get(request, 'query.status');
+        const status = _.get(request, 'query.status');
         
         datasetId = status === "Live" ? _.split(datasetId, '.', 1)[0] : datasetId
         response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');

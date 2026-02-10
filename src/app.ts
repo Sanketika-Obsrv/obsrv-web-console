@@ -18,10 +18,6 @@ app.use(helmet({
     preload: true
   }
 }));
-app.use((request, response, next) => {
-  response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  next();
-});
 const sessionSecret: any = process.env.SESSION_SECRET
 const PostgresqlStore = pgSession(session)
 const sessionStore: any = new PostgresqlStore({

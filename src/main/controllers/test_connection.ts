@@ -1,6 +1,6 @@
-import { NextFunction, Request, Response } from "express";
-import { Kafka } from "kafkajs";
-import * as _ from "lodash";
+import { NextFunction, Request, Response } from 'express';
+import { Kafka } from 'kafkajs';
+import * as _ from 'lodash';
 
 export default {
     name: 'connector:test',

@@ -18,6 +18,7 @@ const invalidRouteHandler = sharedMiddlewares.get('invalidRoute');
 app.set('port', port);
 app.set('logger', logger);
 app.disable('x-powered-by');
+// ToDo: Move helmet and cors to app.ts and remove from here
 app.use(helmet({
   hsts: {
     maxAge: 31536000, // 1 year in seconds

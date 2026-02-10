@@ -13,7 +13,7 @@ export default {
             const userId = _.get(req, ['session', 'userDetails', 'id']);
             res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
             if (user_name !== sessionUserName) {
-                res.status(403).json(
+                return res.status(403).json(
                     transform({
                         responseCode: 'FORBIDDEN',
                         params: {
