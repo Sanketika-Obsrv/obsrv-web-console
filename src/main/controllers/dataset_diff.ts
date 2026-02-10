@@ -7,6 +7,7 @@ export default {
     name: 'dataset:diff',
     handler: () => async (request: Request, response: Response, next: NextFunction) => {
         const { datasetId } = request.params;
+        response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         try {
             let liveDataset = await fetchDataset({ datasetId });
             if (_.get(liveDataset, "api_version") !== "v2") {

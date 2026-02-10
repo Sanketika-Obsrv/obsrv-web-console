@@ -4,6 +4,7 @@ import appConfig from '../../shared/resources/appConfig';
 export default {
     name: 'config:vars',
     handler: () => async (request: Request, response: Response, next: NextFunction) => {
+        response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         response.json({
             "GRAFANA_URL": appConfig.GRAFANA.URL,
             "SUPERSET_URL": appConfig.SUPERSET.URL,

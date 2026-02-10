@@ -38,6 +38,7 @@ export class KeycloakAuthProvider implements BaseAuthProvider {
             deauthenticated(req);
         } catch (error) {
             console.error('Logout error:', error);
+            res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
             res.status(500).send('Logout failed');
         }
     }

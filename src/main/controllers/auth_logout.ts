@@ -6,6 +6,7 @@ export default {
         request.logout({ keepSessionInfo: false }, ((error: any) => {
             error && console.log("Error while logout", error)
         }))
+        response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         response.status(200).json({ "status": "successful" })
     },
 };

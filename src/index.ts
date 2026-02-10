@@ -18,7 +18,14 @@ const invalidRouteHandler = sharedMiddlewares.get('invalidRoute');
 app.set('port', port);
 app.set('logger', logger);
 app.disable('x-powered-by');
-// app.use(helmet());
+// ToDo: Move helmet and cors to app.ts and remove from here
+app.use(helmet({
+  hsts: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true
+  }
+}));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'build')));
 
@@ -26,6 +33,7 @@ app.use(express.static(path.join(__dirname, 'build')));
 mountRoutes(app);
 
 app.get('*', function (req, res) {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 

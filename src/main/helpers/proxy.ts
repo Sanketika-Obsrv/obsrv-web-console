@@ -9,6 +9,7 @@ const authenticationType = appConfig.AUTHENTICATION_TYPE;
 
 export const onError = ({ entity }: any) => (err: any, req: Request, res: Response) => {
     incrementFailedApiCalls({ entity, endpoint: req.url });
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     res.status(500).send('Something went wrong. Please try again later.');
 }
 

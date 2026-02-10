@@ -8,8 +8,16 @@ import { pool } from './shared/databases/postgres';
 import pgSession from 'connect-pg-simple';
 import { authProviderFactory } from './main/services/authProviderFactory';
 import path from 'path';
+import helmet from 'helmet';
 
 const app = express();
+app.use(helmet({
+  hsts: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true
+  }
+}));
 const sessionSecret: any = process.env.SESSION_SECRET
 const PostgresqlStore = pgSession(session)
 const sessionStore: any = new PostgresqlStore({
@@ -44,13 +52,14 @@ const keycloakConfig = {
   bearerOnly: false
 };
 
-const authProvider = authProviderFactory(authenticationType,keycloakConfig, sessionStore); 
-app.use(authProvider.init())
-app.get('/console/logout', authProvider.authenticate(), async (req:any, res) => {
+const authProvider = authProviderFactory(authenticationType, keycloakConfig, sessionStore);
+app.use(authProvider.init());
+app.get('/console/logout', authProvider.authenticate(), async (req: any, res) => {
   await authProvider.logout(req, res);
   res.redirect('/console');
 });
 app.get('/console', authProvider.authenticate(), (req, res) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 

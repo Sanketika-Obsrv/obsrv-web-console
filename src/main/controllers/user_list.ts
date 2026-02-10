@@ -7,6 +7,7 @@ export default {
     name: 'user:list',
     handler: () => async (request: Request, response: Response, next: NextFunction) => {
         try {
+            const apiId = _.get(request, ['body', 'id']);
             const user = _.get(request, ['body', 'request']);
             const result = await userService.findAll(user);
 
@@ -16,7 +17,8 @@ export default {
             });
 
             const responseData = { data: usersList, count: _.size(usersList) };
-            response.status(200).json(transform({ id: request.body.id, result: responseData }));
+            response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+            response.status(200).json(transform({ id: apiId, result: responseData }));
         } catch (error) {
             if (error === 'user_not_found') {
                 const err = new Error('User not found');
