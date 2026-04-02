@@ -9,6 +9,7 @@ export default {
         const { dataset_id } = request.params;
         const status: any = request.query.status;
         let flattenResult: any = [];
+        response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         try {
             const dataset = await fetchDatasetRecord(dataset_id, status);
             const data_schema = _.get(dataset, "data_schema", {});

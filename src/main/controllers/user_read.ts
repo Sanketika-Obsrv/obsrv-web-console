@@ -16,7 +16,8 @@ const getUserDetails = function (request: Request) {
         };
         return userDetails;
     } else if (authenticationType === 'keycloak') {
-        const keycloakToken = JSON.parse(request?.session['keycloak-token']);
+        const sessionToken = _.get(request, ['session','keycloak-token']);
+        const keycloakToken = typeof sessionToken === 'string' ? JSON.parse(sessionToken) : sessionToken;
         const access_token = keycloakToken?.access_token;
         const preferred_username = request?.session?.preferred_username;
         const userDetails = {
@@ -36,6 +37,7 @@ export default {
             const sessionUserName = sessionUserDetails?.sessionUserName;
             const user = await userService.find({ user_name: sessionUserName });
             const { password, ...userInfo } = user;
+
             const responseData = {
                 id: 'api.user.read',
                 result: userInfo,
@@ -45,6 +47,7 @@ export default {
             if (includeToken) {
                 responseData.result.token = sessionUserDetails?.token;
             }
+            response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
             response.status(200).json(transform(responseData));
         } catch (error) {
             next(error);
