@@ -45,12 +45,12 @@ jobs:
         with:
           node-version: '23'
 
-      - name: Generate frontend lock file
-        run: npm install --package-lock-only --legacy-peer-deps
+      - name: Install frontend dependencies
+        run: npm install --legacy-peer-deps
         working-directory: web-console-v2
 
       - name: Generate frontend SPDX SBOM
-        run: npm sbom --sbom-format=spdx --package-lock-only > frontend.spdx.json
+        run: npm sbom --sbom-format=spdx > frontend.spdx.json
         working-directory: web-console-v2
 
       - name: Submit frontend dependency graph
