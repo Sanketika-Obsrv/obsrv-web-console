@@ -11,6 +11,7 @@ export default {
             const { user_name, ...updateInfo } = _.get(req, ['body', 'request']);
             const sessionUserName = _.get(req, ['session', 'userDetails', 'user_name']);
             const userId = _.get(req, ['session', 'userDetails', 'id']);
+            res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
             if (user_name !== sessionUserName) {
                 res.status(403).json(
                     transform({

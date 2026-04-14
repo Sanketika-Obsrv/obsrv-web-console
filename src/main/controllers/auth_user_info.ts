@@ -11,6 +11,7 @@ export default {
             scope: authInfo?.scope,
             email: user?.email_address
         }
+        response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         response.json(data);
     },
 };

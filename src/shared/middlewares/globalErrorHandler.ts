@@ -15,6 +15,7 @@ export default {
         } = error;
 
         const { id = 'api' } = request.responsePayload || {};
+        response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         logger.error(error)
         if (request.url.includes("oauth/v1/login")) {
             return response.redirect(`${appConfig.BASE_URL}/login?err=Invalid Credentials`);
