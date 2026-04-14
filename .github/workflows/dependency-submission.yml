@@ -52,6 +52,8 @@ jobs:
       - name: Generate frontend SPDX SBOM
         run: npm sbom --sbom-format=spdx > frontend.spdx.json
         working-directory: web-console-v2
+        env:
+          npm_config_legacy_peer_deps: "true"
 
       - name: Submit frontend dependency graph
         uses: advanced-security/spdx-dependency-submission-action@v0.2.0
