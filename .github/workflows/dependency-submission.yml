@@ -1,0 +1,63 @@
+name: Dependency Submission
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  submit-backend-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '23'
+
+      - name: Generate backend lock file
+        run: npm install --package-lock-only
+
+      - name: Generate backend SPDX SBOM
+        run: npm sbom --sbom-format=spdx --package-lock-only > backend.spdx.json
+
+      - name: Submit backend dependency graph
+        uses: advanced-security/spdx-dependency-submission-action@v0.2.0
+        with:
+          filePath: "."
+          filePattern: "backend.spdx.json"
+          correlator: "backend"
+
+  submit-frontend-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '23'
+
+      - name: Install frontend dependencies
+        run: npm install --legacy-peer-deps
+        working-directory: web-console-v2
+
+      - name: Generate frontend SPDX SBOM
+        run: npm sbom --sbom-format=spdx > frontend.spdx.json
+        working-directory: web-console-v2
+        env:
+          npm_config_legacy_peer_deps: "true"
+
+      - name: Submit frontend dependency graph
+        uses: advanced-security/spdx-dependency-submission-action@v0.2.0
+        with:
+          filePath: "web-console-v2"
+          filePattern: "frontend.spdx.json"
+          correlator: "frontend"
