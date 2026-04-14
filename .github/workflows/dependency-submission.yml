@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 jobs:
-  submit-dependencies:
+  submit-backend-dependencies:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,12 +25,37 @@ jobs:
       - name: Generate backend lock file
         run: npm install --package-lock-only
 
+      - name: Generate backend SPDX SBOM
+        run: npm sbom --sbom-format=spdx --package-lock-only > backend.spdx.json
+
+      - name: Submit backend dependency graph
+        uses: advanced-security/spdx-dependency-submission-action@v0.2.0
+        with:
+          filePath: "."
+          filePattern: "backend.spdx.json"
+          correlator: "backend"
+
+  submit-frontend-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '23'
+
       - name: Generate frontend lock file
         run: npm install --package-lock-only --legacy-peer-deps
         working-directory: web-console-v2
 
-      - name: Submit Dependency Graph
-        uses: advanced-security/component-detection-dependency-submission-action@v0.1.3
+      - name: Generate frontend SPDX SBOM
+        run: npm sbom --sbom-format=spdx --package-lock-only > frontend.spdx.json
+        working-directory: web-console-v2
+
+      - name: Submit frontend dependency graph
+        uses: advanced-security/spdx-dependency-submission-action@v0.2.0
         with:
-          filePath: "."
-          detectorArgs: "NpmLockfile3=EnableIfDefaultOff"
+          filePath: "web-console-v2"
+          filePattern: "frontend.spdx.json"
+          correlator: "frontend"
