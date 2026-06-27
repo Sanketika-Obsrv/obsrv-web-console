@@ -47,7 +47,19 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
+          sbom: true
+          provenance: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/obsrv-web-console:${{ steps.meta.outputs.tag }}
+
+      # Report-only (continue-on-error). web-console is 0 Critical/High today.
+      - name: Docker Scout — CVE scan (report-only)
+        uses: docker/scout-action@v1
+        continue-on-error: true
+        with:
+          command: cves
+          image: ${{ vars.DOCKERHUB_USERNAME }}/obsrv-web-console:${{ steps.meta.outputs.tag }}
+          only-severities: critical,high
+          sarif-file: scout-web-console.sarif.json
 
   aws-deploy:
     needs: [check-tag, docker-build]
