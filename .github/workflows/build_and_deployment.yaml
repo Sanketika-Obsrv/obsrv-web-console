@@ -39,11 +39,15 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Compute image tag (sanitize ref name → valid Docker tag)
+        id: meta
+        run: echo "tag=$(echo -n '${{ github.ref_name }}' | sed 's#[^a-zA-Z0-9._-]#-#g')" >> "$GITHUB_OUTPUT"
+
       - name: Build docker image and push
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/obsrv-web-console:${{ github.ref_name }}
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/obsrv-web-console:${{ steps.meta.outputs.tag }}
 
   aws-deploy:
     needs: [check-tag, docker-build]
