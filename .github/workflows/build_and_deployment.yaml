@@ -47,8 +47,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          sbom: true
-          provenance: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/obsrv-web-console:${{ steps.meta.outputs.tag }}
 
       # Report-only (continue-on-error). web-console is 0 Critical/High today.
