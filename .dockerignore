@@ -3,3 +3,6 @@ build
 dist
 src/build
 src/node_modules
+web-console-v2/node_modules
+**/node_modules
+logs.txt
