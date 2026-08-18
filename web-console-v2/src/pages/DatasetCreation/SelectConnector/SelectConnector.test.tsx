@@ -1,63 +1,106 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
-import SelectConnector from './SelectConnector';
-import { connectorList } from '../../../components/connectorList';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
+import SelectConnector from './SelectConnector';
+import { useConnectorsList } from 'services/dataset';
+
+jest.mock('services/dataset', () => ({
+  useConnectorsList: jest.fn(),
+}));
+
+const connectors = [
+  { id: 'c1', name: 'BigQuery', type: 'source', iconurl: '', category: 'Database' },
+  { id: 'c2', name: 'Kafka', type: 'source', iconurl: '', category: 'Streaming' },
+];
+
+const mockConnectorsList = (
+  { isPending = false, data = connectors } = {} as { isPending?: boolean; data?: typeof connectors },
+) => {
+  const mutate = jest.fn();
+  (useConnectorsList as jest.Mock).mockReturnValue({
+    mutate,
+    isPending,
+    data: { data: { result: { data } } },
+  });
+  return mutate;
+};
+
+const Wrapper = ({ children }: { children: React.ReactNode }) => (
+  <QueryClientProvider client={new QueryClient()}>
+    <BrowserRouter>{children}</BrowserRouter>
+  </QueryClientProvider>
+);
+
+const renderConnector = () => render(<SelectConnector />, { wrapper: Wrapper });
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockConnectorsList();
+});
 
 test('renders the SelectConnector component', () => {
-  render(<SelectConnector />, { wrapper: BrowserRouter });
-  expect(
-    screen.getByText(
-      /API connector has already pushed the data to Obsrv. You can configure additional data with it./i,
-    ),
-  ).toBeInTheDocument();
-  expect(screen.getByText(/Configure Connector/i)).toBeInTheDocument();
-  expect(
-    screen.getByPlaceholderText(/Search by connector type/i),
-  ).toBeInTheDocument();
-  expect(screen.getByPlaceholderText(/Filters/i)).toBeInTheDocument();
+  renderConnector();
+
+  expect(screen.getByText(/Choose additional data connectors/i)).toBeInTheDocument();
+  expect(screen.getByPlaceholderText(/Search by connector name/i)).toBeInTheDocument();
+  expect(screen.getByPlaceholderText(/Filter/i)).toBeInTheDocument();
+  connectors.forEach((item) => {
+    expect(screen.getByText(item.name)).toBeInTheDocument();
+  });
+});
+
+test('requests the connector list on mount', () => {
+  const mutate = mockConnectorsList();
+  renderConnector();
+
+  expect(mutate).toHaveBeenCalledWith({ payload: {} });
+});
+
+test('shows the loader while the connector list is pending', () => {
+  mockConnectorsList({ isPending: true });
+  renderConnector();
+
+  expect(screen.queryByPlaceholderText(/Search by connector name/i)).not.toBeInTheDocument();
 });
 
 test('filters connectors based on search input', async () => {
-  render(<SelectConnector />, { wrapper: BrowserRouter });
+  renderConnector();
 
-  const searchInput = screen.getByPlaceholderText(/Search by connector type/i);
-  fireEvent.change(searchInput, { target: { value: 'bigquery' } });
+  fireEvent.change(screen.getByPlaceholderText(/Search by connector name/i), {
+    target: { value: 'bigquery' },
+  });
 
   await waitFor(() => {
-    const connector1 = screen.queryByText(/Big query/i);
-    expect(connector1).toBeInTheDocument();
+    expect(screen.getByText('BigQuery')).toBeInTheDocument();
+    expect(screen.queryByText('Kafka')).not.toBeInTheDocument();
   });
 });
 
 test('selects and deselects connector card', () => {
-  render(<SelectConnector />, { wrapper: BrowserRouter });
+  renderConnector();
 
-  connectorList.forEach((item) => {
-    const connectorElements = screen.getAllByTestId('card');
+  const card = screen.getAllByTestId('card')[0];
 
-    connectorElements.forEach((connector) => {
-      fireEvent.click(connector);
+  fireEvent.click(card);
+  expect(card).toHaveClass('selectedCard');
 
-      expect(connector).toHaveClass('selectedCard');
-      fireEvent.click(connector);
-      expect(connector).not.toHaveClass('selectedCard');
-    });
-  });
+  fireEvent.click(card);
+  expect(card).not.toHaveClass('selectedCard');
 });
 
-test('displays Proceed button when a connector is selected', () => {
-  render(<SelectConnector />, { wrapper: BrowserRouter });
+test('displays Proceed button when a connector is selected and Skip when none is', () => {
+  renderConnector();
 
-  connectorList.forEach((item) => {
-    const connector = screen.getByText(item.name);
-    fireEvent.click(connector);
+  expect(screen.getByText('Skip')).toBeInTheDocument();
+  expect(screen.queryByText('Proceed')).not.toBeInTheDocument();
 
-    const proceedButton = screen.getByText(/Proceed/i);
-    expect(proceedButton).toBeInTheDocument();
+  const card = screen.getAllByTestId('card')[0];
+  fireEvent.click(card);
 
-    fireEvent.click(connector);
-    expect(proceedButton).not.toBeInTheDocument();
-  });
+  expect(screen.getByText('Proceed')).toBeInTheDocument();
+  expect(screen.queryByText('Skip')).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getAllByTestId('selected-card')[0]);
+  expect(screen.getByText('Skip')).toBeInTheDocument();
 });
