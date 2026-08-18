@@ -1,6 +1,7 @@
 name: Obsrv web console service build and deploy workflow
 run-name: Workflow run for ${{ github.ref }}
 on:
+  # checkov:skip=CKV_GHA_7:aws-deploy is a maintainer-only deploy toggle, not build input
   push:
     tags:
       - '*'

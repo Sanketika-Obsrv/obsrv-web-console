@@ -4,6 +4,7 @@ ARG BUILD_IMAGE=dhi.io/node:24-debian13-dev
 ARG RUNTIME_IMAGE=dhi.io/node:24-debian13
 
 # Stage 1 - Build the React client and Node.js server
+# checkov:skip=CKV_DOCKER_7:base images are pinned via the ARG defaults above
 FROM ${BUILD_IMAGE} AS build
 
 # Production build settings: no source maps (smaller, no source leak, big memory saver on
@@ -41,4 +42,9 @@ WORKDIR /opt/app/server
 COPY --chown=node:node --from=build /opt/app/server /opt/app/server
 COPY --chown=node:node --from=build /opt/app/LICENSE /opt/app/LICENSE
 USER node
+
+# Exec-form probe against the unauthenticated /metrics route; the runtime image has no shell.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+    CMD ["node", "-e", "require('http').get('http://127.0.0.1:'+(process.env.PORT||3000)+'/metrics',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+
 CMD ["node", "./dist/index.js"]
