@@ -32,6 +32,12 @@ const validActions: Action[] = [
   },
   { kind: 'delete_field', path: 'coupon_code' },
   { kind: 'resolve_conflict', path: 'total_amount', mode: 'apply' },
+  {
+    kind: 'resolve_conflict',
+    path: 'customer.address.geo.lat',
+    mode: 'apply',
+    dataType: 'double',
+  },
   { kind: 'set_additional_fields', allow: false },
   {
     kind: 'set_pii',
@@ -186,6 +192,17 @@ describe('validateAction', () => {
     expect(
       validateAction({ kind: 'set_dedup', enabled: true, key: 'order_id' }).ok,
     ).toBe(true);
+  });
+
+  it('rejects an unknown data type on resolve_conflict', () => {
+    expect(
+      validateAction({
+        kind: 'resolve_conflict',
+        path: 'a',
+        mode: 'apply',
+        dataType: 'money',
+      }).ok,
+    ).toBe(false);
   });
 
   it('requires at least one storage flag', () => {

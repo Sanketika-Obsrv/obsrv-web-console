@@ -111,7 +111,13 @@ export type Action =
       parentPath?: string;
     }
   | { kind: 'delete_field'; path: string }
-  | { kind: 'resolve_conflict'; path: string; mode: 'apply' | 'dismiss' }
+  | {
+      kind: 'resolve_conflict';
+      path: string;
+      mode: 'apply' | 'dismiss';
+      /** Overrides the console's recommendation, which can be lossy. */
+      dataType?: DataType;
+    }
   | { kind: 'set_additional_fields'; allow: boolean }
   | {
       kind: 'set_pii';
@@ -247,7 +253,11 @@ const buildVariants = ({
     variant('delete_field', { path }, ['path']),
     variant(
       'resolve_conflict',
-      { path, mode: { type: 'string', enum: ['apply', 'dismiss'] } },
+      {
+        path,
+        mode: { type: 'string', enum: ['apply', 'dismiss'] },
+        dataType: { type: 'string', enum: [...DATA_TYPES] },
+      },
       ['path', 'mode'],
     ),
     variant('set_additional_fields', { allow: { type: 'boolean' } }, ['allow']),

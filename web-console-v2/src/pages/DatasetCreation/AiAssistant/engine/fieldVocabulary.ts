@@ -109,6 +109,17 @@ export const buildFieldVocabulary = (
   };
 };
 
+/**
+ * Turns a dot path into the JSON Schema ref the API uses, matching the wizard's
+ * own derivation in `services/dataset.formatNewFields`.
+ */
+export const refFromPath = (path: string): string =>
+  path
+    .split('.')
+    .filter(Boolean)
+    .map((segment) => `properties.${segment}`)
+    .join('.');
+
 const uniquePaths = (entries: VocabularyEntry[]) => [
   ...new Set(entries.map((entry) => entry.path)),
 ];

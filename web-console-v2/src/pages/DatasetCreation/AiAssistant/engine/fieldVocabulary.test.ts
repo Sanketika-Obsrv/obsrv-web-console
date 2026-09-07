@@ -1,6 +1,7 @@
 import { SchemaField } from 'services/datasetApi';
 import {
   buildFieldVocabulary,
+  refFromPath,
   dateTimePaths,
   dedupEligiblePaths,
   piiEligiblePaths,
@@ -193,6 +194,22 @@ describe('buildFieldVocabulary', () => {
     expect(
       buildFieldVocabulary(undefined as unknown as SchemaField[]).paths,
     ).toEqual([]);
+  });
+});
+
+describe('refFromPath', () => {
+  it('matches the ref the vocabulary derives from the API response', () => {
+    vocab.entries.forEach((entry) => {
+      expect(refFromPath(entry.path)).toBe(entry.ref);
+    });
+  });
+
+  it('handles a single segment and tolerates stray dots', () => {
+    expect(refFromPath('order_id')).toBe('properties.order_id');
+    expect(refFromPath('customer..email')).toBe(
+      'properties.customer.properties.email',
+    );
+    expect(refFromPath('')).toBe('');
   });
 });
 
