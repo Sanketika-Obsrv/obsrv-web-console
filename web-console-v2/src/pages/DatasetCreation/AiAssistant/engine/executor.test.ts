@@ -421,7 +421,8 @@ describe('failure handling', () => {
   });
 
   it('rejects an action that is not wired up yet without calling the API', async () => {
-    const result = await run({ kind: 'save' });
+    // `undo` lands with the hardening task; `save` is wired now.
+    const result = await run({ kind: 'undo' });
 
     expect(mockRead).not.toHaveBeenCalled();
     expect(mockUpdate).not.toHaveBeenCalled();

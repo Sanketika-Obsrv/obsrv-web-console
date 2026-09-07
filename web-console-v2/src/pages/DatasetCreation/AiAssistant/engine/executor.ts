@@ -16,16 +16,25 @@
  * `UNSUPPORTED_ACTION` without touching the API.
  */
 import _ from 'lodash';
+import { evaluateDataType } from 'pages/DatasetCreation/Processing/utils/dataTypeUtil';
 import {
   createDataset,
   datasetExists,
+  datasetStatusTransition,
   generateDataSchema,
   generateUploadUrls,
   readDataset,
   updateDataset,
   uploadToPresignedUrl,
 } from 'services/datasetApi';
+import { setAdditionalProperties } from 'services/json-schema';
+import { ValidationMode } from 'types/datasets';
 import { Action, DatasetType } from './actions';
+import {
+  buildFieldVocabulary,
+  dateTimePaths,
+  storageKeyEligiblePaths,
+} from './fieldVocabulary';
 import { refFromPath } from './fieldVocabulary';
 import {
   datasetIdFromName,
@@ -46,6 +55,19 @@ import {
 
 /** Smallest projection that supports a schema edit. */
 export const SCHEMA_READ_FIELDS = 'dataset_id,data_schema,version_key';
+
+/** Projection covering everything the processing and storage steps touch. */
+export const PROCESSING_READ_FIELDS =
+  'dataset_id,version_key,type,data_schema,sample_data,validation_config,' +
+  'dedup_config,denorm_config,transformations_config,dataset_config';
+
+/**
+ * The console's label for indexing on ingestion time rather than a schema
+ * field. It is stored as this reserved key, which is not part of the schema.
+ */
+export const EVENT_ARRIVAL_TIME = 'obsrv_meta.syncts';
+
+const EVENT_ARRIVAL_LABEL = 'Event Arrival Time';
 
 /**
  * Name and type chosen before `datasets/create` has run.
@@ -92,6 +114,12 @@ export type ExecutionFailureCode =
   | 'MISSING_SAMPLE'
   | 'UPLOAD_URL_MISSING'
   | 'CREATE_FAILED'
+  | 'INVALID_EXPRESSION'
+  | 'INELIGIBLE_DEDUP_KEY'
+  | 'INELIGIBLE_STORAGE_KEY'
+  | 'INELIGIBLE_TIMESTAMP_KEY'
+  | 'NO_STORAGE_SELECTED'
+  | 'NO_DATASET'
   | string;
 
 export type ExecutionOutcome =
@@ -106,6 +134,8 @@ export type ExecutionOutcome =
     }
   /** Accepted, but held client-side because there is no draft to write to yet. */
   | { ok: true; status: 'pending'; pending: PendingDataset }
+  /** Local-only, e.g. moving between steps. */
+  | { ok: true; status: 'noop' }
   | { ok: false; error: string; code: ExecutionFailureCode };
 
 const failure = (
@@ -439,6 +469,126 @@ const attachSample = async (
   }
 };
 
+type TransformationEntry = {
+  field_key: string;
+  transformation_function: Record<string, unknown>;
+  mode: string;
+};
+
+/** The console stores "skip the record on failure?" as the transformation mode. */
+const modeFor = (skipOnFailure: boolean) =>
+  skipOnFailure ? 'Strict' : 'Lenient';
+
+/**
+ * `transformations_config` and `denorm_config.denorm_fields` are delta APIs:
+ * the PATCH schema requires each item to be `{ value, action }` and rejects a
+ * plain array. Replacing an entry means remove-then-upsert, which is what the
+ * console sends.
+ */
+type Delta = { value: Record<string, unknown>; action: 'upsert' | 'remove' };
+
+const upsertDelta = (
+  entry: Record<string, unknown>,
+  keyName: string,
+  existing: unknown,
+): Delta[] => {
+  const key = entry[keyName];
+  const current = (Array.isArray(existing) ? existing : []) as Record<
+    string,
+    unknown
+  >[];
+  const alreadyPresent = current.some((item) => item[keyName] === key);
+  const removal: Delta[] = alreadyPresent
+    ? [{ value: { [keyName]: key }, action: 'remove' }]
+    : [];
+
+  return [...removal, { value: entry, action: 'upsert' }];
+};
+
+const upsertTransformation = (existing: unknown, entry: TransformationEntry) =>
+  upsertDelta(
+    entry as unknown as Record<string, unknown>,
+    'field_key',
+    existing,
+  );
+
+const vocabularyOf = (dataSchema: DataSchema | undefined) =>
+  buildFieldVocabulary(
+    Object.entries(
+      (dataSchema as { properties?: Record<string, Record<string, unknown>> })
+        ?.properties ?? {},
+    ).map(([name, field]) => ({ ...field, column: name })) as never,
+  );
+
+/**
+ * Runs the expression against `sample_data.mergedEvent` to derive its store
+ * type, reusing the wizard's own evaluator. Doubles as a preflight: an
+ * expression that will not evaluate never reaches the API.
+ */
+const datatypeForExpression = async (
+  expression: string,
+  sampleData: unknown,
+): Promise<{ ok: true; datatype: string } | { ok: false; error: string }> => {
+  try {
+    const evaluated = await evaluateDataType(expression, sampleData);
+    return { ok: true, datatype: String(evaluated?.data_type ?? 'string') };
+  } catch (cause) {
+    return {
+      ok: false,
+      error: cause instanceof Error ? cause.message : String(cause),
+    };
+  }
+};
+
+const requireDataset = (context: ExecutorContext): string | null =>
+  context.datasetId ?? null;
+
+/** Reads the processing projection, applies a builder, then PATCHes and re-reads. */
+const patchProcessing = async (
+  datasetId: string,
+  build: (
+    current: DatasetSnapshot,
+  ) => Promise<Record<string, unknown> | ExecutionOutcome>,
+): Promise<ExecutionOutcome> => {
+  let current: DatasetSnapshot;
+
+  try {
+    current = await readDataset<DatasetSnapshot>({
+      datasetId,
+      fields: PROCESSING_READ_FIELDS,
+    });
+  } catch (cause) {
+    return describeApiError(cause, 'READ_FAILED');
+  }
+
+  const built = await build(current);
+
+  if ('ok' in built) return built as ExecutionOutcome;
+
+  try {
+    await updateDataset({
+      dataset_id: current.dataset_id ?? datasetId,
+      version_key: current.version_key,
+      ...built,
+    });
+  } catch (cause) {
+    return describeApiError(cause, 'PATCH_FAILED');
+  }
+
+  try {
+    const refreshed = await readDataset<DatasetSnapshot>({
+      datasetId,
+      fields: PROCESSING_READ_FIELDS,
+    });
+    return { ok: true, status: 'applied', dataset: refreshed, changedRefs: [] };
+  } catch (cause) {
+    return describeApiError(cause, 'READ_FAILED');
+  }
+};
+
+const fieldExists = (current: DatasetSnapshot, path: string) =>
+  Boolean(_.get(current.data_schema, refFromPath(path)));
+
 export const executeAction = async (
   action: Action,
   context: ExecutorContext,
@@ -453,6 +603,296 @@ export const executeAction = async (
 
   if (action.kind === 'attach_sample') {
     return attachSample(action.fileName, context);
+  }
+
+  if (action.kind === 'goto_step') {
+    return { ok: true, status: 'noop' };
+  }
+
+  const datasetId = requireDataset(context);
+
+  if (
+    !datasetId &&
+    (action.kind === 'set_additional_fields' ||
+      action.kind === 'set_pii' ||
+      action.kind === 'add_transformation' ||
+      action.kind === 'add_derived_field' ||
+      action.kind === 'set_dedup' ||
+      action.kind === 'set_denorm' ||
+      action.kind === 'set_storage' ||
+      action.kind === 'set_keys' ||
+      action.kind === 'save')
+  ) {
+    return failure(
+      'There is no dataset yet — attach a sample file first',
+      'NO_DATASET',
+    );
+  }
+
+  if (action.kind === 'set_additional_fields' && datasetId) {
+    const mode = action.allow
+      ? ValidationMode.IgnoreNewFields
+      : ValidationMode.Strict;
+
+    return patchProcessing(datasetId, async (current) => ({
+      validation_config: { validate: true, mode },
+      data_schema: setAdditionalProperties(
+        _.cloneDeep(current.data_schema ?? {}),
+        mode,
+      ),
+    }));
+  }
+
+  if (action.kind === 'set_pii' && datasetId) {
+    return patchProcessing(datasetId, async (current) => {
+      if (!fieldExists(current, action.path)) {
+        return failure(`Unknown field "${action.path}"`, 'UNKNOWN_FIELD');
+      }
+
+      return {
+        transformations_config: upsertTransformation(
+          current.transformations_config,
+          {
+            field_key: action.path,
+            transformation_function: {
+              type: action.action,
+              expr: action.path,
+              datatype: 'string',
+              category: 'pii',
+            },
+            mode: modeFor(action.skipOnFailure),
+          },
+        ),
+      };
+    });
+  }
+
+  if (action.kind === 'add_transformation' && datasetId) {
+    return patchProcessing(datasetId, async (current) => {
+      if (!fieldExists(current, action.path)) {
+        return failure(`Unknown field "${action.path}"`, 'UNKNOWN_FIELD');
+      }
+
+      const evaluated = await datatypeForExpression(
+        action.expression,
+        current.sample_data,
+      );
+
+      if (!evaluated.ok) {
+        return failure(evaluated.error, 'INVALID_EXPRESSION');
+      }
+
+      return {
+        transformations_config: upsertTransformation(
+          current.transformations_config,
+          {
+            field_key: action.path,
+            transformation_function: {
+              type: 'jsonata',
+              expr: action.expression,
+              datatype: evaluated.datatype,
+              category: 'transform',
+            },
+            mode: modeFor(action.skipOnFailure),
+          },
+        ),
+      };
+    });
+  }
+
+  if (action.kind === 'add_derived_field' && datasetId) {
+    return patchProcessing(datasetId, async (current) => {
+      const evaluated = await datatypeForExpression(
+        action.expression,
+        current.sample_data,
+      );
+
+      if (!evaluated.ok) {
+        return failure(evaluated.error, 'INVALID_EXPRESSION');
+      }
+
+      return {
+        transformations_config: upsertTransformation(
+          current.transformations_config,
+          {
+            field_key: action.name,
+            transformation_function: {
+              type: 'jsonata',
+              expr: action.expression,
+              datatype: evaluated.datatype,
+              category: 'derived',
+            },
+            mode: modeFor(action.skipOnFailure),
+          },
+        ),
+      };
+    });
+  }
+
+  if (action.kind === 'set_dedup' && datasetId) {
+    return patchProcessing(datasetId, async (current) => {
+      if (action.enabled && action.key) {
+        const eligible = storageKeyEligiblePaths(
+          vocabularyOf(current.data_schema),
+        );
+
+        if (!eligible.includes(action.key)) {
+          return failure(
+            `"${action.key}" cannot be a dedup key — choose a top-level, non-object field`,
+            'INELIGIBLE_DEDUP_KEY',
+          );
+        }
+      }
+
+      return {
+        dedup_config: {
+          drop_duplicates: action.enabled,
+          dedup_key: action.enabled ? action.key : '',
+        },
+      };
+    });
+  }
+
+  if (action.kind === 'set_denorm' && datasetId) {
+    return patchProcessing(datasetId, async (current) => {
+      if (!fieldExists(current, action.path)) {
+        return failure(`Unknown field "${action.path}"`, 'UNKNOWN_FIELD');
+      }
+
+      const config = (current.denorm_config ?? {}) as Record<string, unknown>;
+
+      // Only `denorm_fields` may be sent: the redis settings are
+      // server-managed and `denorm_config` is additionalProperties:false.
+      return {
+        denorm_config: {
+          denorm_fields: upsertDelta(
+            {
+              denorm_key: action.path,
+              denorm_out_field: action.outField,
+              dataset_id: action.masterDatasetId,
+            },
+            'denorm_key',
+            config.denorm_fields,
+          ),
+        },
+      };
+    });
+  }
+
+  if (action.kind === 'set_storage' && datasetId) {
+    return patchProcessing(datasetId, async (current) => {
+      const config = (current.dataset_config ?? {}) as Record<string, unknown>;
+      const indexing = (config.indexing_config ?? {}) as Record<
+        string,
+        boolean
+      >;
+      const isMaster = current.type === 'master';
+
+      const next = {
+        olap_store_enabled:
+          action.realtime ?? indexing.olap_store_enabled ?? false,
+        lakehouse_enabled:
+          action.lakehouse ?? indexing.lakehouse_enabled ?? false,
+        // The console forces the cache store on for master datasets.
+        cache_enabled: isMaster
+          ? true
+          : (action.cache ?? indexing.cache_enabled ?? false),
+      };
+
+      if (
+        !next.olap_store_enabled &&
+        !next.lakehouse_enabled &&
+        !next.cache_enabled
+      ) {
+        return failure(
+          'At least one storage option must stay enabled',
+          'NO_STORAGE_SELECTED',
+        );
+      }
+
+      // `dataset_config` is additionalProperties:false — echoing back the
+      // server-added `cache_config` is rejected.
+      return {
+        dataset_config: {
+          file_upload_path: config.file_upload_path,
+          indexing_config: next,
+          keys_config: config.keys_config ?? {},
+        },
+      };
+    });
+  }
+
+  if (action.kind === 'set_keys' && datasetId) {
+    return patchProcessing(datasetId, async (current) => {
+      const vocabulary = vocabularyOf(current.data_schema);
+      const config = (current.dataset_config ?? {}) as Record<string, unknown>;
+      const keys = (config.keys_config ?? {}) as Record<string, string>;
+
+      const eligible = storageKeyEligiblePaths(vocabulary);
+
+      for (const key of [action.primary, action.partition]) {
+        if (key && !eligible.includes(key)) {
+          return failure(
+            `"${key}" cannot be a storage key — choose a top-level, non-object field`,
+            'INELIGIBLE_STORAGE_KEY',
+          );
+        }
+      }
+
+      let timestampKey = keys.timestamp_key ?? '';
+
+      if (action.timestamp) {
+        const isArrivalTime =
+          action.timestamp === EVENT_ARRIVAL_LABEL ||
+          action.timestamp === EVENT_ARRIVAL_TIME;
+
+        if (isArrivalTime) {
+          timestampKey = EVENT_ARRIVAL_TIME;
+        } else if (dateTimePaths(vocabulary).includes(action.timestamp)) {
+          timestampKey = action.timestamp;
+        } else {
+          return failure(
+            `"${action.timestamp}" is not a date-time field — pick one, or use "${EVENT_ARRIVAL_LABEL}"`,
+            'INELIGIBLE_TIMESTAMP_KEY',
+          );
+        }
+      }
+
+      return {
+        dataset_config: {
+          file_upload_path: config.file_upload_path,
+          indexing_config: config.indexing_config ?? {},
+          keys_config: {
+            data_key: action.primary ?? keys.data_key ?? '',
+            partition_key: action.partition ?? keys.partition_key ?? '',
+            timestamp_key: timestampKey,
+          },
+        },
+      };
+    });
+  }
+
+  if (action.kind === 'save' && datasetId) {
+    try {
+      await datasetStatusTransition(datasetId, 'ReadyToPublish');
+    } catch (cause) {
+      return describeApiError(cause, 'PATCH_FAILED');
+    }
+
+    try {
+      const refreshed = await readDataset<DatasetSnapshot>({
+        datasetId,
+        fields: 'dataset_id,status,version_key',
+      });
+      return {
+        ok: true,
+        status: 'applied',
+        dataset: refreshed,
+        changedRefs: [],
+      };
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
   }
 
   if (!isSchemaAction(action)) {
