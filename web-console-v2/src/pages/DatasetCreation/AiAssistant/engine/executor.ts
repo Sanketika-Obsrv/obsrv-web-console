@@ -16,9 +16,22 @@
  * `UNSUPPORTED_ACTION` without touching the API.
  */
 import _ from 'lodash';
-import { readDataset, updateDataset } from 'services/datasetApi';
-import { Action } from './actions';
+import {
+  createDataset,
+  datasetExists,
+  generateDataSchema,
+  generateUploadUrls,
+  readDataset,
+  updateDataset,
+  uploadToPresignedUrl,
+} from 'services/datasetApi';
+import { Action, DatasetType } from './actions';
 import { refFromPath } from './fieldVocabulary';
+import {
+  datasetIdFromName,
+  isValidDatasetName,
+  mergeSampleRows,
+} from './ingestion';
 import {
   DataSchema,
   SchemaEditResult,
@@ -34,8 +47,30 @@ import {
 /** Smallest projection that supports a schema edit. */
 export const SCHEMA_READ_FIELDS = 'dataset_id,data_schema,version_key';
 
+/**
+ * Name and type chosen before `datasets/create` has run.
+ *
+ * The server cannot hold these yet, so the session carries them between turns.
+ * This is the one piece of state that legitimately lives client-side, and it
+ * disappears the moment the draft exists.
+ */
+export interface PendingDataset {
+  name?: string;
+  datasetId?: string;
+  datasetType?: DatasetType;
+}
+
+export interface SampleUpload {
+  file: File;
+  /** Parsed rows, used for inference and for `sample_data.mergedEvent`. */
+  rows: unknown[];
+}
+
 export interface ExecutorContext {
-  datasetId: string;
+  /** Null until `attach_sample` has created the draft. */
+  datasetId: string | null;
+  pending?: PendingDataset;
+  sample?: SampleUpload;
 }
 
 export interface DatasetSnapshot extends Record<string, unknown> {
@@ -51,10 +86,26 @@ export type ExecutionFailureCode =
   | 'NO_SCHEMA'
   | 'READ_FAILED'
   | 'PATCH_FAILED'
+  | 'INVALID_DATASET_NAME'
+  | 'DATASET_ID_TAKEN'
+  | 'MISSING_DATASET_NAME'
+  | 'MISSING_SAMPLE'
+  | 'UPLOAD_URL_MISSING'
+  | 'CREATE_FAILED'
   | string;
 
 export type ExecutionOutcome =
-  | { ok: true; dataset: DatasetSnapshot; changedRefs: string[] }
+  /** Written to the server; `dataset` is the post-PATCH re-read. */
+  | {
+      ok: true;
+      status: 'applied';
+      dataset: DatasetSnapshot;
+      changedRefs: string[];
+      /** Set when this action created the draft. */
+      datasetId?: string;
+    }
+  /** Accepted, but held client-side because there is no draft to write to yet. */
+  | { ok: true; status: 'pending'; pending: PendingDataset }
   | { ok: false; error: string; code: ExecutionFailureCode };
 
 const failure = (
@@ -156,14 +207,265 @@ const applyEdit = (
   }
 };
 
+/** Reads the current draft, then PATCHes the given top-level fields. */
+const patchDataset = async (
+  datasetId: string,
+  fields: string,
+  build: (current: DatasetSnapshot) => Record<string, unknown>,
+): Promise<ExecutionOutcome> => {
+  let current: DatasetSnapshot;
+
+  try {
+    current = await readDataset<DatasetSnapshot>({ datasetId, fields });
+  } catch (cause) {
+    return describeApiError(cause, 'READ_FAILED');
+  }
+
+  try {
+    await updateDataset({
+      dataset_id: current.dataset_id ?? datasetId,
+      version_key: current.version_key,
+      ...build(current),
+    });
+  } catch (cause) {
+    return describeApiError(cause, 'PATCH_FAILED');
+  }
+
+  try {
+    const refreshed = await readDataset<DatasetSnapshot>({
+      datasetId,
+      fields: SCHEMA_READ_FIELDS,
+    });
+    return {
+      ok: true,
+      status: 'applied',
+      dataset: refreshed,
+      changedRefs: [],
+    };
+  } catch (cause) {
+    return describeApiError(cause, 'READ_FAILED');
+  }
+};
+
+/**
+ * A 404 from `dataset/exists` means the id is free. Anything else means it is
+ * taken, or that we could not tell — either way, do not proceed.
+ */
+const datasetIdIsAvailable = async (datasetId: string): Promise<boolean> => {
+  try {
+    await datasetExists(datasetId);
+    return false;
+  } catch (cause) {
+    return _.get(cause, ['response', 'status']) === 404;
+  }
+};
+
+const setName = async (
+  name: string,
+  context: ExecutorContext,
+): Promise<ExecutionOutcome> => {
+  if (!isValidDatasetName(name)) {
+    return failure(
+      `"${name}" contains characters that are not allowed in a dataset name`,
+      'INVALID_DATASET_NAME',
+    );
+  }
+
+  if (context.datasetId) {
+    // The id is derived from the original name and is immutable after create.
+    return patchDataset(context.datasetId, 'dataset_id,version_key', () => ({
+      name,
+    }));
+  }
+
+  const datasetId = datasetIdFromName(name);
+
+  if (!(await datasetIdIsAvailable(datasetId))) {
+    return failure(
+      `A dataset with the id "${datasetId}" already exists`,
+      'DATASET_ID_TAKEN',
+    );
+  }
+
+  return { ok: true, status: 'pending', pending: { name, datasetId } };
+};
+
+const setType = (
+  datasetType: DatasetType,
+  context: ExecutorContext,
+): Promise<ExecutionOutcome> => {
+  if (!context.datasetId) {
+    return Promise.resolve({
+      ok: true,
+      status: 'pending',
+      pending: { datasetType },
+    });
+  }
+
+  return patchDataset(context.datasetId, 'dataset_id,version_key', () => ({
+    type: datasetType,
+  }));
+};
+
+const CREATE_READ_FIELDS = 'dataset_id,version_key,name,type,dataset_config';
+
+/**
+ * Uploads the sample, runs inference, then creates the draft or replaces the
+ * sample on an existing one. Mirrors the wizard's sequence:
+ * generate-url -> PUT -> dataschema -> create/update.
+ */
+const attachSample = async (
+  fileName: string,
+  context: ExecutorContext,
+): Promise<ExecutionOutcome> => {
+  if (!context.sample) {
+    return failure('No sample file has been provided yet', 'MISSING_SAMPLE');
+  }
+
+  let existing: DatasetSnapshot | null = null;
+
+  if (context.datasetId) {
+    try {
+      existing = await readDataset<DatasetSnapshot>({
+        datasetId: context.datasetId,
+        fields: CREATE_READ_FIELDS,
+      });
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
+  }
+
+  const datasetId = context.datasetId ?? context.pending?.datasetId;
+  const name = (existing?.name as string | undefined) ?? context.pending?.name;
+
+  // A name is only needed to create; an existing draft already has one.
+  if (!datasetId || (!existing && !name)) {
+    return failure(
+      'Choose a dataset name before attaching a sample',
+      'MISSING_DATASET_NAME',
+    );
+  }
+
+  let filePath: string;
+
+  try {
+    const [upload] = await generateUploadUrls([fileName], 'write');
+
+    if (!upload?.preSignedUrl) {
+      return failure(
+        'The API did not return an upload URL',
+        'UPLOAD_URL_MISSING',
+      );
+    }
+
+    await uploadToPresignedUrl(upload.preSignedUrl, context.sample.file);
+    filePath = upload.filePath;
+  } catch (cause) {
+    return describeApiError(cause, 'PATCH_FAILED');
+  }
+
+  let dataSchema: DataSchema;
+
+  try {
+    // `config` is mandatory here; omitting it fails DATA_SCHEMA_INVALID_INPUT.
+    const inferred = await generateDataSchema<{ schema: DataSchema }>({
+      data: context.sample.rows,
+      config: { dataset: datasetId },
+    });
+    dataSchema = inferred.schema;
+  } catch (cause) {
+    return describeApiError(cause, 'PATCH_FAILED');
+  }
+
+  const sampleData = { mergedEvent: mergeSampleRows(context.sample.rows) };
+  const datasetType =
+    (existing?.type as DatasetType) ?? context.pending?.datasetType ?? 'event';
+
+  if (!existing) {
+    try {
+      await createDataset({
+        name: name as string,
+        dataset_id: datasetId,
+        type: datasetType,
+        dataset_config: {
+          keys_config: {},
+          indexing_config: {},
+          file_upload_path: [filePath],
+        },
+        connectors_config: [],
+        data_schema: dataSchema,
+        sample_data: sampleData,
+      });
+    } catch (cause) {
+      return describeApiError(cause, 'CREATE_FAILED');
+    }
+  } else {
+    const config = (existing.dataset_config ?? {}) as Record<string, unknown>;
+
+    try {
+      await updateDataset({
+        dataset_id: datasetId,
+        version_key: existing.version_key,
+        ...(name ? { name } : {}),
+        type: datasetType,
+        data_schema: dataSchema,
+        dataset_config: {
+          keys_config: config.keys_config ?? {},
+          indexing_config: config.indexing_config ?? {},
+          file_upload_path: [filePath],
+        },
+        sample_data: sampleData,
+      });
+    } catch (cause) {
+      return describeApiError(cause, 'PATCH_FAILED');
+    }
+  }
+
+  try {
+    const refreshed = await readDataset<DatasetSnapshot>({
+      datasetId,
+      fields: SCHEMA_READ_FIELDS,
+    });
+
+    return {
+      ok: true,
+      status: 'applied',
+      dataset: refreshed,
+      changedRefs: [],
+      datasetId,
+    };
+  } catch (cause) {
+    return describeApiError(cause, 'READ_FAILED');
+  }
+};
+
 export const executeAction = async (
   action: Action,
   context: ExecutorContext,
 ): Promise<ExecutionOutcome> => {
+  if (action.kind === 'set_dataset_name') {
+    return setName(action.name, context);
+  }
+
+  if (action.kind === 'set_dataset_type') {
+    return setType(action.datasetType, context);
+  }
+
+  if (action.kind === 'attach_sample') {
+    return attachSample(action.fileName, context);
+  }
+
   if (!isSchemaAction(action)) {
     return failure(
       `Action "${action.kind}" is not wired up yet`,
       'UNSUPPORTED_ACTION',
+    );
+  }
+
+  if (!context.datasetId) {
+    return failure(
+      'There is no dataset yet — attach a sample file first',
+      'NO_SCHEMA',
     );
   }
 
@@ -212,7 +514,12 @@ export const executeAction = async (
       fields: SCHEMA_READ_FIELDS,
     });
 
-    return { ok: true, dataset: refreshed, changedRefs: edited.changedRefs };
+    return {
+      ok: true,
+      status: 'applied',
+      dataset: refreshed,
+      changedRefs: edited.changedRefs,
+    };
   } catch (cause) {
     return describeApiError(cause, 'READ_FAILED');
   }

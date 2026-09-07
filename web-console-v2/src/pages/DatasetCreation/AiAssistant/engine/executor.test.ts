@@ -159,7 +159,7 @@ describe('read-modify-write ordering', () => {
     });
 
     expect(result.ok).toBe(true);
-    if (result.ok) {
+    if (result.ok && result.status === 'applied') {
       expect(result.dataset.version_key).toBe('222');
       expect(result.changedRefs).toEqual(['properties.order_id']);
     }
