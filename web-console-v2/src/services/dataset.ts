@@ -62,7 +62,7 @@ export const useFetchDatasetsById = ({
         queryParams: string;
     }) => {
     return useQuery({
-        queryKey: ['fetchDatasetsById', 'datasetId', 'status', queryParams],
+        queryKey: ['fetchDatasetsById', datasetId, queryParams],
         queryFn: () => http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}?${queryParams}`).then((response: AxiosResponse) => {
             setDatasetId(_.get(response, ['data', 'result', 'dataset_id']))
             setVersionKey(_.get(response, ['data', 'result', 'version_key']));

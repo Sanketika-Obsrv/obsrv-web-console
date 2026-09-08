@@ -5,6 +5,7 @@ import { t } from 'utils/i18n';
 import ChatPane from './ChatPane';
 import PreviewPane from './PreviewPane';
 import SplitLayout from './SplitLayout';
+import { usePreviewFocus } from './usePreviewFocus';
 
 /** Route placeholder used before `datasets/create` has run. */
 export const NEW_DATASET_PARAM = '<new>';
@@ -22,6 +23,8 @@ const AiAssistantPage: React.FC = () => {
       ? null
       : datasetIdParam;
 
+  const { focusSection, changedRefs, recordAction } = usePreviewFocus();
+
   return (
     <Box
       sx={{
@@ -34,8 +37,16 @@ const AiAssistantPage: React.FC = () => {
         leftLabel={t('aiAssistant.chatPaneLabel')}
         rightLabel={t('aiAssistant.previewPaneLabel')}
         separatorLabel={t('aiAssistant.separatorLabel')}
-        left={<ChatPane datasetId={datasetId} />}
-        right={<PreviewPane datasetId={datasetId} />}
+        left={
+          <ChatPane datasetId={datasetId} onActionExecuted={recordAction} />
+        }
+        right={
+          <PreviewPane
+            datasetId={datasetId}
+            focusSection={focusSection}
+            changedRefs={changedRefs}
+          />
+        }
       />
     </Box>
   );

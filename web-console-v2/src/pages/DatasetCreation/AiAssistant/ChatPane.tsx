@@ -1,9 +1,17 @@
 import { Box, Paper, Typography } from '@mui/material';
 import React from 'react';
 import { t } from 'utils/i18n';
+import { Action } from './engine/actions';
+import { ExecutionOutcome } from './engine/executor';
 
 export interface ChatPaneProps {
   datasetId: string | null;
+  /**
+   * Reports each dispatched action and its outcome so the preview can follow
+   * along. Nothing calls it yet — the composer and the resolver that dispatch
+   * actions land in T12 and T13.
+   */
+  onActionExecuted?: (action: Action, outcome: ExecutionOutcome) => void;
 }
 
 /**

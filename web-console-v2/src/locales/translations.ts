@@ -21,6 +21,7 @@ export const translations = {
       separatorLabel: 'Resize chat and preview panes',
       chatTitle: 'Dataset assistant',
       previewTitle: 'Preview',
+      progressLabel: 'Dataset configuration progress',
       newDatasetLabel: 'New dataset',
       newDatasetHint:
         'Describe the dataset you want to create, or drop a sample JSONL file to get started.',

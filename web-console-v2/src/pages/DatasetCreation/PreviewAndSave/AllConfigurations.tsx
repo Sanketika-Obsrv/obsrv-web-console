@@ -6,7 +6,6 @@ import MuiAccordionSummary, {
     AccordionSummaryProps,
 } from '@mui/material/AccordionSummary';
 import { styled } from '@mui/material/styles';
-import { render } from '@testing-library/react';
 import Loader from 'components/Loader';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
@@ -19,6 +18,18 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Collapse from '@mui/material/Collapse';
 import { DatasetStatus } from 'types/datasets';
+import { PreviewSection, highlightColumns } from 'pages/DatasetCreation/AiAssistant/engine/previewFocus';
+
+interface AllConfigurationsProps {
+    /** Defaults to the `:datasetId` route param, as the wizard supplies it. */
+    datasetId?: string;
+    /** Defaults to the `status` search param. */
+    status?: string;
+    /** Accordion to open. Follows the AI assistant's last action. */
+    focusSection?: PreviewSection;
+    /** JSON Schema refs changed by the last action, flashed in the schema table. */
+    changedRefs?: string[];
+}
 
 interface TransformationRow {
     field_key: string;
@@ -87,9 +98,15 @@ const DenormRow = ({ value }: any) => {
     );
 };
 
-const AllConfigurations = () => {
+const AllConfigurations = ({
+    datasetId: datasetIdProp,
+    status: statusProp,
+    focusSection,
+    changedRefs,
+}: AllConfigurationsProps = {}) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const { datasetId }: any = useParams();
+    const { datasetId: datasetIdParam }: any = useParams();
+    const datasetId = datasetIdProp ?? datasetIdParam;
     const [datasetName, setDatasetName] = useState<any>('');
     const [connectorMeta, setConnectorMeta] = useState<any>(undefined);
     const [connectorConfig, setConnectorConfig] = useState<any>(undefined);
@@ -107,7 +124,7 @@ const AllConfigurations = () => {
 
     const { search } = useLocation();
     const params = new URLSearchParams(search);
-    const status = params.get('status') || DatasetStatus.Draft;
+    const status = statusProp || params.get('status') || DatasetStatus.Draft;
 
     const defaultFields = ["dataset_id", "name", 'data_schema', 'validation_config', 'dedup_config', 'denorm_config', "dataset_config", "type"];
     const queryParams = (status === "Draft") ? `status=${status}&fields=${[...defaultFields, "connectors_config", "transformations_config"]}&mode=edit` : ``;
@@ -117,6 +134,8 @@ const AllConfigurations = () => {
     });
 
     useEffect(() => {
+        // No draft yet: the AI flow mounts the preview before `datasets/create`.
+        if (!datasetId) return;
         try {
             const processFields = async (datasetId: string) => {
                 const response = await getAllFields(datasetId, status || DatasetStatus.Draft);
@@ -191,11 +210,22 @@ const AllConfigurations = () => {
     }, [response.data])
 
 
-    const [expanded, setExpanded] = React.useState<string | false>('connector');
+    const [expanded, setExpanded] = React.useState<string | false>(focusSection ?? 'connector');
 
     const handleChange = (panel: string) => (event: React.SyntheticEvent, newExpanded: boolean) => {
         setExpanded(newExpanded ? panel : false);
     };
+
+    // Opens the accordion the assistant's last action touched. Not a controlled
+    // prop: the user can still collapse or open any panel afterwards.
+    useEffect(() => {
+        if (focusSection) setExpanded(focusSection);
+    }, [focusSection]);
+
+    const highlighted = highlightColumns(
+        changedRefs,
+        _.map(dataSchema, 'column'),
+    );
 
     const Accordion = styled((props: AccordionProps) => (
         <MuiAccordion disableGutters elevation={0} square {...props} />
@@ -247,7 +277,19 @@ const AllConfigurations = () => {
         return (
             <>
                 {fields && fields.map((field: any) => (
-                    <StyledTableRow key={field.column} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <StyledTableRow
+                        key={field.column}
+                        data-changed={highlighted.includes(field.column) || undefined}
+                        sx={{
+                            '&:last-child td, &:last-child th': { border: 0 },
+                            ...(highlighted.includes(field.column)
+                                ? {
+                                    backgroundColor: 'warning.lighter',
+                                    transition: 'background-color 0.4s ease-in-out',
+                                }
+                                : {}),
+                        }}
+                    >
                         <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>
                             {field.column}
                         </TableCell>
