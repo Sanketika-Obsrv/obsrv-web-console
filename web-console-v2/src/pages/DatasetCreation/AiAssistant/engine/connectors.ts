@@ -232,3 +232,46 @@ export const summariseProp = (prop: ConnectorProp): string => {
 
   return parts.join(' ');
 };
+
+export interface ConnectorPayloadArgs {
+  datasetId: string;
+  connectorId: string;
+  /** Non-secret values gathered in conversation. */
+  values: Record<string, unknown>;
+  /**
+   * Credentials, merged in only here on the way to the API. They are never
+   * part of the buffered values, so they cannot reach the session.
+   */
+  secrets?: Record<string, unknown>;
+  operationsConfig?: Record<string, unknown>;
+  /** `create` sends a plain array; `update` sends delta-wrapped entries. */
+  mode: 'create' | 'update';
+}
+
+/**
+ * Builds `connectors_config` in the shape the API expects.
+ *
+ * Both shapes are taken from the wizard's own code rather than guessed:
+ * `ConnectorConfiguration.tsx` sends `[{ value, action: 'upsert' }]` on
+ * update, and `Ingestion.tsx` sends a plain `[{ ... }]` on create. That is
+ * the same asymmetry T9 found for `transformations_config` — array configs
+ * are delta APIs on PATCH and plain arrays on POST.
+ */
+export const connectorConfigPayload = ({
+  datasetId,
+  connectorId,
+  values,
+  secrets,
+  operationsConfig,
+  mode,
+}: ConnectorPayloadArgs): unknown[] => {
+  const entry = {
+    id: `${datasetId}-${connectorId}`,
+    connector_id: connectorId,
+    connector_config: { ...values, ...(secrets ?? {}) },
+    operations_config: operationsConfig ?? {},
+    version: 'v2',
+  };
+
+  return mode === 'update' ? [{ value: entry, action: 'upsert' }] : [entry];
+};

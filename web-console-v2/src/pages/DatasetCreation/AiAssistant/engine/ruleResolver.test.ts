@@ -200,3 +200,131 @@ describe('what a resolution carries', () => {
     expect(resolve('save it').resolvedPath).toBeUndefined();
   });
 });
+
+/**
+ * Connector rules only fire once a connector list or a chosen connector's
+ * properties are in context. Without that, "set X to Y" is a schema
+ * instruction, and reading it as a connector field would be a false positive
+ * of the worst kind — it would write to the wrong config.
+ */
+describe('choosing a connector', () => {
+  const connectors = [
+    { id: 'postgres-connector-1.0.0', name: 'PostgreSQL' },
+    { id: 'kafka-connector-2.0.0', name: 'Kafka' },
+    { id: 'kafka-connector-1.0.0', name: 'Kafka (legacy)' },
+  ];
+
+  const withConnectors = (utterance: string) =>
+    resolveUtterance(utterance, { vocabulary, connectors });
+
+  it('picks a connector named unambiguously', () => {
+    expect(withConnectors('use postgres').action).toEqual({
+      kind: 'select_connector',
+      connectorId: 'postgres-connector-1.0.0',
+    });
+  });
+
+  it('matches on the display name too', () => {
+    expect(withConnectors('connect to PostgreSQL').action).toEqual({
+      kind: 'select_connector',
+      connectorId: 'postgres-connector-1.0.0',
+    });
+  });
+
+  it('asks which one when two versions match', () => {
+    const resolution = withConnectors('use kafka');
+
+    expect(resolution.status).toBe('ambiguous');
+    expect(resolution.clarify?.options).toEqual(
+      expect.arrayContaining(['Kafka', 'Kafka (legacy)']),
+    );
+  });
+
+  it('offers each match as a runnable action', () => {
+    const resolution = withConnectors('use kafka');
+
+    expect(resolution.candidateActions).toEqual(
+      expect.arrayContaining([
+        { kind: 'select_connector', connectorId: 'kafka-connector-2.0.0' },
+      ]),
+    );
+  });
+
+  it('declines a connector that is not installed', () => {
+    expect(withConnectors('use snowflake').status).not.toBe('resolved');
+  });
+
+  it('resolves nothing before the connector list has been read', () => {
+    expect(resolve('use postgres').status).not.toBe('resolved');
+  });
+
+  it('still understands skipping the connector', () => {
+    expect(withConnectors('skip the connector').action).toEqual({
+      kind: 'skip_connector',
+    });
+  });
+});
+
+describe('filling a connector property', () => {
+  const connectorProperties = [
+    'source_database_host',
+    'source_database_port',
+    'source_kafka_auto_offset_reset',
+  ];
+
+  const withConnector = (utterance: string) =>
+    resolveUtterance(utterance, { vocabulary, connectorProperties });
+
+  it('sets a property the connector declares', () => {
+    expect(
+      withConnector('set source_database_host to db.internal').action,
+    ).toEqual({
+      kind: 'set_connector_field',
+      property: 'source_database_host',
+      value: 'db.internal',
+    });
+  });
+
+  it('keeps the value verbatim', () => {
+    expect(
+      withConnector('set source_database_port to 5432').action,
+    ).toMatchObject({ value: '5432' });
+  });
+
+  /**
+   * The credential must never become an action, because an action is recorded
+   * in the transcript. Refusing at the resolver keeps the value out entirely.
+   */
+  it('refuses a credential and says where it will be asked for', () => {
+    const resolution = withConnector('set source_database_pwd to hunter2');
+
+    expect(resolution.status).not.toBe('resolved');
+    expect(JSON.stringify(resolution)).not.toContain('hunter2');
+  });
+
+  it('declines a property the connector does not declare', () => {
+    expect(
+      withConnector('set source_database_schema to public').status,
+    ).not.toBe('resolved');
+  });
+
+  /**
+   * Without a chosen connector, "set X to Y" belongs to the schema rules.
+   * Reading it as a connector field would write to the wrong config.
+   */
+  it('does not claim a schema instruction as a connector field', () => {
+    expect(resolve('set order_id to string').action).toEqual({
+      kind: 'set_data_type',
+      path: 'order_id',
+      dataType: 'string',
+    });
+  });
+
+  it('leaves schema instructions alone even with a connector chosen', () => {
+    expect(withConnector('set order_id to string').action).toEqual({
+      kind: 'set_data_type',
+      path: 'order_id',
+      dataType: 'string',
+    });
+  });
+});

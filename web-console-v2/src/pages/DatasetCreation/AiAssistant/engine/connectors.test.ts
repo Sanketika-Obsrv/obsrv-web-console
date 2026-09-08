@@ -6,6 +6,7 @@
  * password.
  */
 import {
+  connectorConfigPayload,
   fillableProps,
   isSecretProp,
   secretProps,
@@ -395,5 +396,102 @@ describe('describing a property for the user', () => {
     expect(
       summariseProp({ key: 'source_table', spec: {}, required: false }),
     ).toContain('source_table');
+  });
+});
+
+/**
+ * The payload shapes are taken from the wizard's own code rather than
+ * guessed: `ConnectorConfiguration.tsx` sends delta-wrapped entries on
+ * update, and `Ingestion.tsx` sends a plain array on create. That asymmetry
+ * matches what T9 found for `transformations_config`.
+ */
+describe('building the connectors_config payload', () => {
+  const args = {
+    datasetId: 'my-orders',
+    connectorId: 'postgres-connector-1.0.0',
+    values: { source_database_host: 'db.internal' },
+    secrets: { source_database_pwd: 'hunter2' },
+  };
+
+  it('wraps the entry as a delta on update, as the wizard does', () => {
+    const payload = connectorConfigPayload({ ...args, mode: 'update' });
+
+    expect(payload).toEqual([
+      {
+        value: {
+          id: 'my-orders-postgres-connector-1.0.0',
+          connector_id: 'postgres-connector-1.0.0',
+          connector_config: {
+            source_database_host: 'db.internal',
+            source_database_pwd: 'hunter2',
+          },
+          operations_config: {},
+          version: 'v2',
+        },
+        action: 'upsert',
+      },
+    ]);
+  });
+
+  it('sends a plain array on create, as the wizard does', () => {
+    const payload = connectorConfigPayload({ ...args, mode: 'create' });
+
+    expect(payload).toEqual([
+      {
+        id: 'my-orders-postgres-connector-1.0.0',
+        connector_id: 'postgres-connector-1.0.0',
+        connector_config: {
+          source_database_host: 'db.internal',
+          source_database_pwd: 'hunter2',
+        },
+        operations_config: {},
+        version: 'v2',
+      },
+    ]);
+  });
+
+  it('derives the id the way the wizard derives it', () => {
+    const [entry] = connectorConfigPayload({ ...args, mode: 'create' }) as {
+      id: string;
+    }[];
+
+    expect(entry.id).toBe('my-orders-postgres-connector-1.0.0');
+  });
+
+  /**
+   * The secrets are merged in only at this point, on the way to the API. They
+   * are never part of the buffered values, so they cannot be persisted.
+   */
+  it('merges the secrets in at the last moment', () => {
+    const payload = connectorConfigPayload({
+      ...args,
+      secrets: { source_database_pwd: 'hunter2' },
+      mode: 'create',
+    }) as { connector_config: Record<string, unknown> }[];
+
+    expect(payload[0].connector_config.source_database_pwd).toBe('hunter2');
+  });
+
+  it('works with no secrets at all', () => {
+    const payload = connectorConfigPayload({
+      ...args,
+      secrets: undefined,
+      mode: 'create',
+    }) as { connector_config: Record<string, unknown> }[];
+
+    expect(payload[0].connector_config).toEqual({
+      source_database_host: 'db.internal',
+    });
+  });
+
+  /** A stream connector sends an empty operations_config; batch carries one. */
+  it('carries an operations config when one is given', () => {
+    const payload = connectorConfigPayload({
+      ...args,
+      operationsConfig: { batch_size: 100 },
+      mode: 'create',
+    }) as { operations_config: Record<string, unknown> }[];
+
+    expect(payload[0].operations_config).toEqual({ batch_size: 100 });
   });
 });

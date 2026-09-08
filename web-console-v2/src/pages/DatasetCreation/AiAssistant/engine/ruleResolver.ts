@@ -21,6 +21,7 @@ import {
   WIZARD_STEPS,
   WizardStep,
 } from './actions';
+import { isSecretProp } from './connectors';
 import {
   FieldVocabulary,
   dedupEligiblePaths,
@@ -31,6 +32,14 @@ import {
 
 export interface ResolverContext {
   vocabulary: FieldVocabulary;
+  /** Connectors available to choose from, when the list has been read. */
+  connectors?: { id: string; name?: string }[];
+  /**
+   * The connector's non-secret property keys. Absent until a connector is
+   * chosen, which is what stops `set X to Y` being read as a connector field
+   * before there is a connector.
+   */
+  connectorProperties?: string[];
 }
 
 export type ResolutionStatus = 'resolved' | 'ambiguous' | 'unknown';
@@ -501,6 +510,67 @@ const RULES: Rule[] = [
   {
     pattern: /\b(?:skip|no)\b.*\bconnector\b/i,
     resolve: () => resolved({ kind: 'skip_connector' }, FIELDLESS_CONFIDENCE),
+  },
+  {
+    // Credentials are refused here rather than resolved and rejected later,
+    // so the value never becomes an action and never reaches the transcript.
+    pattern:
+      /^(?:set|use)\s+(?:the\s+)?([A-Za-z_][\w.]*)\s+(?:to|as|=)\s*(.+)$/i,
+    resolve: ([, property, value], context) => {
+      if (!context.connectorProperties?.length) return null;
+
+      const known = context.connectorProperties.find(
+        (candidate) =>
+          candidate.toLowerCase() === property.trim().toLowerCase(),
+      );
+      if (!known) return null;
+
+      if (isSecretProp(known, {})) {
+        return unknown(
+          `${known} is a credential, so I will ask for it in a secure form rather than in chat.`,
+        );
+      }
+
+      return resolved(
+        { kind: 'set_connector_field', property: known, value: value.trim() },
+        FIELDLESS_CONFIDENCE,
+      );
+    },
+  },
+  {
+    pattern:
+      /\b(?:use|connect (?:to|with)|pull from|read from)\s+(?:the\s+)?([A-Za-z][\w.-]*)\s*(?:connector)?$/i,
+    resolve: ([, term], context) => {
+      const connectors = context.connectors ?? [];
+      if (!connectors.length) return null;
+
+      const needle = term.trim().toLowerCase();
+      const matches = connectors.filter(
+        (connector) =>
+          connector.id.toLowerCase().includes(needle) ||
+          (connector.name ?? '').toLowerCase().includes(needle),
+      );
+
+      if (matches.length === 1) {
+        return resolved(
+          { kind: 'select_connector', connectorId: matches[0].id },
+          FIELDLESS_CONFIDENCE,
+        );
+      }
+
+      if (matches.length > 1) {
+        return ambiguous(
+          `Which connector did you mean by "${term.trim()}"?`,
+          matches.map((connector) => connector.name ?? connector.id),
+          matches.map((connector) => ({
+            kind: 'select_connector',
+            connectorId: connector.id,
+          })),
+        );
+      }
+
+      return null;
+    },
   },
 
   // — Navigation —
