@@ -8,7 +8,7 @@
  * user supplied.
  */
 import { Action } from '../engine/actions';
-import { ExecutionFailureCode } from '../engine/executor';
+import { ExecutionFailureCode, PendingDataset } from '../engine/executor';
 import { PreviewSection } from '../engine/previewFocus';
 import { MessageCard } from '../messages/types';
 
@@ -46,6 +46,15 @@ export interface AiSession {
   sessionId: string;
   /** Null until `datasets/create` has run. */
   datasetId: string | null;
+  /**
+   * Name, derived id and type chosen before the draft exists.
+   *
+   * The server cannot hold these until `datasets/create` has run, so the
+   * session carries them between turns and drops them the moment the draft
+   * exists and the server owns them. Typed as the executor's own
+   * `PendingDataset` so what is stored is exactly what is handed back.
+   */
+  pending: PendingDataset;
   mode: SessionMode;
   step: string;
   messages: Message[];

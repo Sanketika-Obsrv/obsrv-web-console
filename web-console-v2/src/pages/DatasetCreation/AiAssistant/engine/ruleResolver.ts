@@ -44,6 +44,12 @@ export interface Resolution {
   resolvedPath?: string;
   /** What to ask when the utterance could not be acted on as written. */
   clarify?: { question: string; options?: string[] };
+  /**
+   * One complete action per candidate in `clarify.options`, so the caller can
+   * offer them as buttons. Built here rather than substituted later, because
+   * only the rule knows which slot of which action holds a field path.
+   */
+  candidateActions?: Action[];
 }
 
 const EXACT_CONFIDENCE = 0.95;
@@ -57,10 +63,15 @@ const unknown = (question?: string): Resolution => ({
   ...(question ? { clarify: { question } } : {}),
 });
 
-const ambiguous = (question: string, options: string[]): Resolution => ({
+const ambiguous = (
+  question: string,
+  options: string[],
+  candidateActions?: Action[],
+): Resolution => ({
   status: 'ambiguous',
   confidence: 0,
   clarify: { question, options },
+  ...(candidateActions ? { candidateActions } : {}),
 });
 
 const resolved = (
@@ -93,6 +104,7 @@ const lookupField = (
   context: ResolverContext,
   term: string,
   eligible?: string[],
+  build?: (path: string) => Action,
 ): FieldLookup => {
   const resolution = resolveField(context.vocabulary, term);
 
@@ -102,6 +114,7 @@ const lookupField = (
       resolution: ambiguous(
         `Which field did you mean by "${term.trim()}"?`,
         resolution.candidates,
+        build ? resolution.candidates.map(build) : undefined,
       ),
     };
   }
@@ -121,6 +134,7 @@ const lookupField = (
         ? ambiguous(
             `"${resolution.path}" cannot be used here. Which field did you mean?`,
             eligible,
+            build ? eligible.map(build) : undefined,
           )
         : unknown(`"${resolution.path}" cannot be used here.`),
     };
@@ -182,7 +196,7 @@ const withField = (
   build: (path: string) => Action,
   eligible?: string[],
 ): Resolution => {
-  const field = lookupField(context, term, eligible);
+  const field = lookupField(context, term, eligible, build);
   if (!field.ok) return field.resolution;
 
   return resolved(build(field.path), field.confidence, field.path);

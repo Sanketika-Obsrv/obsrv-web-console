@@ -17,6 +17,7 @@ const message = (overrides: Partial<Message> = {}): Message => ({
 const session = (overrides: Partial<AiSession> = {}): AiSession => ({
   sessionId: 'session-1',
   datasetId: 'orders',
+  pending: {},
   mode: 'create',
   step: 'schema',
   messages: [message()],

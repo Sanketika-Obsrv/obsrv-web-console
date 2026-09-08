@@ -9,6 +9,7 @@ const NOW = 1_700_000_000_000;
 const session = (overrides: Partial<AiSession> = {}): AiSession => ({
   sessionId: 'session-1',
   datasetId: 'my-orders',
+  pending: {},
   mode: 'create',
   step: 'schema',
   messages: [],

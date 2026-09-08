@@ -1,8 +1,8 @@
-import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Divider, Paper, Stack, Typography } from '@mui/material';
 import React from 'react';
 import { t } from 'utils/i18n';
+import ChatComposer from './ChatComposer';
 import { Action } from './engine/actions';
-import { ExecutionOutcome } from './engine/executor';
 import MessageList from './messages/MessageList';
 import SessionResumeList from './session/SessionResumeList';
 import { AiSession, Message } from './session/types';
@@ -18,15 +18,16 @@ export interface ChatPaneProps {
   resumable: AiSession[];
   currentSessionId?: string;
   onClearSession?: (sessionId: string) => void;
-  /** Dispatched when a card is used. The resolver that drives it lands in T13. */
+  /** Dispatched when a card is used. */
   onAction?: (action: Action) => void;
   /** Receives a sample the user supplied through a file-drop card. */
   onSampleRows?: (rows: Record<string, unknown>[], file: File) => void;
-  /**
-   * Reports each dispatched action and its outcome so the preview can follow
-   * along. Called by the resolver in T13.
-   */
-  onActionExecuted?: (action: Action, outcome: ExecutionOutcome) => void;
+  /** Called with what the user typed. */
+  onSend?: (text: string) => void;
+  /** True while a turn is in flight. */
+  busy?: boolean;
+  /** Example instructions offered as chips. */
+  suggestions?: string[];
 }
 
 /**
@@ -47,6 +48,9 @@ const ChatPane: React.FC<ChatPaneProps> = ({
   onClearSession,
   onAction,
   onSampleRows,
+  onSend,
+  busy = false,
+  suggestions,
 }) => (
   <Paper
     variant="outlined"
@@ -71,7 +75,7 @@ const ChatPane: React.FC<ChatPaneProps> = ({
         {t('aiAssistant.restoringSession')}
       </Typography>
     ) : (
-      <Stack spacing={1} sx={{ flex: 1 }}>
+      <Stack spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
         {messages.length === 0 ? (
           <>
             <Typography variant="body2" color="text.secondary">
@@ -95,7 +99,12 @@ const ChatPane: React.FC<ChatPaneProps> = ({
       </Stack>
     )}
 
-    <Box sx={{ flex: 1 }} />
+    <Divider />
+    <ChatComposer
+      onSend={onSend ?? (() => undefined)}
+      busy={busy}
+      suggestions={suggestions}
+    />
   </Paper>
 );
 

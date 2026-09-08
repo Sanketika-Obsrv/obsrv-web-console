@@ -62,6 +62,8 @@ export interface SessionApi {
   clearSample(): Promise<void>;
   noteVersionKey(versionKey: string): Promise<void>;
   markConnectorConfigured(): Promise<void>;
+  /** Records a name or type chosen before the draft exists. */
+  setPending(pending: AiSession['pending']): Promise<void>;
   onSaved(): Promise<void>;
   /** Wipes this conversation and starts a new one in its place. */
   clear(): Promise<void>;
@@ -179,6 +181,7 @@ export const useSession = ({
         apply((id) => sessions.noteVersionKey(id, versionKey)),
       markConnectorConfigured: () =>
         apply((id) => sessions.markConnectorConfigured(id)),
+      setPending: (pending) => apply((id) => sessions.setPending(id, pending)),
       onSaved: () => apply((id) => sessions.onSaved(id)),
 
       resumable,

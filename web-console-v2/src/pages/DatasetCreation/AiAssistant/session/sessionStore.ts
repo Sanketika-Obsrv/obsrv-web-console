@@ -92,6 +92,14 @@ export interface SessionStore {
     sessionId: string,
     datasetId: string,
   ): Promise<AiSession | undefined>;
+  /**
+   * Records a name or type chosen before the draft exists. Merges, so naming
+   * and typing in separate turns both survive.
+   */
+  setPending(
+    sessionId: string,
+    pending: AiSession['pending'],
+  ): Promise<AiSession | undefined>;
   appendMessage(
     sessionId: string,
     message: NewMessage,
@@ -167,6 +175,7 @@ export const createSessionStore = (
       return write({
         sessionId: newId('session', now),
         datasetId: null,
+        pending: {},
         mode,
         step,
         messages: [],
@@ -186,7 +195,19 @@ export const createSessionStore = (
       (await storage.list()).find((session) => session.datasetId === datasetId),
 
     attachDataset: (sessionId, datasetId) =>
-      mutate(sessionId, (session) => ({ ...session, datasetId })),
+      // The draft now exists, so the server owns the name and type; keeping
+      // local copies would let them rot.
+      mutate(sessionId, (session) => ({
+        ...session,
+        datasetId,
+        pending: {},
+      })),
+
+    setPending: (sessionId, pending) =>
+      mutate(sessionId, (session) => ({
+        ...session,
+        pending: { ...session.pending, ...pending },
+      })),
 
     appendMessage: (sessionId, message) =>
       mutate(sessionId, (session) => ({

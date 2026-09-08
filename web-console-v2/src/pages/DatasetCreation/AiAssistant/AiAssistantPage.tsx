@@ -5,8 +5,7 @@ import { t } from 'utils/i18n';
 import ChatPane from './ChatPane';
 import PreviewPane from './PreviewPane';
 import SplitLayout from './SplitLayout';
-import { useSession } from './session/useSession';
-import { usePreviewFocus } from './usePreviewFocus';
+import { useAssistant } from './useAssistant';
 
 /** Route placeholder used before `datasets/create` has run. */
 export const NEW_DATASET_PARAM = '<new>';
@@ -24,8 +23,7 @@ const AiAssistantPage: React.FC = () => {
       ? null
       : datasetIdParam;
 
-  const { focusSection, changedRefs, recordAction } = usePreviewFocus();
-  const session = useSession({ datasetId });
+  const assistant = useAssistant(datasetId);
 
   return (
     <Box
@@ -41,21 +39,25 @@ const AiAssistantPage: React.FC = () => {
         separatorLabel={t('aiAssistant.separatorLabel')}
         left={
           <ChatPane
-            datasetId={datasetId}
-            messages={session.messages}
-            loading={session.loading}
-            persisting={session.persisting}
-            resumable={session.resumable}
-            currentSessionId={session.session?.sessionId}
-            onClearSession={session.clearSession}
-            onActionExecuted={recordAction}
+            datasetId={assistant.datasetId}
+            messages={assistant.messages}
+            loading={assistant.loading}
+            persisting={assistant.persisting}
+            resumable={assistant.resumable}
+            currentSessionId={assistant.currentSessionId}
+            onClearSession={assistant.clearSession}
+            onAction={assistant.dispatch}
+            onSampleRows={assistant.attachSample}
+            onSend={assistant.send}
+            busy={assistant.busy}
+            suggestions={assistant.suggestions}
           />
         }
         right={
           <PreviewPane
-            datasetId={datasetId}
-            focusSection={focusSection}
-            changedRefs={changedRefs}
+            datasetId={assistant.datasetId}
+            focusSection={assistant.focusSection}
+            changedRefs={assistant.changedRefs}
           />
         }
       />

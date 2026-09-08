@@ -577,3 +577,60 @@ describe('pruning conversations that never started', () => {
     expect(await sessions.pruneEmpty()).toBe(2);
   });
 });
+
+/**
+ * Name and type are chosen before `datasets/create` runs, so the server
+ * cannot hold them yet. Losing them between turns would make the create call
+ * fail with MISSING_DATASET_NAME — found by driving the real UI, where the
+ * name was narrated as held and then forgotten.
+ */
+describe('the name and type chosen before the draft exists', () => {
+  it('starts with nothing pending', async () => {
+    expect((await store().start({ mode: 'create' })).pending).toEqual({});
+  });
+
+  it('holds a name across turns', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+
+    await sessions.setPending(sessionId, { name: 'My Orders' });
+
+    expect((await sessions.load(sessionId))?.pending).toEqual({
+      name: 'My Orders',
+    });
+  });
+
+  it('merges a later choice rather than replacing the earlier one', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+
+    await sessions.setPending(sessionId, { name: 'My Orders' });
+    await sessions.setPending(sessionId, { datasetType: 'master' });
+
+    expect((await sessions.load(sessionId))?.pending).toEqual({
+      name: 'My Orders',
+      datasetType: 'master',
+    });
+  });
+
+  it('lets a choice be corrected', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+
+    await sessions.setPending(sessionId, { name: 'Wrong Name' });
+    await sessions.setPending(sessionId, { name: 'My Orders' });
+
+    expect((await sessions.load(sessionId))?.pending?.name).toBe('My Orders');
+  });
+
+  /** Once the draft exists the server owns these, so holding them would rot. */
+  it('drops them when the dataset id is attached', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.setPending(sessionId, { name: 'My Orders' });
+
+    await sessions.attachDataset(sessionId, 'my-orders');
+
+    expect((await sessions.load(sessionId))?.pending).toEqual({});
+  });
+});

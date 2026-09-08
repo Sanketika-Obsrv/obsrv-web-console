@@ -24,6 +24,9 @@ export const translations = {
       progressLabel: 'Dataset configuration progress',
       resumeHeading: 'Resume a previous conversation',
       restoringSession: 'Restoring this conversation…',
+      messageLabel: 'Message',
+      send: 'Send',
+      working: 'Working on that…',
       draftNotCreated: 'Draft not created yet',
       notPersisted:
         'This browser is not saving the conversation, so it will be lost on reload.',

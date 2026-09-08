@@ -19,28 +19,21 @@ jest.mock('./ChatPane', () => ({
   __esModule: true,
   default: ({
     datasetId,
-    onActionExecuted,
+    onAction,
   }: {
     datasetId: string | null;
-    onActionExecuted?: (
-      action: Record<string, unknown>,
-      outcome: Record<string, unknown>,
-    ) => void;
+    onAction?: (action: Record<string, unknown>) => void;
   }) => (
     <div>
       <span>{datasetId ?? 'New dataset'}</span>
       <button
         type="button"
         onClick={() =>
-          onActionExecuted?.(
-            { kind: 'set_data_type', path: 'total_amount', dataType: 'string' },
-            {
-              ok: true,
-              status: 'applied',
-              dataset: {},
-              changedRefs: ['properties.total_amount'],
-            },
-          )
+          onAction?.({
+            kind: 'set_data_type',
+            path: 'total_amount',
+            dataType: 'string',
+          })
         }
       >
         dispatch
@@ -49,21 +42,33 @@ jest.mock('./ChatPane', () => ({
   ),
 }));
 
+// The executor is stubbed, not the assistant: the point of these tests is
+// that the real wiring carries a card's action to the executor and the
+// resulting change back to the preview.
+jest.mock('./engine/executor', () => ({
+  ...jest.requireActual('./engine/executor'),
+  executeAction: jest.fn(),
+}));
+
 jest.mock('services/dataset', () => ({
   ...jest.requireActual('services/dataset'),
   useFetchDatasetsById: jest.fn(),
+  getAllFields: jest.fn(),
 }));
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { useFetchDatasetsById } from 'services/dataset';
+import { getAllFields, useFetchDatasetsById } from 'services/dataset';
 import AiAssistantPage from './AiAssistantPage';
+import { executeAction } from './engine/executor';
 
 // CRA's jest config sets `resetMocks`, so the implementation has to be given
 // per test rather than in the mock factory.
 beforeEach(() => {
+  sessionStorage.clear();
+
   (
     useFetchDatasetsById as jest.MockedFunction<typeof useFetchDatasetsById>
   ).mockReturnValue({
@@ -71,6 +76,19 @@ beforeEach(() => {
     isPending: false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
+
+  (getAllFields as jest.MockedFunction<typeof getAllFields>)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .mockResolvedValue({ data: [[]] } as any);
+
+  (
+    executeAction as jest.MockedFunction<typeof executeAction>
+  ).mockResolvedValue({
+    ok: true,
+    status: 'applied',
+    dataset: {},
+    changedRefs: ['properties.total_amount'],
+  });
 });
 
 const renderAt = (path: string) =>
@@ -120,8 +138,21 @@ describe('AiAssistantPage', () => {
   });
 });
 
-/** T11's acceptance criterion, end to end through the page. */
+/** T11's acceptance criterion, end to end through the real wiring. */
 describe('an action dispatched in the chat moves the preview', () => {
+  it('sends the action to the executor', async () => {
+    renderAt('/dataset/ai/my-orders');
+
+    await userEvent.click(screen.getByRole('button', { name: 'dispatch' }));
+
+    await waitFor(() =>
+      expect(executeAction).toHaveBeenCalledWith(
+        { kind: 'set_data_type', path: 'total_amount', dataType: 'string' },
+        expect.objectContaining({ datasetId: 'my-orders' }),
+      ),
+    );
+  });
+
   it('opens the accordion the action belongs to', async () => {
     renderAt('/dataset/ai/my-orders');
 
@@ -129,7 +160,12 @@ describe('an action dispatched in the chat moves the preview', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'dispatch' }));
 
-    expect(configurations()).toHaveAttribute('data-focus-section', 'ingestion');
+    await waitFor(() =>
+      expect(configurations()).toHaveAttribute(
+        'data-focus-section',
+        'ingestion',
+      ),
+    );
   });
 
   it('flashes the field the server reported as changed', async () => {
@@ -137,9 +173,11 @@ describe('an action dispatched in the chat moves the preview', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'dispatch' }));
 
-    expect(configurations()).toHaveAttribute(
-      'data-changed-refs',
-      'properties.total_amount',
+    await waitFor(() =>
+      expect(configurations()).toHaveAttribute(
+        'data-changed-refs',
+        'properties.total_amount',
+      ),
     );
   });
 });
