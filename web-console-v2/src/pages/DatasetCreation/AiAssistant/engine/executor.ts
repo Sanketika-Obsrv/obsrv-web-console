@@ -32,6 +32,13 @@ import { setAdditionalProperties } from 'services/json-schema';
 import { ValidationMode } from 'types/datasets';
 import { Action, DatasetType } from './actions';
 import {
+  UiSpec,
+  connectorConfigPayload,
+  fillableProps,
+  isSecretProp,
+  validateProp,
+} from './connectors';
+import {
   SESSION_EXPIRED,
   availableStorageLabels,
   diagnose,
@@ -96,11 +103,27 @@ export interface SampleUpload {
   rows: unknown[];
 }
 
+/**
+ * The connector chosen for this dataset, and the non-secret values gathered
+ * so far.
+ *
+ * Buffered client-side because a connector is only written once, together
+ * with its credentials. `values` never holds a secret — the classifier keeps
+ * them out, and they are merged in only by `submitConnector`.
+ */
+export interface ConnectorDraft {
+  id: string;
+  name?: string;
+  uiSpec?: UiSpec;
+  values: Record<string, unknown>;
+}
+
 export interface ExecutorContext {
   /** Null until `attach_sample` has created the draft. */
   datasetId: string | null;
   pending?: PendingDataset;
   sample?: SampleUpload;
+  connector?: ConnectorDraft;
 }
 
 export interface DatasetSnapshot extends Record<string, unknown> {
@@ -128,6 +151,10 @@ export type ExecutionFailureCode =
   | 'INELIGIBLE_TIMESTAMP_KEY'
   | 'NO_STORAGE_SELECTED'
   | 'NO_DATASET'
+  | 'NO_CONNECTOR'
+  | 'UNKNOWN_CONNECTOR_FIELD'
+  | 'INVALID_CONNECTOR_VALUE'
+  | 'SECRET_NOT_ALLOWED'
   | string;
 
 export type ExecutionOutcome =
@@ -986,6 +1013,58 @@ export const executeAction = async (
     }
   }
 
+  if (action.kind === 'select_connector') {
+    // Existence was established when the list was read; there is nothing to
+    // write until the credentials arrive, so this only records the choice.
+    return { ok: true, status: 'noop' };
+  }
+
+  if (action.kind === 'skip_connector') {
+    // A draft with no connector already has none, and `connectors_config` is
+    // a delta API on PATCH — an empty array would mean "no changes", not
+    // "remove all". So there is nothing to send.
+    return { ok: true, status: 'noop' };
+  }
+
+  if (action.kind === 'request_connector_secrets') {
+    return { ok: true, status: 'noop' };
+  }
+
+  if (action.kind === 'set_connector_field') {
+    const { connector } = context;
+
+    if (!connector) {
+      return failure('No connector has been chosen yet', 'NO_CONNECTOR');
+    }
+
+    // The classifier guards the path, not just the property list: a secret
+    // must never be settable through an action, because actions are recorded.
+    if (isSecretProp(action.property, {})) {
+      return failure(
+        `${action.property} is a credential and is only ever collected in the secure form`,
+        'SECRET_NOT_ALLOWED',
+      );
+    }
+
+    const prop = fillableProps(connector.uiSpec).find(
+      (candidate) => candidate.key === action.property,
+    );
+
+    if (!prop) {
+      return failure(
+        `"${action.property}" is not a property of the ${connector.id} connector`,
+        'UNKNOWN_CONNECTOR_FIELD',
+      );
+    }
+
+    const checked = validateProp(prop, action.value);
+    if (!checked.ok) {
+      return failure(checked.error, 'INVALID_CONNECTOR_VALUE');
+    }
+
+    return { ok: true, status: 'noop' };
+  }
+
   if (!isSchemaAction(action)) {
     return failure(
       `Action "${action.kind}" is not wired up yet`,
@@ -1055,4 +1134,53 @@ export const executeAction = async (
       return describeApiError(cause, 'READ_FAILED');
     }
   });
+};
+
+/**
+ * Writes a connector and its credentials.
+ *
+ * **Deliberately not an `Action`.** Every action is recorded in the
+ * transcript as an audit trail, and the transcript is persisted — so a
+ * credential carried by an action would be written to IndexedDB even with
+ * scrubbing as a backstop. Making this a direct call means there is no
+ * representation of a secret that could be recorded in the first place.
+ *
+ * The secrets are received, merged into the payload and dropped. Nothing here
+ * returns them, and the caller is expected to hold no copy.
+ */
+export const submitConnector = async (
+  datasetId: string,
+  connector: ConnectorDraft,
+  secrets: Record<string, unknown>,
+): Promise<ExecutionOutcome> => {
+  let current: DatasetSnapshot;
+
+  try {
+    current = await readSnapshot(datasetId, 'dataset_id,version_key');
+  } catch (cause) {
+    return describeApiError(cause, 'READ_FAILED');
+  }
+
+  try {
+    await updateDataset({
+      dataset_id: current.dataset_id ?? datasetId,
+      version_key: current.version_key,
+      connectors_config: connectorConfigPayload({
+        datasetId,
+        connectorId: connector.id,
+        values: connector.values,
+        secrets,
+        mode: 'update',
+      }),
+    });
+  } catch (cause) {
+    return describeApiError(cause, 'PATCH_FAILED');
+  }
+
+  try {
+    const refreshed = await readSnapshot(datasetId, PROCESSING_READ_FIELDS);
+    return { ok: true, status: 'applied', dataset: refreshed, changedRefs: [] };
+  } catch (cause) {
+    return describeApiError(cause, 'READ_FAILED');
+  }
 };
