@@ -10,6 +10,7 @@
 import { Action } from '../engine/actions';
 import { ExecutionFailureCode } from '../engine/executor';
 import { PreviewSection } from '../engine/previewFocus';
+import { MessageCard } from '../messages/types';
 
 export type MessageRole = 'user' | 'assistant' | 'system';
 
@@ -29,6 +30,11 @@ export interface Message {
   failureCode?: ExecutionFailureCode;
   /** Which preview section the turn concerned, for re-focusing on resume. */
   section?: PreviewSection;
+  /**
+   * A card this turn presents — a file drop, a set of choices, a conflict to
+   * resolve. Cards are how every action stays reachable without a model.
+   */
+  card?: MessageCard;
 }
 
 export type SessionMode = 'create' | 'update';

@@ -3,7 +3,14 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+import { configure } from '@testing-library/react';
 import { TextEncoder, TextDecoder } from 'util';
+
+// Several suites wait on genuinely asynchronous work — FileReader, IndexedDB,
+// a fetch-backed effect. Testing Library's default 1s budget is enough on an
+// idle machine and not enough on a loaded one, which showed up as eight
+// unrelated-looking failures when the full suite ran alongside a lint pass.
+configure({ asyncUtilTimeout: 5000 });
 
 // react-router 7 needs these at module scope; CRA's jsdom does not provide them.
 global.TextEncoder =
