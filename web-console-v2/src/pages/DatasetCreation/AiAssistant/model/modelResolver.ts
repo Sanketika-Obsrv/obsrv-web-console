@@ -28,6 +28,8 @@ const MODEL_CONFIDENCE = 0.85;
 
 export interface ModelResolveInput {
   utterance: string;
+  /** True once the draft exists; narrows what the model may propose. */
+  hasDraft?: boolean;
   step: WizardStep;
   vocabulary: FieldVocabulary;
   history?: Message[];
@@ -62,6 +64,17 @@ export const extractJson = (reply: string): unknown => {
     }
   }
 };
+
+/**
+ * Cues that an instruction was actually about naming the dataset.
+ *
+ * A path slot is checked against the vocabulary, so an invented field becomes
+ * a question. A *name* is free text, so nothing contradicts it — which is how
+ * "the amount column should hold decimal values" became a dataset called
+ * `amount_dataset_20240525`. Free-text slots need corroboration from the
+ * utterance in the same way path slots need resolution.
+ */
+const NAMING_CUE = /\b(call|name|rename|title)\b/i;
 
 /** The slots that hold a field path, per action kind. */
 const PATH_SLOTS = [
@@ -125,6 +138,8 @@ const resolvePaths = (
     status: 'resolved',
     action: draft as Action,
     confidence: MODEL_CONFIDENCE,
+    // A model guess is confirmed before it is written; a rule match is not.
+    needsConfirmation: true,
     ...(resolvedPath ? { resolvedPath } : {}),
   };
 };
@@ -135,6 +150,18 @@ export const resolveWithModel = async (
 ): Promise<Resolution> => {
   const fallBackToRules = () => (fallback ?? defaultFallback)(input);
 
+  /**
+   * The rules go first.
+   *
+   * Measured live: at 0.6B the model is *worse* than the rules on phrasings
+   * the rules already handle — it produced `set_arrival_format` for an
+   * instruction about duplicates. A rule match is a pattern the words
+   * actually fit, so there is nothing for a guess to improve on. The model
+   * earns its place only on utterances the rules decline.
+   */
+  const byRules = fallBackToRules();
+  if (byRules.status === 'resolved') return byRules;
+
   let reply: string;
 
   try {
@@ -143,6 +170,7 @@ export const resolveWithModel = async (
       schema: JSON.stringify(
         buildStepSchema(input.step, {
           connectorProperties: input.connectorProperties,
+          hasDraft: input.hasDraft,
         }),
       ),
     });
@@ -165,6 +193,50 @@ export const resolveWithModel = async (
   // the engine, but a model can still emit an action for another step.
   if (!STEP_ACTIONS[input.step].includes(checked.action.kind)) {
     return fallBackToRules();
+  }
+
+  // A name the user never asked for is worse than no answer.
+  if (
+    checked.action.kind === 'set_dataset_name' &&
+    !NAMING_CUE.test(input.utterance)
+  ) {
+    return fallBackToRules();
+  }
+
+  // Both are done once the draft exists; proposing them again is a sign the
+  // model had nothing better to offer.
+  if (
+    input.hasDraft &&
+    (checked.action.kind === 'attach_sample' ||
+      checked.action.kind === 'set_dataset_name')
+  ) {
+    return fallBackToRules();
+  }
+
+  /**
+   * A `clarify` is the model asking a question, not an action to perform.
+   *
+   * Seen live: it was wrapped in a "Do it / Cancel" confirmation whose label
+   * read "applied that change", so the user was asked to approve something
+   * unnamed. The question is the answer here — it goes straight to the user.
+   */
+  if (checked.action.kind === 'clarify') {
+    const { question, options } = checked.action;
+
+    return {
+      status: 'unknown',
+      confidence: 0,
+      clarify: { question, ...(options?.length ? { options } : {}) },
+    };
+  }
+
+  // Conversation-only actions change nothing, so there is nothing to confirm.
+  if (checked.action.kind === 'explain') {
+    return {
+      status: 'resolved',
+      action: checked.action,
+      confidence: MODEL_CONFIDENCE,
+    };
   }
 
   return resolvePaths(checked.action, input.vocabulary);

@@ -9,7 +9,7 @@
 import { Action } from './actions';
 import { ExecutionOutcome } from './executor';
 import { FieldVocabulary } from './fieldVocabulary';
-import { narrateOutcome, narrateResolution } from './narrate';
+import { describeProposal, narrateOutcome, narrateResolution } from './narrate';
 import { countDuplicates, evaluateExpression } from './preflight';
 import { sectionForAction } from './previewFocus';
 import { MessageCard } from '../messages/types';
@@ -190,6 +190,41 @@ export const runTurn = async (
         connectorsUnavailable: deps.connectorsUnavailable,
         connectorProperties: deps.connectorProperties,
       });
+
+  /**
+   * An inferred action is proposed, not performed.
+   *
+   * Confirming costs one click; a wrong write costs the user a change to
+   * their dataset that they then have to find and undo. Measured live, a
+   * 0.6B model gets this wrong often enough that the click is the better
+   * trade.
+   */
+  if (
+    resolution.status === 'resolved' &&
+    resolution.action &&
+    resolution.needsConfirmation
+  ) {
+    const proposed = resolution.action;
+
+    return {
+      messages: [
+        said,
+        {
+          role: 'assistant',
+          text: `I think you mean: ${describeProposal(proposed)}.`,
+          card: {
+            kind: 'confirm',
+            title: describeProposal(proposed),
+            confirmLabel: 'Do it',
+            confirmAction: proposed,
+          },
+          ...(sectionForAction(proposed)
+            ? { section: sectionForAction(proposed) }
+            : {}),
+        },
+      ],
+    };
+  }
 
   if (resolution.status !== 'resolved' || !resolution.action) {
     const narration = narrateResolution(resolution);

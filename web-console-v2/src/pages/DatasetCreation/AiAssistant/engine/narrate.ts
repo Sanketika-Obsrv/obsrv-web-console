@@ -105,10 +105,38 @@ const describeAction = (action: Action): string => {
     case 'goto_step':
       return `moved to the ${action.step} step`;
 
+    // Named rather than vague: this text is also what a confirmation prompt
+    // shows, and "applied that change" asks the user to approve something
+    // they cannot see. Seen live.
     default:
-      return 'applied that change';
+      return `apply ${action.kind.replace(/_/g, ' ')}`;
   }
 };
+
+/**
+ * What an action would do, in the present tense, for a confirmation prompt.
+ *
+ * `describeAction` is written for the past tense of something already done;
+ * a proposal has to read as something not yet done.
+ */
+export const describeProposal = (action: Action): string =>
+  describeAction(action)
+    .replace(/^named /, 'name ')
+    .replace(/^set /, 'set ')
+    .replace(/^made /, 'make ')
+    .replace(/^described /, 'describe ')
+    .replace(/^added /, 'add ')
+    .replace(/^removed /, 'remove ')
+    .replace(/^resolved /, 'resolve ')
+    .replace(/^kept /, 'keep ')
+    .replace(/^allowed /, 'allow ')
+    .replace(/^restricted /, 'restrict ')
+    .replace(/^updated /, 'update ')
+    .replace(/^selected /, 'select ')
+    .replace(/^skipped /, 'skip ')
+    .replace(/^saved /, 'save ')
+    .replace(/^moved /, 'move ')
+    .replace(/^read /, 'read ');
 
 export const narrateOutcome = (
   action: Action,

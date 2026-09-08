@@ -41,6 +41,7 @@ import {
 import { resolveWithModel } from './model/modelResolver';
 import { Capability, detectCapability } from './model/tiers';
 import { useSession } from './session/useSession';
+import { stepAfterAction } from './engine/previewFocus';
 import { usePreviewFocus } from './usePreviewFocus';
 
 /** Offered as chips before the user knows what they can say. */
@@ -257,6 +258,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                     {
                       utterance,
                       step,
+                      hasDraft: Boolean(datasetId),
                       vocabulary,
                       history: session.messages,
                       connectors,
@@ -362,6 +364,14 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
 
           if (created) await session.attachDataset(created);
 
+          // The step decides which actions the model is offered next, so it
+          // has to follow what actually happened rather than stay where the
+          // conversation started.
+          const nextStep = stepAfterAction(result.action);
+          if (nextStep && nextStep !== session.session?.step) {
+            await session.setStep(nextStep);
+          }
+
           // The schema may have moved, so the vocabulary is re-read rather
           // than patched locally.
           await refreshVocabulary();
@@ -375,6 +385,9 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       connectors,
       connectorsUnavailable,
       contextNow,
+      // Read directly for `hasDraft`, so it has to be declared even though
+      // `contextNow` already changes with it.
+      datasetId,
       modelReady,
       recordAction,
       refreshVocabulary,

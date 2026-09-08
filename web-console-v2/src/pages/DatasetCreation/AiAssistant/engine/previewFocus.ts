@@ -72,6 +72,49 @@ export const sectionForAction = (
   return SECTION_BY_KIND[action.kind];
 };
 
+/**
+ * The step an action leaves the user on.
+ *
+ * The step decides which actions the model is offered, so letting it go stale
+ * is not cosmetic: with the step stuck on `ingestion` after a draft existed,
+ * the only action on offer that could absorb a free-text instruction was
+ * `set_dataset_name`, and the model duly invented a name. Seen live.
+ */
+const STEP_BY_KIND: Partial<Record<Action['kind'], WizardStep>> = {
+  // Attaching the sample is what produces a schema to correct.
+  attach_sample: 'schema',
+  set_dataset_name: 'ingestion',
+  set_dataset_type: 'ingestion',
+
+  set_data_type: 'schema',
+  set_arrival_format: 'schema',
+  toggle_required: 'schema',
+  set_description: 'schema',
+  add_field: 'schema',
+  delete_field: 'schema',
+  resolve_conflict: 'schema',
+
+  set_additional_fields: 'processing',
+  set_pii: 'processing',
+  add_transformation: 'processing',
+  add_derived_field: 'processing',
+  set_dedup: 'processing',
+  set_denorm: 'processing',
+
+  set_storage: 'storage',
+  set_keys: 'storage',
+
+  select_connector: 'connector',
+  set_connector_field: 'connector',
+  request_connector_secrets: 'connector',
+  skip_connector: 'connector',
+
+  save: 'preview',
+};
+
+export const stepAfterAction = (action: Action): WizardStep | undefined =>
+  action.kind === 'goto_step' ? action.step : STEP_BY_KIND[action.kind];
+
 /** Inverse of `refFromPath`: `properties.customer.properties.email` → `customer.email`. */
 export const pathFromRef = (ref: string): string =>
   ref

@@ -64,6 +64,16 @@ export interface Resolution {
    * only the rule knows which slot of which action holds a field path.
    */
   candidateActions?: Action[];
+  /**
+   * Set when the action was inferred rather than matched, and should be
+   * confirmed before it is written.
+   *
+   * Measured live with `Qwen3-0.6B`: "I never want to see the same order
+   * twice" produced `set_arrival_format` on an unrelated field, and it was
+   * applied. A rule match is a pattern the user's words actually fit; a model
+   * guess is not, and the cost of being wrong is a change to their dataset.
+   */
+  needsConfirmation?: boolean;
 }
 
 const EXACT_CONFIDENCE = 0.95;

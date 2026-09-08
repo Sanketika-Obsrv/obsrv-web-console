@@ -5,6 +5,7 @@ import {
   pathFromRef,
   sectionForAction,
   sectionForStep,
+  stepAfterAction,
 } from './previewFocus';
 
 describe('sectionForAction', () => {
@@ -198,5 +199,67 @@ describe('highlightColumns', () => {
 
   it('returns nothing when the table has not loaded', () => {
     expect(highlightColumns(['properties.order_id'], undefined)).toEqual([]);
+  });
+});
+
+/**
+ * The step is not cosmetic: it decides which actions the model is offered.
+ * Seen live — with the step stuck on `ingestion` after a draft existed, the
+ * only offered action that could absorb a free-text instruction was
+ * `set_dataset_name`, so the model invented a dataset name instead of
+ * declining.
+ */
+describe('stepAfterAction', () => {
+  it('moves to the schema step once a sample has been read', () => {
+    expect(stepAfterAction({ kind: 'attach_sample', fileName: 'o.json' })).toBe(
+      'schema',
+    );
+  });
+
+  it('keeps schema edits on the schema step', () => {
+    expect(
+      stepAfterAction({
+        kind: 'set_data_type',
+        path: 'order_id',
+        dataType: 'string',
+      }),
+    ).toBe('schema');
+  });
+
+  it('moves to processing for a dedup change', () => {
+    expect(stepAfterAction({ kind: 'set_dedup', enabled: false })).toBe(
+      'processing',
+    );
+  });
+
+  it('moves to storage for a store change', () => {
+    expect(stepAfterAction({ kind: 'set_storage', realtime: true })).toBe(
+      'storage',
+    );
+  });
+
+  it('follows an explicit goto_step', () => {
+    expect(stepAfterAction({ kind: 'goto_step', step: 'preview' })).toBe(
+      'preview',
+    );
+  });
+
+  it('leaves the step alone for a conversation-only action', () => {
+    expect(
+      stepAfterAction({ kind: 'explain', topic: 'dedup' }),
+    ).toBeUndefined();
+    expect(stepAfterAction({ kind: 'undo' })).toBeUndefined();
+  });
+
+  it('assigns a step to every action that changes the dataset', () => {
+    const changing = ACTION_KINDS.filter(
+      (kind) => !['explain', 'clarify', 'undo', 'goto_step'].includes(kind),
+    );
+
+    const unassigned = changing.filter(
+      (kind) => stepAfterAction({ kind } as Action) === undefined,
+    );
+
+    expect(unassigned).toEqual([]);
   });
 });

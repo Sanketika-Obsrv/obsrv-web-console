@@ -404,3 +404,84 @@ describe('warning about a dedup key that is not unique', () => {
     expect(result.messages[0].text).not.toMatch(/would be dropped/i);
   });
 });
+
+/**
+ * Measured live with Qwen3-0.6B: "I never want to see the same order twice"
+ * produced `set_arrival_format` on an unrelated field, and it was applied.
+ * An inferred action is now proposed rather than performed — confirming costs
+ * a click, a wrong write costs the user a change they have to find and undo.
+ */
+describe('an inferred action is proposed, not performed', () => {
+  const inferred = async (execute: (a: Action) => Promise<ExecutionOutcome>) =>
+    runTurn('something only a model would parse', {
+      vocabulary,
+      execute,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.85,
+        needsConfirmation: true,
+        action: {
+          kind: 'set_data_type',
+          path: 'total_amount',
+          dataType: 'string',
+        },
+      }),
+    });
+
+  it('does not execute it', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await inferred(execute);
+
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('offers it as a confirmation', async () => {
+    const result = await inferred(async () => applied);
+    const { card } = result.messages[1];
+
+    expect(card?.kind).toBe('confirm');
+    if (card?.kind !== 'confirm') return;
+    expect(card.confirmAction).toEqual({
+      kind: 'set_data_type',
+      path: 'total_amount',
+      dataType: 'string',
+    });
+  });
+
+  it('says what it would do, in the present tense', async () => {
+    const result = await inferred(async () => applied);
+
+    expect(result.messages[1].text).toMatch(/set total_amount to string/i);
+    expect(result.messages[1].text).not.toMatch(/^Done/);
+  });
+
+  it('reports no outcome, so the preview does not move', async () => {
+    const result = await inferred(async () => applied);
+
+    expect(result.outcome).toBeUndefined();
+  });
+
+  /** Confirming dispatches the action directly, which does execute. */
+  it('executes once the proposal is confirmed', async () => {
+    const execute = jest.fn(async () => applied);
+    const action: Action = {
+      kind: 'set_data_type',
+      path: 'total_amount',
+      dataType: 'string',
+    };
+
+    await runTurn(action, { vocabulary, execute });
+
+    expect(execute).toHaveBeenCalledWith(action);
+  });
+
+  /** A rule match is a pattern the words fit, so it needs no confirmation. */
+  it('performs a rule match without asking', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await turn('make order_id required', execute);
+
+    expect(execute).toHaveBeenCalled();
+  });
+});

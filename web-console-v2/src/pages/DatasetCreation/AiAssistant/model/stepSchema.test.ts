@@ -158,3 +158,36 @@ describe('estimateTokens', () => {
     expect(estimateTokens({ a: 1 })).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Scoping to a step means a wrong step yields a plausible wrong action rather
+ * than a refusal, so what is on offer has to shrink as work is completed.
+ */
+describe('withdrawing actions that are already done', () => {
+  it('offers naming and sampling before the draft exists', () => {
+    const kinds = kindsIn(buildStepSchema('ingestion'));
+
+    expect(kinds).toContain('set_dataset_name');
+    expect(kinds).toContain('attach_sample');
+  });
+
+  it('withdraws both once the draft exists', () => {
+    const kinds = kindsIn(buildStepSchema('ingestion', { hasDraft: true }));
+
+    expect(kinds).not.toContain('set_dataset_name');
+    expect(kinds).not.toContain('attach_sample');
+  });
+
+  it('still leaves a way to ask and to move on', () => {
+    const kinds = kindsIn(buildStepSchema('ingestion', { hasDraft: true }));
+
+    expect(kinds).toContain('clarify');
+    expect(kinds).toContain('goto_step');
+  });
+
+  it('does not disturb the other steps', () => {
+    expect(
+      kindsIn(buildStepSchema('schema', { hasDraft: true })).sort(),
+    ).toEqual(kindsIn(buildStepSchema('schema')).sort());
+  });
+});

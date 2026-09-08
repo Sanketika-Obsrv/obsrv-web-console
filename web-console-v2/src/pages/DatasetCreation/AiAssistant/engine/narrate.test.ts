@@ -1,6 +1,6 @@
-import { Action } from './actions';
+import { ACTION_KINDS, Action } from './actions';
 import { ExecutionOutcome } from './executor';
-import { narrateOutcome, narrateResolution } from './narrate';
+import { describeProposal, narrateOutcome, narrateResolution } from './narrate';
 
 /**
  * Typed as the applied variant, not the whole union, so a test can add
@@ -270,5 +270,45 @@ describe('narrating a resolution that could not be acted on', () => {
     const { card } = narrateResolution({ status: 'unknown', confidence: 0 });
 
     expect(card).toBeUndefined();
+  });
+});
+
+/**
+ * `describeProposal` is the label on a confirmation prompt, so it must never
+ * be vague. Seen live: a model `clarify` became a "Do it / Cancel" card
+ * labelled "applied that change", asking the user to approve something
+ * unnamed.
+ */
+describe('describeProposal', () => {
+  it('names every action kind', () => {
+    const vague = ACTION_KINDS.filter((kind) =>
+      /applied that change/.test(describeProposal({ kind } as Action)),
+    );
+
+    expect(vague).toEqual([]);
+  });
+
+  it('reads as something not yet done', () => {
+    expect(
+      describeProposal({
+        kind: 'toggle_required',
+        path: 'order_id',
+        required: true,
+      }),
+    ).toMatch(/^make /);
+  });
+
+  it('describes a type change in the present tense', () => {
+    expect(
+      describeProposal({
+        kind: 'set_data_type',
+        path: 'total_amount',
+        dataType: 'double',
+      }),
+    ).toBe('set total_amount to double');
+  });
+
+  it('falls back to naming the kind rather than saying nothing useful', () => {
+    expect(describeProposal({ kind: 'undo' })).toMatch(/undo/);
   });
 });
