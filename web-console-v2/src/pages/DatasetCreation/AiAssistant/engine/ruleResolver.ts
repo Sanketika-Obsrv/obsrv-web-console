@@ -383,6 +383,36 @@ const RULES: Rule[] = [
       ),
   },
 
+  // — Derived fields and transformations —
+  //
+  // The expression is taken verbatim, quotes and all: it is JSONata, and
+  // rewriting any of it would change what it evaluates to. Preflight decides
+  // whether it is valid, not this pattern.
+  {
+    pattern:
+      /^(?:add (?:a )?)?derived (?:field|column)\s+([A-Za-z_][\w.]*)\s*(?:=|as)\s*(.+)$/i,
+    resolve: ([, name, expression]) =>
+      resolved(
+        {
+          kind: 'add_derived_field',
+          name: name.trim(),
+          expression: expression.trim(),
+          skipOnFailure: true,
+        },
+        FIELDLESS_CONFIDENCE,
+      ),
+  },
+  {
+    pattern: /^transform\s+(.+?)\s+(?:with|using|to)\s+(.+)$/i,
+    resolve: ([, term, expression], context) =>
+      withField(context, term, (path) => ({
+        kind: 'add_transformation',
+        path,
+        expression: expression.trim(),
+        skipOnFailure: true,
+      })),
+  },
+
   // — Dedup —
   {
     pattern:

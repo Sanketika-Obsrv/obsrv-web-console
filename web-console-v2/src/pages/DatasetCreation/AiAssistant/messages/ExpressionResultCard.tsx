@@ -11,6 +11,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import _ from 'lodash';
 import React from 'react';
 
 export interface ExpressionResultCardProps {
@@ -22,8 +23,25 @@ export interface ExpressionResultCardProps {
   error?: string;
 }
 
-const asText = (value: unknown): string =>
-  value === null || value === undefined ? '' : String(value);
+/** How much of a row to show before it stops being readable. */
+const MAX_CELL = 60;
+
+/**
+ * Renders a value without flattening structure into "[object Object]".
+ *
+ * The input side is a whole sample row, so it is stringified and truncated;
+ * seeing which row produced which result is the point, not reading it all.
+ */
+const asText = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+
+  const text =
+    _.isPlainObject(value) || Array.isArray(value)
+      ? JSON.stringify(value)
+      : String(value);
+
+  return text.length > MAX_CELL ? `${text.slice(0, MAX_CELL)}…` : text;
+};
 
 /**
  * What a JSONata expression actually produces, evaluated locally against the

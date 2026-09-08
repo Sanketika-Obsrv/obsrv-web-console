@@ -153,6 +153,28 @@ export const UTTERANCES: UtteranceFixture[] = [
     note: '"email" is the unique leaf name of customer.email',
   },
 
+  // — Processing: derived fields and transformations —
+  {
+    utterance:
+      "add derived field email_domain = $split(customer.email, '@')[1]",
+    expected: {
+      kind: 'add_derived_field',
+      name: 'email_domain',
+      expression: "$split(customer.email, '@')[1]",
+      skipOnFailure: true,
+    },
+    note: 'the expression is taken verbatim; preflight judges it, not the regex',
+  },
+  {
+    utterance: 'transform order_id with $uppercase(order_id)',
+    expected: {
+      kind: 'add_transformation',
+      path: 'order_id',
+      expression: '$uppercase(order_id)',
+      skipOnFailure: true,
+    },
+  },
+
   // — Processing: dedup —
   {
     utterance: 'dedup on order_id',

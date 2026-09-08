@@ -177,7 +177,6 @@ const isValidTimestamp = (value: any) => {
 };
 
 const evaluateDataType = async (jsonAtaExpression: string, sampleJsonData: any) => {
-    console.log("### sampleJsonData", sampleJsonData)
     let data: any = {};
     _.map(sampleJsonData, (item: any) => {
         data = _.merge(data, item);

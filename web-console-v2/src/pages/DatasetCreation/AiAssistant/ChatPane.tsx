@@ -3,6 +3,7 @@ import React from 'react';
 import { t } from 'utils/i18n';
 import ChatComposer from './ChatComposer';
 import { Action } from './engine/actions';
+import FileDropCard from './messages/FileDropCard';
 import MessageList from './messages/MessageList';
 import SessionResumeList from './session/SessionResumeList';
 import { AiSession, Message } from './session/types';
@@ -95,6 +96,16 @@ const ChatPane: React.FC<ChatPaneProps> = ({
             onAction={onAction ?? (() => undefined)}
             onSampleRows={onSampleRows ?? (() => undefined)}
           />
+        )}
+
+        {/*
+          Attaching a sample is what creates the draft, so it stays available
+          for as long as there is no draft — not only while the conversation
+          is empty. Naming the dataset first must not remove the only way to
+          supply a sample.
+        */}
+        {!datasetId && (
+          <FileDropCard onRows={onSampleRows ?? (() => undefined)} />
         )}
       </Stack>
     )}

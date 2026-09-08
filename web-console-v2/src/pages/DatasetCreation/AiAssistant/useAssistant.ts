@@ -10,7 +10,7 @@
  * 3. append the answer, then re-read the vocabulary if the schema moved
  * 4. tell the preview which section changed
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAllFields } from 'services/dataset';
 import { DatasetStatus } from 'types/datasets';
 import { Action } from './engine/actions';
@@ -84,8 +84,15 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     refreshVocabulary();
   }, [refreshVocabulary]);
 
-  const context = useMemo<ExecutorContext>(
-    () => ({
+  /**
+   * Built when a turn runs, not memoised.
+   *
+   * The sample lives in a ref, and mutating a ref does not recompute a memo —
+   * so a memoised context captured `sample.current` as it was on the previous
+   * render and the executor never saw the file, failing with MISSING_SAMPLE.
+   */
+  const contextNow = useCallback(
+    (): ExecutorContext => ({
       datasetId,
       // Carried by the session, because the server cannot hold a name or type
       // until `datasets/create` has run.
@@ -103,7 +110,13 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       try {
         const result = await runTurn(input, {
           vocabulary,
-          execute: (action) => executeAction(action, context),
+          execute: (action) => executeAction(action, contextNow()),
+          // The rows the user supplied, for local checks only. They are never
+          // sent from here — the sample reaches the server as a file upload.
+          sampleRows: (session.session?.sampleRows ?? []) as Record<
+            string,
+            unknown
+          >[],
         });
 
         for (const message of result.messages) {
@@ -137,7 +150,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
         setBusy(false);
       }
     },
-    [busy, context, recordAction, refreshVocabulary, session, vocabulary],
+    [busy, contextNow, recordAction, refreshVocabulary, session, vocabulary],
   );
 
   const attachSample = useCallback(

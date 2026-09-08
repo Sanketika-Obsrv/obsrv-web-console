@@ -26,10 +26,16 @@ const applied: ExecutionOutcome = {
   changedRefs: ['properties.order_id'],
 };
 
+const SAMPLE = [
+  { order_id: 'ORD-1', channel: 'web', customer: { email: 'a@x.com' } },
+  { order_id: 'ORD-2', channel: 'web', customer: { email: 'b@y.com' } },
+  { order_id: 'ORD-1', channel: 'app', customer: { email: 'c@z.com' } },
+];
+
 const turn = (
   text: string,
   execute: (action: Action) => Promise<ExecutionOutcome> = async () => applied,
-) => runTurn(text, { vocabulary, execute });
+) => runTurn(text, { vocabulary, execute, sampleRows: SAMPLE });
 
 describe('a turn that resolves', () => {
   it('records what the user said', async () => {
@@ -239,5 +245,162 @@ describe('an executor that throws', () => {
     });
 
     expect(result.messages[1].text).not.toMatch(/^Done/);
+  });
+});
+
+/**
+ * An expression that will not evaluate must never reach the API, and the user
+ * must see why. This is the check the wizard cannot make until it has already
+ * sent the request.
+ */
+describe('preflighting an expression', () => {
+  it('does not execute an expression that will not evaluate', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn(
+      {
+        kind: 'add_derived_field',
+        name: 'email_domain',
+        expression: '$split(',
+        skipOnFailure: true,
+      },
+      { vocabulary, execute, sampleRows: SAMPLE },
+    );
+
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('shows the error on the expression card', async () => {
+    const result = await runTurn(
+      {
+        kind: 'add_derived_field',
+        name: 'email_domain',
+        expression: '$split(',
+        skipOnFailure: true,
+      },
+      { vocabulary, execute: async () => applied, sampleRows: SAMPLE },
+    );
+
+    const { card } = result.messages[0];
+    expect(card?.kind).toBe('expression_result');
+    if (card?.kind !== 'expression_result') return;
+    expect(card.error).toBeTruthy();
+  });
+
+  it('executes an expression that does evaluate', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn(
+      {
+        kind: 'add_derived_field',
+        name: 'email_domain',
+        expression: "$split(customer.email, '@')[1]",
+        skipOnFailure: true,
+      },
+      { vocabulary, execute, sampleRows: SAMPLE },
+    );
+
+    expect(execute).toHaveBeenCalled();
+  });
+
+  it('shows what the expression produced', async () => {
+    const result = await runTurn(
+      {
+        kind: 'add_derived_field',
+        name: 'email_domain',
+        expression: "$split(customer.email, '@')[1]",
+        skipOnFailure: true,
+      },
+      { vocabulary, execute: async () => applied, sampleRows: SAMPLE },
+    );
+
+    const { card } = result.messages[0];
+    expect(card?.kind).toBe('expression_result');
+    if (card?.kind !== 'expression_result') return;
+    expect(card.results?.map((entry) => entry.output)).toEqual([
+      'x.com',
+      'y.com',
+      'z.com',
+    ]);
+  });
+
+  it('preflights a transformation the same way', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn(
+      {
+        kind: 'add_transformation',
+        path: 'order_id',
+        expression: '$notAFunction(',
+        skipOnFailure: true,
+      },
+      { vocabulary, execute, sampleRows: SAMPLE },
+    );
+
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  /** With no sample there is nothing to check against, so it must not block. */
+  it('lets the expression through when there is no sample', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn(
+      {
+        kind: 'add_derived_field',
+        name: 'x',
+        expression: 'order_id',
+        skipOnFailure: true,
+      },
+      { vocabulary, execute, sampleRows: [] },
+    );
+
+    expect(execute).toHaveBeenCalled();
+  });
+});
+
+/**
+ * The wizard's dedup picker says nothing about whether the chosen key is
+ * actually unique in the data the user just supplied. Counting it locally is
+ * free and changes the advice.
+ */
+describe('warning about a dedup key that is not unique', () => {
+  it('still applies the key the user asked for', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await turn('dedup on order_id', execute);
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dedup',
+      enabled: true,
+      key: 'order_id',
+    });
+  });
+
+  it('says how many rows would be dropped', async () => {
+    const result = await turn('dedup on order_id');
+
+    expect(result.messages[1].text).toMatch(/1 of 3|1 row/i);
+  });
+
+  it('stays quiet when the key is unique in the sample', async () => {
+    const result = await runTurn(
+      { kind: 'set_dedup', enabled: true, key: 'channel' },
+      {
+        vocabulary,
+        execute: async () => applied,
+        sampleRows: [{ channel: 'web' }, { channel: 'app' }],
+      },
+    );
+
+    expect(result.messages[0].text).not.toMatch(/would be dropped/i);
+  });
+
+  it('says nothing about duplicates when dedup is turned off', async () => {
+    const result = await runTurn(
+      { kind: 'set_dedup', enabled: false },
+      { vocabulary, execute: async () => applied, sampleRows: SAMPLE },
+    );
+
+    expect(result.messages[0].text).not.toMatch(/would be dropped/i);
   });
 });

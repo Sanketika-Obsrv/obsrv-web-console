@@ -412,6 +412,32 @@ describe('ExpressionResultCard', () => {
     expect(screen.getByText(/string/)).toBeInTheDocument();
   });
 
+  /**
+   * The input side is a whole sample row. Rendering it with `String()` turned
+   * every row into "[object Object]", which was visible in the live run.
+   */
+  it('renders a structured input rather than [object Object]', () => {
+    render(
+      <ExpressionResultCard
+        expression="x"
+        results={[{ input: { order_id: 'ORD-1' }, output: 'ORD-1' }]}
+      />,
+    );
+
+    expect(screen.getByText(/"order_id":"ORD-1"/)).toBeInTheDocument();
+  });
+
+  it('truncates a row too long to read', () => {
+    render(
+      <ExpressionResultCard
+        expression="x"
+        results={[{ input: { note: 'y'.repeat(200) }, output: 'ok' }]}
+      />,
+    );
+
+    expect(screen.getByText(/…$/)).toBeInTheDocument();
+  });
+
   /** An expression that will not evaluate must never reach the API. */
   it('shows the error instead of a result', () => {
     render(

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import ChatPane, { ChatPaneProps } from './ChatPane';
@@ -169,5 +169,59 @@ describe('when the conversation is not being saved', () => {
     show({ persisting: true });
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Attaching a sample is the step that creates the draft, so it has to be
+ * reachable before anything else has happened. Nothing else in the flow
+ * produces a file-drop card, so without this the dataset could never be
+ * created at all.
+ */
+describe('starting a dataset', () => {
+  it('offers a way to supply a sample when the conversation is empty', () => {
+    show();
+
+    expect(screen.getByLabelText(/choose a sample file/i)).toBeInTheDocument();
+  });
+
+  it('accepts pasted JSON too', () => {
+    show();
+
+    expect(screen.getByLabelText(/paste json/i)).toBeInTheDocument();
+  });
+
+  it('reports the rows it parsed', async () => {
+    const onSampleRows = jest.fn();
+    show({ onSampleRows });
+
+    await userEvent.upload(
+      screen.getByLabelText(/choose a sample file/i),
+      new File(['[{"order_id":"ORD-1"}]'], 'orders.json', {
+        type: 'application/json',
+      }),
+    );
+
+    await waitFor(() => expect(onSampleRows).toHaveBeenCalled());
+  });
+
+  /** Once a draft exists the schema is already detected. */
+  it('does not offer it once the draft exists', () => {
+    show({ datasetId: 'orders' });
+
+    expect(
+      screen.queryByLabelText(/choose a sample file/i),
+    ).not.toBeInTheDocument();
+  });
+
+  /**
+   * Found by driving the real UI: naming the dataset first put a message in
+   * the transcript, which hid the empty state — and with it the only way to
+   * attach a sample. The flow dead-ended with no route to creating a draft.
+   */
+  it('keeps offering it after the conversation has started', () => {
+    show({ messages: [message()] });
+
+    expect(screen.getByLabelText(/choose a sample file/i)).toBeInTheDocument();
   });
 });
