@@ -17,6 +17,7 @@
  */
 import _ from 'lodash';
 import { evaluateDataType } from 'pages/DatasetCreation/Processing/utils/dataTypeUtil';
+import { getSystemSetting } from 'services/configData';
 import {
   createDataset,
   datasetExists,
@@ -30,6 +31,13 @@ import {
 import { setAdditionalProperties } from 'services/json-schema';
 import { ValidationMode } from 'types/datasets';
 import { Action, DatasetType } from './actions';
+import {
+  SESSION_EXPIRED,
+  availableStorageLabels,
+  diagnose,
+  isEmptyEnvelope,
+  storageCapabilities,
+} from './errorMap';
 import {
   buildFieldVocabulary,
   dateTimePaths,
@@ -131,6 +139,8 @@ export type ExecutionOutcome =
       changedRefs: string[];
       /** Set when this action created the draft. */
       datasetId?: string;
+      /** Set when a stale `version_key` forced a re-read and a second attempt. */
+      replayed?: boolean;
     }
   /** Accepted, but held client-side because there is no draft to write to yet. */
   | { ok: true; status: 'pending'; pending: PendingDataset }
@@ -159,6 +169,55 @@ const describeApiError = (
     (cause instanceof Error ? cause.message : String(cause));
 
   return failure(message, envelope?.code ?? fallbackCode);
+};
+
+/**
+ * Reads a dataset and insists on getting an envelope back.
+ *
+ * With no session the console answers the SPA HTML shell at HTTP 200, so
+ * `unwrapResult` resolves to `undefined` instead of throwing. Without this
+ * guard the next failure reported would be a misleading `NO_SCHEMA`.
+ */
+const readSnapshot = async (
+  datasetId: string,
+  fields: string,
+): Promise<DatasetSnapshot> => {
+  const result = await readDataset<DatasetSnapshot>({ datasetId, fields });
+
+  if (isEmptyEnvelope(result)) {
+    throw Object.assign(new Error('The response carried no API envelope'), {
+      response: { data: { error: { code: SESSION_EXPIRED } } },
+    });
+  }
+
+  return result;
+};
+
+/**
+ * Runs a read → modify → PATCH → read attempt, repeating it once when the
+ * failure is one the assistant can fix by itself.
+ *
+ * Only a stale `version_key` and a transport error qualify, and repeating is
+ * safe precisely because every attempt starts with its own read: the body is
+ * rebuilt against the current document rather than resent.
+ */
+const withReplay = async (
+  attempt: () => Promise<ExecutionOutcome>,
+): Promise<ExecutionOutcome> => {
+  const first = await attempt();
+
+  if (
+    first.ok ||
+    !diagnose({ code: first.code, error: first.error }).selfHeal
+  ) {
+    return first;
+  }
+
+  const second = await attempt();
+
+  return second.ok && second.status === 'applied'
+    ? { ...second, replayed: true }
+    : second;
 };
 
 type SchemaAction = Extract<
@@ -238,44 +297,42 @@ const applyEdit = (
 };
 
 /** Reads the current draft, then PATCHes the given top-level fields. */
-const patchDataset = async (
+const patchDataset = (
   datasetId: string,
   fields: string,
   build: (current: DatasetSnapshot) => Record<string, unknown>,
-): Promise<ExecutionOutcome> => {
-  let current: DatasetSnapshot;
+): Promise<ExecutionOutcome> =>
+  withReplay(async () => {
+    let current: DatasetSnapshot;
 
-  try {
-    current = await readDataset<DatasetSnapshot>({ datasetId, fields });
-  } catch (cause) {
-    return describeApiError(cause, 'READ_FAILED');
-  }
+    try {
+      current = await readSnapshot(datasetId, fields);
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
 
-  try {
-    await updateDataset({
-      dataset_id: current.dataset_id ?? datasetId,
-      version_key: current.version_key,
-      ...build(current),
-    });
-  } catch (cause) {
-    return describeApiError(cause, 'PATCH_FAILED');
-  }
+    try {
+      await updateDataset({
+        dataset_id: current.dataset_id ?? datasetId,
+        version_key: current.version_key,
+        ...build(current),
+      });
+    } catch (cause) {
+      return describeApiError(cause, 'PATCH_FAILED');
+    }
 
-  try {
-    const refreshed = await readDataset<DatasetSnapshot>({
-      datasetId,
-      fields: SCHEMA_READ_FIELDS,
-    });
-    return {
-      ok: true,
-      status: 'applied',
-      dataset: refreshed,
-      changedRefs: [],
-    };
-  } catch (cause) {
-    return describeApiError(cause, 'READ_FAILED');
-  }
-};
+    try {
+      const refreshed = await readSnapshot(datasetId, SCHEMA_READ_FIELDS);
+      return {
+        ok: true,
+        status: 'applied',
+        dataset: refreshed,
+        changedRefs: [],
+      };
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
+  });
 
 /**
  * A 404 from `dataset/exists` means the id is free. Anything else means it is
@@ -544,47 +601,47 @@ const requireDataset = (context: ExecutorContext): string | null =>
   context.datasetId ?? null;
 
 /** Reads the processing projection, applies a builder, then PATCHes and re-reads. */
-const patchProcessing = async (
+const patchProcessing = (
   datasetId: string,
   build: (
     current: DatasetSnapshot,
   ) => Promise<Record<string, unknown> | ExecutionOutcome>,
-): Promise<ExecutionOutcome> => {
-  let current: DatasetSnapshot;
+): Promise<ExecutionOutcome> =>
+  withReplay(async () => {
+    let current: DatasetSnapshot;
 
-  try {
-    current = await readDataset<DatasetSnapshot>({
-      datasetId,
-      fields: PROCESSING_READ_FIELDS,
-    });
-  } catch (cause) {
-    return describeApiError(cause, 'READ_FAILED');
-  }
+    try {
+      current = await readSnapshot(datasetId, PROCESSING_READ_FIELDS);
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
 
-  const built = await build(current);
+    const built = await build(current);
 
-  if ('ok' in built) return built as ExecutionOutcome;
+    if ('ok' in built) return built as ExecutionOutcome;
 
-  try {
-    await updateDataset({
-      dataset_id: current.dataset_id ?? datasetId,
-      version_key: current.version_key,
-      ...built,
-    });
-  } catch (cause) {
-    return describeApiError(cause, 'PATCH_FAILED');
-  }
+    try {
+      await updateDataset({
+        dataset_id: current.dataset_id ?? datasetId,
+        version_key: current.version_key,
+        ...built,
+      });
+    } catch (cause) {
+      return describeApiError(cause, 'PATCH_FAILED');
+    }
 
-  try {
-    const refreshed = await readDataset<DatasetSnapshot>({
-      datasetId,
-      fields: PROCESSING_READ_FIELDS,
-    });
-    return { ok: true, status: 'applied', dataset: refreshed, changedRefs: [] };
-  } catch (cause) {
-    return describeApiError(cause, 'READ_FAILED');
-  }
-};
+    try {
+      const refreshed = await readSnapshot(datasetId, PROCESSING_READ_FIELDS);
+      return {
+        ok: true,
+        status: 'applied',
+        dataset: refreshed,
+        changedRefs: [],
+      };
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
+  });
 
 const fieldExists = (current: DatasetSnapshot, path: string) =>
   Boolean(_.get(current.data_schema, refFromPath(path)));
@@ -787,12 +844,46 @@ export const executeAction = async (
         boolean
       >;
       const isMaster = current.type === 'master';
+      const available = storageCapabilities(getSystemSetting('STORAGE_TYPES'));
+
+      // The storage step hides checkboxes for stores the cluster lacks, so
+      // asking for one is refused here with a reason rather than sent and
+      // rejected as DATASET_UNSUPPORTED_STORAGE_TYPE.
+      const refused = (
+        [
+          ['lakehouse', 'lake_house'],
+          ['realtime', 'realtime_store'],
+        ] as const
+      ).find(([flag]) => action[flag] === true && !available[flag]);
+
+      if (refused) {
+        const offered = availableStorageLabels(
+          [
+            available.lakehouse ? 'lake_house' : '',
+            available.realtime ? 'realtime_store' : '',
+          ].filter(Boolean),
+        );
+
+        return failure(
+          `This cluster does not have ${availableStorageLabels([refused[1]])[0]}.` +
+            (offered.length > 0
+              ? ` Available here: ${offered.join(', ')}.`
+              : ''),
+          'DATASET_UNSUPPORTED_STORAGE_TYPE',
+        );
+      }
 
       const next = {
-        olap_store_enabled:
-          action.realtime ?? indexing.olap_store_enabled ?? false,
-        lakehouse_enabled:
-          action.lakehouse ?? indexing.lakehouse_enabled ?? false,
+        olap_store_enabled: available.realtime
+          ? (action.realtime ?? indexing.olap_store_enabled ?? false)
+          : false,
+        // `create` does not validate storage availability but `update` does,
+        // so a fresh draft can carry `lakehouse_enabled: true` on a cluster
+        // with no lakehouse. Correct that default instead of echoing it, or
+        // every later storage write fails for a flag the user never set.
+        lakehouse_enabled: available.lakehouse
+          ? (action.lakehouse ?? indexing.lakehouse_enabled ?? false)
+          : false,
         // The console forces the cache store on for master datasets.
         cache_enabled: isMaster
           ? true
@@ -909,58 +1000,59 @@ export const executeAction = async (
     );
   }
 
-  let current: DatasetSnapshot;
+  const datasetIdForSchema = context.datasetId;
 
-  try {
-    current = await readDataset<DatasetSnapshot>({
-      datasetId: context.datasetId,
-      fields: SCHEMA_READ_FIELDS,
-    });
-  } catch (cause) {
-    return describeApiError(cause, 'READ_FAILED');
-  }
+  return withReplay(async () => {
+    let current: DatasetSnapshot;
 
-  const dataSchema = current.data_schema;
+    try {
+      current = await readSnapshot(datasetIdForSchema, SCHEMA_READ_FIELDS);
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
 
-  if (!dataSchema) {
-    return failure(
-      `Dataset "${context.datasetId}" has no schema yet — upload a sample first`,
-      'NO_SCHEMA',
-    );
-  }
+    const dataSchema = current.data_schema;
 
-  // Named up front so an unknown field reports the user's path, not the ref.
-  const path = targetPath(action);
-  if (path && !_.get(dataSchema, refFromPath(path))) {
-    return failure(`Unknown field "${path}"`, 'UNKNOWN_FIELD');
-  }
+    if (!dataSchema) {
+      return failure(
+        `Dataset "${datasetIdForSchema}" has no schema yet — upload a sample first`,
+        'NO_SCHEMA',
+      );
+    }
 
-  const edited = applyEdit(action, dataSchema);
-  if (!edited.ok) return failure(edited.error, 'INVALID_EDIT');
+    // Named up front so an unknown field reports the user's path, not the ref.
+    const path = targetPath(action);
+    if (path && !_.get(dataSchema, refFromPath(path))) {
+      return failure(`Unknown field "${path}"`, 'UNKNOWN_FIELD');
+    }
 
-  try {
-    await updateDataset({
-      dataset_id: current.dataset_id ?? context.datasetId,
-      version_key: current.version_key,
-      data_schema: edited.dataSchema,
-    });
-  } catch (cause) {
-    return describeApiError(cause, 'PATCH_FAILED');
-  }
+    const edited = applyEdit(action, dataSchema);
+    if (!edited.ok) return failure(edited.error, 'INVALID_EDIT');
 
-  try {
-    const refreshed = await readDataset<DatasetSnapshot>({
-      datasetId: context.datasetId,
-      fields: SCHEMA_READ_FIELDS,
-    });
+    try {
+      await updateDataset({
+        dataset_id: current.dataset_id ?? datasetIdForSchema,
+        version_key: current.version_key,
+        data_schema: edited.dataSchema,
+      });
+    } catch (cause) {
+      return describeApiError(cause, 'PATCH_FAILED');
+    }
 
-    return {
-      ok: true,
-      status: 'applied',
-      dataset: refreshed,
-      changedRefs: edited.changedRefs,
-    };
-  } catch (cause) {
-    return describeApiError(cause, 'READ_FAILED');
-  }
+    try {
+      const refreshed = await readSnapshot(
+        datasetIdForSchema,
+        SCHEMA_READ_FIELDS,
+      );
+
+      return {
+        ok: true,
+        status: 'applied',
+        dataset: refreshed,
+        changedRefs: edited.changedRefs,
+      };
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
+  });
 };
