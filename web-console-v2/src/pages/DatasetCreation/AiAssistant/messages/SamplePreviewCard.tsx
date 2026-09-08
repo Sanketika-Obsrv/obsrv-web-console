@@ -40,7 +40,7 @@ const SamplePreviewCard: React.FC<SamplePreviewCardProps> = ({
 
   return (
     <Stack spacing={0.5}>
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" component="span" color="text.secondary">
         {`${totalRows} rows in the sample · showing ${rows.length}`}
       </Typography>
       <TableContainer component={Paper} variant="outlined">

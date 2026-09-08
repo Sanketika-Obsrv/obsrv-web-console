@@ -495,3 +495,46 @@ describe('building the connectors_config payload', () => {
     expect(payload[0].operations_config).toEqual({ batch_size: 100 });
   });
 });
+
+/**
+ * Seen live: `source_database_port` reached `connector_config` as the string
+ * `"5432"` although the spec declares it a number. The coercion happens in
+ * `validateProp`; the caller has to keep the coerced value rather than the
+ * raw one it was given.
+ */
+describe('coercion is part of validation, not a side effect', () => {
+  const port = {
+    key: 'source_database_port',
+    spec: { type: 'number', title: 'Port', minimum: 1, maximum: 65535 },
+    required: true,
+  };
+
+  it('returns a number for a numeric string', () => {
+    const result = validateProp(port, '5432');
+
+    expect(result).toEqual({ ok: true, value: 5432 });
+    expect(typeof (result as { value: unknown }).value).toBe('number');
+  });
+
+  it('returns a number unchanged', () => {
+    expect(validateProp(port, 5432)).toEqual({ ok: true, value: 5432 });
+  });
+
+  it('coerces a batch size the same way', () => {
+    expect(
+      validateProp(
+        { key: 'source_batch_size', spec: { type: 'number' }, required: false },
+        '100',
+      ),
+    ).toEqual({ ok: true, value: 100 });
+  });
+
+  it('leaves a string property as a string', () => {
+    expect(
+      validateProp(
+        { key: 'source_table', spec: { type: 'string' }, required: false },
+        'orders',
+      ),
+    ).toEqual({ ok: true, value: 'orders' });
+  });
+});

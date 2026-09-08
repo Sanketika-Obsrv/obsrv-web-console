@@ -8,7 +8,6 @@
  */
 import { Diagnosis } from '../engine/errorMap';
 import { Action, DataType } from '../engine/actions';
-import { UiSpec } from '../engine/connectors';
 
 export interface ChoiceOption {
   /** What the user sees. */
@@ -74,15 +73,13 @@ export type MessageCard =
   /**
    * Collects a connector's credentials in a form.
    *
-   * The `ui_spec` is safe to persist with the card — it is the connector's
-   * public schema. The values the form collects are not, and never become
-   * part of a message.
+   * Carries only the connector's identity. The `ui_spec` is *not* stored
+   * here: the card is persisted with the transcript, and the session scrubber
+   * redacts any property whose name looks like a credential — which
+   * destroyed `source_database_pwd`'s schema and left RJSF with a string
+   * where a schema belonged, so the form rendered no fields at all. The spec
+   * is supplied live by the pane instead, which is also where it belongs.
    */
-  | {
-      kind: 'secret_form';
-      connectorId: string;
-      connectorName?: string;
-      uiSpec: UiSpec;
-    };
+  | { kind: 'secret_form'; connectorId: string; connectorName?: string };
 
 export type CardKind = MessageCard['kind'];

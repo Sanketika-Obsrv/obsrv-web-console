@@ -94,6 +94,10 @@ const describeAction = (action: Action): string => {
 
     case 'select_connector':
       return `selected the ${action.connectorId} connector`;
+    case 'set_connector_field':
+      return `set ${action.property} to ${String(action.value)}`;
+    case 'request_connector_secrets':
+      return 'asked for the connector credentials';
     case 'skip_connector':
       return 'skipped connector setup';
     case 'save':

@@ -45,7 +45,11 @@ const ChoiceCard: React.FC<ChoiceCardProps> = ({
                 {option.label}
               </Button>
               {option.hint && (
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  variant="caption"
+                  component="span"
+                  color="text.secondary"
+                >
                   {option.hint}
                 </Typography>
               )}

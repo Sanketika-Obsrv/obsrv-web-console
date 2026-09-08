@@ -197,12 +197,6 @@ describe('cards', () => {
       secret_form: {
         kind: 'secret_form',
         connectorId: 'postgres-connector-1.0.0',
-        uiSpec: {
-          type: 'object',
-          properties: {
-            source_database_pwd: { type: 'string', format: 'password' },
-          },
-        },
       },
     };
 
@@ -266,21 +260,21 @@ describe('a secret form card', () => {
             kind: 'secret_form',
             connectorId: 'postgres-connector-1.0.0',
             connectorName: 'Postgres',
-            uiSpec: {
-              type: 'object',
-              properties: {
-                source_database_pwd: {
-                  type: 'string',
-                  title: 'Password',
-                  format: 'password',
-                },
-              },
-            },
           }),
         ]}
         onAction={onAction}
         onSampleRows={jest.fn()}
         onSubmitSecrets={onSubmitSecrets}
+        connectorUiSpec={{
+          type: 'object',
+          properties: {
+            source_database_pwd: {
+              type: 'string',
+              title: 'Password',
+              format: 'password',
+            },
+          },
+        }}
       />,
     );
 

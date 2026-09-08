@@ -146,7 +146,7 @@ const FileDropCard: React.FC<FileDropCardProps> = ({
         <Typography variant="body2">
           {prompt ?? 'Add a sample so the schema can be detected.'}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" component="span" color="text.secondary">
           {`JSON or JSONL, up to ${Math.round(maxBytes / 1024 / 1024)} MB.`}
         </Typography>
 

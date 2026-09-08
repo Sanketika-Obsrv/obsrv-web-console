@@ -8,6 +8,7 @@
 import { List, ListItem, Stack } from '@mui/material';
 import React from 'react';
 import { Action } from '../engine/actions';
+import { UiSpec } from '../engine/connectors';
 import { Message } from '../session/types';
 import ApiErrorCard from './ApiErrorCard';
 import ChoiceCard from './ChoiceCard';
@@ -32,6 +33,11 @@ export interface MessageListProps {
    * actions are recorded in the transcript.
    */
   onSubmitSecrets?: (secrets: Record<string, unknown>) => void;
+  /**
+   * The chosen connector's schema, read live. Not carried by the card,
+   * because the card is persisted and the scrubber would redact it.
+   */
+  connectorUiSpec?: UiSpec;
 }
 
 interface CardProps {
@@ -41,6 +47,7 @@ interface CardProps {
   onAction: (action: Action) => void;
   onSampleRows: MessageListProps['onSampleRows'];
   onSubmitSecrets: MessageListProps['onSubmitSecrets'];
+  connectorUiSpec: MessageListProps['connectorUiSpec'];
 }
 
 const Card: React.FC<CardProps> = ({
@@ -49,6 +56,7 @@ const Card: React.FC<CardProps> = ({
   onAction,
   onSampleRows,
   onSubmitSecrets,
+  connectorUiSpec,
 }) => {
   switch (card.kind) {
     case 'file_drop':
@@ -109,7 +117,7 @@ const Card: React.FC<CardProps> = ({
         <SecretFormCard
           connectorId={card.connectorId}
           connectorName={card.connectorName}
-          uiSpec={card.uiSpec}
+          uiSpec={connectorUiSpec ?? {}}
           onSubmit={onSubmitSecrets ?? (() => undefined)}
         />
       );
@@ -125,6 +133,7 @@ const MessageList: React.FC<MessageListProps> = ({
   onAction,
   onSampleRows,
   onSubmitSecrets,
+  connectorUiSpec,
 }) => {
   if (messages.length === 0) return null;
 
@@ -148,6 +157,7 @@ const MessageList: React.FC<MessageListProps> = ({
                   onAction={onAction}
                   onSampleRows={onSampleRows}
                   onSubmitSecrets={onSubmitSecrets}
+                  connectorUiSpec={connectorUiSpec}
                 />
               </div>
             )}

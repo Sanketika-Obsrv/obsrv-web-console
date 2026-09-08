@@ -267,3 +267,62 @@ describe('nothing secret survives in the persisted session', () => {
     expect(stored).toContain('orders');
   });
 });
+
+/**
+ * The scrubber is name-based, so it cannot tell a credential's *value* from a
+ * credential's *schema*. Persisting a connector's `ui_spec` in a card meant
+ * `source_database_pwd`'s schema object was replaced by the string
+ * "[redacted]", and RJSF then rendered no field at all — the credential form
+ * was silently empty. Found by driving the real UI.
+ *
+ * The card now carries only the connector's identity; the schema is supplied
+ * live. These tests pin that down from both directions.
+ */
+describe('a connector schema is not persisted with the card', () => {
+  it('redacts a schema keyed by a credential name, which is why it is not stored', async () => {
+    const store = createSessionStore(createMemoryStorage());
+    const { sessionId } = await store.start({ mode: 'create' });
+
+    await store.appendMessage(sessionId, {
+      role: 'assistant',
+      text: 'Credentials',
+      // Deliberately smuggling a schema through a field the scrubber sees.
+      action: {
+        kind: 'set_connector_field',
+        property: 'source_database_pwd',
+        value: 'x',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
+    });
+
+    const stored = await store.load(sessionId);
+
+    // The scrubber cannot distinguish schema from secret, so anything under a
+    // credential-shaped key is flattened. That is correct for values and
+    // destructive for schemas — hence the card holds no schema.
+    expect(JSON.stringify(stored)).toContain('[redacted]');
+  });
+
+  it('keeps a secret_form card small enough to survive scrubbing intact', async () => {
+    const store = createSessionStore(createMemoryStorage());
+    const { sessionId } = await store.start({ mode: 'create' });
+
+    await store.appendMessage(sessionId, {
+      role: 'assistant',
+      text: 'These go straight to the server.',
+      card: {
+        kind: 'secret_form',
+        connectorId: 'postgres-connector-1.0.0',
+        connectorName: 'PostgreSQL',
+      },
+    });
+
+    const card = (await store.load(sessionId))?.messages[0].card;
+
+    expect(card).toEqual({
+      kind: 'secret_form',
+      connectorId: 'postgres-connector-1.0.0',
+      connectorName: 'PostgreSQL',
+    });
+  });
+});

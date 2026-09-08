@@ -91,7 +91,7 @@ const SecretFormCard: React.FC<SecretFormCardProps> = ({
         <Typography variant="subtitle2">
           {`Credentials for ${connectorName ?? connectorId}`}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" component="span" color="text.secondary">
           These are sent straight to the server. They are not written to the
           conversation and not saved in this browser.
         </Typography>

@@ -15,7 +15,12 @@ import { getAllFields } from 'services/dataset';
 import { listConnectors, readConnector } from 'services/datasetApi';
 import { DatasetStatus } from 'types/datasets';
 import { Action } from './engine/actions';
-import { UiSpec, fillableProps, summariseProp } from './engine/connectors';
+import {
+  UiSpec,
+  fillableProps,
+  summariseProp,
+  validateProp,
+} from './engine/connectors';
 import {
   ExecutorContext,
   executeAction,
@@ -55,6 +60,8 @@ export interface AssistantApi {
   attachSample: (rows: Record<string, unknown>[], file: File) => Promise<void>;
   /** Hands connector credentials straight to the API; never an action. */
   submitSecrets: (secrets: Record<string, unknown>) => Promise<void>;
+  /** The chosen connector's schema, read live rather than carried by a card. */
+  connectorUiSpec?: UiSpec;
   /**
    * Required connector properties still unanswered, described for asking.
    * Postgres marks nine of ten required, so this list matters.
@@ -230,7 +237,48 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
             }
 
             if (chosen.kind === 'set_connector_field') {
-              await session.setConnectorValue(chosen.property, chosen.value);
+              // The *coerced* value, not the raw one the action carried.
+              // Postgres declares `source_database_port` as a number, and
+              // storing the typed string sent `"5432"` to the connector —
+              // seen live in `connector_config`.
+              const prop = fillableProps(uiSpec).find(
+                (candidate) => candidate.key === chosen.property,
+              );
+              const checked = prop
+                ? validateProp(prop, chosen.value)
+                : undefined;
+
+              await session.setConnectorValue(
+                chosen.property,
+                checked?.ok ? checked.value : chosen.value,
+              );
+            }
+
+            // Nothing else produces this card, so without it the credential
+            // form is unreachable and no connector can ever be saved — the
+            // same gap the file-drop card had.
+            if (chosen.kind === 'request_connector_secrets') {
+              const draft = session.session?.connector;
+
+              if (draft && uiSpec) {
+                await session.append({
+                  role: 'assistant',
+                  text: 'These go straight to the server.',
+                  section: 'connector',
+                  card: {
+                    kind: 'secret_form',
+                    connectorId: draft.id,
+                    ...(draft.name ? { connectorName: draft.name } : {}),
+                  },
+                });
+              } else {
+                await session.append({
+                  role: 'assistant',
+                  text: 'Choose a connector first, then I can ask for its credentials.',
+                  failureCode: 'NO_CONNECTOR',
+                  section: 'connector',
+                });
+              }
             }
           }
 
@@ -333,6 +381,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     dispatch: run,
     attachSample,
     submitSecrets,
+    connectorUiSpec: uiSpec,
     connectorNeedsValues: fillableProps(uiSpec)
       .filter(
         (prop) =>

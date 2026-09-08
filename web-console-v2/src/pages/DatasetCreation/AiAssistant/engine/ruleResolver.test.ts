@@ -369,3 +369,87 @@ describe('when the connector list could not be read', () => {
     });
   });
 });
+
+/**
+ * Seen live: `set source_database_pwd to ...` came back as "I did not
+ * understand". The secret check ran *after* the membership test, and
+ * `connectorProperties` is the fillable list, which already excludes
+ * secrets — so the guard could never fire.
+ */
+describe('naming a credential in chat', () => {
+  const withConnector = (utterance: string) =>
+    resolveUtterance(utterance, {
+      vocabulary,
+      connectorProperties: ['source_database_host', 'source_database_port'],
+    });
+
+  it('says it will be asked for in a secure form', () => {
+    expect(
+      withConnector('set source_database_pwd to hunter2').clarify?.question,
+    ).toMatch(/secure form/i);
+  });
+
+  it('does not fall through to "I did not understand"', () => {
+    const resolution = withConnector('set source_database_pwd to hunter2');
+
+    expect(resolution.clarify?.question ?? '').not.toMatch(
+      /did not understand/i,
+    );
+  });
+
+  it('keeps the value out of the resolution entirely', () => {
+    const resolution = withConnector(
+      'set source_database_pwd to hunter2-leak-check',
+    );
+
+    expect(JSON.stringify(resolution)).not.toContain('hunter2-leak-check');
+  });
+
+  it('refuses cert material by name too', () => {
+    expect(
+      withConnector('set source_kafka_ssl_truststore_base64 to AAAA').clarify
+        ?.question,
+    ).toMatch(/secure form/i);
+  });
+
+  it('resolves nothing', () => {
+    expect(withConnector('set source_database_pwd to x').status).not.toBe(
+      'resolved',
+    );
+  });
+});
+
+/**
+ * The credential form has to be reachable, or a connector can never be saved.
+ * Seen live: naming a credential was correctly refused, but there was no way
+ * to then supply it — the same gap the file-drop card had.
+ */
+describe('asking for the credential form', () => {
+  const withConnector = (utterance: string) =>
+    resolveUtterance(utterance, {
+      vocabulary,
+      connectorProperties: ['source_database_host'],
+    });
+
+  it.each([
+    'I need to enter the connector credentials',
+    'add the credentials',
+    'let me set the password',
+    'provide the secrets',
+  ])('understands "%s"', (utterance) => {
+    expect(withConnector(utterance).action).toEqual({
+      kind: 'request_connector_secrets',
+    });
+  });
+
+  it('does not offer the form before a connector is chosen', () => {
+    expect(resolve('enter the credentials').status).not.toBe('resolved');
+  });
+
+  /** A named property is still refused specifically, not turned into a form. */
+  it('prefers the specific refusal when a property is named', () => {
+    expect(
+      withConnector('set source_database_pwd to hunter2').clarify?.question,
+    ).toMatch(/secure form/i);
+  });
+});

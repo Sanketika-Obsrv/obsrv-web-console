@@ -65,7 +65,11 @@ const ConflictCard: React.FC<ConflictCardProps> = ({
             </Button>
 
             {candidate.count !== undefined && (
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                component="span"
+                color="text.secondary"
+              >
                 {`seen ${candidate.count} time${
                   candidate.count === 1 ? '' : 's'
                 }`}

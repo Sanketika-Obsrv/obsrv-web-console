@@ -52,7 +52,12 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
       )}
 
       {busy && (
-        <Typography role="status" variant="caption" color="text.secondary">
+        <Typography
+          role="status"
+          variant="caption"
+          component="span"
+          color="text.secondary"
+        >
           {t('aiAssistant.working')}
         </Typography>
       )}

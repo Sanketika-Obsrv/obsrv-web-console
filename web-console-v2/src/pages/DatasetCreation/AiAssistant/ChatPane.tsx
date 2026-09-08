@@ -3,6 +3,7 @@ import React from 'react';
 import { t } from 'utils/i18n';
 import ChatComposer from './ChatComposer';
 import { Action } from './engine/actions';
+import { UiSpec } from './engine/connectors';
 import FileDropCard from './messages/FileDropCard';
 import MessageList from './messages/MessageList';
 import SessionResumeList from './session/SessionResumeList';
@@ -25,6 +26,8 @@ export interface ChatPaneProps {
   onSampleRows?: (rows: Record<string, unknown>[], file: File) => void;
   /** Receives connector credentials; deliberately not an action. */
   onSubmitSecrets?: (secrets: Record<string, unknown>) => void;
+  /** The chosen connector's schema, supplied live rather than by a card. */
+  connectorUiSpec?: UiSpec;
   /** Called with what the user typed. */
   onSend?: (text: string) => void;
   /** True while a turn is in flight. */
@@ -52,6 +55,7 @@ const ChatPane: React.FC<ChatPaneProps> = ({
   onAction,
   onSampleRows,
   onSubmitSecrets,
+  connectorUiSpec,
   onSend,
   busy = false,
   suggestions,
@@ -99,6 +103,7 @@ const ChatPane: React.FC<ChatPaneProps> = ({
             onAction={onAction ?? (() => undefined)}
             onSampleRows={onSampleRows ?? (() => undefined)}
             onSubmitSecrets={onSubmitSecrets}
+            connectorUiSpec={connectorUiSpec}
           />
         )}
 

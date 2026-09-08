@@ -524,23 +524,38 @@ const RULES: Rule[] = [
     resolve: ([, property, value], context) => {
       if (!context.connectorProperties?.length) return null;
 
-      const known = context.connectorProperties.find(
-        (candidate) =>
-          candidate.toLowerCase() === property.trim().toLowerCase(),
-      );
-      if (!known) return null;
+      const named = property.trim();
 
-      if (isSecretProp(known, {})) {
+      // Checked *before* membership, not after. `connectorProperties` is the
+      // fillable list, which already excludes secrets — so a check after the
+      // membership test could never fire, and a credential fell through to
+      // "I did not understand". Seen live.
+      if (isSecretProp(named, {})) {
         return unknown(
-          `${known} is a credential, so I will ask for it in a secure form rather than in chat.`,
+          `${named} is a credential, so I will ask for it in a secure form rather than in chat.`,
         );
       }
+
+      const known = context.connectorProperties.find(
+        (candidate) => candidate.toLowerCase() === named.toLowerCase(),
+      );
+      if (!known) return null;
 
       return resolved(
         { kind: 'set_connector_field', property: known, value: value.trim() },
         FIELDLESS_CONFIDENCE,
       );
     },
+  },
+  {
+    // Asked for explicitly, and also the answer when the user names a
+    // credential in chat — there has to be a way to reach the form.
+    pattern:
+      /\b(?:enter|add|set|provide|give|fill in)\b.*\b(?:credential|credentials|password|secret|secrets)\b/i,
+    resolve: (_match, context) =>
+      context.connectorProperties
+        ? resolved({ kind: 'request_connector_secrets' }, FIELDLESS_CONFIDENCE)
+        : null,
   },
   {
     pattern:
