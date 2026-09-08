@@ -35,6 +35,11 @@ export interface ResolverContext {
   /** Connectors available to choose from, when the list has been read. */
   connectors?: { id: string; name?: string }[];
   /**
+   * True when the connector list could not be read, as opposed to simply
+   * being empty. Lets the resolver say why rather than shrug.
+   */
+  connectorsUnavailable?: boolean;
+  /**
    * The connector's non-secret property keys. Absent until a connector is
    * chosen, which is what stops `set X to Y` being read as a connector field
    * before there is a connector.
@@ -542,7 +547,17 @@ const RULES: Rule[] = [
       /\b(?:use|connect (?:to|with)|pull from|read from)\s+(?:the\s+)?([A-Za-z][\w.-]*)\s*(?:connector)?$/i,
     resolve: ([, term], context) => {
       const connectors = context.connectors ?? [];
-      if (!connectors.length) return null;
+
+      // Distinguishing "no connectors known" from "not a connector" matters:
+      // reported live, where the list call was failing and every connector
+      // instruction came back as a generic "I did not understand".
+      if (!connectors.length) {
+        return context.connectorsUnavailable
+          ? unknown(
+              'I could not read the list of connectors from the server, so I cannot set one up yet.',
+            )
+          : null;
+      }
 
       const needle = term.trim().toLowerCase();
       const matches = connectors.filter(

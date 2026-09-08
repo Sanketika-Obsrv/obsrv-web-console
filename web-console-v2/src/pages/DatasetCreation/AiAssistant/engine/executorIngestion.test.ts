@@ -396,3 +396,71 @@ describe('attach_sample replacing the sample of an existing draft', () => {
     });
   });
 });
+
+/**
+ * Reported live: a 500 from `dataset/exists` produced "A dataset with the id
+ * X already exists" for an id that did not exist. Failing closed is right;
+ * claiming certainty about *why* is not.
+ */
+describe('checking whether a dataset id is free', () => {
+  const nameIt = (name: string) =>
+    executeAction({ kind: 'set_dataset_name', name }, {
+      datasetId: null,
+    } as ExecutorContext);
+
+  const rejectExistsWith = (status: number) =>
+    (
+      datasetExists as jest.MockedFunction<typeof datasetExists>
+    ).mockRejectedValue(
+      Object.assign(new Error('nope'), {
+        response: { status },
+      }),
+    );
+
+  it('accepts the name when the id is free', async () => {
+    rejectExistsWith(404);
+
+    const outcome = await nameIt('Brand New Orders');
+
+    expect(outcome).toMatchObject({ ok: true, status: 'pending' });
+  });
+
+  it('reports the id as taken when the check succeeds', async () => {
+    (
+      datasetExists as jest.MockedFunction<typeof datasetExists>
+    ).mockResolvedValue({ id: 'brand-new-orders' });
+
+    const outcome = await nameIt('Brand New Orders');
+
+    expect(outcome).toMatchObject({ ok: false, code: 'DATASET_ID_TAKEN' });
+  });
+
+  it('does not claim the id is taken when the check itself failed', async () => {
+    rejectExistsWith(500);
+
+    const outcome = await nameIt('Brand New Orders');
+
+    expect(outcome).toMatchObject({ ok: false, code: 'ID_CHECK_FAILED' });
+    if (outcome.ok) return;
+    expect(outcome.error).not.toMatch(/already exists/);
+  });
+
+  it('says the server did not answer, so the user can retry', async () => {
+    rejectExistsWith(503);
+
+    const outcome = await nameIt('Brand New Orders');
+
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.error).toMatch(/try again/i);
+  });
+
+  /** Still fails closed: an unverifiable id must not create a draft. */
+  it('does not proceed when the check failed', async () => {
+    rejectExistsWith(500);
+
+    const outcome = await nameIt('Brand New Orders');
+
+    expect(outcome.ok).toBe(false);
+  });
+});

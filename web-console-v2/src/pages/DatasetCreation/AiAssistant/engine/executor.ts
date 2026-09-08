@@ -155,6 +155,7 @@ export type ExecutionFailureCode =
   | 'UNKNOWN_CONNECTOR_FIELD'
   | 'INVALID_CONNECTOR_VALUE'
   | 'SECRET_NOT_ALLOWED'
+  | 'ID_CHECK_FAILED'
   | string;
 
 export type ExecutionOutcome =
@@ -362,15 +363,26 @@ const patchDataset = (
   });
 
 /**
- * A 404 from `dataset/exists` means the id is free. Anything else means it is
- * taken, or that we could not tell — either way, do not proceed.
+ * Whether a dataset id is free.
+ *
+ * A 404 from `dataset/exists` means free, a success means taken, and anything
+ * else means *we could not tell*. Those are three outcomes, not two: the
+ * check still fails closed, but the caller must not claim the id is taken
+ * when the endpoint simply errored. Reported live, where a 500 produced
+ * "A dataset with the id X already exists" for an id that did not exist.
  */
-const datasetIdIsAvailable = async (datasetId: string): Promise<boolean> => {
+type IdAvailability = 'free' | 'taken' | 'unknown';
+
+const datasetIdAvailability = async (
+  datasetId: string,
+): Promise<IdAvailability> => {
   try {
     await datasetExists(datasetId);
-    return false;
+    return 'taken';
   } catch (cause) {
-    return _.get(cause, ['response', 'status']) === 404;
+    const status = _.get(cause, ['response', 'status']);
+    if (status === 404) return 'free';
+    return 'unknown';
   }
 };
 
@@ -394,10 +406,19 @@ const setName = async (
 
   const datasetId = datasetIdFromName(name);
 
-  if (!(await datasetIdIsAvailable(datasetId))) {
+  const availability = await datasetIdAvailability(datasetId);
+
+  if (availability === 'taken') {
     return failure(
       `A dataset with the id "${datasetId}" already exists`,
       'DATASET_ID_TAKEN',
+    );
+  }
+
+  if (availability === 'unknown') {
+    return failure(
+      `I could not check whether the id "${datasetId}" is free — the server did not answer. Try again in a moment.`,
+      'ID_CHECK_FAILED',
     );
   }
 

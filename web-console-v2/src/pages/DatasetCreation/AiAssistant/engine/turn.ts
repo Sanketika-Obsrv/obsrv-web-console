@@ -24,6 +24,12 @@ export interface TurnDeps {
    * and absent when no sample has been given yet.
    */
   sampleRows?: Record<string, unknown>[];
+  /** Connectors available to choose from, once the list has been read. */
+  connectors?: { id: string; name?: string }[];
+  /** True when the list could not be read, as opposed to being empty. */
+  connectorsUnavailable?: boolean;
+  /** The chosen connector's non-secret property keys. */
+  connectorProperties?: string[];
 }
 
 export interface TurnResult {
@@ -170,7 +176,12 @@ export const runTurn = async (
   }
 
   const said: NewMessage = { role: 'user', text: input };
-  const resolution = resolveUtterance(input, { vocabulary: deps.vocabulary });
+  const resolution = resolveUtterance(input, {
+    vocabulary: deps.vocabulary,
+    connectors: deps.connectors,
+    connectorsUnavailable: deps.connectorsUnavailable,
+    connectorProperties: deps.connectorProperties,
+  });
 
   if (resolution.status !== 'resolved' || !resolution.action) {
     const narration = narrateResolution(resolution);

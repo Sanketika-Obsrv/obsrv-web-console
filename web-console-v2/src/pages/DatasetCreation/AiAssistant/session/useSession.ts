@@ -64,6 +64,8 @@ export interface SessionApi {
   markConnectorConfigured(): Promise<void>;
   /** Records a name or type chosen before the draft exists. */
   setPending(pending: AiSession['pending']): Promise<void>;
+  selectConnector(connector: { id: string; name?: string }): Promise<void>;
+  setConnectorValue(key: string, value: unknown): Promise<void>;
   onSaved(): Promise<void>;
   /** Wipes this conversation and starts a new one in its place. */
   clear(): Promise<void>;
@@ -182,6 +184,10 @@ export const useSession = ({
       markConnectorConfigured: () =>
         apply((id) => sessions.markConnectorConfigured(id)),
       setPending: (pending) => apply((id) => sessions.setPending(id, pending)),
+      selectConnector: (connector) =>
+        apply((id) => sessions.selectConnector(id, connector)),
+      setConnectorValue: (key, value) =>
+        apply((id) => sessions.setConnectorValue(id, key, value)),
       onSaved: () => apply((id) => sessions.onSaved(id)),
 
       resumable,

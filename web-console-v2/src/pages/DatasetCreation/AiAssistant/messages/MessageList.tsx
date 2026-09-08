@@ -17,6 +17,7 @@ import ExpressionResultCard from './ExpressionResultCard';
 import FieldTableCard from './FieldTableCard';
 import FileDropCard from './FileDropCard';
 import SamplePreviewCard from './SamplePreviewCard';
+import SecretFormCard from './SecretFormCard';
 import TextMessage from './TextMessage';
 import { MessageCard } from './types';
 
@@ -25,6 +26,12 @@ export interface MessageListProps {
   onAction: (action: Action) => void;
   /** Receives a sample the user supplied through a `file_drop` card. */
   onSampleRows: (rows: Record<string, unknown>[], file: File) => void;
+  /**
+   * Receives connector credentials from a `secret_form` card. Separate from
+   * `onAction` on purpose: credentials must not travel as an action, because
+   * actions are recorded in the transcript.
+   */
+  onSubmitSecrets?: (secrets: Record<string, unknown>) => void;
 }
 
 interface CardProps {
@@ -33,6 +40,7 @@ interface CardProps {
   answered: boolean;
   onAction: (action: Action) => void;
   onSampleRows: MessageListProps['onSampleRows'];
+  onSubmitSecrets: MessageListProps['onSubmitSecrets'];
 }
 
 const Card: React.FC<CardProps> = ({
@@ -40,6 +48,7 @@ const Card: React.FC<CardProps> = ({
   answered,
   onAction,
   onSampleRows,
+  onSubmitSecrets,
 }) => {
   switch (card.kind) {
     case 'file_drop':
@@ -95,6 +104,16 @@ const Card: React.FC<CardProps> = ({
     case 'api_error':
       return <ApiErrorCard diagnosis={card.diagnosis} onAction={onAction} />;
 
+    case 'secret_form':
+      return (
+        <SecretFormCard
+          connectorId={card.connectorId}
+          connectorName={card.connectorName}
+          uiSpec={card.uiSpec}
+          onSubmit={onSubmitSecrets ?? (() => undefined)}
+        />
+      );
+
     default:
       // The union is exhausted above; this keeps that true as kinds are added.
       return null;
@@ -105,6 +124,7 @@ const MessageList: React.FC<MessageListProps> = ({
   messages,
   onAction,
   onSampleRows,
+  onSubmitSecrets,
 }) => {
   if (messages.length === 0) return null;
 
@@ -127,6 +147,7 @@ const MessageList: React.FC<MessageListProps> = ({
                   answered={Boolean(message.action)}
                   onAction={onAction}
                   onSampleRows={onSampleRows}
+                  onSubmitSecrets={onSubmitSecrets}
                 />
               </div>
             )}

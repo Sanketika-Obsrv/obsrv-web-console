@@ -48,6 +48,7 @@ const AiAssistantPage: React.FC = () => {
             onClearSession={assistant.clearSession}
             onAction={assistant.dispatch}
             onSampleRows={assistant.attachSample}
+            onSubmitSecrets={assistant.submitSecrets}
             onSend={assistant.send}
             busy={assistant.busy}
             suggestions={assistant.suggestions}

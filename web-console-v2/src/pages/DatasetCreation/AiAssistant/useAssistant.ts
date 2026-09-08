@@ -12,9 +12,15 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAllFields } from 'services/dataset';
+import { listConnectors, readConnector } from 'services/datasetApi';
 import { DatasetStatus } from 'types/datasets';
 import { Action } from './engine/actions';
-import { ExecutorContext, executeAction } from './engine/executor';
+import { UiSpec, fillableProps, summariseProp } from './engine/connectors';
+import {
+  ExecutorContext,
+  executeAction,
+  submitConnector,
+} from './engine/executor';
 import {
   FieldVocabulary,
   buildFieldVocabulary,
@@ -47,6 +53,13 @@ export interface AssistantApi {
   send: (text: string) => Promise<void>;
   dispatch: (action: Action) => Promise<void>;
   attachSample: (rows: Record<string, unknown>[], file: File) => Promise<void>;
+  /** Hands connector credentials straight to the API; never an action. */
+  submitSecrets: (secrets: Record<string, unknown>) => Promise<void>;
+  /**
+   * Required connector properties still unanswered, described for asking.
+   * Postgres marks nine of ten required, so this list matters.
+   */
+  connectorNeedsValues: string[];
   clearSession: (sessionId: string) => Promise<void>;
 }
 
@@ -63,6 +76,19 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
 
   /** The sample the user supplied, held for the create call. */
   const sample = useRef<{ file: File; rows: unknown[] } | undefined>(undefined);
+
+  /**
+   * Connectors available, and the chosen one's `ui_spec`.
+   *
+   * The spec is fetched rather than remembered: it is the connector's public
+   * schema and can change with the connector's version, so reading it is
+   * cheaper than risking a stale copy.
+   */
+  const [connectors, setConnectors] = useState<{ id: string; name?: string }[]>(
+    [],
+  );
+  const [uiSpec, setUiSpec] = useState<UiSpec | undefined>();
+  const [connectorsUnavailable, setConnectorsUnavailable] = useState(false);
 
   /**
    * The vocabulary is read from the server, never inferred locally, so the
@@ -84,6 +110,52 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     refreshVocabulary();
   }, [refreshVocabulary]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    listConnectors<{ data?: { id: string; name?: string }[] }>({})
+      .then((result) => {
+        if (cancelled) return;
+        setConnectors(result?.data ?? []);
+        setConnectorsUnavailable(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Recorded so the resolver can say *why* it cannot set up a
+        // connector, rather than reporting that it did not understand.
+        setConnectorsUnavailable(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Reads the chosen connector's schema whenever the choice changes. */
+  const chosenConnectorId = session.session?.connector?.id;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!chosenConnectorId) {
+      setUiSpec(undefined);
+      return undefined;
+    }
+
+    readConnector<{ ui_spec?: UiSpec; connector_meta?: { ui_spec?: UiSpec } }>(
+      chosenConnectorId,
+    )
+      .then((result) => {
+        if (cancelled) return;
+        setUiSpec(result?.ui_spec ?? result?.connector_meta?.ui_spec);
+      })
+      .catch(() => setUiSpec(undefined));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chosenConnectorId]);
+
   /**
    * Built when a turn runs, not memoised.
    *
@@ -98,8 +170,11 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       // until `datasets/create` has run.
       pending: session.session?.pending,
       sample: sample.current,
+      connector: session.session?.connector
+        ? { ...session.session.connector, uiSpec }
+        : undefined,
     }),
-    [datasetId, session.session],
+    [datasetId, session.session, uiSpec],
   );
 
   const run = useCallback(
@@ -110,6 +185,9 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       try {
         const result = await runTurn(input, {
           vocabulary,
+          connectors,
+          connectorsUnavailable,
+          connectorProperties: fillableProps(uiSpec).map((prop) => prop.key),
           execute: (action) => executeAction(action, contextNow()),
           // The rows the user supplied, for local checks only. They are never
           // sent from here — the sample reaches the server as a file upload.
@@ -135,6 +213,27 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
             await session.setPending(result.outcome.pending);
           }
 
+          // Connector choices and values are buffered in the session; the
+          // executor validated them and wrote nothing, because a connector is
+          // written once, together with its credentials.
+          if (result.outcome.ok) {
+            const chosen = result.action;
+
+            if (chosen.kind === 'select_connector') {
+              const known = connectors.find(
+                (candidate) => candidate.id === chosen.connectorId,
+              );
+              await session.selectConnector({
+                id: chosen.connectorId,
+                ...(known?.name ? { name: known.name } : {}),
+              });
+            }
+
+            if (chosen.kind === 'set_connector_field') {
+              await session.setConnectorValue(chosen.property, chosen.value);
+            }
+          }
+
           const created =
             result.outcome.ok && result.outcome.status === 'applied'
               ? result.outcome.datasetId
@@ -150,7 +249,63 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
         setBusy(false);
       }
     },
-    [busy, contextNow, recordAction, refreshVocabulary, session, vocabulary],
+    [
+      busy,
+      connectors,
+      connectorsUnavailable,
+      contextNow,
+      recordAction,
+      refreshVocabulary,
+      session,
+      uiSpec,
+      vocabulary,
+    ],
+  );
+
+  /**
+   * Sends the connector and its credentials.
+   *
+   * Not routed through `run`, because a turn dispatches an `Action` and an
+   * action is recorded in the transcript. The credentials are handed to
+   * `submitConnector`, which merges them into the payload and returns nothing
+   * containing them; only the fact of configuration is recorded here.
+   */
+  const submitSecrets = useCallback(
+    async (secrets: Record<string, unknown>) => {
+      const draft = session.session?.connector;
+      if (!datasetId || !draft) return;
+
+      setBusy(true);
+
+      try {
+        const outcome = await submitConnector(
+          datasetId,
+          { ...draft, uiSpec },
+          secrets,
+        );
+
+        if (outcome.ok) {
+          await session.markConnectorConfigured();
+          await session.append({
+            role: 'assistant',
+            text: `Saved the ${
+              draft.name ?? draft.id
+            } connector. The credentials went straight to the server and are not stored here.`,
+            section: 'connector',
+          });
+        } else {
+          await session.append({
+            role: 'assistant',
+            text: outcome.error,
+            failureCode: outcome.code,
+            section: 'connector',
+          });
+        }
+      } finally {
+        setBusy(false);
+      }
+    },
+    [datasetId, session, uiSpec],
   );
 
   const attachSample = useCallback(
@@ -177,6 +332,14 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     send: run,
     dispatch: run,
     attachSample,
+    submitSecrets,
+    connectorNeedsValues: fillableProps(uiSpec)
+      .filter(
+        (prop) =>
+          prop.required &&
+          session.session?.connector?.values[prop.key] === undefined,
+      )
+      .map(summariseProp),
     clearSession: session.clearSession,
   };
 };

@@ -73,6 +73,19 @@ export interface AiSession {
    * themselves are never stored, so this boolean is all that persists.
    */
   connectorConfigured: boolean;
+  /**
+   * The connector chosen and the non-secret values gathered for it.
+   *
+   * Persisted so a reload does not lose eight collected values — postgres
+   * marks nine of its ten properties required. Secrets are absent by
+   * construction: the classifier keeps them out of `values`, and the store
+   * scrubs as a backstop.
+   */
+  connector?: {
+    id: string;
+    name?: string;
+    values: Record<string, unknown>;
+  };
   createdAt: number;
   updatedAt: number;
 }

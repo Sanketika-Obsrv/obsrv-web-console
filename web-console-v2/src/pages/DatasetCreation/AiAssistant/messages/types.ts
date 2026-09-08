@@ -8,6 +8,7 @@
  */
 import { Diagnosis } from '../engine/errorMap';
 import { Action, DataType } from '../engine/actions';
+import { UiSpec } from '../engine/connectors';
 
 export interface ChoiceOption {
   /** What the user sees. */
@@ -69,6 +70,19 @@ export type MessageCard =
       /** Set when the expression could not be evaluated. */
       error?: string;
     }
-  | { kind: 'api_error'; diagnosis: Diagnosis };
+  | { kind: 'api_error'; diagnosis: Diagnosis }
+  /**
+   * Collects a connector's credentials in a form.
+   *
+   * The `ui_spec` is safe to persist with the card — it is the connector's
+   * public schema. The values the form collects are not, and never become
+   * part of a message.
+   */
+  | {
+      kind: 'secret_form';
+      connectorId: string;
+      connectorName?: string;
+      uiSpec: UiSpec;
+    };
 
 export type CardKind = MessageCard['kind'];

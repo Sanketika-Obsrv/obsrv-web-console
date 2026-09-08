@@ -194,6 +194,16 @@ describe('cards', () => {
         kind: 'api_error',
         diagnosis: diagnose({ code: 'WAT', error: 'x' }),
       },
+      secret_form: {
+        kind: 'secret_form',
+        connectorId: 'postgres-connector-1.0.0',
+        uiSpec: {
+          type: 'object',
+          properties: {
+            source_database_pwd: { type: 'string', format: 'password' },
+          },
+        },
+      },
     };
 
     Object.entries(samples).forEach(([kind, card]) => {
@@ -237,5 +247,52 @@ describe('an answered card', () => {
     ]);
 
     expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
+  });
+});
+
+/**
+ * Credentials travel through their own callback, not `onAction`, because an
+ * action is recorded in the transcript.
+ */
+describe('a secret form card', () => {
+  it('hands credentials to the secrets callback', async () => {
+    const onAction = jest.fn();
+    const onSubmitSecrets = jest.fn();
+
+    render(
+      <MessageList
+        messages={[
+          withCard({
+            kind: 'secret_form',
+            connectorId: 'postgres-connector-1.0.0',
+            connectorName: 'Postgres',
+            uiSpec: {
+              type: 'object',
+              properties: {
+                source_database_pwd: {
+                  type: 'string',
+                  title: 'Password',
+                  format: 'password',
+                },
+              },
+            },
+          }),
+        ]}
+        onAction={onAction}
+        onSampleRows={jest.fn()}
+        onSubmitSecrets={onSubmitSecrets}
+      />,
+    );
+
+    await userEvent.type(screen.getByLabelText(/password/i), 'hunter2');
+    await userEvent.click(
+      screen.getByRole('button', { name: /save credentials/i }),
+    );
+
+    expect(onSubmitSecrets).toHaveBeenCalledWith(
+      expect.objectContaining({ source_database_pwd: 'hunter2' }),
+    );
+    // The credential must never reach the action path.
+    expect(onAction).not.toHaveBeenCalled();
   });
 });

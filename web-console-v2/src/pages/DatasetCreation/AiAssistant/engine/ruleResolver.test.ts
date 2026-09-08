@@ -328,3 +328,44 @@ describe('filling a connector property', () => {
     });
   });
 });
+
+/**
+ * Reported live: the connector list call was failing, and every connector
+ * instruction came back as a generic "I did not understand" — which sent the
+ * user looking for a phrasing problem that did not exist.
+ */
+describe('when the connector list could not be read', () => {
+  const unavailable = (utterance: string) =>
+    resolveUtterance(utterance, {
+      vocabulary,
+      connectors: [],
+      connectorsUnavailable: true,
+    });
+
+  it('says the list could not be read', () => {
+    expect(unavailable('use postgres').clarify?.question).toMatch(
+      /could not read the list of connectors/i,
+    );
+  });
+
+  it('still does not resolve an action', () => {
+    expect(unavailable('use postgres').status).not.toBe('resolved');
+  });
+
+  it('stays silent about connectors when the list is merely empty', () => {
+    const resolution = resolveUtterance('use postgres', {
+      vocabulary,
+      connectors: [],
+    });
+
+    expect(resolution.clarify?.question ?? '').not.toMatch(/connectors/i);
+  });
+
+  it('does not hijack a schema instruction', () => {
+    expect(unavailable('make order_id required').action).toEqual({
+      kind: 'toggle_required',
+      path: 'order_id',
+      required: true,
+    });
+  });
+});

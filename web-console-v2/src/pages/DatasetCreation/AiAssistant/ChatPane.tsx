@@ -23,6 +23,8 @@ export interface ChatPaneProps {
   onAction?: (action: Action) => void;
   /** Receives a sample the user supplied through a file-drop card. */
   onSampleRows?: (rows: Record<string, unknown>[], file: File) => void;
+  /** Receives connector credentials; deliberately not an action. */
+  onSubmitSecrets?: (secrets: Record<string, unknown>) => void;
   /** Called with what the user typed. */
   onSend?: (text: string) => void;
   /** True while a turn is in flight. */
@@ -49,6 +51,7 @@ const ChatPane: React.FC<ChatPaneProps> = ({
   onClearSession,
   onAction,
   onSampleRows,
+  onSubmitSecrets,
   onSend,
   busy = false,
   suggestions,
@@ -95,6 +98,7 @@ const ChatPane: React.FC<ChatPaneProps> = ({
             messages={messages}
             onAction={onAction ?? (() => undefined)}
             onSampleRows={onSampleRows ?? (() => undefined)}
+            onSubmitSecrets={onSubmitSecrets}
           />
         )}
 

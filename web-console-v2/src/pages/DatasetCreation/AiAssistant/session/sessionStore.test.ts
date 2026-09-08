@@ -634,3 +634,144 @@ describe('the name and type chosen before the draft exists', () => {
     expect((await sessions.load(sessionId))?.pending).toEqual({});
   });
 });
+
+/**
+ * Postgres marks nine of its ten properties required, so a reload that lost
+ * the collected values would cost the user eight answers. They are persisted;
+ * the credentials are not, by construction.
+ */
+describe('the connector chosen before it is written', () => {
+  it('starts with no connector', async () => {
+    expect((await store().start({ mode: 'create' })).connector).toBeUndefined();
+  });
+
+  it('records the connector chosen', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+      name: 'PostgreSQL',
+    });
+
+    expect((await sessions.load(sessionId))?.connector).toEqual({
+      id: 'postgres-connector-1.0.0',
+      name: 'PostgreSQL',
+      values: {},
+    });
+  });
+
+  it('accumulates values across turns', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+
+    await sessions.setConnectorValue(sessionId, 'source_database_host', 'db');
+    await sessions.setConnectorValue(sessionId, 'source_database_port', 5432);
+
+    expect((await sessions.load(sessionId))?.connector?.values).toEqual({
+      source_database_host: 'db',
+      source_database_port: 5432,
+    });
+  });
+
+  it('lets a value be corrected', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+
+    await sessions.setConnectorValue(
+      sessionId,
+      'source_database_host',
+      'wrong',
+    );
+    await sessions.setConnectorValue(sessionId, 'source_database_host', 'db');
+
+    expect(
+      (await sessions.load(sessionId))?.connector?.values.source_database_host,
+    ).toBe('db');
+  });
+
+  /**
+   * Carrying one connector's values into another could send postgres settings
+   * to kafka, so choosing again starts clean.
+   */
+  it('drops the values when a different connector is chosen', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+    await sessions.setConnectorValue(sessionId, 'source_database_host', 'db');
+
+    await sessions.selectConnector(sessionId, { id: 'kafka-connector-2.0.0' });
+
+    expect((await sessions.load(sessionId))?.connector?.values).toEqual({});
+  });
+
+  it('un-marks configured when a different connector is chosen', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+    await sessions.markConnectorConfigured(sessionId);
+
+    await sessions.selectConnector(sessionId, { id: 'kafka-connector-2.0.0' });
+
+    expect((await sessions.load(sessionId))?.connectorConfigured).toBe(false);
+  });
+
+  it('ignores a value when no connector has been chosen', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+
+    await sessions.setConnectorValue(sessionId, 'source_database_host', 'db');
+
+    expect((await sessions.load(sessionId))?.connector).toBeUndefined();
+  });
+
+  /**
+   * The backstop, and it *drops* rather than redacts. Storing `[redacted]`
+   * would be worse than storing nothing: the buffer is merged into
+   * `connector_config` on submit, so the connector would be sent the literal
+   * placeholder as its password.
+   */
+  it('drops a credential that reaches the value buffer', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+
+    await sessions.setConnectorValue(
+      sessionId,
+      'source_database_pwd',
+      'hunter2-do-not-store',
+    );
+
+    const stored = await sessions.load(sessionId);
+
+    expect(JSON.stringify(stored)).not.toContain('hunter2-do-not-store');
+    expect(stored?.connector?.values).not.toHaveProperty('source_database_pwd');
+  });
+
+  it('keeps the non-secret values alongside a dropped credential', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+
+    await sessions.setConnectorValue(sessionId, 'source_database_host', 'db');
+    await sessions.setConnectorValue(sessionId, 'source_database_pwd', 'x');
+
+    expect((await sessions.load(sessionId))?.connector?.values).toEqual({
+      source_database_host: 'db',
+    });
+  });
+});

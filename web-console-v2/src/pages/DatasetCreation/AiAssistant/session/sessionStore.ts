@@ -120,6 +120,17 @@ export interface SessionStore {
     versionKey: string,
   ): Promise<AiSession | undefined>;
   markConnectorConfigured(sessionId: string): Promise<AiSession | undefined>;
+  /** Records the connector chosen, clearing any values from a previous one. */
+  selectConnector(
+    sessionId: string,
+    connector: { id: string; name?: string },
+  ): Promise<AiSession | undefined>;
+  /** Merges one non-secret connector value into the buffer. */
+  setConnectorValue(
+    sessionId: string,
+    key: string,
+    value: unknown,
+  ): Promise<AiSession | undefined>;
   setSampleRows(
     sessionId: string,
     rows: unknown[],
@@ -242,6 +253,33 @@ export const createSessionStore = (
         ...session,
         connectorConfigured: true,
       })),
+
+    selectConnector: (sessionId, connector) =>
+      // Values from a previous connector would be meaningless here, and
+      // silently carrying them over could send one connector's settings to
+      // another.
+      mutate(sessionId, (session) => ({
+        ...session,
+        connector: { ...connector, values: {} },
+        connectorConfigured: false,
+      })),
+
+    setConnectorValue: (sessionId, key, value) =>
+      mutate(sessionId, (session) => {
+        // A secret is *dropped*, not redacted. Storing `[redacted]` would be
+        // worse than storing nothing: the buffer is merged into
+        // `connector_config` on submit, so the connector would receive the
+        // literal placeholder as its password.
+        if (!session.connector || SECRET_KEY.test(key)) return session;
+
+        return {
+          ...session,
+          connector: {
+            ...session.connector,
+            values: { ...session.connector.values, [key]: value },
+          },
+        };
+      }),
 
     setSampleRows: (sessionId, rows) =>
       mutate(sessionId, (session) => ({
