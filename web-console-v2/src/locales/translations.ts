@@ -22,6 +22,11 @@ export const translations = {
       chatTitle: 'Dataset assistant',
       previewTitle: 'Preview',
       progressLabel: 'Dataset configuration progress',
+      resumeHeading: 'Resume a previous conversation',
+      restoringSession: 'Restoring this conversation…',
+      draftNotCreated: 'Draft not created yet',
+      notPersisted:
+        'This browser is not saving the conversation, so it will be lost on reload.',
       newDatasetLabel: 'New dataset',
       newDatasetHint:
         'Describe the dataset you want to create, or drop a sample JSONL file to get started.',

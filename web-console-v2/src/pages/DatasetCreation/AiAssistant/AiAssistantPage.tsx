@@ -5,6 +5,7 @@ import { t } from 'utils/i18n';
 import ChatPane from './ChatPane';
 import PreviewPane from './PreviewPane';
 import SplitLayout from './SplitLayout';
+import { useSession } from './session/useSession';
 import { usePreviewFocus } from './usePreviewFocus';
 
 /** Route placeholder used before `datasets/create` has run. */
@@ -24,6 +25,7 @@ const AiAssistantPage: React.FC = () => {
       : datasetIdParam;
 
   const { focusSection, changedRefs, recordAction } = usePreviewFocus();
+  const session = useSession({ datasetId });
 
   return (
     <Box
@@ -38,7 +40,16 @@ const AiAssistantPage: React.FC = () => {
         rightLabel={t('aiAssistant.previewPaneLabel')}
         separatorLabel={t('aiAssistant.separatorLabel')}
         left={
-          <ChatPane datasetId={datasetId} onActionExecuted={recordAction} />
+          <ChatPane
+            datasetId={datasetId}
+            messages={session.messages}
+            loading={session.loading}
+            persisting={session.persisting}
+            resumable={session.resumable}
+            currentSessionId={session.session?.sessionId}
+            onClearSession={session.clearSession}
+            onActionExecuted={recordAction}
+          />
         }
         right={
           <PreviewPane
