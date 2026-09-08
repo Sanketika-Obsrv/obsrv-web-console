@@ -16,6 +16,13 @@ import { Capability, detectCapability } from './tiers';
 /** Confirmed present in `prebuiltAppConfig` at 0.2.85. */
 export const MODEL_ID = 'Qwen3-0.6B-q4f16_1-MLC';
 
+/**
+ * Roughly what the weights cost to fetch, for telling the user before they
+ * agree to it. The model's own metadata reports 1,403 MB of *VRAM*, which is
+ * a different number and not the one to quote at a download prompt.
+ */
+export const MODEL_DOWNLOAD_MB = 450;
+
 export interface LoadProgress {
   /** 0..1 where the library reports it. */
   progress: number;

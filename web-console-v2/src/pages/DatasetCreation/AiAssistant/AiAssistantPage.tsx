@@ -5,6 +5,7 @@ import { t } from 'utils/i18n';
 import ChatPane from './ChatPane';
 import PreviewPane from './PreviewPane';
 import SplitLayout from './SplitLayout';
+import { MODEL_DOWNLOAD_MB } from './model/engineClient';
 import { useAssistant } from './useAssistant';
 
 /** Route placeholder used before `datasets/create` has run. */
@@ -53,6 +54,16 @@ const AiAssistantPage: React.FC = () => {
             onSend={assistant.send}
             busy={assistant.busy}
             suggestions={assistant.suggestions}
+            model={{
+              capability: assistant.modelCapability,
+              progress: assistant.modelProgress,
+              ready: assistant.modelReady,
+              cached: assistant.modelCached,
+              downloadMb: MODEL_DOWNLOAD_MB,
+              error: assistant.modelError,
+              onEnable: assistant.enableModel,
+              onRemove: assistant.disableModel,
+            }}
           />
         }
         right={

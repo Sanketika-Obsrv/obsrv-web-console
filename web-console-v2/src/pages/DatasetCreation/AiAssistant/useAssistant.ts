@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAllFields } from 'services/dataset';
 import { listConnectors, readConnector } from 'services/datasetApi';
 import { DatasetStatus } from 'types/datasets';
-import { Action } from './engine/actions';
+import { Action, WizardStep } from './engine/actions';
 import {
   UiSpec,
   fillableProps,
@@ -31,6 +31,15 @@ import {
   buildFieldVocabulary,
 } from './engine/fieldVocabulary';
 import { runTurn } from './engine/turn';
+import {
+  LoadProgress,
+  ModelEngine,
+  isModelCached,
+  loadEngine,
+  removeModel,
+} from './model/engineClient';
+import { resolveWithModel } from './model/modelResolver';
+import { Capability, detectCapability } from './model/tiers';
 import { useSession } from './session/useSession';
 import { usePreviewFocus } from './usePreviewFocus';
 
@@ -62,6 +71,16 @@ export interface AssistantApi {
   submitSecrets: (secrets: Record<string, unknown>) => Promise<void>;
   /** The chosen connector's schema, read live rather than carried by a card. */
   connectorUiSpec?: UiSpec;
+  /** What this browser could do, detected without downloading anything. */
+  modelCapability?: Capability;
+  modelProgress?: LoadProgress;
+  modelReady: boolean;
+  modelCached: boolean;
+  modelError?: string;
+  /** Downloads and starts the model. Only ever from an explicit control. */
+  enableModel: () => Promise<void>;
+  /** Unloads it and frees the cached weights. */
+  disableModel: () => Promise<void>;
   /**
    * Required connector properties still unanswered, described for asking.
    * Postgres marks nine of ten required, so this list matters.
@@ -97,6 +116,15 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   const [uiSpec, setUiSpec] = useState<UiSpec | undefined>();
   const [connectorsUnavailable, setConnectorsUnavailable] = useState(false);
 
+  const [capability, setCapability] = useState<Capability>();
+  const [modelCached, setModelCached] = useState(false);
+  const [modelProgress, setModelProgress] = useState<LoadProgress>();
+  const [modelError, setModelError] = useState<string>();
+  // The engine lives in a ref: it is a large object with a GPU context, and
+  // re-rendering must not recreate or drop it.
+  const engine = useRef<ModelEngine | undefined>(undefined);
+  const [modelReady, setModelReady] = useState(false);
+
   /**
    * The vocabulary is read from the server, never inferred locally, so the
    * fields the resolver will accept are exactly the fields the API knows.
@@ -116,6 +144,27 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   useEffect(() => {
     refreshVocabulary();
   }, [refreshVocabulary]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Both of these are cheap and download nothing: they only report what
+    // this browser could do and whether the weights are already here.
+    Promise.all([detectCapability(), isModelCached()])
+      .then(([detected, cached]) => {
+        if (cancelled) return;
+        setCapability(detected);
+        setModelCached(cached);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCapability({ tier: 0, hasWebGPU: false });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,11 +239,35 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       setBusy(true);
 
       try {
+        const step = (session.session?.step ?? 'ingestion') as WizardStep;
+        const loaded = engine.current;
+
         const result = await runTurn(input, {
           vocabulary,
           connectors,
           connectorsUnavailable,
           connectorProperties: fillableProps(uiSpec).map((prop) => prop.key),
+          // The model replaces one step of the pipeline — resolution — and
+          // returns the same shape the rules do, falling back to them on any
+          // doubt. Everything downstream is unchanged.
+          ...(loaded && modelReady
+            ? {
+                resolve: (utterance: string) =>
+                  resolveWithModel(
+                    {
+                      utterance,
+                      step,
+                      vocabulary,
+                      history: session.messages,
+                      connectors,
+                      connectorProperties: fillableProps(uiSpec).map(
+                        (prop) => prop.key,
+                      ),
+                    },
+                    { engine: loaded },
+                  ),
+              }
+            : {}),
           execute: (action) => executeAction(action, contextNow()),
           // The rows the user supplied, for local checks only. They are never
           // sent from here — the sample reaches the server as a file upload.
@@ -302,6 +375,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       connectors,
       connectorsUnavailable,
       contextNow,
+      modelReady,
       recordAction,
       refreshVocabulary,
       session,
@@ -356,6 +430,45 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     [datasetId, session, uiSpec],
   );
 
+  /**
+   * Downloads and starts the model.
+   *
+   * Only ever called from an explicit control, because it costs the user
+   * bandwidth and disk. A failure is reported and the assistant carries on
+   * with the rules.
+   */
+  const enableModel = useCallback(async () => {
+    setModelError(undefined);
+    setModelProgress({ progress: 0, text: 'Preparing…' });
+
+    try {
+      engine.current = await loadEngine({
+        onProgress: (progress) => setModelProgress(progress),
+      });
+      setModelReady(true);
+      setModelCached(true);
+    } catch (cause) {
+      setModelError(
+        cause instanceof Error
+          ? cause.message
+          : 'The model could not be loaded.',
+      );
+    } finally {
+      setModelProgress(undefined);
+    }
+  }, []);
+
+  const disableModel = useCallback(async () => {
+    await engine.current?.unload().catch(() => undefined);
+    engine.current = undefined;
+    setModelReady(false);
+
+    // Frees the space rather than leaving ~450 MB behind after the user has
+    // said they do not want it.
+    await removeModel().catch(() => undefined);
+    setModelCached(false);
+  }, []);
+
   const attachSample = useCallback(
     async (rows: Record<string, unknown>[], file: File) => {
       sample.current = { file, rows };
@@ -382,6 +495,13 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     attachSample,
     submitSecrets,
     connectorUiSpec: uiSpec,
+    modelCapability: capability,
+    modelProgress,
+    modelReady,
+    modelCached,
+    modelError,
+    enableModel,
+    disableModel,
     connectorNeedsValues: fillableProps(uiSpec)
       .filter(
         (prop) =>

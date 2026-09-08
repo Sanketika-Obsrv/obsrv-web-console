@@ -14,7 +14,7 @@ import { countDuplicates, evaluateExpression } from './preflight';
 import { sectionForAction } from './previewFocus';
 import { MessageCard } from '../messages/types';
 import { NewMessage } from '../session/sessionStore';
-import { resolveUtterance } from './ruleResolver';
+import { Resolution, resolveUtterance } from './ruleResolver';
 
 export interface TurnDeps {
   vocabulary: FieldVocabulary;
@@ -30,6 +30,11 @@ export interface TurnDeps {
   connectorsUnavailable?: boolean;
   /** The chosen connector's non-secret property keys. */
   connectorProperties?: string[];
+  /**
+   * Replaces rule resolution when the model is running. Returns the same
+   * `Resolution`, so nothing downstream knows which tier answered.
+   */
+  resolve?: (utterance: string) => Promise<Resolution>;
 }
 
 export interface TurnResult {
@@ -176,12 +181,15 @@ export const runTurn = async (
   }
 
   const said: NewMessage = { role: 'user', text: input };
-  const resolution = resolveUtterance(input, {
-    vocabulary: deps.vocabulary,
-    connectors: deps.connectors,
-    connectorsUnavailable: deps.connectorsUnavailable,
-    connectorProperties: deps.connectorProperties,
-  });
+
+  const resolution = deps.resolve
+    ? await deps.resolve(input)
+    : resolveUtterance(input, {
+        vocabulary: deps.vocabulary,
+        connectors: deps.connectors,
+        connectorsUnavailable: deps.connectorsUnavailable,
+        connectorProperties: deps.connectorProperties,
+      });
 
   if (resolution.status !== 'resolved' || !resolution.action) {
     const narration = narrateResolution(resolution);

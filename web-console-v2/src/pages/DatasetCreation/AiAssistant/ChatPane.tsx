@@ -2,6 +2,7 @@ import { Alert, Divider, Paper, Stack, Typography } from '@mui/material';
 import React from 'react';
 import { t } from 'utils/i18n';
 import ChatComposer from './ChatComposer';
+import ModelBanner, { ModelBannerProps } from './ModelBanner';
 import { Action } from './engine/actions';
 import { UiSpec } from './engine/connectors';
 import FileDropCard from './messages/FileDropCard';
@@ -34,6 +35,8 @@ export interface ChatPaneProps {
   busy?: boolean;
   /** Example instructions offered as chips. */
   suggestions?: string[];
+  /** The in-browser model's state and controls, when offered at all. */
+  model?: ModelBannerProps;
 }
 
 /**
@@ -59,6 +62,7 @@ const ChatPane: React.FC<ChatPaneProps> = ({
   onSend,
   busy = false,
   suggestions,
+  model,
 }) => (
   <Paper
     variant="outlined"
@@ -73,6 +77,8 @@ const ChatPane: React.FC<ChatPaneProps> = ({
     }}
   >
     <Typography variant="h5">{t('aiAssistant.chatTitle')}</Typography>
+
+    {model && <ModelBanner {...model} />}
 
     {!persisting && (
       <Alert severity="warning">{t('aiAssistant.notPersisted')}</Alert>
