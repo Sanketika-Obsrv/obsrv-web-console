@@ -424,7 +424,28 @@ const relevantErrors = (
   return [...new Set(messages)];
 };
 
+/**
+ * Keys that only appear on a built schema, never on the options.
+ *
+ * `ActionSchemaOptions` has none of its fields required, so
+ * `createActionValidator(buildActionSchema(opts))` type-checks — and silently
+ * produces a validator with *no* vocabulary constraints, which would let a
+ * model set a secret connector property. Caught by the secret-leak test;
+ * guarded here so it fails loudly rather than quietly.
+ */
+const SCHEMA_ONLY_KEYS = ['$schema', 'oneOf', 'definitions', 'properties'];
+
 export const createActionValidator = (options: ActionSchemaOptions = {}) => {
+  const looksLikeSchema = SCHEMA_ONLY_KEYS.some((key) => key in options);
+
+  if (looksLikeSchema) {
+    throw new Error(
+      'createActionValidator takes ActionSchemaOptions, not a built schema. ' +
+        'Passing a schema would drop every vocabulary constraint, including ' +
+        'the one that keeps secret connector properties out of reach.',
+    );
+  }
+
   const ajv = new Ajv({ allErrors: true, strict: false });
   const validate: ValidateFunction = ajv.compile(buildActionSchema(options));
 

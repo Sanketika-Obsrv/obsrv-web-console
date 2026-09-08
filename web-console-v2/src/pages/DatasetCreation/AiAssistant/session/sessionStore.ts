@@ -15,6 +15,7 @@
  *   line of defence at the persistence boundary.
  */
 import _ from 'lodash';
+import { SECRET_PROP_NAME } from '../engine/connectors';
 import {
   AiSession,
   Message,
@@ -34,12 +35,17 @@ export const REDACTED = '[redacted]';
 /**
  * Property names whose values are credentials.
  *
- * Deliberately narrow. A bare `key` would match `dedup_key`, `data_key`,
- * `partition_key`, `timestamp_key` and `version_key` — all legitimate dataset
- * configuration, and redacting them would corrupt the audit trail.
+ * Shared with the connector classifier rather than written twice. The two had
+ * drifted: this copy lacked `pwd`, `truststore` and `keystore`, so Kafka's
+ * `..._truststore_base64` cert material was persisted in plain text. Caught
+ * by `secretLeak.test.ts`, which is exactly what that test is for.
+ *
+ * Still narrow in one deliberate respect — a bare `key` would match
+ * `dedup_key`, `data_key`, `partition_key`, `timestamp_key` and
+ * `version_key`, all legitimate dataset configuration whose redaction would
+ * corrupt the audit trail.
  */
-const SECRET_KEY =
-  /password|secret|token|credential|passphrase|private_key|api_?key/i;
+const SECRET_KEY = SECRET_PROP_NAME;
 
 /**
  * Keys that *name* the field a sibling `value` belongs to.
