@@ -158,7 +158,29 @@ const pasteSample = async (rows: unknown[]) => {
 const transcript = () =>
   screen.getAllByRole('listitem').map((item) => item.textContent ?? '');
 
-const lastReply = () => transcript().slice(-1)[0] ?? '';
+/**
+ * The assistant's answer to what the user just did.
+ *
+ * Not the last bubble: the assistant drives, so a turn ends with the *next
+ * question* and the reply sits before it. Found by position rather than by
+ * wording — the reply is the first assistant bubble after the last thing the
+ * user said, and anything after that is the agenda moving on.
+ */
+const lastReply = () => {
+  const bubbles = transcript();
+  const lastSaid = bubbles.reduce(
+    (found, bubble, index) => (bubble.startsWith('user') ? index : found),
+    -1,
+  );
+
+  return (
+    bubbles
+      .slice(lastSaid + 1)
+      .find((bubble) => bubble.startsWith('assistant')) ??
+    bubbles[bubbles.length - 1] ??
+    ''
+  );
+};
 
 beforeEach(async () => {
   sessionStorage.clear();

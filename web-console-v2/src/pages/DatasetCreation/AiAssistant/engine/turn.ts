@@ -278,6 +278,40 @@ const runUndo = async (deps: TurnDeps): Promise<TurnResult> => {
 };
 
 /**
+ * Cards the assistant is *waiting on*, as opposed to cards that only inform.
+ *
+ * The distinction decides whether a second question may follow in the same
+ * turn. A `confirm` or a `conflict` is a thing to click, so asking something
+ * else alongside it gives the user two prompts and no way to tell which the
+ * assistant wants. An `api_error` or an `expression_result` is a statement
+ * about what just happened, and following it with the next question is
+ * exactly right — that is how a refused name gets asked again instead of
+ * ending the turn.
+ */
+const AWAITING_CARDS = [
+  'confirm',
+  'choice',
+  'conflict',
+  'file_drop',
+  'secret_form',
+];
+
+/**
+ * Whether this turn is already waiting for the user.
+ *
+ * The caller asks the agenda's next question only when this is false. It
+ * lives here, next to the code that builds the cards, so the rule and the
+ * cards cannot drift — but the *asking* happens in the caller, after the
+ * session has recorded what this turn did. Asking from inside the turn read
+ * the session as it was before the turn, and a freshly named dataset was
+ * asked its name again.
+ */
+export const awaitingInput = (messages: NewMessage[]): boolean =>
+  messages.some(
+    (message) => message.card && AWAITING_CARDS.includes(message.card.kind),
+  );
+
+/**
  * Runs a turn from typed text, or from an action a card already chose.
  *
  * A card click has nothing to resolve and nothing the user typed, so it

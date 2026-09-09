@@ -13,7 +13,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAllFields } from 'services/dataset';
 import { downloadJsonFile } from 'utils/downloadUtils';
-import { listConnectors, readConnector } from 'services/datasetApi';
+import {
+  listConnectors,
+  listDatasets,
+  readConnector,
+} from 'services/datasetApi';
 import { DatasetStatus } from 'types/datasets';
 import { Action, WizardStep } from './engine/actions';
 import {
@@ -23,15 +27,18 @@ import {
   validateProp,
 } from './engine/connectors';
 import {
+  AGENDA_READ_FIELDS,
   ExecutorContext,
   executeAction,
+  readSnapshot,
   submitConnector,
 } from './engine/executor';
 import {
   FieldVocabulary,
   buildFieldVocabulary,
 } from './engine/fieldVocabulary';
-import { runTurn } from './engine/turn';
+import { AgendaState, Prompt, askMessage, nextPrompt } from './engine/agenda';
+import { awaitingInput, runTurn } from './engine/turn';
 import {
   LoadProgress,
   ModelEngine,
@@ -128,6 +135,20 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   const [uiSpec, setUiSpec] = useState<UiSpec | undefined>();
   const [connectorsUnavailable, setConnectorsUnavailable] = useState(false);
 
+  /**
+   * Live master datasets, for the denormalisation question.
+   *
+   * `undefined` until listed, and that distinction is load-bearing: the
+   * agenda will not raise the question against a list it has not seen, since
+   * that would offer an empty choice.
+   */
+  const [masterDatasets, setMasterDatasets] = useState<
+    { dataset_id: string; name?: string }[] | undefined
+  >();
+
+  /** The question currently on the table, for the composer's chips. */
+  const [prompt, setPrompt] = useState<Prompt | undefined>();
+
   const [capability, setCapability] = useState<Capability>();
   const [modelCached, setModelCached] = useState(false);
   const [modelProgress, setModelProgress] = useState<LoadProgress>();
@@ -214,6 +235,34 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     };
   }, []);
 
+  /**
+   * Lists the master datasets once, for the denormalisation question.
+   *
+   * Live only, and `type: 'master'` only — the same filter the wizard's
+   * processing page applies, because those are the only datasets a
+   * denormalisation can look values up in. A failure leaves the list
+   * `undefined`, which the agenda reads as "not known" and so does not ask,
+   * rather than as "there are none".
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    listDatasets<{
+      data?: { dataset_id: string; name?: string; type?: string }[];
+    }>({ status: ['Live'] })
+      .then((result) => {
+        if (cancelled) return;
+        setMasterDatasets(
+          (result?.data ?? []).filter((entry) => entry.type === 'master'),
+        );
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   /** Reads the chosen connector's schema whenever the choice changes. */
   const chosenConnectorId = session.session?.connector?.id;
 
@@ -259,6 +308,92 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     }),
     [datasetId, session.session, uiSpec],
   );
+
+  /**
+   * Works out the question to ask next.
+   *
+   * Reads the dataset on its own rather than reusing the outcome's snapshot:
+   * every action reads with the projection *it* needs, and the agenda needs
+   * the whole document. One extra GET per turn buys the guarantee that the
+   * question follows what the server actually holds — the same reason nothing
+   * else here caches dataset state.
+   *
+   * A read that fails asks nothing. Guessing the next question from a stale
+   * view is how a conversation ends up asking about a field that is no longer
+   * there.
+   */
+  const agendaState = useCallback(
+    async (current = session.session): Promise<AgendaState> => {
+      const id = current?.datasetId ?? datasetId;
+      const dataset = id
+        ? await readSnapshot(id, AGENDA_READ_FIELDS).catch(() => undefined)
+        : undefined;
+
+      return {
+        ...(dataset ? { dataset } : {}),
+        ...(current?.pending ? { pending: current.pending } : {}),
+        history: current?.messages ?? [],
+        sampleRows: (current?.sampleRows ?? []) as Record<string, unknown>[],
+        ...(current?.connector
+          ? {
+              connector: {
+                ...current.connector,
+                configured: current.connectorConfigured,
+              },
+            }
+          : {}),
+        ...(connectorsUnavailable ? {} : { connectorsAvailable: connectors }),
+        ...(masterDatasets ? { masterDatasets } : {}),
+      };
+    },
+    [
+      connectors,
+      connectorsUnavailable,
+      datasetId,
+      masterDatasets,
+      session.session,
+    ],
+  );
+
+  /**
+   * Asks the next question, if there is one.
+   *
+   * Reads the session back from the store rather than trusting this render's
+   * copy: it is called at the end of a turn that has just written to the
+   * session, and React state does not update inside the callback that changed
+   * it. Without the re-read, a dataset that was just named was asked its name
+   * again — seen in the end-to-end test.
+   */
+  const askNext = useCallback(async (): Promise<Prompt | undefined> => {
+    const fresh = await session.reload();
+    const next = nextPrompt(await agendaState(fresh));
+
+    setPrompt(next);
+    if (next) await session.append(askMessage(next));
+
+    return next;
+  }, [agendaState, session]);
+
+  /**
+   * Opens with a question rather than a hint.
+   *
+   * The assistant drives, so an empty conversation is the one place where
+   * nothing has happened to trigger the next question — this is that trigger.
+   * Guarded on the transcript being empty, so a resumed conversation is not
+   * re-opened with a question it already answered.
+   */
+  const opened = useRef(new Set<string>());
+
+  useEffect(() => {
+    const current = session.session;
+    if (!current || session.loading || busy) return;
+    if (current.messages.length > 0) return;
+    if (opened.current.has(current.sessionId)) return;
+
+    opened.current.add(current.sessionId);
+
+    void askNext();
+  }, [askNext, busy, session]);
 
   const run = useCallback(
     async (input: string | Action) => {
@@ -440,11 +575,16 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           // than patched locally.
           await refreshVocabulary();
         }
+
+        // Last, so the question is decided from the session as it is *after*
+        // this turn recorded itself, and from a fresh read of the dataset.
+        if (!awaitingInput(result.messages)) await askNext();
       } finally {
         setBusy(false);
       }
     },
     [
+      askNext,
       busy,
       connectors,
       connectorsUnavailable,
@@ -578,8 +718,19 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     // Restoring counts as busy, so the composer is disabled rather than
     // accepting an instruction it would silently drop.
     busy: busy || session.loading,
-    suggestions:
-      vocabulary.paths.length > 0 ? SCHEMA_SUGGESTIONS : OPENING_SUGGESTIONS,
+    /**
+     * Chips for the question being asked.
+     *
+     * The static lists were a guess at what the user might want to say next.
+     * The agenda knows, so they are only a fallback for a turn that is not on
+     * the agenda — an undo, or a free instruction after everything is
+     * answered.
+     */
+    suggestions: prompt?.chips?.length
+      ? prompt.chips
+      : vocabulary.paths.length > 0
+        ? SCHEMA_SUGGESTIONS
+        : OPENING_SUGGESTIONS,
     focusSection,
     changedRefs,
     send: run,

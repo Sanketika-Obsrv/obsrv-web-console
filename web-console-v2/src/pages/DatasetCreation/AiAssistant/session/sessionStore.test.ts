@@ -836,3 +836,67 @@ describe('the inverse a change carries', () => {
     expect(updated?.messages[1].undone).toBe(true);
   });
 });
+
+/**
+ * The assistant opens by asking, so every conversation has a message from the
+ * moment it exists. `messages.length` therefore stopped meaning "was used",
+ * and both pruning and the resume list depended on it: an abandoned visit
+ * would have survived forever and shown up as resumable.
+ */
+describe('a conversation the assistant opened but nobody answered', () => {
+  it('does not count as spoken to', async () => {
+    const store = createSessionStore(createMemoryStorage());
+    const started = await store.start({ mode: 'create' });
+
+    await store.appendMessage(started.sessionId, {
+      role: 'assistant',
+      text: 'What would you like to call this dataset?',
+    });
+
+    const opened = await store.load(started.sessionId);
+    expect(store.isSpokenTo(opened!)).toBe(false);
+  });
+
+  it('counts as spoken to once the user answers', async () => {
+    const store = createSessionStore(createMemoryStorage());
+    const started = await store.start({ mode: 'create' });
+
+    await store.appendMessage(started.sessionId, {
+      role: 'assistant',
+      text: 'What would you like to call this dataset?',
+    });
+    await store.appendMessage(started.sessionId, {
+      role: 'user',
+      text: 'My Orders',
+    });
+
+    const used = await store.load(started.sessionId);
+    expect(store.isSpokenTo(used!)).toBe(true);
+  });
+
+  it('is still pruned, despite carrying the opening question', async () => {
+    const store = createSessionStore(createMemoryStorage());
+    const abandoned = await store.start({ mode: 'create' });
+
+    await store.appendMessage(abandoned.sessionId, {
+      role: 'assistant',
+      text: 'What would you like to call this dataset?',
+    });
+
+    expect(await store.pruneEmpty()).toBe(1);
+    expect(await store.load(abandoned.sessionId)).toBeUndefined();
+  });
+
+  it('survives pruning once the user has answered', async () => {
+    const store = createSessionStore(createMemoryStorage());
+    const real = await store.start({ mode: 'create' });
+
+    await store.appendMessage(real.sessionId, {
+      role: 'user',
+      text: 'call it My Orders',
+    });
+
+    expect(await store.pruneEmpty()).toBe(0);
+    expect(await store.load(real.sessionId)).toBeDefined();
+  });
+});

@@ -69,6 +69,13 @@ export interface SessionApi {
   selectConnector(connector: { id: string; name?: string }): Promise<void>;
   setConnectorValue(key: string, value: unknown): Promise<void>;
   onSaved(): Promise<void>;
+  /**
+   * Re-reads this conversation from the store.
+   *
+   * For callers that need the session *after* their own writes in the same
+   * callback, where React state still holds the previous value.
+   */
+  reload(): Promise<AiSession | undefined>;
   /** Wipes this conversation and starts a new one in its place. */
   clear(): Promise<void>;
   /** Other conversations that have turns and can be picked up again. */
@@ -127,7 +134,9 @@ export const useSession = ({
       setResumable(
         all.filter(
           (candidate) =>
-            candidate.messages.length > 0 &&
+            // Spoken to, not merely opened: the assistant asks the first
+            // question itself, so every conversation has a message.
+            sessions.isSpokenTo(candidate) &&
             candidate.sessionId !== currentSessionId,
         ),
       );
@@ -174,6 +183,15 @@ export const useSession = ({
       messages: session?.messages ?? [],
       loading,
       persisting: sessions.isPersisting(),
+
+      reload: async () => {
+        if (!session) return undefined;
+
+        const fresh = await sessions.load(session.sessionId);
+        if (fresh) setSession(fresh);
+
+        return fresh;
+      },
 
       append: (message) => apply((id) => sessions.appendMessage(id, message)),
       setStep: (step) => apply((id) => sessions.setStep(id, step)),

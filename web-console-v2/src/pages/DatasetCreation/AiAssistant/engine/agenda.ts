@@ -57,9 +57,10 @@ import {
 } from './fieldVocabulary';
 import { EVENT_ARRIVAL_LABEL } from './executor';
 import { ChoiceOption, MessageCard } from '../messages/types';
+import { NewMessage } from '../session/sessionStore';
 import { conflictOptions, unresolvedConflicts } from './schemaEditor';
 import { Message } from '../session/types';
-import { pathFromRef } from './previewFocus';
+import { PreviewSection, pathFromRef, sectionForAction } from './previewFocus';
 
 export type { AgendaStepId };
 
@@ -743,6 +744,30 @@ const QUESTION: Record<
       confirmAction: { kind: 'save' },
     },
   }),
+};
+
+/**
+ * The question as a transcript entry.
+ *
+ * Built here rather than by the caller so that the two places that ask — the
+ * turn loop after a change, and the session when it opens — cannot phrase the
+ * same question differently.
+ */
+export const askMessage = (prompt: Prompt): NewMessage => {
+  // Reuses the existing action→section mapping rather than a second copy of
+  // it: a declined question lands in the same accordion the question was
+  // asked about, which is exactly what is wanted here.
+  const section: PreviewSection | undefined = sectionForAction({
+    kind: 'skip_step',
+    step: prompt.step,
+  });
+
+  return {
+    role: 'assistant',
+    text: prompt.text,
+    ...(prompt.card ? { card: prompt.card } : {}),
+    ...(section ? { section } : {}),
+  };
 };
 
 /** The question to ask now, or nothing when the dataset is saved. */

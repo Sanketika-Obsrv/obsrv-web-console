@@ -97,6 +97,18 @@ const patchDatasetDocument = <T = unknown>(payload: UpdateDatasetPayload) =>
   updateDataset<T>(payload, { keepSuggestions: true });
 
 /**
+ * Everything the guided flow needs to work out which question is still open.
+ *
+ * Wider than any single action's projection, and read on its own rather than
+ * reused from an outcome: the agenda has to see the whole document, and the
+ * projection an action happened to use is about that action, not about what
+ * to ask next.
+ */
+export const AGENDA_READ_FIELDS =
+  'dataset_id,version_key,name,type,status,data_schema,dedup_config,' +
+  'dataset_config,transformations_config,denorm_config,validation_config';
+
+/**
  * The console's label for indexing on ingestion time rather than a schema
  * field. It is stored as this reserved key, which is not part of the schema.
  */
@@ -250,7 +262,7 @@ const undoFields = (
  * `unwrapResult` resolves to `undefined` instead of throwing. Without this
  * guard the next failure reported would be a misleading `NO_SCHEMA`.
  */
-const readSnapshot = async (
+export const readSnapshot = async (
   datasetId: string,
   fields: string,
 ): Promise<DatasetSnapshot> => {

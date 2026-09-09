@@ -150,10 +150,28 @@ export interface SessionStore {
    * without this an abandoned visit would leave one behind forever.
    */
   pruneEmpty(exceptSessionId?: string): Promise<number>;
+  /**
+   * Whether the user ever answered anything in this conversation.
+   *
+   * Not `messages.length > 0`: the assistant opens by *asking*, so every
+   * conversation has a message from the moment it is created, and an
+   * abandoned visit would look identical to a real one — it would never be
+   * pruned, and it would show up in the resume list.
+   */
+  isSpokenTo(session: AiSession): boolean;
   list(): Promise<AiSession[]>;
   /** False once a write has failed, e.g. IndexedDB refused in private browsing. */
   isPersisting(): boolean;
 }
+
+/**
+ * Whether the user has taken a turn.
+ *
+ * The one honest test of whether a conversation was used, now that the
+ * assistant opens with a question of its own.
+ */
+const hasUserTurn = (session: AiSession): boolean =>
+  session.messages.some((message) => message.role === 'user');
 
 const newId = (prefix: string, now: number) =>
   `${prefix}-${now.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -332,10 +350,12 @@ export const createSessionStore = (
       await storage.delete(sessionId);
     },
 
+    isSpokenTo: hasUserTurn,
+
     pruneEmpty: async (exceptSessionId) => {
       const orphans = (await storage.list()).filter(
         (candidate) =>
-          candidate.messages.length === 0 &&
+          !hasUserTurn(candidate) &&
           // A draft outlives the conversation, so keep the link to it.
           candidate.datasetId === null &&
           candidate.sessionId !== exceptSessionId,

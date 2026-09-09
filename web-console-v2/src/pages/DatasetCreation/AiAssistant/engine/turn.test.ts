@@ -1,7 +1,8 @@
 import { Action } from './actions';
 import { buildFieldVocabulary } from './fieldVocabulary';
 import { ExecutionOutcome } from './executor';
-import { runTurn } from './turn';
+import { awaitingInput, runTurn } from './turn';
+import { MessageCard } from '../messages/types';
 import { Message } from '../session/types';
 
 const FIELDS = [
@@ -652,5 +653,48 @@ describe('undo', () => {
       path: 'order_id',
       dataType: 'string',
     });
+  });
+});
+
+describe('awaitingInput', () => {
+  /**
+   * The predicate that decides whether the caller may follow this turn with
+   * the agenda's next question. A card the assistant is waiting on means no:
+   * two prompts in one turn give the user two things to click and no way to
+   * tell which is wanted.
+   */
+  const carrying = (kind: string) =>
+    awaitingInput([
+      { role: 'assistant', text: 'x', card: { kind } as MessageCard },
+    ]);
+
+  it('is true for a card the assistant is waiting on', () => {
+    ['confirm', 'choice', 'conflict', 'file_drop', 'secret_form'].forEach(
+      (kind) =>
+        expect({ kind, awaiting: carrying(kind) }).toEqual({
+          kind,
+          awaiting: true,
+        }),
+    );
+  });
+
+  it('is false for a card that only reports what happened', () => {
+    // A rejected action must still be followed by the question, or a refused
+    // name is a dead end rather than a re-ask.
+    ['api_error', 'expression_result', 'field_table', 'sample_preview'].forEach(
+      (kind) =>
+        expect({ kind, awaiting: carrying(kind) }).toEqual({
+          kind,
+          awaiting: false,
+        }),
+    );
+  });
+
+  it('is false for a turn that produced no card at all', () => {
+    expect(awaitingInput([{ role: 'assistant', text: 'done' }])).toBe(false);
+  });
+
+  it('is false for an empty turn', () => {
+    expect(awaitingInput([])).toBe(false);
   });
 });
