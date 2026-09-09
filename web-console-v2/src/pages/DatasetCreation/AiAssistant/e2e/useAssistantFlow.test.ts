@@ -391,4 +391,90 @@ describe('creating a dataset by answering only', () => {
       expect(api.dataset('my-orders')?.status).toBe('ReadyToPublish'),
     );
   });
+
+  /**
+   * The same walk, typed rather than clicked.
+   *
+   * Every answer is sent as text — the label of the option, the name of the
+   * type, "yes" — and only the sample is handed over as a file, because a
+   * file cannot be typed. What this proves beyond the loop above is that a
+   * typed answer is *acted on*: if any of them fell through to the resolver
+   * and came back as "I think you mean", the transcript would carry a second
+   * confirmation card and the count below would be wrong.
+   */
+  it('reaches a saved dataset when every answer is typed', async () => {
+    const { result } = renderHook(() => useAssistant(null));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const quiet = () => waitFor(() => expect(result.current.busy).toBe(false));
+    const grew = (before: number) =>
+      waitFor(() =>
+        expect(result.current.messages.length).toBeGreaterThan(before),
+      );
+
+    const typed: string[] = [];
+
+    for (let turn = 0; turn < 25; turn += 1) {
+      await quiet();
+
+      const question = result.current.messages[
+        result.current.messages.length - 1
+      ] as Message | undefined;
+      const card = question?.card;
+      const before = result.current.messages.length;
+
+      if (card?.kind === 'file_drop') {
+        await result.current.attachSample(
+          ROWS as unknown as Record<string, unknown>[],
+          new File([JSON.stringify(ROWS)], 'orders.json', {
+            type: 'application/json',
+          }),
+        );
+        await quiet();
+        continue;
+      }
+
+      const say =
+        card?.kind === 'choice'
+          ? card.options[0].label
+          : card?.kind === 'conflict'
+            ? (card.candidates.find((entry) => entry.isSafest)?.dataType ??
+              card.candidates[0].dataType)
+            : card?.kind === 'confirm'
+              ? 'yes'
+              : /call this dataset/i.test(question?.text ?? '')
+                ? 'call it My Orders'
+                : undefined;
+
+      if (!say) break;
+
+      /**
+       * A question that comes back after being answered is a stuck agenda,
+       * and spinning through the turn budget hides which question it was.
+       */
+      if (typed.filter((said) => said === say).length >= 2) {
+        throw new Error(`The same question was asked three times: ${say}`);
+      }
+
+      typed.push(say);
+      await result.current.send(say);
+      await grew(before);
+
+      if (card?.kind === 'confirm') break;
+    }
+
+    expect(typed.join(' -> ')).toContain('yes');
+
+    await waitFor(() =>
+      expect(api.dataset('my-orders')?.status).toBe('ReadyToPublish'),
+    );
+
+    // The review question is the only confirmation anyone should have seen.
+    expect(
+      result.current.messages.filter(
+        (message) => message.card?.kind === 'confirm',
+      ),
+    ).toHaveLength(1);
+  });
 });

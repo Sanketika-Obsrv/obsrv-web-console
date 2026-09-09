@@ -1,4 +1,5 @@
 import { Action } from './actions';
+import { Prompt } from './agenda';
 import { buildFieldVocabulary } from './fieldVocabulary';
 import { ExecutionOutcome } from './executor';
 import { awaitingInput, runTurn } from './turn';
@@ -696,5 +697,135 @@ describe('awaitingInput', () => {
 
   it('is false for an empty turn', () => {
     expect(awaitingInput([])).toBe(false);
+  });
+});
+
+describe('answering the question on the table', () => {
+  const STORAGE: Prompt = {
+    step: 'storage',
+    text: 'Where should this data be stored?',
+    card: {
+      kind: 'choice',
+      options: [
+        {
+          label: 'Real-time store',
+          action: { kind: 'set_storage', realtime: true },
+        },
+        {
+          label: 'Lakehouse',
+          action: { kind: 'set_storage', lakehouse: true },
+        },
+      ],
+    },
+  };
+
+  const NAME: Prompt = {
+    step: 'name',
+    text: 'What would you like to call this dataset?',
+  };
+
+  const asked = (
+    prompt: Prompt,
+    text: string,
+    execute: (action: Action) => Promise<ExecutionOutcome> = async () =>
+      applied,
+  ) => runTurn(text, { vocabulary, execute, prompt });
+
+  it('performs an answer without asking for it twice', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await asked(STORAGE, 'lakehouse please', execute);
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_storage',
+      lakehouse: true,
+    });
+    expect(result.messages[1].card?.kind).not.toBe('confirm');
+  });
+
+  it('takes prose as the answer where the question asked for prose', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await asked(NAME, 'My Orders', execute);
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dataset_name',
+      name: 'My Orders',
+    });
+  });
+
+  /**
+   * The agenda drives, but it does not trap: a command at a question that
+   * takes prose still reaches the resolver rather than becoming a value.
+   */
+  it('still hears a command at the name question', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('undo', {
+      vocabulary,
+      execute,
+      prompt: NAME,
+      history: [],
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].text).toMatch(/nothing/i);
+  });
+
+  it('resolves anything the question did not offer as a request', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await asked(STORAGE, 'make order_id required', execute);
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'toggle_required',
+      path: 'order_id',
+      required: true,
+    });
+  });
+
+  /**
+   * An inferred action that answers the current question needs no confirming
+   * — the question narrowed the possibilities to the point where a wrong
+   * reading is a wrong reading of a yes or no.
+   */
+  it('performs an inferred action that answers the question', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn('put it in the lake', {
+      vocabulary,
+      execute,
+      prompt: STORAGE,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.8,
+        needsConfirmation: true,
+        action: { kind: 'set_storage', lakehouse: true },
+      }),
+    });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_storage',
+      lakehouse: true,
+    });
+  });
+
+  it('still confirms an inferred action about something else', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('something only a model would parse', {
+      vocabulary,
+      execute,
+      prompt: STORAGE,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.8,
+        needsConfirmation: true,
+        action: { kind: 'delete_field', path: 'order_id' },
+      }),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].card?.kind).toBe('confirm');
   });
 });

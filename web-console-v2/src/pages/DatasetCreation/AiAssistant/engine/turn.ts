@@ -6,8 +6,10 @@
  * session here — the caller owns persistence, which keeps this pure enough to
  * reason about.
  */
+import { ACCEPTS, Prompt } from './agenda';
 import { Action } from './actions';
 import { ExecutionOutcome } from './executor';
+import { answerTo } from './answer';
 import { FieldVocabulary } from './fieldVocabulary';
 import {
   NOTHING_TO_UNDO,
@@ -38,6 +40,14 @@ export interface TurnDeps {
   connectorsUnavailable?: boolean;
   /** The chosen connector's non-secret property keys. */
   connectorProperties?: string[];
+  /**
+   * The question the assistant has on the table, when it has one.
+   *
+   * Typed text is read as an answer to it first, and an action that answers
+   * it is performed rather than proposed. Absent when nothing was asked, in
+   * which case every utterance is a free-standing request as before.
+   */
+  prompt?: Prompt;
   /**
    * Replaces rule resolution when the model is running. Returns the same
    * `Resolution`, so nothing downstream knows which tier answered.
@@ -330,6 +340,22 @@ export const runTurn = async (
 
   const said: NewMessage = { role: 'user', text: input };
 
+  /**
+   * An answer to the question is acted on as it stands.
+   *
+   * It is tried before resolving because the question is better evidence
+   * than the words: "no" means nothing on its own and means "keep the
+   * duplicates" right after the deduplication question. `answerTo` returns
+   * nothing for a command or a request, so those still reach the resolver.
+   */
+  const answered = answerTo(deps.prompt, input);
+
+  if (answered) {
+    const { outcome, message } = await runAction(answered, deps);
+
+    return { messages: [said, message], action: answered, outcome };
+  }
+
   const resolution = deps.resolve
     ? await deps.resolve(input)
     : resolveUtterance(input, {
@@ -347,10 +373,20 @@ export const runTurn = async (
    * 0.6B model gets this wrong often enough that the click is the better
    * trade.
    */
+  /**
+   * An inferred action that answers the current question is not a guess in
+   * the same sense: the question already narrowed the field, so being wrong
+   * means misreading an answer rather than choosing the wrong subject. Those
+   * are performed. Anything else keeps the click.
+   */
+  const onAgenda = (action: Action): boolean =>
+    Boolean(deps.prompt && ACCEPTS[deps.prompt.step].includes(action.kind));
+
   if (
     resolution.status === 'resolved' &&
     resolution.action &&
-    resolution.needsConfirmation
+    resolution.needsConfirmation &&
+    !onAgenda(resolution.action)
   ) {
     const proposed = resolution.action;
 

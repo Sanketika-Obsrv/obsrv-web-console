@@ -387,13 +387,25 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   useEffect(() => {
     const current = session.session;
     if (!current || session.loading || busy) return;
-    if (current.messages.length > 0) return;
     if (opened.current.has(current.sessionId)) return;
 
     opened.current.add(current.sessionId);
 
-    void askNext();
-  }, [askNext, busy, session]);
+    if (current.messages.length === 0) {
+      void askNext();
+      return;
+    }
+
+    /**
+     * A resumed conversation already has its question in the transcript, so
+     * asking again would repeat it — but the question still has to be *known*
+     * here, or the first thing typed after a reload is read as a
+     * free-standing request instead of the answer it is.
+     */
+    void (async () => {
+      setPrompt(nextPrompt(await agendaState(current)));
+    })();
+  }, [agendaState, askNext, busy, session]);
 
   const run = useCallback(
     async (input: string | Action) => {
@@ -418,6 +430,8 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
 
         const result = await runTurn(input, {
           vocabulary,
+          // What was asked, so a typed answer is read as an answer.
+          ...(prompt ? { prompt } : {}),
           connectors,
           connectorsUnavailable,
           connectorProperties: fillableProps(uiSpec).map((prop) => prop.key),
@@ -593,6 +607,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       // `contextNow` already changes with it.
       datasetId,
       modelReady,
+      prompt,
       recordAction,
       refreshVocabulary,
       session,
