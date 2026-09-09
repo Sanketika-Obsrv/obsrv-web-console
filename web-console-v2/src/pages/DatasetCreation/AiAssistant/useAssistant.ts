@@ -51,6 +51,8 @@ const SCHEMA_SUGGESTIONS = [
   'make order_id required',
   'dedup on order_id',
   'enable the real-time store',
+  // Offered as a chip because an undo nobody knows about is not a safety net.
+  'undo that',
   'save it',
 ];
 
@@ -283,6 +285,9 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
               }
             : {}),
           execute: (action) => executeAction(action, contextNow()),
+          // The transcript is the undo stack: each change carries the actions
+          // that would put it back.
+          history: session.messages,
           // The rows the user supplied, for local checks only. They are never
           // sent from here — the sample reaches the server as a file upload.
           sampleRows: (session.session?.sampleRows ?? []) as Record<
@@ -296,6 +301,12 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           // record of what happened.
 
           await session.append(message);
+        }
+
+        // Spent, so the same change cannot be undone twice — and so an undo
+        // of the undo reaches the restoring turn instead.
+        if (result.undoneMessageId) {
+          await session.markUndone(result.undoneMessageId);
         }
 
         if (result.action && result.outcome) {

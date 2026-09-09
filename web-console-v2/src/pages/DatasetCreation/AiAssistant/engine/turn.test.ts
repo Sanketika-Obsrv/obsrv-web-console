@@ -2,6 +2,7 @@ import { Action } from './actions';
 import { buildFieldVocabulary } from './fieldVocabulary';
 import { ExecutionOutcome } from './executor';
 import { runTurn } from './turn';
+import { Message } from '../session/types';
 
 const FIELDS = [
   { column: 'order_id', data_type: 'string', arrival_format: 'text' },
@@ -483,5 +484,173 @@ describe('an inferred action is proposed, not performed', () => {
     await turn('make order_id required', execute);
 
     expect(execute).toHaveBeenCalled();
+  });
+});
+
+describe('undo', () => {
+  const change = (overrides: Partial<Message> = {}): Message => ({
+    id: 'm1',
+    role: 'assistant',
+    text: 'Done — set order_id to double.',
+    createdAt: 1,
+    action: { kind: 'set_data_type', path: 'order_id', dataType: 'double' },
+    inverse: [{ kind: 'set_data_type', path: 'order_id', dataType: 'string' }],
+    ...overrides,
+  });
+
+  const undo = (
+    history: Message[],
+    execute: (action: Action) => Promise<ExecutionOutcome> = async () =>
+      applied,
+  ) => runTurn('undo that', { vocabulary, execute, history });
+
+  it('says there is nothing to undo when nothing has changed', async () => {
+    const result = await undo([]);
+
+    expect(result.messages[1].text).toMatch(/nothing to undo/i);
+    expect(result.action).toBeUndefined();
+  });
+
+  it('re-PATCHes the recorded inverse through the executor', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await undo([change()], execute);
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_data_type',
+      path: 'order_id',
+      dataType: 'string',
+    });
+  });
+
+  it('says what it put back', async () => {
+    const result = await undo([change()]);
+
+    expect(result.messages[1].text).toBe('Undone. I set order_id to string.');
+  });
+
+  it('names the change it spent, so it cannot be undone twice', async () => {
+    const result = await undo([change({ id: 'm7' })]);
+
+    expect(result.undoneMessageId).toBe('m7');
+  });
+
+  /**
+   * The restoring write computes its own inverse, so undoing an undo is a
+   * redo — no separate mechanism, and no third state to keep in step.
+   */
+  it('carries an inverse of its own, which makes the next undo a redo', async () => {
+    const result = await undo([change()], async () => ({
+      ...applied,
+      inverse: [
+        { kind: 'set_data_type', path: 'order_id', dataType: 'double' },
+      ],
+    }));
+
+    expect(result.messages[1].inverse).toEqual([
+      { kind: 'set_data_type', path: 'order_id', dataType: 'double' },
+    ]);
+  });
+
+  it('explains why a change cannot be undone instead of skipping it', async () => {
+    const blocked = change({
+      id: 'm2',
+      inverse: undefined,
+      undoBlocked: 'I cannot take back the sample.',
+    });
+    const execute = jest.fn(async () => applied);
+
+    const result = await undo([change(), blocked], execute);
+
+    expect(result.messages[1]).toMatchObject({
+      text: 'I cannot take back the sample.',
+      failureCode: 'NOT_UNDOABLE',
+    });
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('sends every action a multi-step restoration needs, in order', async () => {
+    // Typed, so `mock.calls` is a tuple the assertion below can index.
+    const execute = jest.fn<Promise<ExecutionOutcome>, [Action]>(
+      async () => applied,
+    );
+    const deleted = change({
+      action: { kind: 'delete_field', path: 'customer.email' },
+      inverse: [
+        {
+          kind: 'add_field',
+          name: 'email',
+          parentPath: 'customer',
+          arrivalFormat: 'text',
+          dataType: 'string',
+        },
+        {
+          kind: 'toggle_required',
+          path: 'customer.email',
+          required: true,
+        },
+      ],
+    });
+
+    const result = await undo([deleted], execute);
+
+    expect(execute.mock.calls.map(([action]) => action.kind)).toEqual([
+      'add_field',
+      'toggle_required',
+    ]);
+    expect(result.messages[1].text).toBe(
+      'Undone. I added customer.email and made customer.email required.',
+    );
+  });
+
+  /**
+   * A restoration that stops half way has still changed the dataset, so what
+   * landed is reported before the failure. Silence here would leave the user
+   * believing nothing happened.
+   */
+  it('reports what landed before a failure part way through', async () => {
+    const deleted = change({
+      inverse: [
+        {
+          kind: 'add_field',
+          name: 'email',
+          parentPath: 'customer',
+          arrivalFormat: 'text',
+          dataType: 'string',
+        },
+        { kind: 'toggle_required', path: 'customer.email', required: true },
+      ],
+    });
+
+    const execute = jest
+      .fn<Promise<ExecutionOutcome>, [Action]>()
+      .mockResolvedValueOnce(applied)
+      .mockResolvedValueOnce({
+        ok: false,
+        code: 'PATCH_FAILED',
+        error: 'The dataset is outdated.',
+      });
+
+    const result = await undo([deleted], execute);
+
+    expect(result.messages[1].text).toMatch(/put part of that back/i);
+    expect(result.messages[1].text).toContain('added customer.email');
+    expect(result.messages[2].failureCode).toBe('PATCH_FAILED');
+    expect(result.undoneMessageId).toBeUndefined();
+  });
+
+  it('undoes from a card as well as from typed text', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn(
+      { kind: 'undo' },
+      { vocabulary, execute, history: [change()] },
+    );
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_data_type',
+      path: 'order_id',
+      dataType: 'string',
+    });
   });
 });

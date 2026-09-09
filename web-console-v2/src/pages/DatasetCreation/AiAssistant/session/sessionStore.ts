@@ -111,6 +111,11 @@ export interface SessionStore {
     message: NewMessage,
   ): Promise<AiSession | undefined>;
   setStep(sessionId: string, step: string): Promise<AiSession | undefined>;
+  /** Records that a change has been undone, so undo cannot repeat it. */
+  markUndone(
+    sessionId: string,
+    messageId: string,
+  ): Promise<AiSession | undefined>;
   setModelTier(
     sessionId: string,
     tier: ModelTier,
@@ -241,6 +246,14 @@ export const createSessionStore = (
 
     setStep: (sessionId, step) =>
       mutate(sessionId, (session) => ({ ...session, step })),
+
+    markUndone: (sessionId, messageId) =>
+      mutate(sessionId, (session) => ({
+        ...session,
+        messages: session.messages.map((message) =>
+          message.id === messageId ? { ...message, undone: true } : message,
+        ),
+      })),
 
     setModelTier: (sessionId, modelTier) =>
       mutate(sessionId, (session) => ({ ...session, modelTier })),

@@ -28,8 +28,8 @@ const storeLabel = (flag: 'lakehouse' | 'realtime' | 'cache') => {
   ])[0];
 };
 
-/** What the action asked for, in plain words. Present tense, no outcome. */
-const describeAction = (action: Action): string => {
+/** What the action asked for, in plain words. Past tense, no outcome. */
+export const describeAction = (action: Action): string => {
   switch (action.kind) {
     case 'set_dataset_name':
       return `named the dataset "${action.name}"`;
@@ -73,6 +73,10 @@ const describeAction = (action: Action): string => {
         : 'set duplicates to be kept';
     case 'set_denorm':
       return 'set up denormalisation';
+    case 'remove_transformation':
+      return `removed the transformation on ${action.fieldKey}`;
+    case 'remove_denorm':
+      return `removed the denormalisation on ${action.path}`;
 
     case 'set_storage': {
       const changes = (['lakehouse', 'realtime', 'cache'] as const)
@@ -137,6 +141,33 @@ export const describeProposal = (action: Action): string =>
     .replace(/^saved /, 'save ')
     .replace(/^moved /, 'move ')
     .replace(/^read /, 'read ');
+
+/** "a", "a and b", "a, b and c" — for a sequence read as one sentence. */
+const joinPhrases = (phrases: string[]): string =>
+  phrases.length <= 1
+    ? (phrases[0] ?? '')
+    : `${phrases.slice(0, -1).join(', ')} and ${phrases[phrases.length - 1]}`;
+
+export const NOTHING_TO_UNDO =
+  'There is nothing to undo yet — I have not changed anything.';
+
+/**
+ * What was put back.
+ *
+ * Phrased as what the assistant *did*, not as "reverted", because an undo is
+ * an ordinary write like any other: the transcript should read as the change
+ * it actually made.
+ */
+export const narrateUndo = (
+  restored: Action[],
+  partial = false,
+): Narration => ({
+  text: partial
+    ? `I put part of that back — I ${joinPhrases(
+        restored.map(describeAction),
+      )} — and then hit a problem.`
+    : `Undone. I ${joinPhrases(restored.map(describeAction))}.`,
+});
 
 export const narrateOutcome = (
   action: Action,

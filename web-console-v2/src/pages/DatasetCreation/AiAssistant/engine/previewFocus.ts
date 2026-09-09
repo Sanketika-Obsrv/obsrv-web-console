@@ -42,6 +42,8 @@ const SECTION_BY_KIND: Partial<Record<ActionKind, PreviewSection>> = {
   add_derived_field: 'processing',
   set_dedup: 'processing',
   set_denorm: 'processing',
+  remove_transformation: 'processing',
+  remove_denorm: 'processing',
 
   set_storage: 'storage',
   set_keys: 'storage',
@@ -100,6 +102,8 @@ const STEP_BY_KIND: Partial<Record<Action['kind'], WizardStep>> = {
   add_derived_field: 'processing',
   set_dedup: 'processing',
   set_denorm: 'processing',
+  remove_transformation: 'processing',
+  remove_denorm: 'processing',
 
   set_storage: 'storage',
   set_keys: 'storage',

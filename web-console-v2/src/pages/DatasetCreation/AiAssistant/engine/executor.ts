@@ -66,9 +66,13 @@ import {
   setDescription,
   setRequired,
 } from './schemaEditor';
+import { inverseOf } from './undo';
 
 /** Smallest projection that supports a schema edit. */
 export const SCHEMA_READ_FIELDS = 'dataset_id,data_schema,version_key';
+
+/** Projection carrying the name and type, which undo needs to restore. */
+export const NAMED_READ_FIELDS = 'dataset_id,version_key,name,type';
 
 /** Projection covering everything the processing and storage steps touch. */
 export const PROCESSING_READ_FIELDS =
@@ -166,6 +170,14 @@ export type ExecutionOutcome =
       changedRefs: string[];
       /** Set when this action created the draft. */
       datasetId?: string;
+      /**
+       * What would put this change back, computed from the document as it was
+       * read *before* the write. Only the pre-write read knows the old value,
+       * which is why the inverse is derived here and not from the outcome.
+       */
+      inverse?: Action[];
+      /** Why this change cannot be undone, when it cannot. */
+      undoBlocked?: string;
       /** Set when a stale `version_key` forced a re-read and a second attempt. */
       replayed?: boolean;
     }
@@ -196,6 +208,21 @@ const describeApiError = (
     (cause instanceof Error ? cause.message : String(cause));
 
   return failure(message, envelope?.code ?? fallbackCode);
+};
+
+/**
+ * What an applied outcome carries about undoing itself: either the actions
+ * that reverse it, or the reason it cannot be reversed.
+ */
+const undoFields = (
+  action: Action,
+  before: DatasetSnapshot,
+): { inverse?: Action[]; undoBlocked?: string } => {
+  const inverted = inverseOf(action, before);
+
+  return inverted.ok
+    ? { inverse: inverted.actions }
+    : { undoBlocked: inverted.reason };
 };
 
 /**
@@ -327,6 +354,7 @@ const applyEdit = (
 const patchDataset = (
   datasetId: string,
   fields: string,
+  action: Action,
   build: (current: DatasetSnapshot) => Record<string, unknown>,
 ): Promise<ExecutionOutcome> =>
   withReplay(async () => {
@@ -355,6 +383,7 @@ const patchDataset = (
         status: 'applied',
         dataset: refreshed,
         changedRefs: [],
+        ...undoFields(action, current),
       };
     } catch (cause) {
       return describeApiError(cause, 'READ_FAILED');
@@ -398,9 +427,13 @@ const setName = async (
 
   if (context.datasetId) {
     // The id is derived from the original name and is immutable after create.
-    return patchDataset(context.datasetId, 'dataset_id,version_key', () => ({
-      name,
-    }));
+    // `name` and `type` are read so undo knows what to put back.
+    return patchDataset(
+      context.datasetId,
+      NAMED_READ_FIELDS,
+      { kind: 'set_dataset_name', name },
+      () => ({ name }),
+    );
   }
 
   const datasetId = datasetIdFromName(name);
@@ -436,9 +469,12 @@ const setType = (
     });
   }
 
-  return patchDataset(context.datasetId, 'dataset_id,version_key', () => ({
-    type: datasetType,
-  }));
+  return patchDataset(
+    context.datasetId,
+    NAMED_READ_FIELDS,
+    { kind: 'set_dataset_type', datasetType },
+    () => ({ type: datasetType }),
+  );
 };
 
 const CREATE_READ_FIELDS = 'dataset_id,version_key,name,type,dataset_config';
@@ -567,6 +603,7 @@ const attachSample = async (
       dataset: refreshed,
       changedRefs: [],
       datasetId,
+      ...undoFields({ kind: 'attach_sample', fileName }, existing ?? {}),
     };
   } catch (cause) {
     return describeApiError(cause, 'READ_FAILED');
@@ -650,6 +687,7 @@ const requireDataset = (context: ExecutorContext): string | null =>
 /** Reads the processing projection, applies a builder, then PATCHes and re-reads. */
 const patchProcessing = (
   datasetId: string,
+  action: Action,
   build: (
     current: DatasetSnapshot,
   ) => Promise<Record<string, unknown> | ExecutionOutcome>,
@@ -684,6 +722,7 @@ const patchProcessing = (
         status: 'applied',
         dataset: refreshed,
         changedRefs: [],
+        ...undoFields(action, current),
       };
     } catch (cause) {
       return describeApiError(cause, 'READ_FAILED');
@@ -723,6 +762,8 @@ export const executeAction = async (
       action.kind === 'add_derived_field' ||
       action.kind === 'set_dedup' ||
       action.kind === 'set_denorm' ||
+      action.kind === 'remove_transformation' ||
+      action.kind === 'remove_denorm' ||
       action.kind === 'set_storage' ||
       action.kind === 'set_keys' ||
       action.kind === 'save')
@@ -738,7 +779,7 @@ export const executeAction = async (
       ? ValidationMode.IgnoreNewFields
       : ValidationMode.Strict;
 
-    return patchProcessing(datasetId, async (current) => ({
+    return patchProcessing(datasetId, action, async (current) => ({
       validation_config: { validate: true, mode },
       data_schema: setAdditionalProperties(
         _.cloneDeep(current.data_schema ?? {}),
@@ -748,7 +789,7 @@ export const executeAction = async (
   }
 
   if (action.kind === 'set_pii' && datasetId) {
-    return patchProcessing(datasetId, async (current) => {
+    return patchProcessing(datasetId, action, async (current) => {
       if (!fieldExists(current, action.path)) {
         return failure(`Unknown field "${action.path}"`, 'UNKNOWN_FIELD');
       }
@@ -772,7 +813,7 @@ export const executeAction = async (
   }
 
   if (action.kind === 'add_transformation' && datasetId) {
-    return patchProcessing(datasetId, async (current) => {
+    return patchProcessing(datasetId, action, async (current) => {
       if (!fieldExists(current, action.path)) {
         return failure(`Unknown field "${action.path}"`, 'UNKNOWN_FIELD');
       }
@@ -805,7 +846,7 @@ export const executeAction = async (
   }
 
   if (action.kind === 'add_derived_field' && datasetId) {
-    return patchProcessing(datasetId, async (current) => {
+    return patchProcessing(datasetId, action, async (current) => {
       const evaluated = await datatypeForExpression(
         action.expression,
         current.sample_data,
@@ -834,7 +875,7 @@ export const executeAction = async (
   }
 
   if (action.kind === 'set_dedup' && datasetId) {
-    return patchProcessing(datasetId, async (current) => {
+    return patchProcessing(datasetId, action, async (current) => {
       if (action.enabled && action.key) {
         const eligible = storageKeyEligiblePaths(
           vocabularyOf(current.data_schema),
@@ -858,7 +899,7 @@ export const executeAction = async (
   }
 
   if (action.kind === 'set_denorm' && datasetId) {
-    return patchProcessing(datasetId, async (current) => {
+    return patchProcessing(datasetId, action, async (current) => {
       if (!fieldExists(current, action.path)) {
         return failure(`Unknown field "${action.path}"`, 'UNKNOWN_FIELD');
       }
@@ -883,8 +924,32 @@ export const executeAction = async (
     });
   }
 
+  /**
+   * Both removals exist for undo, and both send the delta the wizard's own
+   * delete button sends: `{ value: { <key> }, action: 'remove' }`. Nothing
+   * else about the block is echoed, because a delta PATCH describes changes
+   * rather than the desired array.
+   */
+  if (action.kind === 'remove_transformation' && datasetId) {
+    return patchProcessing(datasetId, action, async () => ({
+      transformations_config: [
+        { value: { field_key: action.fieldKey }, action: 'remove' },
+      ],
+    }));
+  }
+
+  if (action.kind === 'remove_denorm' && datasetId) {
+    return patchProcessing(datasetId, action, async () => ({
+      denorm_config: {
+        denorm_fields: [
+          { value: { denorm_key: action.path }, action: 'remove' },
+        ],
+      },
+    }));
+  }
+
   if (action.kind === 'set_storage' && datasetId) {
-    return patchProcessing(datasetId, async (current) => {
+    return patchProcessing(datasetId, action, async (current) => {
       const config = (current.dataset_config ?? {}) as Record<string, unknown>;
       const indexing = (config.indexing_config ?? {}) as Record<
         string,
@@ -966,7 +1031,7 @@ export const executeAction = async (
   }
 
   if (action.kind === 'set_keys' && datasetId) {
-    return patchProcessing(datasetId, async (current) => {
+    return patchProcessing(datasetId, action, async (current) => {
       const vocabulary = vocabularyOf(current.data_schema);
       const config = (current.dataset_config ?? {}) as Record<string, unknown>;
       const keys = (config.keys_config ?? {}) as Record<string, string>;
@@ -1044,6 +1109,7 @@ export const executeAction = async (
         status: 'applied',
         dataset: refreshed,
         changedRefs: [],
+        ...undoFields(action, refreshed),
       };
     } catch (cause) {
       return describeApiError(cause, 'READ_FAILED');
@@ -1166,6 +1232,7 @@ export const executeAction = async (
         status: 'applied',
         dataset: refreshed,
         changedRefs: edited.changedRefs,
+        ...undoFields(action, current),
       };
     } catch (cause) {
       return describeApiError(cause, 'READ_FAILED');

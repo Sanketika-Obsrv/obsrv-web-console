@@ -775,3 +775,64 @@ describe('the connector chosen before it is written', () => {
     });
   });
 });
+
+/**
+ * The transcript is the undo stack, so the inverse has to survive a reload
+ * and being spent has to be recorded — otherwise the same change could be
+ * undone twice, the second time against a document that no longer holds it.
+ */
+describe('the inverse a change carries', () => {
+  const inverse: Action[] = [
+    { kind: 'set_data_type', path: 'order_id', dataType: 'string' },
+  ];
+
+  it('persists with the message', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+
+    await sessions.appendMessage(sessionId, {
+      role: 'assistant',
+      text: 'Done — set order_id to double.',
+      action: { kind: 'set_data_type', path: 'order_id', dataType: 'double' },
+      inverse,
+    });
+
+    const resumed = await sessions.load(sessionId);
+
+    expect(resumed?.messages[0].inverse).toEqual(inverse);
+  });
+
+  it('is marked spent once it has been undone', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    const appended = await sessions.appendMessage(sessionId, {
+      role: 'assistant',
+      text: 'Done',
+      action: { kind: 'set_data_type', path: 'order_id', dataType: 'double' },
+      inverse,
+    });
+    const [message] = appended?.messages ?? [];
+
+    const updated = await sessions.markUndone(sessionId, message.id);
+
+    expect(updated?.messages[0].undone).toBe(true);
+  });
+
+  it('leaves the other turns alone', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.appendMessage(sessionId, { role: 'user', text: 'first' });
+    const appended = await sessions.appendMessage(sessionId, {
+      role: 'assistant',
+      text: 'Done',
+      action: { kind: 'set_dedup', enabled: false },
+      inverse,
+    });
+    const target = appended?.messages[1];
+
+    const updated = await sessions.markUndone(sessionId, target?.id ?? '');
+
+    expect(updated?.messages[0].undone).toBeUndefined();
+    expect(updated?.messages[1].undone).toBe(true);
+  });
+});

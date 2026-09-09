@@ -177,6 +177,29 @@ beforeEach(async () => {
 });
 
 /**
+ * Gets to a draft *with its vocabulary loaded*.
+ *
+ * Waiting only for the draft is not enough: the field list is read from the
+ * server after creation, and until it arrives the resolver rightly declines
+ * every field name. The preview showing a field is the user-visible signal
+ * that the vocabulary is in hand.
+ */
+const withDraft = async () => {
+  renderAssistant();
+  await say('call it My Orders');
+  await pasteSample(SAMPLE_ROWS);
+  await waitFor(() => expect(api.dataset('my-orders')).toBeDefined(), {
+    timeout: 10000,
+  });
+
+  const preview = screen.getByRole('region', { name: /dataset preview/i });
+  await waitFor(
+    () => expect(within(preview).getByText('order_id')).toBeInTheDocument(),
+    { timeout: 10000 },
+  );
+};
+
+/**
  * The flow the product exists for. Each step is a thing a user does, and the
  * assertion at the end is on what the *server* holds — not on what the UI
  * said it did.
@@ -241,29 +264,6 @@ describe('creating a dataset through the conversation', () => {
 });
 
 describe('editing the schema by instruction', () => {
-  /**
-   * Gets to a draft *with its vocabulary loaded*.
-   *
-   * Waiting only for the draft is not enough: the field list is read from the
-   * server after creation, and until it arrives the resolver rightly declines
-   * every field name. The preview showing a field is the user-visible signal
-   * that the vocabulary is in hand.
-   */
-  const withDraft = async () => {
-    renderAssistant();
-    await say('call it My Orders');
-    await pasteSample(SAMPLE_ROWS);
-    await waitFor(() => expect(api.dataset('my-orders')).toBeDefined(), {
-      timeout: 10000,
-    });
-
-    const preview = screen.getByRole('region', { name: /dataset preview/i });
-    await waitFor(
-      () => expect(within(preview).getByText('order_id')).toBeInTheDocument(),
-      { timeout: 10000 },
-    );
-  };
-
   it('writes a required flag through to the stored schema', async () => {
     await withDraft();
 
@@ -589,5 +589,118 @@ describe('the whole path, ending in a saved dataset', () => {
     );
 
     expect(conflicted).toEqual([]);
+  });
+});
+
+/**
+ * Undo, end to end, against what the server holds.
+ *
+ * The inverse is computed from the pre-write read and recorded on the message,
+ * so these assert the whole loop: a change lands, `undo` re-PATCHes the
+ * inverse, and the stored document is the one that was there before.
+ */
+describe('undoing a change', () => {
+  const properties = () =>
+    api.dataset('my-orders')?.data_schema.properties as Record<
+      string,
+      { data_type?: string; arrival_format?: string; isRequired?: boolean }
+    >;
+
+  /**
+   * Restoring the store format is not enough on its own: `double` moved the
+   * field out of the `number` bucket into `text`, and setting `double` back
+   * leaves it there. Both halves of the pairing have to come back.
+   */
+  it('puts a data type back, including the arrival format it moved', async () => {
+    await withDraft();
+    await say('make total_amount a string');
+    await waitFor(() =>
+      expect(properties().total_amount.data_type).toBe('string'),
+    );
+
+    await say('undo that');
+
+    await waitFor(() => {
+      expect(properties().total_amount.data_type).toBe('double');
+      expect(properties().total_amount.arrival_format).toBe('number');
+    });
+  });
+
+  it('makes a field optional again', async () => {
+    await withDraft();
+    await say('make order_id required');
+    await waitFor(() => expect(properties().order_id.isRequired).toBe(true));
+
+    await say('undo');
+
+    await waitFor(() => expect(properties().order_id.isRequired).toBe(false));
+  });
+
+  it('removes a transformation it added', async () => {
+    await withDraft();
+    await say('mask the email');
+    await waitFor(() =>
+      expect(api.dataset('my-orders')?.transformations_config).toHaveLength(1),
+    );
+
+    await say('undo');
+
+    await waitFor(() =>
+      expect(api.dataset('my-orders')?.transformations_config).toEqual([]),
+    );
+  });
+
+  it('turns deduplication back off, clearing the key with it', async () => {
+    await withDraft();
+    await say('dedup on order_id');
+    await waitFor(() =>
+      expect(api.dataset('my-orders')?.dedup_config).toMatchObject({
+        drop_duplicates: true,
+        dedup_key: 'order_id',
+      }),
+    );
+
+    await say('undo');
+
+    await waitFor(() =>
+      expect(api.dataset('my-orders')?.dedup_config).toMatchObject({
+        drop_duplicates: false,
+        dedup_key: '',
+      }),
+    );
+  });
+
+  /**
+   * Undoing an undo is a redo, with no separate mechanism: the restoring
+   * write computes its own inverse from the document it read, exactly as the
+   * original write did.
+   */
+  it('redoes when the undo is itself undone', async () => {
+    await withDraft();
+    await say('make order_id required');
+    await say('undo');
+    await waitFor(() => expect(properties().order_id.isRequired).toBe(false));
+
+    await say('undo');
+
+    await waitFor(() => expect(properties().order_id.isRequired).toBe(true));
+  });
+
+  it('says why the sample cannot be taken back, and sends nothing', async () => {
+    await withDraft();
+    const before = api.dataset('my-orders')?.version_key;
+
+    await say('undo');
+
+    expect(lastReply()).toMatch(/sample/i);
+    expect(api.dataset('my-orders')?.version_key).toBe(before);
+  });
+
+  it('has nothing to undo before anything has changed', async () => {
+    renderAssistant();
+
+    await say('undo');
+
+    expect(lastReply()).toMatch(/nothing to undo/i);
   });
 });

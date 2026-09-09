@@ -586,6 +586,14 @@ export const createFakeConfigApi = ({
       const denorm = payload.denorm_config as Json;
       rejectExtraKeys('denorm_config', denorm, ['denorm_fields']);
       requireDeltaItems('denorm_config', denorm.denorm_fields);
+      dataset.denorm_config = {
+        ...dataset.denorm_config,
+        denorm_fields: applyDelta(
+          (dataset.denorm_config.denorm_fields as Json[]) ?? [],
+          denorm.denorm_fields as Json[],
+          'denorm_key',
+        ),
+      };
     }
 
     if (payload.validation_config) {

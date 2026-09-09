@@ -35,6 +35,21 @@ export interface Message {
    * resolve. Cards are how every action stays reachable without a model.
    */
   card?: MessageCard;
+  /**
+   * The actions that would put this change back, computed from the document
+   * as it was *before* the write.
+   *
+   * Actions rather than a document snapshot: an inverse expressed in the same
+   * vocabulary is small enough to persist, keeps undo working after a reload,
+   * and is auditable in exactly the way an instruction is — where caching the
+   * dataset document would break the rule that dataset state is always
+   * re-read from the server.
+   */
+  inverse?: Action[];
+  /** Why this change cannot be undone, when it cannot. */
+  undoBlocked?: string;
+  /** Set once this change has been undone, so it is not offered twice. */
+  undone?: boolean;
 }
 
 export type SessionMode = 'create' | 'update';

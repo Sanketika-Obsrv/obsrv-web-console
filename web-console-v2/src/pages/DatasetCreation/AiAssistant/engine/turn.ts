@@ -9,12 +9,20 @@
 import { Action } from './actions';
 import { ExecutionOutcome } from './executor';
 import { FieldVocabulary } from './fieldVocabulary';
-import { describeProposal, narrateOutcome, narrateResolution } from './narrate';
+import {
+  NOTHING_TO_UNDO,
+  describeProposal,
+  narrateOutcome,
+  narrateResolution,
+  narrateUndo,
+} from './narrate';
 import { countDuplicates, evaluateExpression } from './preflight';
 import { sectionForAction } from './previewFocus';
 import { MessageCard } from '../messages/types';
 import { NewMessage } from '../session/sessionStore';
 import { Resolution, resolveUtterance } from './ruleResolver';
+import { Message } from '../session/types';
+import { undoTarget } from './undo';
 
 export interface TurnDeps {
   vocabulary: FieldVocabulary;
@@ -35,6 +43,14 @@ export interface TurnDeps {
    * `Resolution`, so nothing downstream knows which tier answered.
    */
   resolve?: (utterance: string) => Promise<Resolution>;
+  /**
+   * The transcript so far, which is where an inverse action is recorded.
+   *
+   * Undo needs it and nothing else does: the inverse of a change is computed
+   * before the write and carried on the message, so the transcript is the
+   * undo stack. Passing it in keeps this module free of session access.
+   */
+  history?: Message[];
 }
 
 export interface TurnResult {
@@ -43,6 +59,8 @@ export interface TurnResult {
   /** The action that ran, when one did. */
   action?: Action;
   outcome?: ExecutionOutcome;
+  /** The change this turn undid, for the caller to mark as spent. */
+  undoneMessageId?: string;
 }
 
 /** Failure shape for an executor that threw rather than returning a failure. */
@@ -150,18 +168,112 @@ const runAction = async (
   // a failure has its own card explaining why.
   const card = narration.card ?? (outcome.ok ? preflight.card : undefined);
 
+  const undoable =
+    outcome.ok && outcome.status === 'applied'
+      ? {
+          ...(outcome.inverse ? { inverse: outcome.inverse } : {}),
+          ...(outcome.undoBlocked ? { undoBlocked: outcome.undoBlocked } : {}),
+        }
+      : {};
+
   return {
     outcome,
     message: {
       role: 'assistant',
       text: `${narration.text}${warning}`,
       action,
+      ...undoable,
       ...(card ? { card } : {}),
       ...(narration.failureCode ? { failureCode: narration.failureCode } : {}),
       ...(sectionForAction(action)
         ? { section: sectionForAction(action) }
         : {}),
     },
+  };
+};
+
+/**
+ * Puts the most recent change back.
+ *
+ * The inverse actions were computed before the write and recorded on the
+ * message, so undo is an ordinary turn: the same executor, the same
+ * narration, the same audit trail. It re-PATCHes rather than restoring a
+ * cached document, which means a concurrent edit is reported by the same
+ * `version_key` check as everything else.
+ *
+ * Several actions can be needed to put one change back — a deleted field is
+ * re-added, then made required, then described — and they are sent in order,
+ * stopping at the first failure and saying what did land.
+ */
+const runUndo = async (deps: TurnDeps): Promise<TurnResult> => {
+  const target = undoTarget(deps.history ?? []);
+
+  if (target.status === 'none') {
+    return { messages: [{ role: 'assistant', text: NOTHING_TO_UNDO }] };
+  }
+
+  if (target.status === 'blocked') {
+    return {
+      messages: [
+        {
+          role: 'assistant',
+          text: target.reason,
+          failureCode: 'NOT_UNDOABLE',
+        },
+      ],
+    };
+  }
+
+  const restored: Action[] = [];
+  /** Each restoring action's own inverse, which together make a redo. */
+  const inverses: Action[][] = [];
+  let redoBlocked: string | undefined;
+  let last: ExecutionOutcome | undefined;
+
+  for (const action of target.actions) {
+    const step = await runAction(action, deps);
+    last = step.outcome;
+
+    if (!step.outcome?.ok) {
+      // A partial restoration the user is not told about is worse than a
+      // failure, so what did land is said first, then why the rest did not.
+      const said: NewMessage[] = restored.length
+        ? [{ role: 'assistant', text: narrateUndo(restored, true).text }]
+        : [];
+
+      return {
+        messages: [...said, step.message],
+        action,
+        outcome: step.outcome,
+      };
+    }
+
+    restored.push(action);
+
+    if (step.outcome.status === 'applied') {
+      if (step.outcome.inverse) inverses.push(step.outcome.inverse);
+      if (step.outcome.undoBlocked) redoBlocked = step.outcome.undoBlocked;
+    }
+  }
+
+  // Undoing a sequence is undone by inverting it back to front.
+  const redo = inverses.reverse().flat();
+  const section = sectionForAction(restored[0]);
+
+  return {
+    messages: [
+      {
+        role: 'assistant',
+        text: narrateUndo(restored).text,
+        action: restored[0],
+        ...(redo.length && !redoBlocked ? { inverse: redo } : {}),
+        ...(redoBlocked ? { undoBlocked: redoBlocked } : {}),
+        ...(section ? { section } : {}),
+      },
+    ],
+    action: restored[0],
+    outcome: last,
+    undoneMessageId: target.message.id,
   };
 };
 
@@ -176,6 +288,8 @@ export const runTurn = async (
   deps: TurnDeps,
 ): Promise<TurnResult> => {
   if (typeof input !== 'string') {
+    if (input.kind === 'undo') return runUndo(deps);
+
     const { outcome, message } = await runAction(input, deps);
     return { messages: [message], action: input, outcome };
   }
@@ -224,6 +338,12 @@ export const runTurn = async (
         },
       ],
     };
+  }
+
+  if (resolution.status === 'resolved' && resolution.action?.kind === 'undo') {
+    const undone = await runUndo(deps);
+
+    return { ...undone, messages: [said, ...undone.messages] };
   }
 
   if (resolution.status !== 'resolved' || !resolution.action) {

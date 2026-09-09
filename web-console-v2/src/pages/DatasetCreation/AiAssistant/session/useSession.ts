@@ -57,6 +57,8 @@ export interface SessionApi {
   persisting: boolean;
   append(message: NewMessage): Promise<void>;
   setStep(step: string): Promise<void>;
+  /** Marks a change undone, so `undoTarget` does not offer it again. */
+  markUndone(messageId: string): Promise<void>;
   attachDataset(datasetId: string): Promise<void>;
   setSampleRows(rows: unknown[]): Promise<void>;
   clearSample(): Promise<void>;
@@ -175,6 +177,8 @@ export const useSession = ({
 
       append: (message) => apply((id) => sessions.appendMessage(id, message)),
       setStep: (step) => apply((id) => sessions.setStep(id, step)),
+      markUndone: (messageId) =>
+        apply((id) => sessions.markUndone(id, messageId)),
       attachDataset: (id) =>
         apply((sessionId) => sessions.attachDataset(sessionId, id)),
       setSampleRows: (rows) => apply((id) => sessions.setSampleRows(id, rows)),

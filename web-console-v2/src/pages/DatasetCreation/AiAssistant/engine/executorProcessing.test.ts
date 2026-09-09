@@ -678,3 +678,97 @@ describe('set_keys and the storage block', () => {
     expect(patchedAt('dataset_config')).not.toHaveProperty('indexing_config');
   });
 });
+
+describe('remove_transformation', () => {
+  it('sends the remove delta the wizard sends, and nothing else', async () => {
+    await run({ kind: 'remove_transformation', fieldKey: 'customer.email' });
+
+    expect(patchedAt('transformations_config')).toEqual([
+      { value: { field_key: 'customer.email' }, action: 'remove' },
+    ]);
+  });
+});
+
+describe('remove_denorm', () => {
+  it('sends the remove delta under denorm_fields', async () => {
+    await run({ kind: 'remove_denorm', path: 'customer.email' });
+
+    expect(patchedAt('denorm_config')).toEqual({
+      denorm_fields: [
+        { value: { denorm_key: 'customer.email' }, action: 'remove' },
+      ],
+    });
+  });
+});
+
+/**
+ * The inverse is derived from the document read *before* the write, because
+ * that read is the only place the old value exists. These check the wiring —
+ * `undo.test.ts` checks the mapping itself.
+ */
+describe('what an applied change says about undoing itself', () => {
+  it('carries the previous dedup settings', async () => {
+    mocked.read.mockResolvedValue(
+      draft({ dedup_config: { drop_duplicates: true, dedup_key: 'order_id' } }),
+    );
+
+    const outcome = await run({ kind: 'set_dedup', enabled: false });
+
+    expect(
+      outcome.ok && outcome.status === 'applied' && outcome.inverse,
+    ).toEqual([{ kind: 'set_dedup', enabled: true, key: 'order_id' }]);
+  });
+
+  it('carries the previous storage flags, not only the one that changed', async () => {
+    const outcome = await run({ kind: 'set_storage', cache: true });
+
+    expect(
+      outcome.ok && outcome.status === 'applied' && outcome.inverse,
+    ).toEqual([
+      {
+        kind: 'set_storage',
+        realtime: true,
+        lakehouse: false,
+        cache: false,
+      },
+    ]);
+  });
+
+  it('carries the previous data type for a schema edit', async () => {
+    const outcome = await run({
+      kind: 'set_data_type',
+      path: 'total_amount',
+      dataType: 'string',
+    });
+
+    expect(
+      outcome.ok && outcome.status === 'applied' && outcome.inverse,
+    ).toEqual([
+      { kind: 'set_data_type', path: 'total_amount', dataType: 'double' },
+    ]);
+  });
+
+  it('says why a save cannot be undone rather than offering an inverse', async () => {
+    const outcome = await run({ kind: 'save' });
+
+    expect(
+      outcome.ok && outcome.status === 'applied' && outcome.inverse,
+    ).toBeFalsy();
+    expect(
+      outcome.ok && outcome.status === 'applied' && outcome.undoBlocked,
+    ).toMatch(/status/i);
+  });
+
+  it('reads the name and type so a rename can be put back', async () => {
+    mocked.read.mockResolvedValue(draft({ name: 'My Orders' }));
+
+    const outcome = await run({ kind: 'set_dataset_name', name: 'Renamed' });
+
+    expect(mocked.read.mock.calls[0][0]).toMatchObject({
+      fields: 'dataset_id,version_key,name,type',
+    });
+    expect(
+      outcome.ok && outcome.status === 'applied' && outcome.inverse,
+    ).toEqual([{ kind: 'set_dataset_name', name: 'My Orders' }]);
+  });
+});

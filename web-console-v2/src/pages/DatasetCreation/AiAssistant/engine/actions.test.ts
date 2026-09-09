@@ -65,8 +65,13 @@ const validActions: Action[] = [
     masterDatasetId: 'customer-master',
     outField: 'customer_details',
   },
+  { kind: 'remove_transformation', fieldKey: 'customer.email' },
+  { kind: 'remove_denorm', path: 'customer.customer_id' },
   { kind: 'set_storage', realtime: true, lakehouse: false },
   { kind: 'set_keys', primary: 'order_id', partition: 'channel' },
+  // Restoring `keys_config` as it was often means putting a key back to
+  // unset, which the console stores as the empty string.
+  { kind: 'set_keys', primary: '', partition: '', timestamp: '' },
   { kind: 'goto_step', step: 'processing' },
   { kind: 'save' },
   { kind: 'explain', topic: 'dedup' },
@@ -97,6 +102,8 @@ describe('action catalog', () => {
       'add_derived_field',
       'set_dedup',
       'set_denorm',
+      'remove_transformation',
+      'remove_denorm',
       'set_storage',
       'set_keys',
       'goto_step',
@@ -231,6 +238,17 @@ describe('field path constraints', () => {
       validate({ kind: 'set_data_type', path: 'made_up', dataType: 'string' })
         .ok,
     ).toBe(false);
+  });
+
+  /**
+   * The empty string clears a storage key, so it has to be accepted even with
+   * the vocabulary pinned — without letting an invented path through with it.
+   */
+  it('accepts a cleared storage key but not an invented one', () => {
+    const validate = createActionValidator({ fieldPaths: paths });
+
+    expect(validate({ kind: 'set_keys', primary: '' }).ok).toBe(true);
+    expect(validate({ kind: 'set_keys', primary: 'made_up' }).ok).toBe(false);
   });
 
   it('leaves paths unconstrained when no vocabulary is given', () => {

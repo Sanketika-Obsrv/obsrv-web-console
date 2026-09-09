@@ -34,6 +34,11 @@ export const ACTION_KINDS = [
   'add_derived_field',
   'set_dedup',
   'set_denorm',
+  // Undo-only, and reachable no other way: a transformation or a
+  // denormalisation is removed to put back a document that did not have it.
+  // Both mirror what the wizard's own delete button sends.
+  'remove_transformation',
+  'remove_denorm',
   'set_storage',
   'set_keys',
   'goto_step',
@@ -144,6 +149,8 @@ export type Action =
       masterDatasetId: string;
       outField: string;
     }
+  | { kind: 'remove_transformation'; fieldKey: string }
+  | { kind: 'remove_denorm'; path: string }
   | {
       kind: 'set_storage';
       lakehouse?: boolean;
@@ -196,6 +203,15 @@ const buildVariants = ({
   const path: JsonSchema = fieldPaths?.length
     ? { type: 'string', enum: fieldPaths }
     : nonEmptyString;
+
+  /**
+   * A storage key slot, where the empty string means "clear this key".
+   *
+   * That is how the console stores a key that is not set, and undo needs to
+   * be able to send it: restoring `keys_config` as it was often means putting
+   * a key back to unset.
+   */
+  const keyOrCleared: JsonSchema = { anyOf: [path, { const: '' }] };
 
   const connectorProperty: JsonSchema = connectorProperties?.length
     ? { type: 'string', enum: connectorProperties }
@@ -304,6 +320,10 @@ const buildVariants = ({
       { path, masterDatasetId: nonEmptyString, outField: nonEmptyString },
       ['path', 'masterDatasetId', 'outField'],
     ),
+    variant('remove_transformation', { fieldKey: nonEmptyString }, [
+      'fieldKey',
+    ]),
+    variant('remove_denorm', { path }, ['path']),
     variant(
       'set_storage',
       {
@@ -322,7 +342,11 @@ const buildVariants = ({
     ),
     variant(
       'set_keys',
-      { primary: path, timestamp: path, partition: path },
+      {
+        primary: keyOrCleared,
+        timestamp: keyOrCleared,
+        partition: keyOrCleared,
+      },
       [],
       {
         anyOf: [
