@@ -704,3 +704,106 @@ describe('undoing a change', () => {
     expect(lastReply()).toMatch(/nothing to undo/i);
   });
 });
+
+/**
+ * The audit trail, exported the way a user exports it.
+ *
+ * `downloadJsonFile` is left alone and the browser's own object-URL seam is
+ * captured instead, so what is asserted is the actual bytes the file would
+ * contain — not an intermediate object a mocked writer was handed.
+ */
+describe('exporting the action trail', () => {
+  const captureDownload = () => {
+    const blobs: Blob[] = [];
+
+    // jsdom implements neither, so these are the seam rather than a stub of
+    // our own code.
+    (URL as unknown as { createObjectURL: unknown }).createObjectURL = (
+      blob: Blob,
+    ) => {
+      blobs.push(blob);
+      return 'blob:trail';
+    };
+    (URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = () =>
+      undefined;
+
+    return async () => {
+      const blob = blobs[blobs.length - 1];
+      expect(blob).toBeDefined();
+
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.readAsText(blob);
+      });
+
+      return JSON.parse(text);
+    };
+  };
+
+  it('writes every action the conversation took', async () => {
+    const read = captureDownload();
+    await withDraft();
+    await say('make order_id required');
+    await say('dedup on order_id');
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /export the action trail/i }),
+    );
+
+    const trail = await read();
+
+    expect(trail.session.datasetId).toBe('my-orders');
+    expect(
+      trail.entries
+        .filter((entry: { action?: { kind: string } }) => entry.action)
+        .map((entry: { action: { kind: string } }) => entry.action.kind),
+    ).toEqual([
+      // Held client-side until there was a draft, and recorded either way.
+      'set_dataset_name',
+      'attach_sample',
+      'toggle_required',
+      'set_dedup',
+    ]);
+    expect(trail.summary.changes).toBe(4);
+  });
+
+  it('records an undo as part of the trail, and marks what it undid', async () => {
+    const read = captureDownload();
+    await withDraft();
+    await say('make order_id required');
+    await say('undo');
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /export the action trail/i }),
+    );
+
+    const trail = await read();
+    const changes = trail.entries.filter(
+      (entry: { action?: unknown }) => entry.action,
+    );
+
+    expect(
+      changes.map((entry: { action: { kind: string } }) => entry.action.kind),
+    ).toEqual([
+      'set_dataset_name',
+      'attach_sample',
+      'toggle_required',
+      'toggle_required',
+    ]);
+    expect(changes[2].undone).toBe(true);
+    expect(changes[3].undone).toBeUndefined();
+  });
+
+  it('leaves the sample rows out of the file', async () => {
+    const read = captureDownload();
+    await withDraft();
+    await say('make order_id required');
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /export the action trail/i }),
+    );
+
+    expect(JSON.stringify(await read())).not.toContain('a@example.com');
+  });
+});

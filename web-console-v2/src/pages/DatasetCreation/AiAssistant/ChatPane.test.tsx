@@ -225,3 +225,24 @@ describe('starting a dataset', () => {
     expect(screen.getByLabelText(/choose a sample file/i)).toBeInTheDocument();
   });
 });
+
+describe('exporting the action trail', () => {
+  it('is offered once there is a conversation to export', async () => {
+    const onExportTrail = jest.fn();
+    show({ messages: [message()], onExportTrail });
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /export the action trail/i }),
+    );
+
+    expect(onExportTrail).toHaveBeenCalled();
+  });
+
+  it('is not offered before anything has been said', () => {
+    show({ messages: [], onExportTrail: jest.fn() });
+
+    expect(
+      screen.queryByRole('button', { name: /export the action trail/i }),
+    ).not.toBeInTheDocument();
+  });
+});

@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAllFields } from 'services/dataset';
+import { downloadJsonFile } from 'utils/downloadUtils';
 import { listConnectors, readConnector } from 'services/datasetApi';
 import { DatasetStatus } from 'types/datasets';
 import { Action, WizardStep } from './engine/actions';
@@ -40,7 +41,13 @@ import {
 } from './model/engineClient';
 import { resolveWithModel } from './model/modelResolver';
 import { Capability, detectCapability } from './model/tiers';
+import { auditFileName, buildAuditTrail } from './session/auditTrail';
 import { useSession } from './session/useSession';
+import {
+  reportAction,
+  reportSessionEnd,
+  reportSessionStart,
+} from './telemetry';
 import { stepAfterAction } from './engine/previewFocus';
 import { usePreviewFocus } from './usePreviewFocus';
 
@@ -90,6 +97,8 @@ export interface AssistantApi {
    */
   connectorNeedsValues: string[];
   clearSession: (sessionId: string) => Promise<void>;
+  /** Writes this conversation's action trail to a file. */
+  exportTrail: () => void;
 }
 
 export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
@@ -127,6 +136,21 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   // re-rendering must not recreate or drop it.
   const engine = useRef<ModelEngine | undefined>(undefined);
   const [modelReady, setModelReady] = useState(false);
+
+  /**
+   * Conversations already reported, so a re-render does not report again.
+   * A ref rather than state: reporting is a side effect with no bearing on
+   * what is rendered.
+   */
+  const reportedSessions = useRef(new Set<string>());
+
+  useEffect(() => {
+    const current = session.session;
+    if (!current || reportedSessions.current.has(current.sessionId)) return;
+
+    reportedSessions.current.add(current.sessionId);
+    reportSessionStart(current.sessionId, current.modelTier);
+  }, [session.session]);
 
   /**
    * The vocabulary is read from the server, never inferred locally, so the
@@ -311,6 +335,23 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
 
         if (result.action && result.outcome) {
           recordAction(result.action, result.outcome);
+
+          const currentStep = session.session?.step ?? 'ingestion';
+
+          reportAction({
+            action: result.action,
+            datasetId,
+            step: currentStep,
+            ...(result.outcome.ok ? {} : { failureCode: result.outcome.code }),
+          });
+
+          if (result.action.kind === 'save' && result.outcome.ok) {
+            reportSessionEnd(
+              session.session?.sessionId ?? '',
+              datasetId,
+              session.messages.filter((message) => message.action).length,
+            );
+          }
 
           // A choice made before the draft exists has to be kept, or the
           // create call would later run without a name.
@@ -505,6 +546,19 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     setModelCached(false);
   }, []);
 
+  /**
+   * Writes the action trail to a file.
+   *
+   * Built from the persisted session rather than from anything held in
+   * memory, so what is exported is exactly what was recorded.
+   */
+  const exportTrail = useCallback(() => {
+    const current = session.session;
+    if (!current) return;
+
+    downloadJsonFile(buildAuditTrail(current), auditFileName(current));
+  }, [session.session]);
+
   const attachSample = useCallback(
     async (rows: Record<string, unknown>[], file: File) => {
       sample.current = { file, rows };
@@ -548,5 +602,6 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       )
       .map(summariseProp),
     clearSession: session.clearSession,
+    exportTrail,
   };
 };

@@ -54,6 +54,7 @@ const AiAssistantPage: React.FC = () => {
             onSend={assistant.send}
             busy={assistant.busy}
             suggestions={assistant.suggestions}
+            onExportTrail={assistant.exportTrail}
             model={{
               capability: assistant.modelCapability,
               progress: assistant.modelProgress,

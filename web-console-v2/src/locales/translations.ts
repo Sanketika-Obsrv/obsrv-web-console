@@ -35,6 +35,9 @@ export const translations = {
         'Describe the dataset you want to create, or drop a sample JSONL file to get started.',
       resumingDraft:
         'Resuming this draft. Every change is saved to the dataset as you go.',
+      exportTrail: 'Export the action trail',
+      exportTrailHint:
+        'Downloads every action this conversation took, as JSON. Your sample rows and any credentials are left out.',
       previewEmpty:
         'The preview mirrors what is stored on the server and updates after each change.',
     },

@@ -1,4 +1,12 @@
-import { Alert, Divider, Paper, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Button,
+  Divider,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import React from 'react';
 import { t } from 'utils/i18n';
 import ChatComposer from './ChatComposer';
@@ -37,6 +45,8 @@ export interface ChatPaneProps {
   suggestions?: string[];
   /** The in-browser model's state and controls, when offered at all. */
   model?: ModelBannerProps;
+  /** Writes the conversation's action trail to a file. */
+  onExportTrail?: () => void;
 }
 
 /**
@@ -63,6 +73,7 @@ const ChatPane: React.FC<ChatPaneProps> = ({
   busy = false,
   suggestions,
   model,
+  onExportTrail,
 }) => (
   <Paper
     variant="outlined"
@@ -76,7 +87,31 @@ const ChatPane: React.FC<ChatPaneProps> = ({
       overflow: 'auto',
     }}
   >
-    <Typography variant="h5">{t('aiAssistant.chatTitle')}</Typography>
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="space-between"
+      spacing={1}
+    >
+      <Typography variant="h5">{t('aiAssistant.chatTitle')}</Typography>
+
+      {/*
+        Offered whenever there is something to export. Every change is
+        recorded with the action that made it, so the trail is worth having
+        without waiting for the dataset to be finished.
+
+        The tooltip uses `describeChild`, so the hint becomes the button's
+        description rather than its accessible name — the default replaces the
+        name, which left the button announced as a paragraph about credentials.
+      */}
+      {onExportTrail && messages.length > 0 && (
+        <Tooltip title={t('aiAssistant.exportTrailHint')} describeChild>
+          <Button size="small" variant="text" onClick={onExportTrail}>
+            {t('aiAssistant.exportTrail')}
+          </Button>
+        </Tooltip>
+      )}
+    </Stack>
 
     {model && <ModelBanner {...model} />}
 
