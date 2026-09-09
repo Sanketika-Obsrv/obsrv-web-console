@@ -622,3 +622,59 @@ describe('goto_step', () => {
     expect(result.ok).toBe(true);
   });
 });
+
+/**
+ * Setting a key is not changing storage.
+ *
+ * `set_keys` used to echo `indexing_config` back, carrying whatever default
+ * the draft arrived with — including `lakehouse_enabled: true`, which the
+ * live API sets on create and then rejects on update for a cluster with no
+ * lakehouse. Every `set_keys` failed for a flag the user never touched.
+ * Verified live that a `dataset_config` carrying only `keys_config` is
+ * accepted and leaves `indexing_config` untouched.
+ */
+describe('set_keys and the storage block', () => {
+  it('sends no indexing_config at all', async () => {
+    await run({ kind: 'set_keys', partition: 'total_amount' });
+
+    expect(patchedAt('dataset_config')).not.toHaveProperty('indexing_config');
+  });
+
+  it('still sends the keys it was asked to set', async () => {
+    await run({ kind: 'set_keys', partition: 'total_amount' });
+
+    expect(patchedAt('dataset_config.keys_config')).toMatchObject({
+      partition_key: 'total_amount',
+    });
+  });
+
+  it('preserves the upload path, which it does hold', async () => {
+    await run({ kind: 'set_keys', partition: 'total_amount' });
+
+    expect(patchedAt('dataset_config.file_upload_path')).toEqual([
+      'uploads/orders.json',
+    ]);
+  });
+
+  /** A draft whose default names an unavailable store must still accept keys. */
+  it('succeeds even when the draft carries an unhonourable storage default', async () => {
+    mocked.read.mockResolvedValue(
+      draft({
+        dataset_config: {
+          keys_config: { data_key: '', partition_key: '', timestamp_key: '' },
+          indexing_config: {
+            olap_store_enabled: true,
+            lakehouse_enabled: true,
+            cache_enabled: false,
+          },
+          file_upload_path: ['uploads/orders.json'],
+        },
+      }),
+    );
+
+    const outcome = await run({ kind: 'set_keys', partition: 'total_amount' });
+
+    expect(outcome.ok).toBe(true);
+    expect(patchedAt('dataset_config')).not.toHaveProperty('indexing_config');
+  });
+});

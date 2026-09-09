@@ -237,6 +237,18 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   const run = useCallback(
     async (input: string | Action) => {
       if (busy) return;
+
+      /**
+       * Nothing runs until there is a session to record it in.
+       *
+       * Found by the end-to-end test: an instruction sent while the session
+       * was still loading *executed* — it reached the API — but its turns
+       * were dropped, because `useSession.apply` no-ops when the session is
+       * not ready yet. A write with no record of it is worse than a write
+       * that waits, since the transcript is the audit trail.
+       */
+      if (session.loading || !session.session) return;
+
       setBusy(true);
 
       try {
@@ -498,7 +510,9 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     persisting: session.persisting,
     resumable: session.resumable,
     currentSessionId: session.session?.sessionId,
-    busy,
+    // Restoring counts as busy, so the composer is disabled rather than
+    // accepting an instruction it would silently drop.
+    busy: busy || session.loading,
     suggestions:
       vocabulary.paths.length > 0 ? SCHEMA_SUGGESTIONS : OPENING_SUGGESTIONS,
     focusSection,

@@ -40,7 +40,6 @@ import {
 } from './connectors';
 import {
   SESSION_EXPIRED,
-  availableStorageLabels,
   diagnose,
   isEmptyEnvelope,
   storageCapabilities,
@@ -905,18 +904,23 @@ export const executeAction = async (
       ).find(([flag]) => action[flag] === true && !available[flag]);
 
       if (refused) {
-        const offered = availableStorageLabels(
-          [
-            available.lakehouse ? 'lake_house' : '',
-            available.realtime ? 'realtime_store' : '',
-          ].filter(Boolean),
-        );
+        const offered = [
+          available.lakehouse ? 'lake_house' : '',
+          available.realtime ? 'realtime_store' : '',
+        ].filter(Boolean);
 
+        /**
+         * Phrased the way the API phrases it, deliberately.
+         *
+         * The error map already turns this exact sentence into the console's
+         * own storage wording *and* derives a corrected `set_storage` to
+         * retry with. Writing a nicer message here instead duplicated the
+         * labelling and lost the retry, so the path that refuses *before*
+         * sending offered less help than the one that let the server refuse.
+         * Found by the end-to-end test.
+         */
         return failure(
-          `This cluster does not have ${availableStorageLabels([refused[1]])[0]}.` +
-            (offered.length > 0
-              ? ` Available here: ${offered.join(', ')}.`
-              : ''),
+          `The storage type "${refused[1]}" is not available. Please use one of the available storage types: ${offered.join(', ')}`,
           'DATASET_UNSUPPORTED_STORAGE_TYPE',
         );
       }
@@ -997,10 +1001,22 @@ export const executeAction = async (
         }
       }
 
+      /**
+       * `indexing_config` is deliberately absent.
+       *
+       * Setting a key is not changing storage, and echoing the block back
+       * meant carrying whatever default the draft arrived with — including
+       * `lakehouse_enabled: true` on a cluster with no lakehouse, which the
+       * update API rejects. Every `set_keys` then failed for a flag the user
+       * never touched. Found by the end-to-end test.
+       *
+       * Verified against the live API: a `dataset_config` carrying only
+       * `keys_config` is accepted, and `indexing_config` is preserved rather
+       * than cleared — the update merges the block rather than replacing it.
+       */
       return {
         dataset_config: {
           file_upload_path: config.file_upload_path,
-          indexing_config: config.indexing_config ?? {},
           keys_config: {
             data_key: action.primary ?? keys.data_key ?? '',
             partition_key: action.partition ?? keys.partition_key ?? '',

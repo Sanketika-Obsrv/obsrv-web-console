@@ -73,8 +73,24 @@ const collect = (
   const name = field.column?.split('.').pop() ?? field.key;
   if (!name) return;
 
-  const path = parentPath ? `${parentPath}.${name}` : name;
-  const ref = field.ref ?? `${parentRef}properties.${name}`;
+  /**
+   * `generate-fields` returns nested fields **both** ways: hanging off a
+   * parent's `properties`, and as their own top-level row whose `column` is
+   * already the dotted path. Taking only the last segment of a dotted column
+   * turned `customer.email` into `email`, which then matched nothing in
+   * `data_schema` and failed as `Unknown field "email"`. Found by the
+   * end-to-end test; the preview never showed it because the preview renders
+   * `column` directly.
+   */
+  const dottedColumn =
+    !parentPath && field.column?.includes('.') ? field.column : undefined;
+
+  const path = dottedColumn ?? (parentPath ? `${parentPath}.${name}` : name);
+  const ref =
+    field.ref ??
+    (dottedColumn
+      ? refFromPath(dottedColumn)
+      : `${parentRef}properties.${name}`);
 
   into.push({
     path,
@@ -112,6 +128,10 @@ export const buildFieldVocabulary = (
 /**
  * Turns a dot path into the JSON Schema ref the API uses, matching the wizard's
  * own derivation in `services/dataset.formatNewFields`.
+ *
+ * Declared after `collect`, which calls it — a function declaration would be
+ * hoisted, and this arrow is only ever called at build time, never at module
+ * evaluation.
  */
 export const refFromPath = (path: string): string =>
   path

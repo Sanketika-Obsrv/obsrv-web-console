@@ -20,11 +20,16 @@ jest.mock('./ChatPane', () => ({
   default: ({
     datasetId,
     onAction,
+    busy,
   }: {
     datasetId: string | null;
     onAction?: (action: Record<string, unknown>) => void;
+    busy?: boolean;
   }) => (
-    <div>
+    // `data-busy` mirrors what the real pane uses to disable its composer:
+    // the assistant refuses to act before the session can record the turn,
+    // so a test has to wait for readiness just as a user would.
+    <div data-busy={busy ? 'true' : 'false'}>
       <span>{datasetId ?? 'New dataset'}</span>
       <button
         type="button"
@@ -104,6 +109,12 @@ const renderAt = (path: string) =>
 
 const configurations = () => screen.getByTestId('all-configurations');
 
+/** The assistant refuses to act until the session can record the turn. */
+const waitUntilReady = () =>
+  waitFor(() =>
+    expect(document.querySelector('[data-busy="false"]')).toBeInTheDocument(),
+  );
+
 describe('AiAssistantPage', () => {
   it('renders the chat and preview panes side by side', () => {
     renderAt('/dataset/ai/%3Cnew%3E');
@@ -142,6 +153,7 @@ describe('AiAssistantPage', () => {
 describe('an action dispatched in the chat moves the preview', () => {
   it('sends the action to the executor', async () => {
     renderAt('/dataset/ai/my-orders');
+    await waitUntilReady();
 
     await userEvent.click(screen.getByRole('button', { name: 'dispatch' }));
 
@@ -155,6 +167,7 @@ describe('an action dispatched in the chat moves the preview', () => {
 
   it('opens the accordion the action belongs to', async () => {
     renderAt('/dataset/ai/my-orders');
+    await waitUntilReady();
 
     expect(configurations()).toHaveAttribute('data-focus-section', '');
 
@@ -170,6 +183,7 @@ describe('an action dispatched in the chat moves the preview', () => {
 
   it('flashes the field the server reported as changed', async () => {
     renderAt('/dataset/ai/my-orders');
+    await waitUntilReady();
 
     await userEvent.click(screen.getByRole('button', { name: 'dispatch' }));
 

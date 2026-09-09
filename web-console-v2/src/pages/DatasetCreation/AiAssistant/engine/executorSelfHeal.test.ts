@@ -11,7 +11,7 @@ jest.mock('services/configData', () => ({
 import { getSystemSetting } from 'services/configData';
 import { readDataset, updateDataset } from 'services/datasetApi';
 import { Action } from './actions';
-import { SESSION_EXPIRED } from './errorMap';
+import { SESSION_EXPIRED, diagnose } from './errorMap';
 import { ExecutorContext, executeAction } from './executor';
 
 const mocked = {
@@ -239,6 +239,12 @@ describe('storage the cluster does not have', () => {
     expect(mocked.update).not.toHaveBeenCalled();
   });
 
+  /**
+   * Phrased as the API phrases it, so the error map can label it *and* derive
+   * a corrected retry — the console wording is asserted in `errorMap.test.ts`.
+   * Writing the friendly sentence here instead duplicated the labelling and
+   * left this path without the retry the server-error path offered.
+   */
   it('names the store and what is available instead', async () => {
     realtimeOnly();
 
@@ -246,8 +252,25 @@ describe('storage the cluster does not have', () => {
 
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
-    expect(outcome.error).toContain('Data Lakehouse (Hudi)');
-    expect(outcome.error).toContain('Real-time Store (Druid)');
+    expect(outcome.error).toContain('lake_house');
+    expect(outcome.error).toContain('realtime_store');
+  });
+
+  it('phrases it so the error map can derive a retry from it', async () => {
+    realtimeOnly();
+
+    const outcome = await run({ kind: 'set_storage', lakehouse: true });
+
+    if (outcome.ok) throw new Error('expected a refusal');
+
+    const { diagnosis } = { diagnosis: diagnose(outcome) };
+
+    expect(diagnosis.explanation).toContain('Data Lakehouse (Hudi)');
+    expect(diagnosis.retryAction).toEqual({
+      kind: 'set_storage',
+      lakehouse: false,
+      realtime: true,
+    });
   });
 
   it('allows turning an unavailable store off', async () => {

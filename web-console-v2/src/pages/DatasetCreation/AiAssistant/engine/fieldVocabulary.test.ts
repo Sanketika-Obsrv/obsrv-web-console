@@ -334,3 +334,92 @@ describe('eligibility rules observed in the wizard', () => {
     expect(dateTimePaths(vocab)).toEqual(['order_ts', 'refund.refunded_at']);
   });
 });
+
+/**
+ * `generate-fields` returns nested fields **both** ways: hanging off a
+ * parent's `properties`, and as their own top-level row whose `column` is
+ * already the dotted path. Confirmed live in T11, where the schema table
+ * rendered rows for both `customer` and `customer.email`.
+ *
+ * Taking only the last segment of a dotted column turned `customer.email`
+ * into `email`, which then matched nothing in `data_schema` — `mask the
+ * email` failed with `Unknown field "email"`. Found by the end-to-end test;
+ * the preview never showed it, because the preview renders `column` directly.
+ */
+describe('nested fields arriving as flat dotted rows', () => {
+  const flat = buildFieldVocabulary([
+    { column: 'order_id', data_type: 'string' },
+    { column: 'customer', data_type: 'object' },
+    { column: 'customer.email', data_type: 'string' },
+    { column: 'customer.address.city', data_type: 'string' },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ] as any);
+
+  it('keeps the dotted column as the path', () => {
+    expect(flat.paths).toEqual(
+      expect.arrayContaining(['customer.email', 'customer.address.city']),
+    );
+  });
+
+  it('does not collapse a nested field to its last segment', () => {
+    expect(flat.paths).not.toContain('email');
+    expect(flat.paths).not.toContain('city');
+  });
+
+  it('derives a ref the schema can actually be read with', () => {
+    expect(flat.byPath['customer.email'].ref).toBe(
+      'properties.customer.properties.email',
+    );
+  });
+
+  it('derives a ref for a deeply nested row', () => {
+    expect(flat.byPath['customer.address.city'].ref).toBe(
+      'properties.customer.properties.address.properties.city',
+    );
+  });
+
+  it('still names the field by its last segment, for resolving', () => {
+    expect(flat.byPath['customer.email'].name).toBe('email');
+  });
+
+  it('resolves the short name to the full path', () => {
+    expect(resolveField(flat, 'email')).toEqual({
+      status: 'exact',
+      path: 'customer.email',
+    });
+  });
+
+  it('leaves a top-level field alone', () => {
+    expect(flat.byPath.order_id).toMatchObject({
+      path: 'order_id',
+      ref: 'properties.order_id',
+    });
+  });
+
+  /** The nested-`properties` shape has to keep working too. */
+  it('still handles nested fields hanging off properties', () => {
+    const nested = buildFieldVocabulary([
+      {
+        column: 'customer',
+        data_type: 'object',
+        properties: { email: { key: 'email', data_type: 'string' } },
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ] as any);
+
+    expect(nested.byPath['customer.email']).toMatchObject({
+      path: 'customer.email',
+      ref: 'properties.customer.properties.email',
+    });
+  });
+
+  /** An explicit `ref` from the API wins over any derivation. */
+  it('prefers a ref the API supplied', () => {
+    const withRef = buildFieldVocabulary([
+      { column: 'a.b', ref: 'properties.a.properties.b', data_type: 'string' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ] as any);
+
+    expect(withRef.byPath['a.b'].ref).toBe('properties.a.properties.b');
+  });
+});
