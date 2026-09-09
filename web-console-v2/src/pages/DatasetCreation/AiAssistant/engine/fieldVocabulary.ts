@@ -220,6 +220,13 @@ export const piiEligiblePaths = (vocabulary: FieldVocabulary): string[] =>
   vocabulary.entries.filter((entry) => entry.isLeaf).map((entry) => entry.path);
 
 /**
+ * The denormalisation picker offered the same flattened field list the
+ * transformation picker uses, minus the fields already joined on — which the
+ * caller subtracts, since it is the one holding `denorm_config`.
+ */
+export const denormKeyEligiblePaths = piiEligiblePaths;
+
+/**
  * Date-time fields at any depth.
  *
  * The wizard's timestamp-key picker additionally offers "Event Arrival Time"

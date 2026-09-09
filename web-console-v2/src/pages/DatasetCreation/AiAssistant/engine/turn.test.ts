@@ -722,6 +722,7 @@ describe('answering the question on the table', () => {
   const NAME: Prompt = {
     step: 'name',
     text: 'What would you like to call this dataset?',
+    freeText: (name) => ({ kind: 'set_dataset_name', name }),
   };
 
   const asked = (

@@ -34,6 +34,11 @@ export const ACTION_KINDS = [
   'add_derived_field',
   'set_dedup',
   'set_denorm',
+  // Records one of the three values a denormalisation needs. Writes nothing,
+  // like `select_connector`: the API takes the field, the master dataset and
+  // the output field together, so the choices are carried in the transcript
+  // until all three are known.
+  'select_denorm',
   // Undo-only, and reachable no other way: a transformation or a
   // denormalisation is removed to put back a document that did not have it.
   // Both mirror what the wizard's own delete button sends.
@@ -185,6 +190,11 @@ export type Action =
       path: string;
       masterDatasetId: string;
       outField: string;
+    }
+  | {
+      kind: 'select_denorm';
+      masterDatasetId?: string;
+      path?: string;
     }
   | { kind: 'remove_transformation'; fieldKey: string }
   | { kind: 'remove_denorm'; path: string }
@@ -363,6 +373,9 @@ const buildVariants = ({
       { path, masterDatasetId: nonEmptyString, outField: nonEmptyString },
       ['path', 'masterDatasetId', 'outField'],
     ),
+    variant('select_denorm', { masterDatasetId: nonEmptyString, path }, [], {
+      anyOf: [{ required: ['masterDatasetId'] }, { required: ['path'] }],
+    }),
     variant('remove_transformation', { fieldKey: nonEmptyString }, [
       'fieldKey',
     ]),

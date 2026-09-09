@@ -1168,6 +1168,13 @@ export const executeAction = async (
     }
   }
 
+  if (action.kind === 'select_denorm') {
+    // One of the three values a denormalisation needs. The options came from
+    // the schema and the master-dataset list, so there is nothing to check
+    // and nothing to send until all three are in hand.
+    return { ok: true, status: 'noop' };
+  }
+
   if (action.kind === 'select_connector') {
     // Existence was established when the list was read; there is nothing to
     // write until the credentials arrive, so this only records the choice.

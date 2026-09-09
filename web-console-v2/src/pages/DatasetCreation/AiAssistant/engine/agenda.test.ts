@@ -818,6 +818,151 @@ describe('the denormalisation offer', () => {
     expect(currentStep(state)).toBe('denorm');
     expect(nextPrompt(state)?.text).toContain('Customers');
   });
+
+  /**
+   * A denormalisation needs three values, and the API takes them together.
+   * They are collected over three turns and carried in the transcript as
+   * `select_denorm` — the same shape as the connector's choice: an action
+   * that records a decision and writes nothing.
+   */
+  describe('collecting the three values', () => {
+    const masters = [
+      { dataset_id: 'customers', name: 'Customers' },
+      { dataset_id: 'products', name: 'Products' },
+    ];
+
+    const offered = (history: Message[]): AgendaState => ({
+      dataset: draft(),
+      history,
+      masterDatasets: masters,
+    });
+
+    it('offers one option per master dataset, and a way out', () => {
+      const card = nextPrompt(offered(base))?.card;
+
+      expect(card?.kind).toBe('choice');
+      if (card?.kind !== 'choice') return;
+
+      expect(card.options.map((option) => option.action)).toEqual([
+        { kind: 'select_denorm', masterDatasetId: 'customers' },
+        { kind: 'select_denorm', masterDatasetId: 'products' },
+        { kind: 'skip_step', step: 'denorm' },
+      ]);
+    });
+
+    it('asks which field matches, once a master is chosen', () => {
+      const state = offered([
+        ...base,
+        applied({ kind: 'select_denorm', masterDatasetId: 'customers' }, 90),
+      ]);
+      const prompt = nextPrompt(state);
+      const card = prompt?.card;
+
+      expect(currentStep(state)).toBe('denorm');
+      expect(prompt?.text).toContain('Customers');
+      expect(card?.kind).toBe('choice');
+      if (card?.kind !== 'choice') return;
+
+      expect(card.options.map((option) => option.action)).toEqual([
+        { kind: 'select_denorm', path: 'order_id' },
+        { kind: 'select_denorm', path: 'amount' },
+      ]);
+    });
+
+    it('asks what to call the joined record last, and takes prose', () => {
+      const state = offered([
+        ...base,
+        applied({ kind: 'select_denorm', masterDatasetId: 'customers' }, 90),
+        applied({ kind: 'select_denorm', path: 'order_id' }, 91),
+      ]);
+      const prompt = nextPrompt(state);
+
+      expect(prompt?.card).toBeUndefined();
+      expect(prompt?.freeText?.('customer_details')).toEqual({
+        kind: 'set_denorm',
+        path: 'order_id',
+        masterDatasetId: 'customers',
+        outField: 'customer_details',
+      });
+    });
+
+    it('takes the last choice when one is changed', () => {
+      const state = offered([
+        ...base,
+        applied({ kind: 'select_denorm', masterDatasetId: 'customers' }, 90),
+        applied({ kind: 'select_denorm', path: 'order_id' }, 91),
+        applied({ kind: 'select_denorm', masterDatasetId: 'products' }, 92),
+      ]);
+
+      expect(nextPrompt(state)?.freeText?.('product')).toMatchObject({
+        masterDatasetId: 'products',
+        path: 'order_id',
+      });
+    });
+
+    it('does not carry a half-collected choice past the answer', () => {
+      // The next denormalisation starts from nothing, rather than inheriting
+      // the master the previous one used.
+      const state = offered([
+        ...base,
+        applied({ kind: 'select_denorm', masterDatasetId: 'customers' }, 90),
+        applied({ kind: 'select_denorm', path: 'order_id' }, 91),
+        applied(
+          {
+            kind: 'set_denorm',
+            path: 'order_id',
+            masterDatasetId: 'customers',
+            outField: 'customer_details',
+          },
+          92,
+        ),
+      ]);
+
+      expect(currentStep(state)).not.toBe('denorm');
+    });
+
+    it('ignores a choice the API refused', () => {
+      const state = offered([
+        ...base,
+        rejected({ kind: 'select_denorm', masterDatasetId: 'customers' }, 90),
+      ]);
+      const card = nextPrompt(state)?.card;
+
+      expect(card?.kind).toBe('choice');
+      if (card?.kind !== 'choice') return;
+      expect(card.options[0].action).toEqual({
+        kind: 'select_denorm',
+        masterDatasetId: 'customers',
+      });
+    });
+
+    it('does not offer a field already joined on', () => {
+      const state: AgendaState = {
+        dataset: draft({
+          denorm_config: {
+            denorm_fields: [
+              {
+                denorm_key: 'order_id',
+                dataset_id: 'customers',
+                denorm_out_field: 'customer_details',
+              },
+            ],
+          },
+        }),
+        history: [
+          ...base,
+          applied({ kind: 'select_denorm', masterDatasetId: 'products' }, 90),
+        ],
+        masterDatasets: masters,
+      };
+      const card = nextPrompt(state)?.card;
+
+      if (card?.kind !== 'choice') throw new Error('expected a choice');
+      expect(card.options.map((option) => option.action)).toEqual([
+        { kind: 'select_denorm', path: 'amount' },
+      ]);
+    });
+  });
 });
 
 describe('the keys question', () => {

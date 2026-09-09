@@ -148,6 +148,16 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
 
   /** The question currently on the table, for the composer's chips. */
   const [prompt, setPrompt] = useState<Prompt | undefined>();
+  /**
+   * The same question, in a ref.
+   *
+   * A turn reads it from here rather than from state, because a turn can
+   * follow the one before it without a render in between — and a stale
+   * question means the answer is read against the *previous* one. Found in
+   * the end-to-end test, where "Event" answered the type question and was
+   * written as the dataset's name.
+   */
+  const asked = useRef<Prompt | undefined>(undefined);
 
   const [capability, setCapability] = useState<Capability>();
   const [modelCached, setModelCached] = useState(false);
@@ -368,6 +378,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     const fresh = await session.reload();
     const next = nextPrompt(await agendaState(fresh));
 
+    asked.current = next;
     setPrompt(next);
     if (next) await session.append(askMessage(next));
 
@@ -403,7 +414,10 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
      * free-standing request instead of the answer it is.
      */
     void (async () => {
-      setPrompt(nextPrompt(await agendaState(current)));
+      const resumed = nextPrompt(await agendaState(current));
+
+      asked.current = resumed;
+      setPrompt(resumed);
     })();
   }, [agendaState, askNext, busy, session]);
 
@@ -431,7 +445,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
         const result = await runTurn(input, {
           vocabulary,
           // What was asked, so a typed answer is read as an answer.
-          ...(prompt ? { prompt } : {}),
+          ...(asked.current ? { prompt: asked.current } : {}),
           connectors,
           connectorsUnavailable,
           connectorProperties: fillableProps(uiSpec).map((prop) => prop.key),
@@ -607,7 +621,6 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       // `contextNow` already changes with it.
       datasetId,
       modelReady,
-      prompt,
       recordAction,
       refreshVocabulary,
       session,

@@ -52,6 +52,7 @@ import {
 import {
   dateTimePaths,
   dedupEligiblePaths,
+  denormKeyEligiblePaths,
   storageKeyEligiblePaths,
   vocabularyFromSchema,
 } from './fieldVocabulary';
@@ -107,6 +108,15 @@ export interface Prompt {
   card?: MessageCard;
   /** Suggested replies, offered as chips. */
   chips?: string[];
+  /**
+   * Builds the action from a typed value, for a question that asks for one.
+   *
+   * Two questions cannot be answered by choosing: the dataset's name, and
+   * what a joined record should be called. Both take whatever the user types,
+   * so the question itself says what to do with it — which keeps the parsing
+   * beside the asking instead of in a second table of steps.
+   */
+  freeText?: (value: string) => Action;
 }
 
 /**
@@ -143,7 +153,7 @@ export const ACCEPTS: Record<AgendaStepId, ActionKind[]> = {
   pii: ['set_pii', 'skip_step'],
   validation: ['set_additional_fields', 'skip_step'],
   transform: ['add_transformation', 'add_derived_field', 'skip_step'],
-  denorm: ['set_denorm', 'skip_step'],
+  denorm: ['set_denorm', 'select_denorm', 'skip_step'],
   dedup: ['set_dedup', 'skip_step'],
   storage: ['set_storage', 'skip_step'],
   // No `skip_step`: the chosen store does not work without its key, so this
@@ -345,6 +355,7 @@ const nameQuestion = (state: AgendaState): Prompt => {
       step: 'name',
       text: 'What else shall we call it?',
       chips: [alternativeName(state.lastName)],
+      freeText: (name) => ({ kind: 'set_dataset_name', name }),
     };
   }
 
@@ -353,6 +364,7 @@ const nameQuestion = (state: AgendaState): Prompt => {
     text: state.lastFailureCode
       ? 'What shall we call it?'
       : 'What would you like to call this dataset?',
+    freeText: (name) => ({ kind: 'set_dataset_name', name }),
   };
 };
 
@@ -600,26 +612,134 @@ const transformQuestion = (): Prompt => ({
   ]),
 });
 
+/** One denormalisation, part-way collected. */
+interface DenormDraft {
+  masterDatasetId?: string;
+  path?: string;
+}
+
 /**
- * The denormalisation offer.
+ * The choices made towards the denormalisation currently being described.
  *
- * Decline-only for now: `set_denorm` needs a field, a master dataset and an
- * output field, which is a three-value sub-flow like the connector's. Naming
- * the available masters at least makes the feature discoverable, where before
- * it could only be reached by typing a dataset id from memory. T35 completes
- * it.
+ * Read from the transcript rather than held in the session: `select_denorm`
+ * records a decision and writes nothing, so the conversation is the state —
+ * which means a reload resumes half-way through the same way undo works.
+ * Anything before the last completed or declined denormalisation belongs to
+ * that one, so the next starts from nothing.
+ */
+const denormDraft = (state: AgendaState): DenormDraft => {
+  const actions = appliedActions(state.history);
+
+  const settled = actions.reduce(
+    (found, action, index) =>
+      action.kind === 'set_denorm' ||
+      (action.kind === 'skip_step' && action.step === 'denorm')
+        ? index
+        : found,
+    -1,
+  );
+
+  return actions.slice(settled + 1).reduce<DenormDraft>(
+    (draft, action) =>
+      action.kind === 'select_denorm'
+        ? {
+            ...draft,
+            ...(action.masterDatasetId
+              ? { masterDatasetId: action.masterDatasetId }
+              : {}),
+            ...(action.path ? { path: action.path } : {}),
+          }
+        : draft,
+    {},
+  );
+};
+
+/** Fields already joined on, which the wizard's picker also excludes. */
+const joinedPaths = (state: AgendaState): string[] =>
+  (
+    (block(state, 'denorm_config').denorm_fields ?? []) as {
+      denorm_key?: string;
+    }[]
+  )
+    .map((field) => field.denorm_key)
+    .filter((key): key is string => Boolean(key));
+
+/**
+ * The denormalisation offer, and the two questions that follow accepting it.
+ *
+ * `set_denorm` needs a field, a master dataset and an output field, and the
+ * API takes all three together — so they are asked for one at a time and
+ * carried in the transcript until the last one arrives. Every master is named
+ * in the first question, because before this the feature could only be
+ * reached by typing a dataset id from memory.
  */
 const denormQuestion = (state: AgendaState): Prompt => {
-  const names = (state.masterDatasets ?? []).map(
-    (master) => master.name ?? master.dataset_id,
-  );
+  const masters = state.masterDatasets ?? [];
+  const draft = denormDraft(state);
+  const nameOf = (id: string) =>
+    masters.find((master) => master.dataset_id === id)?.name ?? id;
+
+  if (!draft.masterDatasetId) {
+    const names = masters.map((master) => master.name ?? master.dataset_id);
+
+    return {
+      step: 'denorm',
+      text: `Do you want to pull fields in from a master dataset? ${names.join(', ')} ${names.length === 1 ? 'is' : 'are'} available.`,
+      card: choice('Denormalisation', [
+        ...masters.map((master) => ({
+          label: master.name ?? master.dataset_id,
+          action: {
+            kind: 'select_denorm' as const,
+            masterDatasetId: master.dataset_id,
+          },
+        })),
+        { label: 'Not now', action: { kind: 'skip_step', step: 'denorm' } },
+      ]),
+    };
+  }
+
+  if (!draft.path) {
+    const joined = joinedPaths(state);
+    const eligible = denormKeyEligiblePaths(
+      vocabularyFromSchema(state.dataset?.data_schema),
+    ).filter((path) => !joined.includes(path));
+
+    return {
+      step: 'denorm',
+      text: eligible.length
+        ? `Which field in your data matches a record in ${nameOf(draft.masterDatasetId)}?`
+        : 'Every field is already joined to something, so there is nothing left to join on.',
+      card: choice('Join on', [
+        ...eligible.map((path) => ({
+          label: path,
+          action: { kind: 'select_denorm' as const, path },
+        })),
+        ...(eligible.length
+          ? []
+          : [
+              {
+                label: 'Not now',
+                action: { kind: 'skip_step' as const, step: 'denorm' as const },
+              },
+            ]),
+      ]),
+    };
+  }
+
+  const { masterDatasetId, path } = draft;
 
   return {
     step: 'denorm',
-    text: `Do you want to pull fields in from a master dataset? ${names.join(', ')} ${names.length === 1 ? 'is' : 'are'} available.`,
-    card: choice('Denormalisation', [
-      { label: 'Not now', action: { kind: 'skip_step', step: 'denorm' } },
-    ]),
+    text: `What should the ${nameOf(masterDatasetId)} record be called in your data?`,
+    // The master's own id, so the suggestion is a name the server already
+    // uses rather than one invented here.
+    chips: [masterDatasetId],
+    freeText: (outField) => ({
+      kind: 'set_denorm',
+      path,
+      masterDatasetId,
+      outField,
+    }),
   };
 };
 

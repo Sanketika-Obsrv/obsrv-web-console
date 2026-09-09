@@ -251,6 +251,118 @@ describe('a dataset with more than one type conflict', () => {
 });
 
 /**
+ * The denormalisation sub-flow, which is the only question that takes three
+ * answers. It is tested end to end because the three are carried in the
+ * *transcript* rather than in session state, so nothing but a real
+ * conversation proves they survive the round trip.
+ */
+describe('joining to a master dataset', () => {
+  const ROWS = [{ order_id: 'A-1', amount: 10.5 }];
+
+  it('collects the field, the master and the output field, then writes once', async () => {
+    api = createFakeConfigApi({
+      masters: [{ dataset_id: 'customers', name: 'Customers' }],
+    });
+    (
+      httpModule as unknown as { httpHolder: { current: unknown } }
+    ).httpHolder.current = api.http;
+
+    const { result } = renderHook(() => useAssistant(null));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const quiet = () => waitFor(() => expect(result.current.busy).toBe(false));
+    const asked = () =>
+      result.current.messages[result.current.messages.length - 1] as
+        Message | undefined;
+
+    /**
+     * Answers, then waits for the transcript to grow.
+     *
+     * Waiting on `busy` alone is not enough here: `send` already awaited the
+     * whole turn, so `busy` is false before React has committed anything, and
+     * the next answer would be read against the question before last.
+     */
+    const answer = async (said: string) => {
+      const before = result.current.messages.length;
+
+      await result.current.send(said);
+      await waitFor(() =>
+        expect(result.current.messages.length).toBeGreaterThan(before),
+      );
+      await quiet();
+    };
+
+    await answer('call it My Orders');
+    await answer('Event');
+
+    await result.current.attachSample(
+      ROWS as unknown as Record<string, unknown>[],
+      new File([JSON.stringify(ROWS)], 'orders.json', {
+        type: 'application/json',
+      }),
+    );
+    await waitFor(() => expect(result.current.datasetId).toBe('my-orders'));
+    await quiet();
+
+    // Walk to the denormalisation question by declining what can be declined.
+    for (let turn = 0; turn < 8; turn += 1) {
+      const card = asked()?.card;
+      if (card?.kind !== 'choice') break;
+      if (card.options.some((option) => option.label === 'Customers')) break;
+
+      // Declining where declining is offered, and taking the first option
+      // where it is not — the validation question has no way out.
+      const move =
+        card.options.find((option) => option.action.kind === 'skip_step') ??
+        card.options[0];
+
+      const before = result.current.messages.length;
+      await result.current.dispatch(move.action);
+      await waitFor(() =>
+        expect(result.current.messages.length).toBeGreaterThan(before),
+      );
+      await quiet();
+    }
+
+    expect(asked()?.text).toContain('Customers');
+
+    await answer('Customers');
+    expect(asked()?.text).toMatch(/which field in your data/i);
+
+    await answer('order_id');
+    expect(asked()?.text).toMatch(
+      /what should the Customers record be called/i,
+    );
+
+    // Nothing has been written yet: the API takes all three together.
+    expect(
+      (api.dataset('my-orders')?.denorm_config as { denorm_fields?: unknown[] })
+        ?.denorm_fields ?? [],
+    ).toHaveLength(0);
+
+    await answer('customer_details');
+
+    expect(
+      (
+        api.dataset('my-orders')?.denorm_config as {
+          denorm_fields?: Record<string, string>[];
+        }
+      )?.denorm_fields,
+    ).toEqual([
+      {
+        denorm_key: 'order_id',
+        denorm_out_field: 'customer_details',
+        dataset_id: 'customers',
+      },
+    ]);
+
+    // And the conversation moves on rather than asking for another join.
+    expect(asked()?.text).not.toMatch(/master dataset/i);
+  });
+});
+
+/**
  * T24's acceptance criterion: a dataset created without the user composing a
  * single instruction.
  *

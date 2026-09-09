@@ -99,7 +99,12 @@ export const describeAction = (action: Action): string => {
         ? `set duplicates to be dropped on ${action.key}`
         : 'set duplicates to be kept';
     case 'set_denorm':
-      return 'set up denormalisation';
+      return `pulled ${action.masterDatasetId} in on ${action.path}, as ${action.outField}`;
+
+    case 'select_denorm':
+      return action.masterDatasetId
+        ? `noted ${action.masterDatasetId} as the master dataset`
+        : `noted ${action.path} as the field to join on`;
     case 'remove_transformation':
       return `removed the transformation on ${action.fieldKey}`;
     case 'remove_denorm':

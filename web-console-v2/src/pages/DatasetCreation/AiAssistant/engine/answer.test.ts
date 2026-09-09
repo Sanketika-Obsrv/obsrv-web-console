@@ -66,6 +66,7 @@ const DEDUP: Prompt = choicePrompt('dedup', [
 const NAME: Prompt = {
   step: 'name',
   text: 'What would you like to call this dataset?',
+  freeText: (name) => ({ kind: 'set_dataset_name', name }),
 };
 
 describe('answering a choice question', () => {

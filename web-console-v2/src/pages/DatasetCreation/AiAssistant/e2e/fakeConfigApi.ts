@@ -33,6 +33,12 @@ export interface FakeApiOptions {
   storageTypes?: Record<string, boolean>;
   /** Datasets that already exist, so `create` can collide. */
   existingIds?: string[];
+  /**
+   * Live master datasets the cluster holds, so the denormalisation offer has
+   * something to join to. Off by default: the assistant does not raise the
+   * offer when there is nothing to join to, and most flows should not see it.
+   */
+  masters?: { dataset_id: string; name?: string }[];
 }
 
 interface StoredDataset extends Json {
@@ -126,9 +132,29 @@ export interface FakeConfigApi {
 export const createFakeConfigApi = ({
   storageTypes = { lake_house: false, realtime_store: true },
   existingIds = [],
+  masters = [],
 }: FakeApiOptions = {}): FakeConfigApi => {
   const datasets = new Map<string, StoredDataset>();
   const taken = new Set(existingIds);
+
+  for (const master of masters) {
+    datasets.set(master.dataset_id, {
+      dataset_id: master.dataset_id,
+      name: master.name ?? master.dataset_id,
+      type: 'master',
+      status: 'Live',
+      version_key: 'master-vk',
+      data_schema: { type: 'object', properties: {} },
+      dataset_config: {},
+      dedup_config: {},
+      denorm_config: {},
+      validation_config: {},
+      transformations_config: [],
+      connectors_config: [],
+      sample_data: {},
+    });
+    taken.add(master.dataset_id);
+  }
   const calls: FakeConfigApi['calls'] = [];
   let versionCounter = 1000;
 

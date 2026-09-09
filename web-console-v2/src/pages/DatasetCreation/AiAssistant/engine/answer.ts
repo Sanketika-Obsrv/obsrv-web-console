@@ -95,22 +95,22 @@ const AFFIRMS =
   /^(?:yes|yeah|yep|yup|ok|okay|sure|do it|go ahead|go on|please do|save|publish|confirm|proceed|looks? (?:right|good)|that'?s right)\b/i;
 
 /**
- * Replies at the name question that are not names.
+ * Replies at a question that asks for a value, which are not values.
  *
- * The name question is the one place a whole utterance is taken as a value,
- * which makes it the one place a command has to be let past — otherwise
- * "undo" names the dataset "undo".
+ * A question with no options takes the whole utterance, which makes it the
+ * one place a command has to be let past — otherwise "undo" names the
+ * dataset "undo".
  */
 const COMMANDS =
   /^(?:undo|revert|redo|help|why|what|which|how|when|who|explain|tell me|start over|cancel|stop|quit|wait|back|go back|nevermind|never mind|save|publish)\b/i;
 
-/** How people preface a name. */
-const NAME_PREFIX =
+/** How people preface a value. */
+const VALUE_PREFIX =
   /^(?:(?:let'?s|lets|we(?:'ll| will)?|i(?:'d| would)? like to|please)\s+)?(?:call|name)\s+(?:it|this|the dataset)\s+/i;
 
-const NAME_SUFFIX = /\s*(?:please|thanks|thank you)\s*[.!]?$/i;
+const VALUE_SUFFIX = /\s*(?:please|thanks|thank you)\s*[.!]?$/i;
 
-const MAX_NAME = 100;
+const MAX_VALUE = 100;
 
 const words = (text: string): string[] =>
   text
@@ -271,14 +271,24 @@ const answerToConflict = (
     : undefined;
 };
 
-const answerToName = (utterance: string): Action | undefined => {
+/**
+ * A question that asks for a value in prose.
+ *
+ * What the value *means* is the question's own business — it supplies
+ * `freeText` — so all that happens here is deciding whether the reply is a
+ * value at all, and trimming the way people say it.
+ */
+const answerToProse = (
+  freeText: (value: string) => Action,
+  utterance: string,
+): Action | undefined => {
   const said = utterance.trim();
-  if (!said || said.length > MAX_NAME || said.endsWith('?')) return undefined;
+  if (!said || said.length > MAX_VALUE || said.endsWith('?')) return undefined;
   if (COMMANDS.test(said)) return undefined;
 
-  const name = said.replace(NAME_PREFIX, '').replace(NAME_SUFFIX, '').trim();
+  const value = said.replace(VALUE_PREFIX, '').replace(VALUE_SUFFIX, '').trim();
 
-  return name ? { kind: 'set_dataset_name', name } : undefined;
+  return value ? freeText(value) : undefined;
 };
 
 /**
@@ -315,7 +325,10 @@ export const answerTo = (
     return AFFIRMS.test(utterance.trim()) ? card.confirmAction : undefined;
   }
 
-  // Questions with no options: only the name asks for a value in prose. A
-  // file cannot be typed, and the connector form collects its own values.
-  return prompt.step === 'name' ? answerToName(utterance) : undefined;
+  // Questions with no options. Two ask for a value in prose and say what to
+  // do with it; the rest — the file drop, the connector form — collect their
+  // own answers and have nothing to read here.
+  return prompt.freeText
+    ? answerToProse(prompt.freeText, utterance)
+    : undefined;
 };
