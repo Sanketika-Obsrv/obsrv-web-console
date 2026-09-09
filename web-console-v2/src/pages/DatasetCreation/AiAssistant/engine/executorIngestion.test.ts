@@ -129,11 +129,16 @@ describe('set_dataset_name after the draft exists', () => {
     );
 
     expect(mocked.exists).not.toHaveBeenCalled();
-    expect(mocked.update).toHaveBeenCalledWith({
-      dataset_id: 'my-orders',
-      version_key: '111',
-      name: 'Renamed Orders',
-    });
+    expect(mocked.update).toHaveBeenCalledWith(
+      {
+        dataset_id: 'my-orders',
+        version_key: '111',
+        name: 'Renamed Orders',
+      },
+      // The assistant never strips the API's suggestions: doing so erases
+      // unresolved conflicts on fields the user never touched.
+      { keepSuggestions: true },
+    );
     expect(result.ok).toBe(true);
   });
 });
@@ -163,11 +168,14 @@ describe('set_dataset_type', () => {
       { datasetId: 'my-orders' },
     );
 
-    expect(mocked.update).toHaveBeenCalledWith({
-      dataset_id: 'my-orders',
-      version_key: '111',
-      type: 'transaction',
-    });
+    expect(mocked.update).toHaveBeenCalledWith(
+      {
+        dataset_id: 'my-orders',
+        version_key: '111',
+        type: 'transaction',
+      },
+      { keepSuggestions: true },
+    );
   });
 });
 

@@ -126,6 +126,24 @@ export const buildFieldVocabulary = (
 };
 
 /**
+ * Builds a vocabulary from a `data_schema` document.
+ *
+ * `buildFieldVocabulary` takes the *array* shape that `generate-fields`
+ * returns, while `datasets/read` returns the JSON Schema object — so the two
+ * need bridging, and the bridge lived privately inside the executor until the
+ * guided flow needed it too. One definition, here, where the vocabulary is.
+ */
+export const vocabularyFromSchema = (
+  dataSchema: Record<string, unknown> | undefined,
+): FieldVocabulary =>
+  buildFieldVocabulary(
+    Object.entries(
+      (dataSchema as { properties?: Record<string, Record<string, unknown>> })
+        ?.properties ?? {},
+    ).map(([name, field]) => ({ ...field, column: name })) as never,
+  );
+
+/**
  * Turns a dot path into the JSON Schema ref the API uses, matching the wizard's
  * own derivation in `services/dataset.formatNewFields`.
  *

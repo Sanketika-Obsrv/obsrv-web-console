@@ -77,14 +77,16 @@ describe('sectionForAction', () => {
    * one accordion. This test fails when a kind is added without a decision.
    */
   it('classifies every action kind', () => {
-    // `goto_step` reads its `step` payload, so a bare `{ kind }` cannot stand
-    // in for it here; the dedicated test above covers it.
+    // `goto_step` and `skip_step` read their `step` payload, so a bare
+    // `{ kind }` cannot stand in for either here; the dedicated tests cover
+    // them.
     const noSectionByDesign = [
       'explain',
       'clarify',
       'undo',
       'save',
       'goto_step',
+      'skip_step',
     ];
 
     const unclassified = ACTION_KINDS.filter(
@@ -94,6 +96,18 @@ describe('sectionForAction', () => {
     );
 
     expect(unclassified).toEqual([]);
+  });
+
+  it('sends a declined question to the accordion it was asked in', () => {
+    expect(sectionForAction({ kind: 'skip_step', step: 'pii' })).toBe(
+      'processing',
+    );
+    expect(sectionForAction({ kind: 'skip_step', step: 'connector' })).toBe(
+      'connector',
+    );
+    expect(sectionForAction({ kind: 'skip_step', step: 'keys' })).toBe(
+      'storage',
+    );
   });
 });
 
@@ -244,6 +258,20 @@ describe('stepAfterAction', () => {
     );
   });
 
+  it('leaves a declined question on the step that asked it', () => {
+    // A skip changes nothing, but the user is looking at the thing they just
+    // decided about, so the pane must not jump elsewhere.
+    expect(stepAfterAction({ kind: 'skip_step', step: 'pii' })).toBe(
+      'processing',
+    );
+    expect(stepAfterAction({ kind: 'skip_step', step: 'conflicts' })).toBe(
+      'schema',
+    );
+    expect(stepAfterAction({ kind: 'skip_step', step: 'storage' })).toBe(
+      'storage',
+    );
+  });
+
   it('leaves the step alone for a conversation-only action', () => {
     expect(
       stepAfterAction({ kind: 'explain', topic: 'dedup' }),
@@ -253,7 +281,10 @@ describe('stepAfterAction', () => {
 
   it('assigns a step to every action that changes the dataset', () => {
     const changing = ACTION_KINDS.filter(
-      (kind) => !['explain', 'clarify', 'undo', 'goto_step'].includes(kind),
+      (kind) =>
+        !['explain', 'clarify', 'undo', 'goto_step', 'skip_step'].includes(
+          kind,
+        ),
     );
 
     const unassigned = changing.filter(

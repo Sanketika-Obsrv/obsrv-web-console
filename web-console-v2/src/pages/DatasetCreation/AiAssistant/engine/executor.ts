@@ -19,6 +19,7 @@ import _ from 'lodash';
 import { evaluateDataType } from 'pages/DatasetCreation/Processing/utils/dataTypeUtil';
 import { getSystemSetting } from 'services/configData';
 import {
+  UpdateDatasetPayload,
   createDataset,
   datasetExists,
   datasetStatusTransition,
@@ -45,9 +46,9 @@ import {
   storageCapabilities,
 } from './errorMap';
 import {
-  buildFieldVocabulary,
   dateTimePaths,
   storageKeyEligiblePaths,
+  vocabularyFromSchema,
 } from './fieldVocabulary';
 import { refFromPath } from './fieldVocabulary';
 import {
@@ -80,12 +81,29 @@ export const PROCESSING_READ_FIELDS =
   'dedup_config,denorm_config,transformations_config,dataset_config';
 
 /**
+ * Every assistant write keeps the API's own suggestions.
+ *
+ * `updateDataset` strips them by default — the wizard's long-standing
+ * behaviour — but `suggestions` is where the API reports unresolved MUST-FIX
+ * type conflicts and its LOW-severity index and masking hints, and the server
+ * does not re-derive them. So one stripped PATCH erases a conflict on a field
+ * the user never touched, and nothing ever reports it again. Probed live: a
+ * PATCH carrying suggestions is accepted and a re-read preserves them.
+ *
+ * Routed through one helper rather than an option at five call sites, so a
+ * sixth cannot forget.
+ */
+const patchDatasetDocument = <T = unknown>(payload: UpdateDatasetPayload) =>
+  updateDataset<T>(payload, { keepSuggestions: true });
+
+/**
  * The console's label for indexing on ingestion time rather than a schema
  * field. It is stored as this reserved key, which is not part of the schema.
  */
 export const EVENT_ARRIVAL_TIME = 'obsrv_meta.syncts';
 
-const EVENT_ARRIVAL_LABEL = 'Event Arrival Time';
+/** The label the console's timestamp picker shows for that reserved key. */
+export const EVENT_ARRIVAL_LABEL = 'Event Arrival Time';
 
 /**
  * Name and type chosen before `datasets/create` has run.
@@ -367,7 +385,7 @@ const patchDataset = (
     }
 
     try {
-      await updateDataset({
+      await patchDatasetDocument({
         dataset_id: current.dataset_id ?? datasetId,
         version_key: current.version_key,
         ...build(current),
@@ -573,7 +591,7 @@ const attachSample = async (
     const config = (existing.dataset_config ?? {}) as Record<string, unknown>;
 
     try {
-      await updateDataset({
+      await patchDatasetDocument({
         dataset_id: datasetId,
         version_key: existing.version_key,
         ...(name ? { name } : {}),
@@ -654,12 +672,7 @@ const upsertTransformation = (existing: unknown, entry: TransformationEntry) =>
   );
 
 const vocabularyOf = (dataSchema: DataSchema | undefined) =>
-  buildFieldVocabulary(
-    Object.entries(
-      (dataSchema as { properties?: Record<string, Record<string, unknown>> })
-        ?.properties ?? {},
-    ).map(([name, field]) => ({ ...field, column: name })) as never,
-  );
+  vocabularyFromSchema(dataSchema);
 
 /**
  * Runs the expression against `sample_data.mergedEvent` to derive its store
@@ -706,7 +719,7 @@ const patchProcessing = (
     if ('ok' in built) return built as ExecutionOutcome;
 
     try {
-      await updateDataset({
+      await patchDatasetDocument({
         dataset_id: current.dataset_id ?? datasetId,
         version_key: current.version_key,
         ...built,
@@ -749,6 +762,13 @@ export const executeAction = async (
   }
 
   if (action.kind === 'goto_step') {
+    return { ok: true, status: 'noop' };
+  }
+
+  // A decision to leave something alone. Recorded by the caller, sent nowhere:
+  // there is no API for "no", and inventing a write to represent one would put
+  // a change in the dataset that the user declined to make.
+  if (action.kind === 'skip_step') {
     return { ok: true, status: 'noop' };
   }
 
@@ -1212,7 +1232,7 @@ export const executeAction = async (
     if (!edited.ok) return failure(edited.error, 'INVALID_EDIT');
 
     try {
-      await updateDataset({
+      await patchDatasetDocument({
         dataset_id: current.dataset_id ?? datasetIdForSchema,
         version_key: current.version_key,
         data_schema: edited.dataSchema,
@@ -1266,7 +1286,7 @@ export const submitConnector = async (
   }
 
   try {
-    await updateDataset({
+    await patchDatasetDocument({
       dataset_id: current.dataset_id ?? datasetId,
       version_key: current.version_key,
       connectors_config: connectorConfigPayload({

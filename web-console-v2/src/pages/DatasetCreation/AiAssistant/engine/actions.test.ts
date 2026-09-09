@@ -72,6 +72,8 @@ const validActions: Action[] = [
   // Restoring `keys_config` as it was often means putting a key back to
   // unset, which the console stores as the empty string.
   { kind: 'set_keys', primary: '', partition: '', timestamp: '' },
+  { kind: 'skip_step', step: 'pii', path: 'customer.email' },
+  { kind: 'skip_step', step: 'dedup' },
   { kind: 'goto_step', step: 'processing' },
   { kind: 'save' },
   { kind: 'explain', topic: 'dedup' },
@@ -106,6 +108,7 @@ describe('action catalog', () => {
       'remove_denorm',
       'set_storage',
       'set_keys',
+      'skip_step',
       'goto_step',
       'save',
       'explain',

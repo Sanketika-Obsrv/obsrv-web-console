@@ -5,7 +5,7 @@
  * flash. Keeping them out of the component means the mapping is tested
  * directly and a new action kind cannot quietly default to the wrong panel.
  */
-import { Action, ActionKind, WizardStep } from './actions';
+import { Action, ActionKind, AgendaStepId, WizardStep } from './actions';
 
 /** The accordions `AllConfigurations` renders, in the order it renders them. */
 export const PREVIEW_SECTIONS = [
@@ -66,10 +66,32 @@ const SECTION_BY_STEP: Partial<Record<WizardStep, PreviewSection>> = {
 export const sectionForStep = (step: WizardStep): PreviewSection | undefined =>
   SECTION_BY_STEP[step];
 
+/**
+ * Where a declined question was asked, so the pane still moves with the
+ * conversation. `skip_step` changes nothing, but the user is looking at the
+ * thing they just decided about.
+ */
+const SECTION_BY_AGENDA_STEP: Partial<Record<AgendaStepId, PreviewSection>> = {
+  name: 'ingestion',
+  type: 'ingestion',
+  connector: 'connector',
+  sample: 'ingestion',
+  conflicts: 'ingestion',
+  schema: 'ingestion',
+  pii: 'processing',
+  validation: 'processing',
+  transform: 'processing',
+  denorm: 'processing',
+  dedup: 'processing',
+  storage: 'storage',
+  keys: 'storage',
+};
+
 export const sectionForAction = (
   action: Action,
 ): PreviewSection | undefined => {
   if (action.kind === 'goto_step') return sectionForStep(action.step);
+  if (action.kind === 'skip_step') return SECTION_BY_AGENDA_STEP[action.step];
 
   return SECTION_BY_KIND[action.kind];
 };
@@ -116,8 +138,32 @@ const STEP_BY_KIND: Partial<Record<Action['kind'], WizardStep>> = {
   save: 'preview',
 };
 
-export const stepAfterAction = (action: Action): WizardStep | undefined =>
-  action.kind === 'goto_step' ? action.step : STEP_BY_KIND[action.kind];
+/** The wizard step each agenda question belongs to. */
+const WIZARD_STEP_BY_AGENDA_STEP: Partial<Record<AgendaStepId, WizardStep>> = {
+  name: 'ingestion',
+  type: 'ingestion',
+  connector: 'connector',
+  sample: 'ingestion',
+  conflicts: 'schema',
+  schema: 'schema',
+  pii: 'processing',
+  validation: 'processing',
+  transform: 'processing',
+  denorm: 'processing',
+  dedup: 'processing',
+  storage: 'storage',
+  keys: 'storage',
+  review: 'preview',
+};
+
+export const stepAfterAction = (action: Action): WizardStep | undefined => {
+  if (action.kind === 'goto_step') return action.step;
+  if (action.kind === 'skip_step') {
+    return WIZARD_STEP_BY_AGENDA_STEP[action.step];
+  }
+
+  return STEP_BY_KIND[action.kind];
+};
 
 /** Inverse of `refFromPath`: `properties.customer.properties.email` → `customer.email`. */
 export const pathFromRef = (ref: string): string =>

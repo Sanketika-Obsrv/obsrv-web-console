@@ -272,6 +272,52 @@ describe('updateDataset', () => {
     expect(sent.data_schema.properties.order_ts).toEqual({ type: 'string' });
   });
 
+  /**
+   * The strip is the wizard's behaviour and stays the default, but it destroys
+   * the API's own suggestions on the stored document — including an unresolved
+   * MUST-FIX conflict on a *different* field, which then becomes invisible.
+   * Verified against the live API: it accepts and preserves them.
+   */
+  it('keeps suggestions when the caller opts in', async () => {
+    mockHttp.patch.mockResolvedValue(okResult({}));
+
+    await updateDataset(
+      {
+        ...versioned,
+        data_schema: {
+          properties: {
+            order_ts: { type: 'string', suggestions: [{ severity: 'LOW' }] },
+          },
+        },
+      },
+      { keepSuggestions: true },
+    );
+
+    const sent = envelopeOf(mockHttp.patch.mock.calls[0]).request as {
+      data_schema: { properties: { order_ts: Record<string, unknown> } };
+    };
+    expect(sent.data_schema.properties.order_ts).toEqual({
+      type: 'string',
+      suggestions: [{ severity: 'LOW' }],
+    });
+  });
+
+  it('still strips by default, so the wizard is unchanged', async () => {
+    mockHttp.patch.mockResolvedValue(okResult({}));
+
+    await updateDataset({
+      ...versioned,
+      data_schema: {
+        properties: { a: { suggestions: [{ severity: 'LOW' }] } },
+      },
+    });
+
+    const sent = envelopeOf(mockHttp.patch.mock.calls[0]).request as {
+      data_schema: { properties: { a: Record<string, unknown> } };
+    };
+    expect(sent.data_schema.properties.a).toEqual({});
+  });
+
   it('round-trips every other data_schema key untouched', async () => {
     mockHttp.patch.mockResolvedValue(okResult({}));
 

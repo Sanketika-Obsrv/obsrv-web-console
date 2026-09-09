@@ -367,9 +367,87 @@ export const createFakeConfigApi = ({
           return typeof value === 'number' && !Number.isInteger(value);
         });
 
+      /**
+       * The distinct store types seen for a key across every row.
+       *
+       * The real API widens over all values and reports a MUST-FIX conflict
+       * when they disagree, with the occurrence counts in the message. The
+       * fake used to emit no `suggestions` and no `oneof` at all, which is
+       * why the entire conflict path — `unresolvedConflicts`, the
+       * `ConflictCard`, `resolveConflict` — was never exercised end to end,
+       * and why a PATCH that stripped a *second* field's unresolved conflict
+       * went unnoticed.
+       */
+      const storeTypes = (key: string): Record<string, number> => {
+        const counts: Record<string, number> = {};
+
+        rows.forEach((row) => {
+          const value = row[key];
+          if (value === undefined || value === null) return;
+
+          const type =
+            typeof value === 'number'
+              ? Number.isInteger(value)
+                ? 'integer'
+                : 'double'
+              : typeof value === 'boolean'
+                ? 'boolean'
+                : 'string';
+
+          counts[type] = (counts[type] ?? 0) + 1;
+        });
+
+        return counts;
+      };
+
+      /** Verbatim shape of a live MUST-FIX conflict suggestion. */
+      const conflictSuggestion = (
+        key: string,
+        counts: Record<string, number>,
+      ) => ({
+        message: `Conflict in the Schema Generation at property: '${key}'. The property type ${Object.entries(
+          counts,
+        )
+          .map(([type, count]) => `${type}: ${count} time(s)`)
+          .join(', ')}, `,
+        advice:
+          'System can choose highest occurance property or last appeared object property',
+        resolutionType: 'DATA_TYPE',
+        severity: 'MUST-FIX',
+        path: `properties.${key}`,
+      });
+
+      /** The LOW hints the live API attaches, in its own words. */
+      const lowSuggestion = (key: string, kind: 'email' | 'date-time') =>
+        kind === 'email'
+          ? {
+              message: `The Property '${key}' appears to be 'email' format type.`,
+              advice: 'Suggest to Mask the Personal Information',
+              resolutionType: 'TRANSFORMATION',
+              severity: 'LOW',
+              path: `properties.${key}`,
+            }
+          : {
+              message: `The Property '${key}' appears to be 'date-time' format type.`,
+              advice: 'The System can index all data on this column',
+              resolutionType: 'INDEX',
+              severity: 'LOW',
+              path: `properties.${key}`,
+            };
+
       const properties: Json = {};
 
       Object.entries(merged).forEach(([key, value]) => {
+        const counts = storeTypes(key);
+        const distinct = Object.keys(counts);
+        const conflict =
+          distinct.length > 1
+            ? {
+                oneof: distinct.map((type) => ({ type })),
+                suggestions: [conflictSuggestion(key, counts)],
+              }
+            : {};
+
         if (typeof value === 'number') {
           properties[key] = {
             type: 'number',
@@ -378,6 +456,7 @@ export const createFakeConfigApi = ({
               Number.isInteger(value) && !anyFractional(key)
                 ? 'integer'
                 : 'double',
+            ...conflict,
           };
           return;
         }
@@ -410,11 +489,30 @@ export const createFakeConfigApi = ({
 
         const isTimestamp =
           typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value);
+        const isEmail =
+          typeof value === 'string' && /^[^@\s]+@[^@\s]+$/.test(value);
+
+        const hint = isEmail
+          ? [lowSuggestion(key, 'email')]
+          : isTimestamp
+            ? [lowSuggestion(key, 'date-time')]
+            : [];
 
         properties[key] = {
           type: 'string',
           arrival_format: 'text',
           data_type: isTimestamp ? 'date-time' : 'string',
+          ...conflict,
+          // A MUST-FIX conflict and a LOW hint can both be attached; the real
+          // API sends whichever apply.
+          ...(hint.length
+            ? {
+                suggestions: [
+                  ...((conflict.suggestions as Json[]) ?? []),
+                  ...hint,
+                ],
+              }
+            : {}),
         };
       });
 

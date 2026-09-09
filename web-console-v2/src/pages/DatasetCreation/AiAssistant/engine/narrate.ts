@@ -9,7 +9,7 @@
  * Nothing here invents facts about the dataset. Every sentence is built from
  * the action that was dispatched and the outcome the server returned.
  */
-import { Action } from './actions';
+import { Action, AgendaStepId } from './actions';
 import { availableStorageLabels, diagnose } from './errorMap';
 import { ExecutionFailureCode, ExecutionOutcome } from './executor';
 import { MessageCard } from '../messages/types';
@@ -29,6 +29,33 @@ const storeLabel = (flag: 'lakehouse' | 'realtime' | 'cache') => {
 };
 
 /** What the action asked for, in plain words. Past tense, no outcome. */
+/**
+ * How each declined question reads back.
+ *
+ * A function per step rather than one sentence, because "left customer.email
+ * as it is" and "kept duplicates" are the same decision about different
+ * things, and a generic phrasing would leave the transcript saying nothing
+ * about what the user actually chose.
+ */
+const SKIP_WORDING: Record<AgendaStepId, (path?: string) => string> = {
+  name: () => 'left the name alone',
+  type: () => 'left the dataset type alone',
+  connector: () => 'skipped connector setup',
+  sample: () => 'skipped the sample',
+  conflicts: (path) =>
+    path ? `left the type of ${path} alone` : 'left the type conflicts alone',
+  schema: () => 'left the schema as it is',
+  pii: (path) =>
+    path ? `left ${path} unmasked` : 'left the suggested fields unmasked',
+  validation: () => 'left validation as it is',
+  transform: () => 'added no transformations',
+  denorm: () => 'added no denormalisation',
+  dedup: () => 'kept duplicates',
+  storage: () => 'left storage as it is',
+  keys: () => 'left the storage keys as they are',
+  review: () => 'left the dataset unsaved',
+};
+
 export const describeAction = (action: Action): string => {
   switch (action.kind) {
     case 'set_dataset_name':
@@ -108,6 +135,15 @@ export const describeAction = (action: Action): string => {
       return 'saved the dataset';
     case 'goto_step':
       return `moved to the ${action.step} step`;
+
+    // Says what was decided, not that a step was skipped: the user answered a
+    // question, and "skipped the pii step" describes the machinery instead of
+    // the decision.
+    case 'skip_step':
+      // Falls back rather than indexing blind: this function labels a
+      // confirmation prompt, so a malformed action must still produce a
+      // sentence. Throwing here would take down the card that asks.
+      return SKIP_WORDING[action.step]?.(action.path) ?? 'leave that as it is';
 
     // Named rather than vague: this text is also what a confirmation prompt
     // shows, and "applied that change" asks the user to approve something

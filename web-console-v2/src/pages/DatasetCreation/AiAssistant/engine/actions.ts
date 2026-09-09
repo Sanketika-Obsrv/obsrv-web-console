@@ -41,6 +41,11 @@ export const ACTION_KINDS = [
   'remove_denorm',
   'set_storage',
   'set_keys',
+  // A decision *not* to change something. It writes nothing, and it exists so
+  // that "leave it as it is" is recorded rather than merely not recorded:
+  // the guided flow derives which questions have been answered from the
+  // transcript, and silence is indistinguishable from a question never asked.
+  'skip_step',
   'goto_step',
   'save',
   'explain',
@@ -78,6 +83,37 @@ export const DATA_TYPES = [
 
 export const DATASET_TYPES = ['event', 'transaction', 'master'] as const;
 
+/**
+ * The questions the guided flow asks, in the order it asks them.
+ *
+ * Distinct from `WIZARD_STEPS`, which names the wizard's *pages*. A page can
+ * hold several questions — PII, deduplication and denormalisation all live on
+ * the processing page — and the assistant asks them one at a time, so it needs
+ * its own vocabulary.
+ */
+export const AGENDA_STEPS = [
+  'name',
+  'type',
+  // Offered at the sample question; only in play once a connector is chosen.
+  'connector',
+  'sample',
+  'conflicts',
+  // The three offers: raised once, and a decline moves on. They exist because
+  // a feature reachable only by guessing the right sentence is, for this
+  // product, not reachable — all three were built, tested and unreachable.
+  'schema',
+  'pii',
+  'validation',
+  'transform',
+  'denorm',
+  'dedup',
+  'storage',
+  // Separate from `storage` because which keys are mandatory depends on which
+  // stores were chosen, so it cannot be asked at the same time.
+  'keys',
+  'review',
+] as const;
+
 export const WIZARD_STEPS = [
   'connector',
   'ingestion',
@@ -91,6 +127,7 @@ export type ArrivalFormat = (typeof ARRIVAL_FORMATS)[number];
 export type DataType = (typeof DATA_TYPES)[number];
 export type DatasetType = (typeof DATASET_TYPES)[number];
 export type WizardStep = (typeof WIZARD_STEPS)[number];
+export type AgendaStepId = (typeof AGENDA_STEPS)[number];
 
 export type Action =
   | { kind: 'set_dataset_name'; name: string }
@@ -162,6 +199,12 @@ export type Action =
       primary?: string;
       timestamp?: string;
       partition?: string;
+    }
+  | {
+      kind: 'skip_step';
+      step: AgendaStepId;
+      /** The field the answer concerned, when the question was about one. */
+      path?: string;
     }
   | { kind: 'goto_step'; step: WizardStep }
   | { kind: 'save' }
@@ -355,6 +398,11 @@ const buildVariants = ({
           { required: ['partition'] },
         ],
       },
+    ),
+    variant(
+      'skip_step',
+      { step: { type: 'string', enum: [...AGENDA_STEPS] }, path },
+      ['step'],
     ),
     variant(
       'goto_step',

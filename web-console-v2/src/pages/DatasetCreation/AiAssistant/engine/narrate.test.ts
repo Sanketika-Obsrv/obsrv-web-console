@@ -1,6 +1,11 @@
 import { ACTION_KINDS, Action } from './actions';
 import { ExecutionOutcome } from './executor';
-import { describeProposal, narrateOutcome, narrateResolution } from './narrate';
+import {
+  describeAction,
+  describeProposal,
+  narrateOutcome,
+  narrateResolution,
+} from './narrate';
 
 /**
  * Typed as the applied variant, not the whole union, so a test can add
@@ -279,6 +284,28 @@ describe('narrating a resolution that could not be acted on', () => {
  * labelled "applied that change", asking the user to approve something
  * unnamed.
  */
+describe('describeAction for a declined question', () => {
+  it('says what was decided, not that a step was skipped', () => {
+    expect(
+      describeAction({
+        kind: 'skip_step',
+        step: 'pii',
+        path: 'customer.email',
+      }),
+    ).toBe('left customer.email unmasked');
+    expect(describeAction({ kind: 'skip_step', step: 'dedup' })).toBe(
+      'kept duplicates',
+    );
+  });
+
+  it('still produces a sentence for a step it does not know', () => {
+    // This text labels a confirmation card, so it must never throw.
+    expect(describeAction({ kind: 'skip_step' } as unknown as Action)).toBe(
+      'leave that as it is',
+    );
+  });
+});
+
 describe('describeProposal', () => {
   it('names every action kind', () => {
     const vague = ACTION_KINDS.filter((kind) =>

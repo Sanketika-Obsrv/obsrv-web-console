@@ -184,8 +184,26 @@ export const createDataset = <T = ApiResult>(
  * that produced the payload, so a stale write fails loudly instead of
  * clobbering a concurrent change.
  */
+export interface UpdateDatasetOptions {
+  /**
+   * Send `data_schema` with its `suggestions` intact.
+   *
+   * Off by default, because stripping is what the wizard has always done and
+   * changing that silently is not this feature's call. But the strip is
+   * destructive: `suggestions` is where the API reports unresolved MUST-FIX
+   * type conflicts and its LOW-severity index and masking hints, and the
+   * server does not re-derive them — so one stripped PATCH erases a conflict
+   * on a field the user never touched, and it stops being reported at all.
+   *
+   * Verified against the live API: a PATCH carrying suggestions is accepted,
+   * and a re-read shows them preserved alongside the `resolved` flag.
+   */
+  keepSuggestions?: boolean;
+}
+
 export const updateDataset = async <T = ApiResult>(
   data: UpdateDatasetPayload,
+  { keepSuggestions = false }: UpdateDatasetOptions = {},
 ): Promise<T> => {
   if (_.isNil(data.version_key) || data.version_key === '') {
     throw new Error(
@@ -195,7 +213,7 @@ export const updateDataset = async <T = ApiResult>(
 
   const request: UpdateDatasetPayload = { ...data };
 
-  if (!_.isNil(request.data_schema)) {
+  if (!_.isNil(request.data_schema) && !keepSuggestions) {
     request.data_schema = stripSuggestions(request.data_schema);
   }
 
