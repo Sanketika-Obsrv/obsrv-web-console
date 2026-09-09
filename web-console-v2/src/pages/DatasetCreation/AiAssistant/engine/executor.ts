@@ -61,6 +61,7 @@ import {
   SchemaEditResult,
   addField,
   deleteField,
+  markKeysRequired,
   resolveConflict,
   setArrivalFormat,
   setDataType,
@@ -1111,15 +1112,34 @@ export const executeAction = async (
        * `keys_config` is accepted, and `indexing_config` is preserved rather
        * than cleared — the update merges the block rather than replacing it.
        */
+      const keysConfig = {
+        data_key: action.primary ?? keys.data_key ?? '',
+        partition_key: action.partition ?? keys.partition_key ?? '',
+        timestamp_key: timestampKey,
+      };
+
+      /**
+       * A storage key must be present in every event, so the wizard marks
+       * the three key fields required as soon as they are picked. Doing the
+       * same here is what keeps an assistant-built dataset identical to a
+       * wizard-built one; without it the validation the user gets differs
+       * depending on which interface created the dataset.
+       *
+       * All three keys are marked, not only the ones this action changed,
+       * because the wizard marks whatever its pickers hold.
+       */
+      const marked = markKeysRequired(current.data_schema ?? {}, [
+        keysConfig.data_key,
+        keysConfig.partition_key,
+        keysConfig.timestamp_key,
+      ]);
+
       return {
         dataset_config: {
           file_upload_path: config.file_upload_path,
-          keys_config: {
-            data_key: action.primary ?? keys.data_key ?? '',
-            partition_key: action.partition ?? keys.partition_key ?? '',
-            timestamp_key: timestampKey,
-          },
+          keys_config: keysConfig,
         },
+        ...(marked ? { data_schema: marked } : {}),
       };
     });
   }

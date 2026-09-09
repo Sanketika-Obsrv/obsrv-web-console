@@ -4,6 +4,7 @@ import {
   addField,
   conflictOptions,
   deleteField,
+  markKeysRequired,
   parseConflictCounts,
   resolveConflict,
   setArrivalFormat,
@@ -471,5 +472,58 @@ describe('resolveConflict', () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/no data-type conflict/i);
+  });
+});
+
+describe('markKeysRequired', () => {
+  it('marks each named field required', () => {
+    const marked = markKeysRequired(dataSchema(), [
+      'order_id',
+      'customer.email',
+    ]) as DataSchema;
+
+    expect(at(marked, 'properties.order_id').isRequired).toBe(true);
+    expect(at(marked, EMAIL).isRequired).toBe(true);
+  });
+
+  it('leaves the field otherwise untouched', () => {
+    const marked = markKeysRequired(dataSchema(), ['order_id']) as DataSchema;
+
+    // The wizard's storage step sets the flag without marking the field
+    // edited, and a stray `isModified` is a difference in the document.
+    expect(at(marked, 'properties.order_id').isModified).toBeUndefined();
+    expect(at(marked, 'properties.order_id')).toMatchObject({
+      key: 'order_id',
+      data_type: 'string',
+      resolved: true,
+    });
+  });
+
+  it('does not mutate what it was given', () => {
+    const original = dataSchema();
+    markKeysRequired(original, ['order_id']);
+
+    expect(at(original, 'properties.order_id').isRequired).toBe(false);
+  });
+
+  it('ignores a path the schema does not have', () => {
+    // The event arrival time is `obsrv_meta.syncts`, which is a valid
+    // timestamp key and is not a field of the dataset.
+    const marked = markKeysRequired(dataSchema(), [
+      'obsrv_meta.syncts',
+      'order_id',
+    ]) as DataSchema;
+
+    expect(at(marked, 'properties.order_id').isRequired).toBe(true);
+    expect(_.get(marked, 'properties.obsrv_meta')).toBeUndefined();
+  });
+
+  it('says nothing changed rather than returning an identical schema', () => {
+    expect(markKeysRequired(dataSchema(), [])).toBeNull();
+    expect(markKeysRequired(dataSchema(), [undefined, ''])).toBeNull();
+    expect(markKeysRequired(dataSchema(), ['obsrv_meta.syncts'])).toBeNull();
+
+    const marked = markKeysRequired(dataSchema(), ['order_id']) as DataSchema;
+    expect(markKeysRequired(marked, ['order_id'])).toBeNull();
   });
 });

@@ -570,6 +570,73 @@ describe('set_keys', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.code).toBe('INELIGIBLE_STORAGE_KEY');
   });
+
+  it('marks the key fields required, as the wizard does', async () => {
+    mocked.read.mockResolvedValue(
+      draft({
+        data_schema: {
+          ...dataSchema(),
+          properties: {
+            ...dataSchema().properties,
+            order_ts: {
+              key: 'order_ts',
+              type: 'string',
+              data_type: 'date-time',
+            },
+          },
+        },
+      }),
+    );
+
+    await run({
+      kind: 'set_keys',
+      primary: 'order_id',
+      partition: 'total_amount',
+      timestamp: 'order_ts',
+    });
+
+    expect(patchedAt('data_schema.properties.order_id.isRequired')).toBe(true);
+    expect(patchedAt('data_schema.properties.total_amount.isRequired')).toBe(
+      true,
+    );
+    expect(patchedAt('data_schema.properties.order_ts.isRequired')).toBe(true);
+    expect(
+      patchedAt('data_schema.properties.customer.isRequired'),
+    ).toBeUndefined();
+  });
+
+  it('also marks a key the draft already carried', async () => {
+    // The wizard marks whatever the three pickers hold, not only what
+    // changed, so setting one key leaves the others required too.
+    mocked.read.mockResolvedValue(
+      draft({
+        dataset_config: {
+          keys_config: {
+            data_key: 'order_id',
+            partition_key: '',
+            timestamp_key: '',
+          },
+          indexing_config: { olap_store_enabled: true },
+          file_upload_path: ['uploads/orders.json'],
+        },
+      }),
+    );
+
+    await run({ kind: 'set_keys', partition: 'total_amount' });
+
+    expect(patchedAt('data_schema.properties.order_id.isRequired')).toBe(true);
+    expect(patchedAt('data_schema.properties.total_amount.isRequired')).toBe(
+      true,
+    );
+  });
+
+  it('sends no schema when there is nothing to mark', async () => {
+    // The event arrival time is not a field of the dataset, so nothing in
+    // the document changes and the schema is left out of the PATCH.
+    await run({ kind: 'set_keys', timestamp: 'Event Arrival Time' });
+
+    expect(patchedAt('data_schema')).toBeUndefined();
+  });
 });
 
 describe('save', () => {

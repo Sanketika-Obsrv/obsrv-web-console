@@ -19,6 +19,7 @@ import {
   jsonSchemaTypeFor,
   resolveTypeChange,
 } from './dataMappings';
+import { refFromPath } from './fieldVocabulary';
 
 export type DataSchema = Record<string, unknown>;
 
@@ -131,6 +132,45 @@ export const setRequired = (
     field.isRequired = required;
     return null;
   });
+
+/**
+ * Marks the storage key fields required, the way the wizard's storage step
+ * does (`updateRequiredFields` in `Storage/Storage.tsx`).
+ *
+ * Three things the wizard does that this copies deliberately:
+ *
+ * - It only ever sets the flag. Nothing here clears it, so a key that stops
+ *   being a key stays required — and an `isRequired` the user set by hand is
+ *   never silently taken back.
+ * - It skips a path the schema does not have. The event arrival time is
+ *   `obsrv_meta.syncts`, a legitimate timestamp key that is not a field of
+ *   the dataset.
+ * - It does not mark the field modified. `isModified` is a difference in the
+ *   document, and the wizard's storage step leaves it alone.
+ *
+ * Returns `null` when nothing would change, so the caller can leave
+ * `data_schema` out of the PATCH rather than sending the document back
+ * unaltered.
+ */
+export const markKeysRequired = (
+  dataSchema: DataSchema,
+  paths: (string | undefined)[],
+): DataSchema | null => {
+  const draft = _.cloneDeep(dataSchema);
+  let changed = false;
+
+  for (const path of paths) {
+    if (!path) continue;
+
+    const field = fieldAt(draft, refFromPath(path));
+    if (!field || field.isRequired === true) continue;
+
+    field.isRequired = true;
+    changed = true;
+  }
+
+  return changed ? draft : null;
+};
 
 export const setDescription = (
   dataSchema: DataSchema,

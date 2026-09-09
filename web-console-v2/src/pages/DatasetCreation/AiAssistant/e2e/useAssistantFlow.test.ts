@@ -376,6 +376,17 @@ describe('creating a dataset by answering only', () => {
       )?.keys_config?.timestamp_key,
     ).toBe('order_ts');
 
+    // A storage key has to be present in every event, so the wizard marks it
+    // required. An assistant-built dataset that skipped this would validate
+    // differently from a wizard-built one.
+    expect(
+      (
+        api.dataset('my-orders')?.data_schema as {
+          properties?: Record<string, { isRequired?: boolean }>;
+        }
+      )?.properties?.order_ts?.isRequired,
+    ).toBe(true);
+
     await waitFor(() =>
       expect(api.dataset('my-orders')?.status).toBe('ReadyToPublish'),
     );
