@@ -16,10 +16,15 @@ export interface ModelBannerProps {
   /** Set while the weights are downloading. */
   progress?: LoadProgress;
   ready: boolean;
-  /** True when the weights are already in this browser. */
-  cached: boolean;
-  /** Roughly how much will be downloaded, for an honest prompt. */
-  downloadMb: number;
+  /**
+   * Ids of the models whose weights are already in this browser.
+   *
+   * Per model, not a single flag: "the model is already downloaded" was true
+   * of the small one and said nothing about the large one, so the button
+   * beside it read as "switch to the better model" when it meant "fetch
+   * another gigabyte". Reported by the user, who clicked it.
+   */
+  cached: string[];
   /**
    * Models this browser could actually hold, smallest first.
    *
@@ -41,18 +46,38 @@ export interface ModelBannerProps {
  * because it is the user's bandwidth and disk, and a returning user whose
  * weights are cached is not warned about a fetch that will not happen.
  */
+/** What a button for this model should say, given what is already here. */
+const labelFor = (
+  model: ModelSpec,
+  cached: string[],
+  plain: boolean,
+): string => {
+  if (cached.includes(model.id)) {
+    return plain ? 'Use the model' : `Use ${model.label}`;
+  }
+
+  return plain
+    ? 'Download the model'
+    : `Download ${model.label} (${model.downloadMB} MB)`;
+};
+
 const ModelBanner: React.FC<ModelBannerProps> = ({
   capability,
   progress,
   ready,
   cached,
-  downloadMb,
   choices = [MODELS[0]],
   onEnable,
   onRemove,
   error,
 }) => {
-  const [smallest, ...alternatives] = choices;
+  /**
+   * The list is empty until capability detection returns, and this renders
+   * before that. Falling back to the recommended model keeps the offer
+   * honest in the meantime; a blind destructure threw during render, which
+   * takes the page with it.
+   */
+  const [smallest = MODELS[0], ...alternatives] = choices;
   if (error) {
     return (
       <Alert severity="warning">
@@ -112,12 +137,13 @@ const ModelBanner: React.FC<ModelBannerProps> = ({
         color="text.secondary"
         sx={{ flex: 1 }}
       >
-        {cached
-          ? 'The model is already downloaded in this browser.'
-          : `Optional: download a small model (about ${downloadMb} MB) so instructions can be phrased freely. Everything works without it.${alternatives
-              .map(
-                (model) =>
-                  ` ${model.label} understands more and costs about ${model.downloadMB} MB.`,
+        {cached.includes(smallest.id)
+          ? `${smallest.label} is already downloaded in this browser.`
+          : `Optional: download a small model (about ${smallest.downloadMB} MB) so instructions can be phrased freely. Everything works without it.${alternatives
+              .map((model) =>
+                cached.includes(model.id)
+                  ? ` ${model.label} is already here.`
+                  : ` ${model.label} understands more and costs about ${model.downloadMB} MB.`,
               )
               .join('')}`}
       </Typography>
@@ -126,11 +152,11 @@ const ModelBanner: React.FC<ModelBannerProps> = ({
         variant="outlined"
         onClick={() => onEnable(smallest)}
       >
-        {cached ? 'Use the model' : 'Download the model'}
+        {labelFor(smallest, cached, true)}
       </Button>
       {alternatives.map((model) => (
         <Button key={model.id} size="small" onClick={() => onEnable(model)}>
-          {`${model.label} instead`}
+          {labelFor(model, cached, false)}
         </Button>
       ))}
     </Stack>

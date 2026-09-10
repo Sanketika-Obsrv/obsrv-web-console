@@ -615,8 +615,23 @@ const RULES: Rule[] = [
 
   // — Navigation —
   {
+    /**
+     * Moving between stages, including by naming one and nothing else.
+     *
+     * The bare name is the shortest way to say it and the one people reach
+     * for, so it is matched on its own — anchored, so that a stage word
+     * *inside* an instruction ("enable the lakehouse storage") is not read as
+     * a request to move.
+     */
+    /**
+     * A movement word, then a stage. The verb may be a few words in — "can
+     * we go back to storage" is how people say it — but it must be near the
+     * front, so a stage *mentioned* in an instruction ("enable the lakehouse
+     * storage") is not read as a request to move. A bare stage name counts
+     * on its own; it is the shortest way to say it.
+     */
     pattern:
-      /\b(?:go to|take me (?:back )?to|jump to|open|back to)\b.*\b(connector|ingestion|schema|processing|storage|preview|review)\b/i,
+      /^(?:\S+\s+){0,3}?(?:go|going|back|return|returning|switch|move|jump|open|revisit|take me|show me|look at|do|about)\b[^.?!]*?\b(connector|ingestion|schema|processing|storage|preview|review)\b|^(connector|ingestion|schema|processing|storage|preview|review)(?:\s+(?:step|stage|bit|section|page))?[?.!]?$/i,
     resolve: (match) => {
       const found = STEP_WORDS.find(([pattern]) =>
         pattern.test(match[0].toLowerCase()),

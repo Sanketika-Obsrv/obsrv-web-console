@@ -91,6 +91,69 @@ describe('the fixture set', () => {
   });
 });
 
+/**
+ * Moving between stages by saying so.
+ *
+ * "Back and forth between ingestion, processing and storage" was the ask, so
+ * the phrasings people actually use for it have to land — including the bare
+ * stage name, which is the shortest way to say it.
+ */
+describe('moving between stages', () => {
+  const goesTo = (utterance: string, step: string) =>
+    expect(resolve(utterance)).toMatchObject({
+      status: 'resolved',
+      action: { kind: 'goto_step', step },
+    });
+
+  it('takes a bare stage name', () => {
+    goesTo('storage', 'storage');
+    goesTo('processing', 'processing');
+    goesTo('ingestion', 'ingestion');
+  });
+
+  it('takes the ways people ask to move', () => {
+    goesTo('go to storage', 'storage');
+    goesTo("let's do processing", 'processing');
+    goesTo('back to the schema', 'schema');
+    goesTo('take me to preview', 'preview');
+    goesTo('what about storage', 'storage');
+    goesTo('can we do the processing bit', 'processing');
+  });
+
+  /**
+   * Found live: the model read "can we go back to storage" as an answer to
+   * the question on the table and recorded a decision the user had not made.
+   * The rules run first, so a phrasing that lands here can never be
+   * misread — which is the argument for matching movement generously.
+   */
+  it('takes a request to move that does not start with the verb', () => {
+    goesTo('can we go back to storage', 'storage');
+    goesTo('i want to go back to the schema', 'schema');
+    goesTo('could we look at processing again', 'processing');
+    goesTo('now switch to storage', 'storage');
+  });
+
+  /** A stage word inside an instruction is still not a request to move. */
+  it('does not move on a mention, however it is phrased', () => {
+    for (const said of [
+      'enable the lakehouse storage',
+      'the schema looks right',
+      'mask the email in processing',
+    ]) {
+      expect(resolve(said)).not.toMatchObject({
+        action: { kind: 'goto_step' },
+      });
+    }
+  });
+
+  /** A stage word inside an instruction is not a request to move. */
+  it('does not move on a mention', () => {
+    expect(resolve('enable the lakehouse storage')).not.toMatchObject({
+      action: { kind: 'goto_step' },
+    });
+  });
+});
+
 describe('confidence', () => {
   it('is highest when the field matched exactly', () => {
     const exact = resolve('make total_amount a double');

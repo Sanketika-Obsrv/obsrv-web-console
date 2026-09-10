@@ -141,7 +141,9 @@ const STEP_BY_KIND: Partial<Record<Action['kind'], WizardStep>> = {
 };
 
 /** The wizard step each agenda question belongs to. */
-const WIZARD_STEP_BY_AGENDA_STEP: Partial<Record<AgendaStepId, WizardStep>> = {
+export const WIZARD_STEP_BY_AGENDA_STEP: Partial<
+  Record<AgendaStepId, WizardStep>
+> = {
   name: 'ingestion',
   type: 'ingestion',
   connector: 'connector',

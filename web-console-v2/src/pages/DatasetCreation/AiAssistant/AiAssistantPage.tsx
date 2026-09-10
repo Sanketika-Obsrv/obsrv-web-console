@@ -59,7 +59,6 @@ const AiAssistantPage: React.FC = () => {
               progress: assistant.modelProgress,
               ready: assistant.modelReady,
               cached: assistant.modelCached,
-              downloadMb: assistant.model.downloadMB,
               choices: assistant.modelChoices,
               error: assistant.modelError,
               onEnable: assistant.enableModel,

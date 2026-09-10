@@ -47,6 +47,7 @@ import {
   removeModel,
 } from './model/engineClient';
 import { DEFAULT_MODEL, MODELS, ModelSpec } from './model/catalog';
+import { forgetModel, rememberModel, rememberedModel } from './model/choice';
 import { resolveWithModel } from './model/modelResolver';
 import { Capability, detectCapability } from './model/tiers';
 import { auditFileName, buildAuditTrail } from './session/auditTrail';
@@ -93,7 +94,8 @@ export interface AssistantApi {
   modelCapability?: Capability;
   modelProgress?: LoadProgress;
   modelReady: boolean;
-  modelCached: boolean;
+  /** Ids of the models whose weights are already in this browser. */
+  modelCached: string[];
   /** The model in use, and every model this browser could run instead. */
   model: ModelSpec;
   modelChoices: ModelSpec[];
@@ -164,15 +166,21 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   const asked = useRef<Prompt | undefined>(undefined);
 
   const [capability, setCapability] = useState<Capability>();
-  const [modelCached, setModelCached] = useState(false);
+  const [modelCached, setModelCached] = useState<string[]>([]);
   const [modelProgress, setModelProgress] = useState<LoadProgress>();
   const [modelError, setModelError] = useState<string>();
   // The engine lives in a ref: it is a large object with a GPU context, and
   // re-rendering must not recreate or drop it.
   const engine = useRef<ModelEngine | undefined>(undefined);
   const [modelReady, setModelReady] = useState(false);
-  /** Which model is in use, which decides the size quoted and what to free. */
-  const [model, setModel] = useState<ModelSpec>(DEFAULT_MODEL);
+  /**
+   * Which model is in use, which decides what to free and what to load.
+   *
+   * Restored from the last explicit choice: downloading a gigabyte and then
+   * being offered the small one again on the next visit is not a choice
+   * being respected.
+   */
+  const [model, setModel] = useState<ModelSpec>(rememberedModel);
 
   /**
    * Conversations already reported, so a re-render does not report again.
@@ -213,12 +221,24 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     let cancelled = false;
 
     // Both of these are cheap and download nothing: they only report what
-    // this browser could do and whether the weights are already here.
-    Promise.all([detectCapability(), isModelCached()])
+    // this browser could do and which weights are already here. Asked per
+    // model, because "cached" was reported for the small one and read as
+    // true of both.
+    Promise.all([
+      detectCapability(),
+      Promise.all(
+        MODELS.map(async (candidate) => ({
+          id: candidate.id,
+          cached: await isModelCached(candidate.id),
+        })),
+      ),
+    ])
       .then(([detected, cached]) => {
         if (cancelled) return;
         setCapability(detected);
-        setModelCached(cached);
+        setModelCached(
+          cached.filter((entry) => entry.cached).map((entry) => entry.id),
+        );
       })
       .catch(() => {
         if (cancelled) return;
@@ -348,6 +368,10 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       return {
         ...(dataset ? { dataset } : {}),
         ...(current?.pending ? { pending: current.pending } : {}),
+        // The stage the conversation is on, so the agenda asks about where
+        // the user actually is rather than where the plan starts. It follows
+        // every action, which is what keeps a detour from snapping back.
+        ...(current?.step ? { focus: current.step as WizardStep } : {}),
         history: current?.messages ?? [],
         sampleRows: (current?.sampleRows ?? []) as Record<string, unknown>[],
         ...(current?.connector
@@ -728,7 +752,10 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       });
       setModel(wanted);
       setModelReady(true);
-      setModelCached(true);
+      setModelCached((present) =>
+        present.includes(wanted.id) ? present : [...present, wanted.id],
+      );
+      rememberModel(wanted.id);
     } catch (cause) {
       setModelError(
         cause instanceof Error
@@ -748,7 +775,8 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     // Frees the space rather than leaving the weights behind after the user
     // has said they do not want them.
     await removeModel(model.id).catch(() => undefined);
-    setModelCached(false);
+    setModelCached((present) => present.filter((id) => id !== model.id));
+    forgetModel();
   }, [model.id]);
 
   /**

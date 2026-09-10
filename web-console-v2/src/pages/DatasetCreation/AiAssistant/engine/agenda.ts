@@ -37,6 +37,7 @@ import {
   AGENDA_STEPS,
   AgendaStepId,
   DATASET_TYPES,
+  WizardStep,
 } from './actions';
 import { dedupCandidates, describeCandidate } from './dedupSuggest';
 import {
@@ -61,7 +62,12 @@ import { ChoiceOption, MessageCard } from '../messages/types';
 import { NewMessage } from '../session/sessionStore';
 import { conflictOptions, unresolvedConflicts } from './schemaEditor';
 import { Message } from '../session/types';
-import { PreviewSection, pathFromRef, sectionForAction } from './previewFocus';
+import {
+  PreviewSection,
+  WIZARD_STEP_BY_AGENDA_STEP,
+  pathFromRef,
+  sectionForAction,
+} from './previewFocus';
 
 export type { AgendaStepId };
 
@@ -95,6 +101,15 @@ export interface AgendaState {
    * would offer an empty list.
    */
   masterDatasets?: { dataset_id: string; name?: string }[];
+  /**
+   * The stage the user is on, when they have moved to one.
+   *
+   * The plan exists so that nothing is forgotten, not so the user is marched
+   * through it: a stage in focus is asked about first, and a stage they moved
+   * to deliberately is re-opened even where it has already been answered,
+   * because revisiting is how a setting gets changed.
+   */
+  focus?: WizardStep;
   /** The failure from the turn that just ran, so a question can be re-asked. */
   lastFailureCode?: ExecutionFailureCode;
   /** The name that was refused, so an alternative can be offered. */
@@ -156,9 +171,13 @@ export const ACCEPTS: Record<AgendaStepId, ActionKind[]> = {
   denorm: ['set_denorm', 'select_denorm', 'skip_step'],
   dedup: ['set_dedup', 'skip_step'],
   storage: ['set_storage', 'skip_step'],
-  // No `skip_step`: the chosen store does not work without its key, so this
-  // is the one question that cannot be declined.
-  keys: ['set_keys'],
+  /**
+   * `skip_step` is here only so that "leave it as it is" *parses* when the
+   * question is being looked at again. It cannot decline the question: what
+   * makes the key outstanding is the document, not the transcript, so a
+   * store without one keeps being asked about.
+   */
+  keys: ['set_keys', 'skip_step'],
   review: ['save'],
 };
 
@@ -352,8 +371,71 @@ const PENDING: Record<AgendaStepId, (state: AgendaState) => boolean> = {
   review: (state) => (state.dataset?.status ?? 'Draft') === 'Draft',
 };
 
-export const currentStep = (state: AgendaState): AgendaStepId | undefined =>
-  AGENDA_STEPS.find((step) => PENDING[step](state));
+/** Questions belonging to one stage of the wizard. */
+const questionsIn = (stage: WizardStep): AgendaStepId[] =>
+  AGENDA_STEPS.filter((step) => WIZARD_STEP_BY_AGENDA_STEP[step] === stage);
+
+/**
+ * Actions taken since the user last moved stage.
+ *
+ * A revisit is scoped to the visit: without that, re-opening an answered
+ * question would re-open it again the moment it was answered, and the
+ * conversation would circle.
+ */
+const sinceMoving = (state: AgendaState): Action[] => {
+  const actions = appliedActions(state.history);
+  const moved = actions.reduce(
+    (found, action, index) => (action.kind === 'goto_step' ? index : found),
+    -1,
+  );
+
+  return actions.slice(moved + 1);
+};
+
+const answeredInThisVisit = (state: AgendaState, step: AgendaStepId): boolean =>
+  sinceMoving(state).some((action) =>
+    // A decline answers the question it names and no other. Matching on the
+    // kind alone counted "leave storage as it is" as an answer to the key
+    // question too, since `skip_step` is accepted almost everywhere.
+    action.kind === 'skip_step'
+      ? action.step === step
+      : ACCEPTS[step].includes(action.kind),
+  );
+
+/**
+ * Questions that ask about one outstanding item rather than about a setting.
+ *
+ * Both are driven by a list the document produces — an unresolved conflict, a
+ * field the API flagged as personal. There is nothing to re-ask once the list
+ * is empty, so revisiting a stage skips them; they come back on their own if
+ * a new sample produces a new conflict or a new hint.
+ */
+const PER_ITEM: AgendaStepId[] = ['conflicts', 'pii'];
+
+/**
+ * The question to ask next.
+ *
+ * Outstanding questions in the stage the user is on come first, then the rest
+ * of that stage — so moving to storage asks about storage, including what is
+ * already set. Only once the stage has nothing left to say does this fall
+ * back to the earliest outstanding question anywhere, which is what keeps a
+ * wander from losing the thread.
+ */
+export const currentStep = (state: AgendaState): AgendaStepId | undefined => {
+  if (state.focus) {
+    const here = questionsIn(state.focus);
+
+    return (
+      here.find((step) => PENDING[step](state)) ??
+      here.find(
+        (step) => !PER_ITEM.includes(step) && !answeredInThisVisit(state, step),
+      ) ??
+      AGENDA_STEPS.find((step) => PENDING[step](state))
+    );
+  }
+
+  return AGENDA_STEPS.find((step) => PENDING[step](state));
+};
 
 /** `My Orders` → `My Orders 2`, `My Orders 2` → `My Orders 3`. */
 export const alternativeName = (name: string): string => {
@@ -529,9 +611,33 @@ const dedupQuestion = (state: AgendaState): Prompt => {
  * not the cluster has a lakehouse, so "real-time store" became a request for
  * a lakehouse nobody mentioned, and the API refused the write. Found live.
  */
-const storageQuestion = (): Prompt => ({
+/**
+ * What a stage already holds, said back when the question is asked again.
+ *
+ * Read from the document, like everything else here, so it cannot claim a
+ * setting the server does not have. Empty where nothing has been chosen —
+ * "currently nothing" is noise on a question being asked for the first time.
+ */
+const storesNow = (state: AgendaState): string => {
+  // `create` writes `lakehouse_enabled: true` into every draft, so the
+  // document alone cannot say whether anyone chose it. Only a recorded
+  // answer counts — the rule the question's own openness already follows.
+  if (!answeredInTranscript(state, 'storage', ['set_storage'])) return '';
+
+  const indexing = (block(state, 'dataset_config').indexing_config ??
+    {}) as Record<string, boolean>;
+  const stores = [
+    indexing.olap_store_enabled && 'real-time',
+    indexing.lakehouse_enabled && 'lakehouse',
+    indexing.cache_enabled && 'cache',
+  ].filter(Boolean);
+
+  return stores.length ? ` Currently ${stores.join(' and ')}.` : '';
+};
+
+const storageQuestion = (state: AgendaState): Prompt => ({
   step: 'storage',
-  text: 'Where should this data be stored?',
+  text: `Where should this data be stored?${storesNow(state)}`,
   card: choice('Storage', [
     {
       label: 'Real-time store',
@@ -652,9 +758,26 @@ const schemaQuestion = (state: AgendaState): Prompt => {
   };
 };
 
-const validationQuestion = (): Prompt => ({
+const validationNow = (state: AgendaState): string => {
+  // As with storage: `mode: 'Strict'` is the default every draft arrives
+  // with, not a decision anyone made.
+  if (!answeredInTranscript(state, 'validation', ['set_additional_fields'])) {
+    return '';
+  }
+
+  const mode = block(state, 'validation_config').mode;
+
+  if (mode === 'Strict') return ' Currently they are rejected.';
+  if (mode === 'IgnoreNewFields') return ' Currently they are let through.';
+
+  return '';
+};
+
+const validationQuestion = (state: AgendaState): Prompt => ({
   step: 'validation',
-  text: 'What should happen to fields that are not in the schema?',
+  text: `What should happen to fields that are not in the schema?${validationNow(
+    state,
+  )}`,
   card: choice('Unknown fields', [
     {
       label: 'Reject them',
@@ -827,8 +950,23 @@ const KEY_WORDING: Record<KeySlot, { asks: string; because: string }> = {
  * drift from the rule the wizard enforces. Not declinable: the store does not
  * work without it.
  */
+/** The key this slot already holds, when someone chose it. */
+const keyNow = (state: AgendaState, slot: KeySlot): string => {
+  if (!keyChosenInTranscript(state)) return '';
+
+  const keys = (block(state, 'dataset_config').keys_config ?? {}) as Record<
+    string,
+    string
+  >;
+  const held = keys[KEY_FIELD[slot]];
+
+  if (!held) return '';
+
+  return ` Currently ${held === CREATED_TIMESTAMP_DEFAULT ? EVENT_ARRIVAL_LABEL : held}.`;
+};
+
 const keysQuestion = (state: AgendaState): Prompt => {
-  const [slot] = missingKeys(state);
+  const [slot = 'timestamp'] = missingKeys(state);
   const vocabulary = vocabularyFromSchema(state.dataset?.data_schema);
   const wording = KEY_WORDING[slot];
 
@@ -842,7 +980,7 @@ const keysQuestion = (state: AgendaState): Prompt => {
 
     return {
       step: 'keys',
-      text: `Which field is the timestamp? ${_.upperFirst(wording.because)}.`,
+      text: `Which field is the timestamp? ${_.upperFirst(wording.because)}.${keyNow(state, slot)}`,
       card: choice('Timestamp key', [
         ...ordered.map((path) => ({
           label: path,
@@ -864,7 +1002,7 @@ const keysQuestion = (state: AgendaState): Prompt => {
 
   return {
     step: 'keys',
-    text: `Which field is the ${wording.asks} key? ${_.upperFirst(wording.because)}.`,
+    text: `Which field is the ${wording.asks} key? ${_.upperFirst(wording.because)}.${keyNow(state, slot)}`,
     card: choice(`${_.upperFirst(wording.asks)} key`, [
       ...eligible.map((path) => ({
         label: path,
@@ -959,8 +1097,40 @@ export const askMessage = (prompt: Prompt): NewMessage => {
 };
 
 /** The question to ask now, or nothing when the dataset is saved. */
+/**
+ * Keeping the answer a question already has.
+ *
+ * Added to the card rather than written into each question, because it is
+ * the same offer everywhere and only ever applies on a revisit: on a first
+ * asking there is nothing to keep. Found live — "leave it as it is" is the
+ * obvious thing to say when you have looked at a stage and are happy, and
+ * the storage question had no way to hear it.
+ *
+ * Safe even for the key, which cannot be declined the first time: that
+ * question's openness is read from the document, so a decline recorded here
+ * cannot leave a store without its key — the question simply comes back.
+ */
+const keepingIt = (step: AgendaStepId): ChoiceOption => ({
+  label: 'Leave it as it is',
+  action: { kind: 'skip_step', step },
+});
+
 export const nextPrompt = (state: AgendaState): Prompt | undefined => {
   const step = currentStep(state);
+  if (!step) return undefined;
 
-  return step ? QUESTION[step](state) : undefined;
+  const prompt = QUESTION[step](state);
+
+  // A question that is not outstanding is one being looked at again.
+  if (!prompt || PENDING[step](state)) return prompt;
+
+  return prompt.card?.kind === 'choice'
+    ? {
+        ...prompt,
+        card: {
+          ...prompt.card,
+          options: [...prompt.card.options, keepingIt(step)],
+        },
+      }
+    : prompt;
 };

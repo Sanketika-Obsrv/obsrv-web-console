@@ -633,19 +633,40 @@ describe('ACCEPTS', () => {
     expect(ACCEPTS.pii).toContain('set_pii');
   });
 
-  it('lets every question be declined except the ones that cannot be', () => {
-    // `name` and `review` have nothing to decline. `keys` is the interesting
-    // one: the chosen store does not work without its key, so offering to
-    // skip it would offer to build a broken dataset.
+  it('lets every question be declined except the ones with nothing to decline', () => {
+    // `name` and `review` have nothing to decline.
     Object.entries(ACCEPTS)
-      .filter(([step]) => !['name', 'review', 'keys'].includes(step))
+      .filter(([step]) => !['name', 'review'].includes(step))
       .forEach(([step, kinds]) => {
         expect({ step, kinds }).toMatchObject({
           kinds: expect.arrayContaining(['skip_step']),
         });
       });
+  });
 
-    expect(ACCEPTS.keys).not.toContain('skip_step');
+  /**
+   * `keys` accepts `skip_step` so that "leave it as it is" parses when the
+   * question is being looked at again — but it cannot *decline* the
+   * question, because what makes a key outstanding is the document rather
+   * than the transcript. A store without its key keeps being asked about.
+   */
+  it('cannot be talked out of a key the chosen store needs', () => {
+    const state: AgendaState = {
+      dataset: draft({
+        dataset_config: {
+          indexing_config: { olap_store_enabled: true },
+          keys_config: { timestamp_key: '' },
+        },
+      }),
+      piiSuggested: [],
+      history: [
+        ...answeredThrough('schema', 'validation', 'transform', 'dedup'),
+        applied({ kind: 'set_storage', realtime: true }, 40),
+        applied({ kind: 'skip_step', step: 'keys' }, 41),
+      ],
+    };
+
+    expect(currentStep(state)).toBe('keys');
   });
 });
 
@@ -1204,5 +1225,345 @@ describe('the summary before saving', () => {
 
   it('says nothing about joins when there are none', () => {
     expect(summaryOf(ready()).join(' ')).not.toMatch(/joined/i);
+  });
+});
+
+/**
+ * A question asked a second time has to say what the answer already is.
+ *
+ * Without it, revisiting a stage reads as the assistant having forgotten —
+ * and the user cannot tell whether their earlier answer landed.
+ */
+describe('re-asking a question that already has an answer', () => {
+  it('says where the data is stored now', () => {
+    const prompt = nextPrompt({
+      dataset: draft({
+        dataset_config: {
+          indexing_config: {
+            olap_store_enabled: true,
+            lakehouse_enabled: false,
+          },
+          keys_config: { timestamp_key: 'order_ts' },
+        },
+      }),
+      focus: 'storage',
+      history: [
+        ...answeredThrough('schema', 'validation', 'transform', 'dedup'),
+        applied({ kind: 'set_storage', realtime: true }, 39),
+        applied({ kind: 'goto_step', step: 'storage' }, 40),
+      ],
+    });
+
+    expect(prompt?.step).toBe('storage');
+    expect(prompt?.text).toMatch(/currently.*real-time/i);
+  });
+
+  it('says nothing about a current answer when there is none', () => {
+    const prompt = nextPrompt({
+      dataset: draft(),
+      history: answeredThrough('schema', 'validation', 'transform', 'dedup'),
+      piiSuggested: [],
+    });
+
+    expect(prompt?.step).toBe('storage');
+    expect(prompt?.text).not.toMatch(/currently/i);
+  });
+
+  /**
+   * `create` writes `lakehouse_enabled: true` and `mode: Strict` into every
+   * fresh draft, so reading the document literally would report defaults
+   * nobody chose as though they were the user's answers — the same trap the
+   * storage and timestamp questions already avoid.
+   */
+  it('does not report a default as an answer', () => {
+    const fresh = {
+      dataset: draft({
+        dataset_config: {
+          indexing_config: {
+            olap_store_enabled: true,
+            lakehouse_enabled: true,
+          },
+        },
+        validation_config: { validate: true, mode: 'Strict' },
+      }),
+      history: answeredThrough('schema', 'transform', 'dedup'),
+      piiSuggested: [],
+    };
+
+    expect(nextPrompt({ ...fresh, focus: 'processing' })?.text).not.toMatch(
+      /currently/i,
+    );
+    expect(
+      nextPrompt({
+        ...fresh,
+        history: answeredThrough('schema', 'validation', 'transform', 'dedup'),
+      })?.text,
+    ).not.toMatch(/currently/i);
+  });
+
+  it('says which field is the timestamp now', () => {
+    const prompt = nextPrompt({
+      dataset: draft({
+        data_schema: schemaWith({
+          order_ts: {
+            type: 'string',
+            data_type: 'date-time',
+            arrival_format: 'text',
+          },
+        }),
+        dataset_config: {
+          indexing_config: { olap_store_enabled: true },
+          keys_config: { timestamp_key: 'order_ts' },
+        },
+      }),
+      focus: 'storage',
+      history: [
+        ...answeredThrough('schema', 'validation', 'transform', 'dedup'),
+        applied({ kind: 'set_storage', realtime: true }, 39),
+        applied({ kind: 'set_keys', timestamp: 'order_ts' }, 40),
+        applied({ kind: 'goto_step', step: 'storage' }, 41),
+        // Storage comes first in the stage, and has been revisited already.
+        applied({ kind: 'set_storage', realtime: true }, 42),
+      ],
+    });
+
+    expect(prompt?.step).toBe('keys');
+    expect(prompt?.text).toMatch(/currently order_ts/i);
+  });
+
+  /**
+   * Found live. Revisiting storage re-asked "where should this be stored?"
+   * with only the three stores to choose from — so "leave it as it is", the
+   * obvious thing to say when you looked and were happy, meant nothing. A
+   * question being asked again has to offer keeping the answer.
+   */
+  it('offers keeping the answer it already has', () => {
+    const revisited = (focus: 'storage' | 'processing', history: Message[]) =>
+      nextPrompt({
+        dataset: draft({
+          data_schema: schemaWith({
+            order_ts: {
+              type: 'string',
+              data_type: 'date-time',
+              arrival_format: 'text',
+            },
+          }),
+          dataset_config: {
+            indexing_config: { olap_store_enabled: true },
+            keys_config: { timestamp_key: 'order_ts' },
+          },
+          validation_config: { validate: true, mode: 'Strict' },
+        }),
+        focus,
+        piiSuggested: [],
+        history,
+      });
+
+    const base = [
+      ...answeredThrough('schema', 'validation', 'transform', 'dedup'),
+      applied({ kind: 'set_storage', realtime: true }, 38),
+      applied({ kind: 'set_keys', timestamp: 'order_ts' }, 39),
+    ];
+
+    const storage = revisited('storage', [
+      ...base,
+      applied({ kind: 'goto_step', step: 'storage' }, 40),
+    ]);
+
+    expect(storage?.step).toBe('storage');
+    if (storage?.card?.kind !== 'choice') throw new Error('expected a choice');
+    expect(storage.card.options.map((option) => option.action)).toContainEqual({
+      kind: 'skip_step',
+      step: 'storage',
+    });
+
+    // And the key, which is the one question that cannot be declined the
+    // *first* time — its openness comes from the document, so a decline on a
+    // revisit cannot leave a store without one.
+    const keys = revisited('storage', [
+      ...base,
+      applied({ kind: 'goto_step', step: 'storage' }, 40),
+      applied({ kind: 'set_storage', realtime: true }, 41),
+    ]);
+
+    expect(keys?.step).toBe('keys');
+    if (keys?.card?.kind !== 'choice') throw new Error('expected a choice');
+    expect(keys.card.options.map((option) => option.action)).toContainEqual({
+      kind: 'skip_step',
+      step: 'keys',
+    });
+  });
+
+  it('does not offer keeping an answer that does not exist yet', () => {
+    const prompt = nextPrompt({
+      dataset: draft({
+        dataset_config: { indexing_config: { olap_store_enabled: true } },
+      }),
+      piiSuggested: [],
+      history: answeredThrough('schema', 'validation', 'transform', 'dedup'),
+    });
+
+    expect(prompt?.step).toBe('storage');
+    if (prompt?.card?.kind !== 'choice') throw new Error('expected a choice');
+    expect(
+      prompt.card.options.map((option) => option.action),
+    ).not.toContainEqual({ kind: 'skip_step', step: 'storage' });
+  });
+
+  it('says what happens to unknown fields now', () => {
+    const prompt = nextPrompt({
+      dataset: draft({ validation_config: { validate: true, mode: 'Strict' } }),
+      focus: 'processing',
+      piiSuggested: [],
+      history: [
+        ...answeredThrough('schema', 'transform', 'dedup'),
+        applied({ kind: 'set_additional_fields', allow: false }, 39),
+        applied({ kind: 'goto_step', step: 'processing' }, 40),
+      ],
+    });
+
+    expect(prompt?.step).toBe('validation');
+    expect(prompt?.text).toMatch(/currently.*rejected/i);
+  });
+});
+
+/**
+ * Moving between ingestion, processing and storage — and back.
+ *
+ * The plan exists so nothing is forgotten, not so the user is marched
+ * through it. Answering something out of order used to be honoured and then
+ * followed by the *earliest* outstanding question again, which reads as the
+ * assistant dragging you back. A stage in focus is asked about first.
+ */
+describe('following the user between stages', () => {
+  const answered = answeredThrough('schema');
+
+  const midway = (over: Partial<AgendaState> = {}): AgendaState => ({
+    dataset: draft({
+      data_schema: hintedSchema,
+      dataset_config: { indexing_config: { olap_store_enabled: true } },
+    }),
+    history: answered,
+    ...over,
+  });
+
+  it('asks the earliest outstanding question when nothing is in focus', () => {
+    expect(currentStep(midway())).toBe('pii');
+  });
+
+  it('asks about the stage the user moved to', () => {
+    expect(currentStep(midway({ focus: 'storage' }))).toBe('storage');
+  });
+
+  it('stays within that stage for its other questions', () => {
+    const state = midway({
+      focus: 'storage',
+      history: [
+        ...answered,
+        applied({ kind: 'set_storage', realtime: true }, 20),
+      ],
+      dataset: draft({
+        data_schema: hintedSchema,
+        dataset_config: {
+          indexing_config: { olap_store_enabled: true },
+          keys_config: { timestamp_key: '' },
+        },
+      }),
+    });
+
+    expect(currentStep(state)).toBe('keys');
+  });
+
+  it('goes back to what is outstanding once the stage is done', () => {
+    const state = midway({
+      focus: 'storage',
+      history: [
+        ...answered,
+        applied({ kind: 'set_storage', realtime: true }, 20),
+        applied({ kind: 'set_keys', timestamp: 'order_ts' }, 21),
+      ],
+      dataset: draft({
+        data_schema: hintedSchema,
+        dataset_config: {
+          indexing_config: { olap_store_enabled: true },
+          keys_config: { timestamp_key: 'order_ts' },
+        },
+      }),
+    });
+
+    expect(currentStep(state)).toBe('pii');
+  });
+
+  /**
+   * Revisiting a finished stage is the other half of "back and forth": the
+   * user wants to *change* something, not only fill a gap. So a stage in
+   * focus is asked about even where it has already been answered — and once
+   * answered again, or left as it is, the conversation moves on rather than
+   * asking in a circle.
+   */
+  it('re-opens a stage that is already answered', () => {
+    const state = midway({
+      focus: 'processing',
+      piiSuggested: [],
+      history: [
+        ...answeredThrough('schema', 'validation', 'transform', 'dedup'),
+        applied({ kind: 'goto_step', step: 'processing' }, 30),
+      ],
+    });
+
+    expect(currentStep(state)).toBe('validation');
+  });
+
+  /**
+   * Found live. `skip_step` is in almost every question's accepted list, so
+   * matching on the kind alone made "leave storage as it is" count as an
+   * answer to the *key* question too — and the revisit walked straight past
+   * it. A decline answers the question it names and no other.
+   */
+  it('does not let one decline stand in for another question', () => {
+    const state = midway({
+      focus: 'storage',
+      piiSuggested: [],
+      dataset: draft({
+        data_schema: hintedSchema,
+        dataset_config: {
+          indexing_config: { olap_store_enabled: true },
+          keys_config: { timestamp_key: 'order_ts' },
+        },
+      }),
+      history: [
+        ...answeredThrough('schema', 'validation', 'transform', 'dedup'),
+        applied({ kind: 'set_storage', realtime: true }, 38),
+        applied({ kind: 'set_keys', timestamp: 'order_ts' }, 39),
+        applied({ kind: 'goto_step', step: 'storage' }, 40),
+        applied({ kind: 'skip_step', step: 'storage' }, 41),
+      ],
+    });
+
+    expect(currentStep(state)).toBe('keys');
+  });
+
+  it('does not ask the same thing twice in one visit', () => {
+    const state = midway({
+      focus: 'processing',
+      piiSuggested: [],
+      history: [
+        ...answeredThrough('schema', 'validation', 'transform', 'dedup'),
+        applied({ kind: 'goto_step', step: 'processing' }, 30),
+        applied({ kind: 'set_additional_fields', allow: true }, 31),
+      ],
+    });
+
+    expect(currentStep(state)).not.toBe('validation');
+  });
+
+  /** A stage the user has not asked for stays closed once answered. */
+  it('does not re-open a stage nobody moved to', () => {
+    const state = midway({
+      piiSuggested: [],
+      history: answeredThrough('schema', 'validation', 'transform', 'dedup'),
+    });
+
+    expect(currentStep(state)).toBe('storage');
   });
 });
