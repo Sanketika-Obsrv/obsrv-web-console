@@ -98,6 +98,49 @@ describe('the fixture set', () => {
  * the phrasings people actually use for it have to land — including the bare
  * stage name, which is the shortest way to say it.
  */
+/**
+ * "What is X" only explains X when X is part of this job.
+ *
+ * The rule used to take any question at all, so "what is the weather in
+ * Bangalore" became an `explain` action about the weather — the assistant
+ * answering something it has no business answering. Reported by the user,
+ * who asked for anything unrelated to be refused instead.
+ */
+describe('explaining', () => {
+  it('explains the things this product is made of', () => {
+    for (const said of [
+      'what is deduplication',
+      'what does the lakehouse do',
+      'explain the timestamp key',
+      'why do you need a schema',
+    ]) {
+      expect({ said, ...resolve(said) }).toMatchObject({
+        status: 'resolved',
+        action: { kind: 'explain' },
+      });
+    }
+  });
+
+  it('explains a field of this dataset', () => {
+    expect(resolve('what is order_ts')).toMatchObject({
+      status: 'resolved',
+      action: { kind: 'explain' },
+    });
+  });
+
+  it('declines to explain anything else', () => {
+    for (const said of [
+      'what is the weather in Bangalore',
+      'who won the cricket match',
+      'what is 2 + 2',
+    ]) {
+      expect({ said, ...resolve(said) }).not.toMatchObject({
+        action: { kind: 'explain' },
+      });
+    }
+  });
+});
+
 describe('moving between stages', () => {
   const goesTo = (utterance: string, step: string) =>
     expect(resolve(utterance)).toMatchObject({

@@ -19,6 +19,7 @@ import {
   narrateUndo,
 } from './narrate';
 import { countDuplicates, evaluateExpression } from './preflight';
+import { isAboutDataset } from './topicality';
 import { sectionForAction } from './previewFocus';
 import { MessageCard } from '../messages/types';
 import { NewMessage } from '../session/sessionStore';
@@ -417,7 +418,20 @@ export const runTurn = async (
   }
 
   if (resolution.status !== 'resolved' || !resolution.action) {
-    const narration = narrateResolution(resolution);
+    /**
+     * Nothing could be done with it, so the reply has to be honest about
+     * *why*. An instruction about the weather is refused as outside the job;
+     * an instruction about the dataset that could not be parsed is asked
+     * about, pointing at the question on the table rather than at examples
+     * naming fields this dataset may not have.
+     */
+    const narration = narrateResolution(resolution, {
+      onTopic: isAboutDataset(input, deps.vocabulary),
+      fieldPaths: deps.vocabulary.entries
+        .filter((entry) => entry.isLeaf)
+        .map((entry) => entry.path),
+      ...(deps.prompt ? { asked: deps.prompt.text } : {}),
+    });
 
     return {
       messages: [

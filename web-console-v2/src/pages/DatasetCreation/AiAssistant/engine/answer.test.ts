@@ -316,6 +316,41 @@ describe('answering the name question', () => {
     }
   });
 
+  /**
+   * Found live: "write me a poem about ducks" became the dataset's name,
+   * because the name question takes whatever is typed. A question that
+   * accepts prose still must not accept a request aimed at the assistant.
+   */
+  it('refuses a request dressed as a value', () => {
+    for (const said of [
+      'write me a poem about ducks',
+      'tell me a joke',
+      'show me the cricket scores',
+      'send an email to my manager',
+      'translate this into French',
+    ]) {
+      expect({ said, answer: answerTo(NAME, said) }).toEqual({
+        said,
+        answer: undefined,
+      });
+    }
+  });
+
+  it('still takes the names people actually use', () => {
+    for (const said of [
+      'My Orders',
+      'Air Quality Probe',
+      'orders_2026',
+      'Customer Orders 2024',
+      'Web Checkout Events EU',
+    ]) {
+      expect({ said, kind: answerTo(NAME, said)?.kind }).toEqual({
+        said,
+        kind: 'set_dataset_name',
+      });
+    }
+  });
+
   it('refuses a name nothing could be called', () => {
     expect(answerTo(NAME, '   ')).toBeUndefined();
     expect(answerTo(NAME, 'a'.repeat(200))).toBeUndefined();

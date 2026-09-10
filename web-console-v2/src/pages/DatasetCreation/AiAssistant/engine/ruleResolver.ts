@@ -22,6 +22,7 @@ import {
   WizardStep,
 } from './actions';
 import { isSecretProp } from './connectors';
+import { isAboutDataset } from './topicality';
 import {
   FieldVocabulary,
   dedupEligiblePaths,
@@ -631,7 +632,7 @@ const RULES: Rule[] = [
      * on its own; it is the shortest way to say it.
      */
     pattern:
-      /^(?:\S+\s+){0,3}?(?:go|going|back|return|returning|switch|move|jump|open|revisit|take me|show me|look at|do|about)\b[^.?!]*?\b(connector|ingestion|schema|processing|storage|preview|review)\b|^(connector|ingestion|schema|processing|storage|preview|review)(?:\s+(?:step|stage|bit|section|page))?[?.!]?$/i,
+      /^(?:\S+\s+){0,3}?(?:go|going|back|return|returning|switch|move|jump|open|revisit|take me|show me|look at|let'?s do|what about|how about|can we do)\b[^.?!]*?\b(connector|ingestion|schema|processing|storage|preview|review)\b|^(connector|ingestion|schema|processing|storage|preview|review)(?:\s+(?:step|stage|bit|section|page))?[?.!]?$/i,
     resolve: (match) => {
       const found = STEP_WORDS.find(([pattern]) =>
         pattern.test(match[0].toLowerCase()),
@@ -644,13 +645,24 @@ const RULES: Rule[] = [
 
   // — Explain —
   {
+    /**
+     * Only what this product is made of.
+     *
+     * The pattern used to take any question, so "what is the weather in
+     * Bangalore" became an `explain` action about the weather — the
+     * assistant answering something it has no business answering. The topic
+     * now has to be a dataset word or a field of this dataset; anything else
+     * falls through and is refused as outside the job.
+     */
     pattern:
       /^(?:what(?:'s| is| does)|explain|why|tell me about)\b\s*(?:the\s+)?(.+?)(?:\s+mean)?$/i,
-    resolve: ([, topic]) =>
-      resolved(
-        { kind: 'explain', topic: topic.trim().toLowerCase() },
-        FIELDLESS_CONFIDENCE,
-      ),
+    resolve: ([, topic], context) =>
+      isAboutDataset(topic, context.vocabulary)
+        ? resolved(
+            { kind: 'explain', topic: topic.trim().toLowerCase() },
+            FIELDLESS_CONFIDENCE,
+          )
+        : null,
   },
 
   // — Undo —

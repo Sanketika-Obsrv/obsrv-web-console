@@ -58,19 +58,8 @@ import {
   reportSessionStart,
 } from './telemetry';
 import { stepAfterAction } from './engine/previewFocus';
+import { OPENING_SUGGESTIONS, fallbackSuggestions } from './suggestions';
 import { usePreviewFocus } from './usePreviewFocus';
-
-/** Offered as chips before the user knows what they can say. */
-const OPENING_SUGGESTIONS = ['call it My Orders', "it's event data"];
-
-const SCHEMA_SUGGESTIONS = [
-  'make order_id required',
-  'dedup on order_id',
-  'enable the real-time store',
-  // Offered as a chip because an undo nobody knows about is not a safety net.
-  'undo that',
-  'save it',
-];
 
 export interface AssistantApi {
   datasetId: string | null;
@@ -822,7 +811,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     suggestions: prompt?.chips?.length
       ? prompt.chips
       : vocabulary.paths.length > 0
-        ? SCHEMA_SUGGESTIONS
+        ? fallbackSuggestions(vocabulary)
         : OPENING_SUGGESTIONS,
     focusSection,
     changedRefs,

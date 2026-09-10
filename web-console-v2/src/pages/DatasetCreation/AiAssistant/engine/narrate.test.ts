@@ -183,6 +183,66 @@ describe('narrating a failure', () => {
   });
 });
 
+/**
+ * What is said when nothing could be done with the utterance.
+ *
+ * The old wording named `order_id` as an example — in every dataset,
+ * whether or not it had such a field. Reported by the user: "it says order
+ * id for any dataset". Nothing here may name a field the dataset does not
+ * have, which is the same rule the narration already follows about
+ * everything else.
+ */
+describe('narrating what cannot be done', () => {
+  it('says plainly that it is not dataset work', () => {
+    const { text } = narrateResolution(
+      { status: 'unknown', confidence: 0 },
+      { onTopic: false },
+    );
+
+    expect(text).toMatch(/only/i);
+    expect(text).toMatch(/dataset/i);
+    expect(text).not.toMatch(/did not understand/i);
+  });
+
+  it('never invents a field name', () => {
+    const off = narrateResolution(
+      { status: 'unknown', confidence: 0 },
+      { onTopic: false },
+    );
+    const unclear = narrateResolution(
+      { status: 'unknown', confidence: 0 },
+      { onTopic: true },
+    );
+
+    expect(off.text).not.toMatch(/order_id/);
+    expect(unclear.text).not.toMatch(/order_id/);
+  });
+
+  it('offers an example built from the dataset in hand', () => {
+    const { text } = narrateResolution(
+      { status: 'unknown', confidence: 0 },
+      { onTopic: true, fieldPaths: ['sensor_id', 'reading'] },
+    );
+
+    expect(text).toMatch(/sensor_id/);
+  });
+
+  it('points at the question on the table instead of guessing', () => {
+    const { text } = narrateResolution(
+      { status: 'unknown', confidence: 0 },
+      { onTopic: true, asked: 'Which field is the timestamp?' },
+    );
+
+    expect(text).toContain('Which field is the timestamp?');
+  });
+
+  it('still says something useful with no context at all', () => {
+    const { text } = narrateResolution({ status: 'unknown', confidence: 0 });
+
+    expect(text).toMatch(/did not understand/i);
+  });
+});
+
 describe('narrating a resolution that could not be acted on', () => {
   it('asks the clarifying question', () => {
     const { text } = narrateResolution({

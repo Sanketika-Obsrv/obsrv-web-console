@@ -251,10 +251,47 @@ export const narrateOutcome = (
   };
 };
 
-const DID_NOT_UNDERSTAND =
-  'I did not understand that. You can tell me things like "make order_id required", "dedup on order_id" or "enable the real-time store".';
+/**
+ * What is said when nothing could be done with what was typed.
+ *
+ * The wording used to carry examples — "make order_id required" — which
+ * named a field most datasets do not have. Reported by the user, plainly:
+ * "it says order id for any dataset". So an example is only given when it
+ * can be drawn from the dataset in hand, and the rest of the sentence
+ * points at the question that is actually on the table.
+ */
+export interface ResolutionContext {
+  /**
+   * False when the utterance is not about a dataset at all. Then the honest
+   * answer is that it cannot be done here, rather than that it was not
+   * understood — the assistant does one job.
+   */
+  onTopic?: boolean;
+  /** Field paths of this dataset, for an example that exists. */
+  fieldPaths?: string[];
+  /** The question the assistant is waiting on, when it is waiting on one. */
+  asked?: string;
+}
 
-export const narrateResolution = (resolution: Resolution): Narration => {
+const OFF_TOPIC =
+  'I can only work on this dataset — its name and type, its schema, and how it is processed and stored. That one is outside what I can do here.';
+
+const DID_NOT_UNDERSTAND = 'I did not understand that.';
+
+const helpFor = ({ fieldPaths = [], asked }: ResolutionContext): string => {
+  if (asked) return ` I am asking: ${asked}`;
+
+  const [field] = fieldPaths;
+
+  return field
+    ? ` You can tell me things like "make ${field} required" or "enable the real-time store".`
+    : '';
+};
+
+export const narrateResolution = (
+  resolution: Resolution,
+  context: ResolutionContext = {},
+): Narration => {
   const question = resolution.clarify?.question;
   const options = resolution.clarify?.options ?? [];
   const actions = resolution.candidateActions ?? [];
@@ -272,5 +309,15 @@ export const narrateResolution = (resolution: Resolution): Narration => {
         }
       : undefined;
 
-  return { text: question ?? DID_NOT_UNDERSTAND, card };
+  if (question) return { text: question, card };
+
+  /**
+   * Both halves matter when a question is on the table. Saying only that
+   * the request is outside the job leaves the user unsure what the
+   * assistant is waiting for; saying only the question ignores what they
+   * actually asked.
+   */
+  const opening = context.onTopic === false ? OFF_TOPIC : DID_NOT_UNDERSTAND;
+
+  return { text: `${opening}${helpFor(context)}`, card };
 };

@@ -121,6 +121,20 @@ const VALUE_SUFFIX = /\s*(?:please|thanks|thank you)\s*[.!]?$/i;
 
 const MAX_VALUE = 100;
 
+/**
+ * A request aimed at the assistant, rather than a value for it to use.
+ *
+ * The name question takes whatever is typed, which is what makes it usable
+ * — and what made "write me a poem about ducks" the name of a dataset.
+ * Found in the browser. These are the verbs of asking someone to *do*
+ * something, which no dataset is called.
+ */
+const ADDRESSED =
+  /^(?:write|tell|show|send|give|find|search|play|fetch|translate|summari[sz]e|draw|calculate|compute|order|book|email|call up|remind)\s+(?:me|us|him|her|them|this|that|it|an?\b|the\b)/i;
+
+/** A name is short. Six words is generous for one; a request is longer. */
+const MAX_VALUE_WORDS = 6;
+
 const words = (text: string): string[] =>
   text
     .toLowerCase()
@@ -294,7 +308,8 @@ const answerToProse = (
 ): Action | undefined => {
   const said = utterance.trim();
   if (!said || said.length > MAX_VALUE || said.endsWith('?')) return undefined;
-  if (COMMANDS.test(said)) return undefined;
+  if (COMMANDS.test(said) || ADDRESSED.test(said)) return undefined;
+  if (said.split(/\s+/).length > MAX_VALUE_WORDS) return undefined;
 
   const value = said.replace(VALUE_PREFIX, '').replace(VALUE_SUFFIX, '').trim();
 

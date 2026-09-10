@@ -700,6 +700,67 @@ describe('awaitingInput', () => {
   });
 });
 
+/**
+ * The assistant does one job, and says so.
+ *
+ * "Ignore anything not related to dataset creation as can't be done" was
+ * the ask: an off-topic instruction is refused plainly rather than reported
+ * as a dataset instruction that could not be parsed.
+ */
+describe('something that is not dataset work', () => {
+  it('says it cannot be done here', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('what is the weather in Bangalore', {
+      vocabulary,
+      execute,
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].text).toMatch(/only work on this dataset/i);
+  });
+
+  it('still asks about a dataset instruction it could not parse', async () => {
+    const result = await runTurn('the amount column ought to be textual', {
+      vocabulary,
+      execute: async () => applied,
+    });
+
+    expect(result.messages[1].text).not.toMatch(/only work on this dataset/i);
+  });
+
+  /** An example has to come from the dataset in hand, not from a fixture. */
+  it('names a real field when it gives an example', async () => {
+    const theirs = buildFieldVocabulary([
+      { column: 'sensor_id', data_type: 'string', arrival_format: 'text' },
+      { column: 'reading', data_type: 'double', arrival_format: 'number' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ] as any);
+
+    const result = await runTurn('hmm', {
+      vocabulary: theirs,
+      execute: async () => applied,
+    });
+
+    expect(result.messages[1].text).toMatch(/sensor_id/);
+    expect(result.messages[1].text).not.toMatch(/order_id/);
+  });
+
+  it('points at the question rather than at examples', async () => {
+    const result = await runTurn('hmm', {
+      vocabulary,
+      execute: async () => applied,
+      prompt: {
+        step: 'keys',
+        text: 'Which field is the timestamp?',
+        card: { kind: 'choice', options: [] },
+      },
+    });
+
+    expect(result.messages[1].text).toContain('Which field is the timestamp?');
+  });
+});
+
 describe('answering the question on the table', () => {
   const STORAGE: Prompt = {
     step: 'storage',
