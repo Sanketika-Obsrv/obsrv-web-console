@@ -74,6 +74,15 @@ const DECLINES =
  */
 const NEGATES = /^(?:no|not|none|nope|nah|don'?t|do not|never)\b/i;
 
+/**
+ * "Right now" and "just now" say *when*, not what.
+ *
+ * Folded away before a decline is read, so "not right now" is the plain no
+ * it plainly is — while "not right", which says the answer is wrong, keeps
+ * its subject and is not read as a decline.
+ */
+const TIME_PHRASE = /\b(?:right|just)\s+now\b/i;
+
 /** Words a bare decline is made of, so anything else counts as a subject. */
 const DECLINE_WORDS = new Set([
   'dont',
@@ -106,7 +115,7 @@ const COMMANDS =
 
 /** How people preface a value. */
 const VALUE_PREFIX =
-  /^(?:(?:let'?s|lets|we(?:'ll| will)?|i(?:'d| would)? like to|please)\s+)?(?:call|name)\s+(?:it|this|the dataset)\s+/i;
+  /^(?:(?:let'?s|lets|we(?:'ll| will)?|i(?:'d| would)? like to|please)\s+)?(?:(?:call|name)\s+(?:it|this|the dataset)|go with|use)\s+/i;
 
 const VALUE_SUFFIX = /\s*(?:please|thanks|thank you)\s*[.!]?$/i;
 
@@ -209,8 +218,9 @@ const bareDecline = (utterance: string): boolean =>
 
 const answerToChoice = (
   options: ChoiceOption[],
-  utterance: string,
+  raw: string,
 ): Action | undefined => {
+  const utterance = raw.replace(TIME_PHRASE, 'now');
   const matched = bestOption(options, utterance);
 
   // An option said in full is that option, whatever else the words look

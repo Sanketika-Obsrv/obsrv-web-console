@@ -162,6 +162,21 @@ describe('answering a choice question', () => {
     });
   });
 
+  it('hears "not right now" as a plain no, and "not right" as a complaint', () => {
+    const schema = choicePrompt('schema', [
+      { label: 'Looks right', action: { kind: 'skip_step', step: 'schema' } },
+    ]);
+
+    expect(answerTo(schema, 'not right now')).toEqual({
+      kind: 'skip_step',
+      step: 'schema',
+    });
+
+    // "Not right" says the schema is wrong. Reading it as "looks right"
+    // would record the opposite of what was said.
+    expect(answerTo(schema, 'not right')).toBeUndefined();
+  });
+
   /**
    * Declining is only unambiguous when one option declines. Two skips, or a
    * "no" where nothing declines, are for the resolver to ask about.
@@ -271,6 +286,10 @@ describe('answering the name question', () => {
     expect(answerTo(NAME, 'call it My Orders')).toEqual({
       kind: 'set_dataset_name',
       name: 'My Orders',
+    });
+    expect(answerTo(NAME, 'go with orders_2026')).toEqual({
+      kind: 'set_dataset_name',
+      name: 'orders_2026',
     });
     expect(answerTo(NAME, "let's call it my-orders please")).toEqual({
       kind: 'set_dataset_name',
