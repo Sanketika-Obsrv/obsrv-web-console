@@ -46,13 +46,11 @@ const AiAssistantPage: React.FC = () => {
             resumable={assistant.resumable}
             currentSessionId={assistant.currentSessionId}
             onClearSession={assistant.clearSession}
-            onAction={assistant.dispatch}
-            onSampleRows={assistant.attachSample}
+            onSampleFile={assistant.offerSample}
             onSubmitSecrets={assistant.submitSecrets}
             connectorUiSpec={assistant.connectorUiSpec}
             onSend={assistant.send}
             busy={assistant.busy}
-            suggestions={assistant.suggestions}
             onExportTrail={assistant.exportTrail}
             model={{
               capability: assistant.modelCapability,

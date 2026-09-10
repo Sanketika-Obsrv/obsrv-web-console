@@ -36,9 +36,11 @@ export interface FieldRow {
 }
 
 export type MessageCard =
-  /** Sample upload, inside the conversation. */
-  | { kind: 'file_drop'; prompt?: string; accept?: string[] }
-  /** A set of buttons, so any choice is clickable rather than typed. */
+  /**
+   * The answers a question will take, listed rather than offered as
+   * buttons. The actions stay on the card because a typed answer is matched
+   * against them.
+   */
   | { kind: 'choice'; prompt?: string; options: ChoiceOption[] }
   | {
       kind: 'confirm';

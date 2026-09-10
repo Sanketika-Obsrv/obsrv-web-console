@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { diagnose } from '../engine/errorMap';
 import { Message } from '../session/types';
@@ -15,20 +15,8 @@ const message = (overrides: Partial<Message> = {}): Message => ({
   ...overrides,
 });
 
-const show = (
-  messages: Message[],
-  onAction = jest.fn(),
-  onRows = jest.fn(),
-) => {
-  render(
-    <MessageList
-      messages={messages}
-      onAction={onAction}
-      onSampleRows={onRows}
-    />,
-  );
-  return { onAction, onRows };
-};
+const show = (messages: Message[]) =>
+  render(<MessageList messages={messages} />);
 
 const withCard = (card: MessageCard, overrides: Partial<Message> = {}) =>
   message({ ...overrides, card } as Partial<Message>);
@@ -53,49 +41,39 @@ describe('plain turns', () => {
   });
 
   it('renders nothing for an empty transcript', () => {
-    const { container } = render(
-      <MessageList
-        messages={[]}
-        onAction={jest.fn()}
-        onSampleRows={jest.fn()}
-      />,
-    );
+    const { container } = render(<MessageList messages={[]} />);
 
     expect(container).toBeEmptyDOMElement();
   });
 });
 
 describe('cards', () => {
-  it('renders a choice card and dispatches what was clicked', async () => {
-    const action = { kind: 'skip_connector' } as const;
-    const { onAction } = show([
+  it('renders a choice card as the answers it will take', () => {
+    show([
       withCard({
         kind: 'choice',
         prompt: 'Use a connector?',
-        options: [{ label: 'Skip for now', action }],
+        options: [
+          { label: 'Skip for now', action: { kind: 'skip_connector' } },
+        ],
       }),
     ]);
 
-    await userEvent.click(
-      screen.getByRole('button', { name: /skip for now/i }),
-    );
-
-    expect(onAction).toHaveBeenCalledWith(action);
+    expect(screen.getByText('Skip for now')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('renders a confirm card', async () => {
-    const action = { kind: 'save' } as const;
-    const { onAction } = show([
+  it('renders a confirm card without anything to press', () => {
+    show([
       withCard({
         kind: 'confirm',
         title: 'Save this dataset?',
-        confirmAction: action,
+        confirmAction: { kind: 'save' },
       }),
     ]);
 
-    await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
-
-    expect(onAction).toHaveBeenCalledWith(action);
+    expect(screen.getByText('Save this dataset?')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('renders a conflict card with its counts', () => {
@@ -145,41 +123,23 @@ describe('cards', () => {
     expect(screen.getAllByText('ORD-1').length).toBeGreaterThan(0);
   });
 
-  it('renders an API error with its retry', async () => {
+  it('renders an API error and says how to re-send it', () => {
     const diagnosis = diagnose({
       code: 'DATASET_UNSUPPORTED_STORAGE_TYPE',
       error:
         'The storage type "lake_house" is not available. Please use one of the available storage types: realtime_store',
     });
-    const { onAction } = show([withCard({ kind: 'api_error', diagnosis })]);
+    show([withCard({ kind: 'api_error', diagnosis })]);
 
-    await userEvent.click(screen.getByRole('button', { name: /retry/i }));
-
-    expect(onAction).toHaveBeenCalledWith(diagnosis.retryAction);
-  });
-
-  it('renders a file drop and reports the rows it parsed', async () => {
-    const { onRows } = show([withCard({ kind: 'file_drop' })]);
-
-    await userEvent.upload(
-      screen.getByLabelText(/choose a sample file/i),
-      new File(['[{"order_id":"ORD-1"}]'], 'orders.json', {
-        type: 'application/json',
-      }),
-    );
-
-    // The card reads the file through FileReader, so the call is asynchronous.
-    await waitFor(() => expect(onRows).toHaveBeenCalled());
+    expect(screen.getByRole('alert')).toHaveTextContent(/try again/i);
   });
 
   /**
-   * Every card kind must be reachable, or an action would exist that the
-   * rule-only tier cannot offer. This fails when a kind is added to the union
-   * without a renderer.
+   * Every card kind must be reachable. This fails when a kind is added to
+   * the union without a renderer.
    */
   it('has a renderer for every card kind', () => {
     const samples: Record<CardKind, MessageCard> = {
-      file_drop: { kind: 'file_drop' },
       choice: { kind: 'choice', options: [] },
       confirm: {
         kind: 'confirm',
@@ -202,11 +162,7 @@ describe('cards', () => {
 
     Object.entries(samples).forEach(([kind, card]) => {
       const { unmount } = render(
-        <MessageList
-          messages={[withCard(card, { id: kind })]}
-          onAction={jest.fn()}
-          onSampleRows={jest.fn()}
-        />,
+        <MessageList messages={[withCard(card, { id: kind })]} />,
       );
 
       expect(screen.getByTestId(`card-${kind}`)).toBeInTheDocument();
@@ -215,42 +171,13 @@ describe('cards', () => {
   });
 });
 
-describe('an answered card', () => {
-  it('withdraws the buttons once the turn has been acted on', () => {
-    show([
-      withCard(
-        {
-          kind: 'choice',
-          options: [{ label: 'Skip', action: { kind: 'skip_connector' } }],
-        },
-        { action: { kind: 'skip_connector' } },
-      ),
-    ]);
-
-    expect(
-      screen.queryByRole('button', { name: 'Skip' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('keeps the buttons while the turn is still open', () => {
-    show([
-      withCard({
-        kind: 'choice',
-        options: [{ label: 'Skip', action: { kind: 'skip_connector' } }],
-      }),
-    ]);
-
-    expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
-  });
-});
-
 /**
- * Credentials travel through their own callback, not `onAction`, because an
- * action is recorded in the transcript.
+ * The credential form is the one thing left in the transcript with a button
+ * on it, and its credentials travel through their own callback: an action is
+ * recorded in the transcript, and a password must not be.
  */
 describe('a secret form card', () => {
   it('hands credentials to the secrets callback', async () => {
-    const onAction = jest.fn();
     const onSubmitSecrets = jest.fn();
 
     render(
@@ -262,8 +189,6 @@ describe('a secret form card', () => {
             connectorName: 'Postgres',
           }),
         ]}
-        onAction={onAction}
-        onSampleRows={jest.fn()}
         onSubmitSecrets={onSubmitSecrets}
         connectorUiSpec={{
           type: 'object',
@@ -286,7 +211,5 @@ describe('a secret form card', () => {
     expect(onSubmitSecrets).toHaveBeenCalledWith(
       expect.objectContaining({ source_database_pwd: 'hunter2' }),
     );
-    // The credential must never reach the action path.
-    expect(onAction).not.toHaveBeenCalled();
   });
 });

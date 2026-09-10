@@ -9,7 +9,7 @@
 import { ACCEPTS, Prompt } from './agenda';
 import { Action } from './actions';
 import { ExecutionOutcome } from './executor';
-import { answerTo } from './answer';
+import { answerTo, isAffirmative, isNegative } from './answer';
 import { FieldVocabulary } from './fieldVocabulary';
 import {
   NOTHING_TO_UNDO,
@@ -19,6 +19,7 @@ import {
   narrateUndo,
 } from './narrate';
 import { countDuplicates, evaluateExpression } from './preflight';
+import { unmetForAction, unmetForUtterance } from './prerequisites';
 import { isAboutDataset } from './topicality';
 import { sectionForAction } from './previewFocus';
 import { MessageCard } from '../messages/types';
@@ -41,6 +42,11 @@ export interface TurnDeps {
   connectorsUnavailable?: boolean;
   /** The chosen connector's non-secret property keys. */
   connectorProperties?: string[];
+  /**
+   * False before `datasets/create` has run, when there is no document to
+   * change. Defaults to true, since every turn after the first has one.
+   */
+  datasetExists?: boolean;
   /**
    * The question the assistant has on the table, when it has one.
    *
@@ -152,6 +158,63 @@ const dedupWarning = (action: Action, deps: TurnDeps): string => {
   return ` In your sample, ${duplicates} of ${total} row${
     total === 1 ? '' : 's'
   } would be dropped as duplicates.`;
+};
+
+/**
+ * What the flow has so far, for deciding whether a request can be honoured.
+ *
+ * A schema is what makes a field nameable, so its presence is read off the
+ * vocabulary rather than tracked separately — the two cannot then disagree.
+ */
+const stateOf = (deps: TurnDeps) => ({
+  hasDataset: deps.datasetExists ?? true,
+  hasSchema: deps.vocabulary.paths.length > 0,
+});
+
+/**
+ * The proposal waiting on a yes, when one is.
+ *
+ * A proposal is live only while it is the most recent thing the assistant
+ * said: once anything else has happened, "yes" cannot be about it any more.
+ * Reading it from the transcript rather than holding it in state keeps the
+ * turn loop free of memory the session would have to persist.
+ */
+const pendingConfirmation = (history: Message[] = []): Action | undefined => {
+  const last = [...history]
+    .reverse()
+    .find((message) => message.role === 'assistant');
+
+  return last?.card?.kind === 'confirm' && !last.action
+    ? last.card.confirmAction
+    : undefined;
+};
+
+/** Ways of asking for the last failure to be sent again. */
+const RETRIES =
+  /^(?:try (?:that |it )?again|retry(?: that| it)?|resend(?: it| that)?|send (?:it|that) again|do it again)\b/i;
+
+/**
+ * What to send when the user asks to try again.
+ *
+ * The diagnosis often knows better than the user does: a store the cluster
+ * does not have comes back with a *corrected* action naming the store it
+ * does, and re-sending the original would fail identically. So the
+ * correction wins where there is one, and the failed action is the fallback
+ * for an ordinary transient failure.
+ */
+const retryTarget = (history: Message[] = []): Action | undefined => {
+  const failed = [...history]
+    .reverse()
+    .find((message) => message.failureCode && (message.action || message.card));
+
+  if (!failed) return undefined;
+
+  const corrected =
+    failed.card?.kind === 'api_error'
+      ? failed.card.diagnosis.retryAction
+      : undefined;
+
+  return corrected ?? failed.action;
 };
 
 const runAction = async (
@@ -342,6 +405,56 @@ export const runTurn = async (
   const said: NewMessage = { role: 'user', text: input };
 
   /**
+   * A proposal is answered in words, since there is nothing to click.
+   *
+   * It is read before the agenda's own question because a proposal is the
+   * more recent thing asked: "yes" right after "shall I deduplicate on
+   * order_id?" is about that, whatever question the agenda still holds.
+   * Anything that is neither a yes nor a no abandons it and is treated as a
+   * fresh request — a proposal nobody answered is not a queue.
+   */
+  const proposed = pendingConfirmation(deps.history);
+
+  if (proposed && isAffirmative(input)) {
+    const { outcome, message } = await runAction(proposed, deps);
+
+    return { messages: [said, message], action: proposed, outcome };
+  }
+
+  if (proposed && isNegative(input)) {
+    return {
+      messages: [said, { role: 'assistant', text: 'Left it as it was.' }],
+    };
+  }
+
+  /**
+   * "Try again" re-sends what failed.
+   *
+   * The failed action is recorded on the message it failed in, so there is
+   * nothing to remember between turns: the transcript is the retry stack in
+   * the same way it is the undo stack.
+   */
+  if (RETRIES.test(input.trim())) {
+    const target = retryTarget(deps.history);
+
+    if (!target) {
+      return {
+        messages: [
+          said,
+          {
+            role: 'assistant',
+            text: 'There is nothing to try again — nothing has failed yet.',
+          },
+        ],
+      };
+    }
+
+    const { outcome, message } = await runAction(target, deps);
+
+    return { messages: [said, message], action: target, outcome };
+  }
+
+  /**
    * An answer to the question is acted on as it stands.
    *
    * It is tried before resolving because the question is better evidence
@@ -365,6 +478,35 @@ export const runTurn = async (
         connectorsUnavailable: deps.connectorsUnavailable,
         connectorProperties: deps.connectorProperties,
       });
+
+  /**
+   * A request the flow cannot honour yet is answered with what is missing.
+   *
+   * The user asked for this: any request at any point, and a reply that
+   * says what has to happen first rather than one that refuses. It is
+   * checked against the words too, not only against a resolved action —
+   * "dedup on order_id" before a sample resolves to nothing, because a
+   * dataset with no fields has no `order_id`, and "I did not understand
+   * that" would be both unhelpful and untrue.
+   */
+  const blocked =
+    resolution.status === 'resolved' && resolution.action
+      ? unmetForAction(resolution.action, stateOf(deps))
+      : unmetForUtterance(input, stateOf(deps));
+
+  if (blocked) {
+    return {
+      messages: [
+        said,
+        {
+          role: 'assistant',
+          text: blocked.text,
+          failureCode:
+            blocked.requirement === 'dataset' ? 'NO_DATASET' : 'NO_SCHEMA',
+        },
+      ],
+    };
+  }
 
   /**
    * An inferred action is proposed, not performed.
@@ -426,6 +568,7 @@ export const runTurn = async (
      * naming fields this dataset may not have.
      */
     const narration = narrateResolution(resolution, {
+      said: input,
       onTopic: isAboutDataset(input, deps.vocabulary),
       fieldPaths: deps.vocabulary.entries
         .filter((entry) => entry.isLeaf)

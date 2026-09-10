@@ -334,14 +334,18 @@ describe('the name question', () => {
     expect(prompt?.text).toMatch(/\?$/);
   });
 
-  it('offers an alternative after the id was taken', () => {
+  /**
+   * Said in the question rather than offered as something to click: the
+   * surface is a conversation, so a suggestion has to be a sentence.
+   */
+  it('names an alternative after the id was taken', () => {
     const prompt = nextPrompt({
       pending: {},
       lastName: 'My Orders',
       lastFailureCode: 'DATASET_ID_TAKEN',
     });
 
-    expect(prompt?.chips).toContain('My Orders 2');
+    expect(prompt?.text).toMatch(/My Orders 2/);
   });
 
   it('does not repeat the sentence the executor already said', () => {
@@ -364,7 +368,7 @@ describe('the name question', () => {
     });
 
     expect(prompt?.step).toBe('name');
-    expect(prompt?.chips ?? []).not.toContain('My Orders 2');
+    expect(prompt?.text).not.toMatch(/My Orders 2/);
   });
 });
 
@@ -388,11 +392,15 @@ describe('the sample question', () => {
     pending: { name: 'My Orders', datasetType: 'event' },
   };
 
-  it('carries a file drop', () => {
-    expect(nextPrompt(state)?.card).toMatchObject({ kind: 'file_drop' });
+  it('carries no card, since there is nothing to click', () => {
+    expect(nextPrompt(state)?.card).toBeUndefined();
   });
 
-  it('offers the connectors as chips when the list is known', () => {
+  it('says how to supply the data without offering a button', () => {
+    expect(nextPrompt(state)?.text).toMatch(/paste|drop/i);
+  });
+
+  it('names the connectors it could pull from when the list is known', () => {
     const prompt = nextPrompt({
       ...state,
       connectorsAvailable: [
@@ -401,12 +409,13 @@ describe('the sample question', () => {
       ],
     });
 
-    expect(prompt?.chips).toEqual(['use PostgreSQL', 'use Kafka']);
+    expect(prompt?.text).toMatch(/PostgreSQL/);
+    expect(prompt?.text).toMatch(/Kafka/);
   });
 
-  it('offers no connector chips when the list could not be read', () => {
-    // Offering a connector that cannot be listed produces a dead end.
-    expect(nextPrompt(state)?.chips ?? []).toEqual([]);
+  it('mentions no connector when the list could not be read', () => {
+    // Naming a connector that cannot be listed produces a dead end.
+    expect(nextPrompt(state)?.text).not.toMatch(/connector/i);
   });
 });
 

@@ -149,10 +149,12 @@ const say = async (text: string) => {
 };
 
 /**
- * Supplies the sample through the paste path, as a user would.
+ * Supplies the sample by pasting it into the composer, as a user would.
  *
- * `user-event` is v13 here, where `paste` takes the element rather than
- * relying on focus.
+ * There is no drop card and no paste box any more: data typed or pasted into
+ * the conversation is recognised as data, described back, and used only once
+ * the user says yes. `user-event` is v13 here, where `paste` takes the
+ * element rather than relying on focus.
  */
 const pasteSample = async (rows: unknown[]) => {
   await waitFor(
@@ -161,32 +163,30 @@ const pasteSample = async (rows: unknown[]) => {
     { timeout: SETTLE },
   );
 
-  /**
-   * The drop card belongs to the sample *question*, so it appears when the
-   * assistant asks for a sample — not before. Between the name and that
-   * question stands the type, so it is answered here rather than at nine
-   * call sites, and only when it is what is actually on the table.
-   */
-  if (!screen.queryByLabelText(/paste json/i)) {
-    const event = screen.queryByRole('button', { name: /^Event$/ });
-
-    if (event) {
-      await userEvent.click(event);
-      await waitFor(
-        () =>
-          expect(
-            screen.queryByText(/working on that/i),
-          ).not.toBeInTheDocument(),
-        { timeout: SETTLE },
-      );
-    }
+  /*
+    The type question stands between the name and the sample. Pasting would
+    be recognised whatever is on the table, but answering in order is what a
+    user does — and the type is what `create` is told the dataset is.
+  */
+  if (screen.queryByText(/what kind of data is it/i)) {
+    await say('event');
   }
 
-  const box = await screen.findByLabelText(/paste json/i);
+  const box = composer();
 
   await userEvent.click(box);
   userEvent.paste(box, JSON.stringify(rows));
-  await userEvent.click(screen.getByRole('button', { name: /use this/i }));
+
+  const send = screen.getByRole('button', { name: /send/i });
+  await waitFor(() => expect(send).toBeEnabled());
+  await userEvent.click(send);
+
+  await waitFor(
+    () => expect(screen.getByText(/use it as the sample/i)).toBeInTheDocument(),
+    { timeout: SETTLE },
+  );
+
+  await say('yes');
 };
 
 const transcript = () =>
@@ -395,23 +395,22 @@ describe('editing the schema by instruction', () => {
     expect(JSON.stringify(api.dataset('my-orders')?.data_schema)).toBe(before);
   });
 
-  /** Ambiguity is offered as buttons, not prose the user must retype. */
-  it('offers the candidates when a field name is ambiguous', async () => {
+  /** Ambiguity is listed, so the answer is a field name rather than a retype. */
+  it('names the candidates when a field name is ambiguous', async () => {
     await withDraft();
 
     await say('set id to string');
 
     expect(lastReply()).toMatch(/which field/i);
-    expect(
-      screen.getByRole('button', { name: 'order_id' }),
-    ).toBeInTheDocument();
+    // Named in the card, and also present in the preview's field table.
+    expect(screen.getAllByText('order_id').length).toBeGreaterThan(0);
   });
 
-  it('applies the candidate that was clicked', async () => {
+  it('applies the candidate that was named', async () => {
     await withDraft();
     await say('set id to string');
 
-    await userEvent.click(screen.getByRole('button', { name: 'order_id' }));
+    await say('order_id');
 
     await waitFor(() => {
       const properties = api.dataset('my-orders')?.data_schema
@@ -501,18 +500,20 @@ describe('processing and storage', () => {
     await say('enable the lakehouse');
 
     expect(lastReply()).toMatch(/does not have Data Lakehouse/i);
+    // More than one alert is on screen — the preview warns too — so the
+    // error card is found by what it says.
     expect(
-      screen.getByRole('button', { name: /retry with the available option/i }),
-    ).toBeInTheDocument();
+      screen
+        .getAllByRole('alert')
+        .some((alert) => /try again/i.test(alert.textContent ?? '')),
+    ).toBe(true);
   });
 
-  it('applies the retry it offered', async () => {
+  it('applies the retry it offered when asked in words', async () => {
     await withDraft();
     await say('enable the lakehouse');
 
-    await userEvent.click(
-      screen.getByRole('button', { name: /retry with the available option/i }),
-    );
+    await say('try again');
 
     await waitFor(() =>
       expect(

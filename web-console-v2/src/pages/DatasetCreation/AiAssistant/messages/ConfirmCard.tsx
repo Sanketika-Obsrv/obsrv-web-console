@@ -1,33 +1,20 @@
-import {
-  Button,
-  List,
-  ListItem,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { List, ListItem, Paper, Stack, Typography } from '@mui/material';
 import React from 'react';
-import { Action } from '../engine/actions';
 
 export interface ConfirmCardProps {
   title: string;
-  /** What is about to be written, so the user is not confirming blind. */
+  /** What is about to be written, so nothing is agreed to blind. */
   summary?: string[];
-  confirmLabel?: string;
-  confirmAction: Action;
-  onAction: (action: Action) => void;
-  onCancel?: () => void;
 }
 
-/** Explicit confirmation for a step that changes the dataset's status. */
-const ConfirmCard: React.FC<ConfirmCardProps> = ({
-  title,
-  summary,
-  confirmLabel = 'Save',
-  confirmAction,
-  onAction,
-  onCancel,
-}) => (
+/**
+ * What is about to happen, waiting on a yes.
+ *
+ * The confirming action stays on the message rather than on a button: a
+ * typed "yes" is matched against it, and "no" abandons it. Confirming is
+ * still explicit — it is the wording that changed, not the safeguard.
+ */
+const ConfirmCard: React.FC<ConfirmCardProps> = ({ title, summary }) => (
   <Paper variant="outlined" sx={{ p: 1.5 }}>
     <Stack spacing={1}>
       <Typography variant="subtitle2">{title}</Typography>
@@ -44,18 +31,9 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({
         </List>
       )}
 
-      <Stack direction="row" spacing={1}>
-        <Button
-          size="small"
-          variant="contained"
-          onClick={() => onAction(confirmAction)}
-        >
-          {confirmLabel}
-        </Button>
-        <Button size="small" onClick={onCancel}>
-          Cancel
-        </Button>
-      </Stack>
+      <Typography variant="caption" component="p" color="text.secondary">
+        Say yes to go ahead, or no to leave it.
+      </Typography>
     </Stack>
   </Paper>
 );

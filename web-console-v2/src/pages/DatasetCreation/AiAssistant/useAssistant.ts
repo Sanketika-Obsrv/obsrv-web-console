@@ -38,7 +38,9 @@ import {
   buildFieldVocabulary,
 } from './engine/fieldVocabulary';
 import { AgendaState, Prompt, askMessage, nextPrompt } from './engine/agenda';
+import { looksLikeData, summariseSample } from './engine/pastedData';
 import { awaitingInput, runTurn } from './engine/turn';
+import { readSampleFile } from './messages/sampleParse';
 import {
   LoadProgress,
   ModelEngine,
@@ -58,7 +60,6 @@ import {
   reportSessionStart,
 } from './telemetry';
 import { stepAfterAction } from './engine/previewFocus';
-import { OPENING_SUGGESTIONS, fallbackSuggestions } from './suggestions';
 import { usePreviewFocus } from './usePreviewFocus';
 
 export interface AssistantApi {
@@ -69,12 +70,13 @@ export interface AssistantApi {
   resumable: ReturnType<typeof useSession>['resumable'];
   currentSessionId?: string;
   busy: boolean;
-  suggestions: string[];
   focusSection: ReturnType<typeof usePreviewFocus>['focusSection'];
   changedRefs: ReturnType<typeof usePreviewFocus>['changedRefs'];
   send: (text: string) => Promise<void>;
   dispatch: (action: Action) => Promise<void>;
   attachSample: (rows: Record<string, unknown>[], file: File) => Promise<void>;
+  /** Offers a dropped or pasted sample, to be confirmed before it is used. */
+  offerSample: (file: File, pasted?: boolean) => Promise<void>;
   /** Hands connector credentials straight to the API; never an action. */
   submitSecrets: (secrets: Record<string, unknown>) => Promise<void>;
   /** The chosen connector's schema, read live rather than carried by a card. */
@@ -141,16 +143,15 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     { dataset_id: string; name?: string }[] | undefined
   >();
 
-  /** The question currently on the table, for the composer's chips. */
-  const [prompt, setPrompt] = useState<Prompt | undefined>();
   /**
-   * The same question, in a ref.
+   * The question currently on the table.
    *
-   * A turn reads it from here rather than from state, because a turn can
-   * follow the one before it without a render in between — and a stale
-   * question means the answer is read against the *previous* one. Found in
-   * the end-to-end test, where "Event" answered the type question and was
-   * written as the dataset's name.
+   * A ref rather than state: nothing renders it — the question is a message
+   * in the transcript like any other — and a turn can follow the one before
+   * it without a render in between, where a stale question would mean the
+   * answer is read against the *previous* one. Found in the end-to-end test,
+   * where "Event" answered the type question and was written as the
+   * dataset's name.
    */
   const asked = useRef<Prompt | undefined>(undefined);
 
@@ -398,7 +399,6 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     const next = nextPrompt(await agendaState(fresh));
 
     asked.current = next;
-    setPrompt(next);
     if (next) await session.append(askMessage(next));
 
     return next;
@@ -436,7 +436,6 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       const resumed = nextPrompt(await agendaState(current));
 
       asked.current = resumed;
-      setPrompt(resumed);
     })();
   }, [agendaState, askNext, busy, session]);
 
@@ -463,6 +462,10 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
 
         const result = await runTurn(input, {
           vocabulary,
+          // False before `datasets/create` has run, so a request that needs
+          // a document to change is answered with what is missing rather
+          // than attempted against nothing.
+          datasetExists: Boolean(datasetId),
           // What was asked, so a typed answer is read as an answer.
           ...(asked.current ? { prompt: asked.current } : {}),
           connectors,
@@ -790,6 +793,92 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     [run, session],
   );
 
+  /**
+   * Offers a sample the user supplied, rather than using it.
+   *
+   * Both ways in — dropping a file on the pane, pasting rows into the box —
+   * land here. The rows are parsed locally and *described* back; nothing is
+   * sent until the user says yes, because a sample is their own data and a
+   * truncated or misparsed paste is worth catching before it becomes the
+   * schema. The confirmation is an ordinary `confirm` card, so the typed
+   * "yes" that answers it is the one that answers any other proposal.
+   */
+  const offerSample = useCallback(
+    async (file: File, pasted = false) => {
+      if (!session.session || busy) return;
+
+      setBusy(true);
+
+      try {
+        const parsed = await readSampleFile(file);
+
+        /*
+          What is recorded is the description, not the data. A pasted sample
+          can be a megabyte of the user's own records, and the transcript is
+          persisted and exportable — so the turn says what arrived, and the
+          rows live only in the session's capped, expiring sample slot.
+        */
+        await session.append({
+          role: 'user',
+          text: pasted
+            ? parsed.ok
+              ? `Pasted ${summariseSample(parsed.rows)}.`
+              : 'Pasted something I could not read.'
+            : `Dropped ${file.name}.`,
+        });
+
+        if (!parsed.ok) {
+          await session.append({
+            role: 'assistant',
+            text: `${parsed.error} A sample has to be JSON or JSONL — an array of records, or one record per line.`,
+            failureCode: 'MISSING_SAMPLE',
+          });
+          return;
+        }
+
+        // Held here so the create call has the file, and in the session so
+        // the local checks — duplicate counts, expressions — have the rows.
+        sample.current = { file, rows: parsed.rows };
+        await session.setSampleRows(parsed.rows);
+
+        await session.append({
+          role: 'assistant',
+          text: `That looks like ${summariseSample(parsed.rows)}. Use it as the sample?`,
+          card: {
+            kind: 'confirm',
+            title: `Use ${file.name} as the sample`,
+            confirmAction: { kind: 'attach_sample', fileName: file.name },
+          },
+        });
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, session],
+  );
+
+  /**
+   * What the user typed.
+   *
+   * Data is recognised before anything else looks at it: a pasted JSON array
+   * is a sample, not an instruction, and handing it to the resolver would
+   * get it refused as gibberish. Everything else is an ordinary turn.
+   */
+  const send = useCallback(
+    async (text: string) => {
+      if (!looksLikeData(text)) {
+        await run(text);
+        return;
+      }
+
+      await offerSample(
+        new File([text], 'pasted-sample.json', { type: 'application/json' }),
+        true,
+      );
+    },
+    [offerSample, run],
+  );
+
   return {
     datasetId,
     messages: session.messages,
@@ -800,24 +889,12 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     // Restoring counts as busy, so the composer is disabled rather than
     // accepting an instruction it would silently drop.
     busy: busy || session.loading,
-    /**
-     * Chips for the question being asked.
-     *
-     * The static lists were a guess at what the user might want to say next.
-     * The agenda knows, so they are only a fallback for a turn that is not on
-     * the agenda — an undo, or a free instruction after everything is
-     * answered.
-     */
-    suggestions: prompt?.chips?.length
-      ? prompt.chips
-      : vocabulary.paths.length > 0
-        ? fallbackSuggestions(vocabulary)
-        : OPENING_SUGGESTIONS,
     focusSection,
     changedRefs,
-    send: run,
+    send,
     dispatch: run,
     attachSample,
+    offerSample,
     submitSecrets,
     connectorUiSpec: uiSpec,
     modelCapability: capability,

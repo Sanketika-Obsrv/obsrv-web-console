@@ -1,7 +1,7 @@
 /**
  * The preview's own rendering is covered by `PreviewPane.test.tsx` and
  * `AllConfigurations.focus.test.tsx`. Here both panes are stubbed so these
- * tests can assert the one thing only the page owns: that an action dispatched
+ * tests can assert the one thing only the page owns: that an action resolved
  * in the chat reaches the preview.
  */
 jest.mock('pages/DatasetCreation/PreviewAndSave/AllConfigurations', () => ({
@@ -19,11 +19,11 @@ jest.mock('./ChatPane', () => ({
   __esModule: true,
   default: ({
     datasetId,
-    onAction,
+    onSend,
     busy,
   }: {
     datasetId: string | null;
-    onAction?: (action: Record<string, unknown>) => void;
+    onSend?: (text: string) => void;
     busy?: boolean;
   }) => (
     // `data-busy` mirrors what the real pane uses to disable its composer:
@@ -31,17 +31,15 @@ jest.mock('./ChatPane', () => ({
     // so a test has to wait for readiness just as a user would.
     <div data-busy={busy ? 'true' : 'false'}>
       <span>{datasetId ?? 'New dataset'}</span>
+      {/*
+        Typed, because typing is the only way in now: the panes are stubbed,
+        so this stands in for the composer rather than for a card's button.
+      */}
       <button
         type="button"
-        onClick={() =>
-          onAction?.({
-            kind: 'set_data_type',
-            path: 'total_amount',
-            dataType: 'string',
-          })
-        }
+        onClick={() => onSend?.('set total_amount to string')}
       >
-        dispatch
+        say
       </button>
     </div>
   ),
@@ -82,9 +80,21 @@ beforeEach(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
 
-  (getAllFields as jest.MockedFunction<typeof getAllFields>)
+  // A field to name, since instructions are typed: with no vocabulary the
+  // resolver declines every field, which is the safe direction but not what
+  // these tests are about.
+  (getAllFields as jest.MockedFunction<typeof getAllFields>).mockResolvedValue({
+    data: [
+      [
+        {
+          column: 'total_amount',
+          data_type: 'double',
+          arrival_format: 'number',
+        },
+      ],
+    ],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .mockResolvedValue({ data: [[]] } as any);
+  } as any);
 
   (
     executeAction as jest.MockedFunction<typeof executeAction>
@@ -150,12 +160,12 @@ describe('AiAssistantPage', () => {
 });
 
 /** T11's acceptance criterion, end to end through the real wiring. */
-describe('an action dispatched in the chat moves the preview', () => {
+describe('an instruction typed in the chat moves the preview', () => {
   it('sends the action to the executor', async () => {
     renderAt('/dataset/ai/my-orders');
     await waitUntilReady();
 
-    await userEvent.click(screen.getByRole('button', { name: 'dispatch' }));
+    await userEvent.click(screen.getByRole('button', { name: 'say' }));
 
     await waitFor(() =>
       expect(executeAction).toHaveBeenCalledWith(
@@ -171,7 +181,7 @@ describe('an action dispatched in the chat moves the preview', () => {
 
     expect(configurations()).toHaveAttribute('data-focus-section', '');
 
-    await userEvent.click(screen.getByRole('button', { name: 'dispatch' }));
+    await userEvent.click(screen.getByRole('button', { name: 'say' }));
 
     await waitFor(() =>
       expect(configurations()).toHaveAttribute(
@@ -185,7 +195,7 @@ describe('an action dispatched in the chat moves the preview', () => {
     renderAt('/dataset/ai/my-orders');
     await waitUntilReady();
 
-    await userEvent.click(screen.getByRole('button', { name: 'dispatch' }));
+    await userEvent.click(screen.getByRole('button', { name: 'say' }));
 
     await waitFor(() =>
       expect(configurations()).toHaveAttribute(

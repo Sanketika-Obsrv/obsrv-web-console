@@ -1,6 +1,5 @@
-import { Alert, Button, Chip, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Chip, Paper, Stack, Typography } from '@mui/material';
 import React from 'react';
-import { Action } from '../engine/actions';
 import { ConflictCandidate } from './types';
 
 export interface ConflictCardProps {
@@ -8,22 +7,21 @@ export interface ConflictCardProps {
   candidates: ConflictCandidate[];
   /** How many observed values the API's recommendation would narrow. */
   valuesAtRisk?: number;
-  onAction: (action: Action) => void;
 }
 
 /**
- * Resolves a datatype conflict against the counts the API actually reported.
+ * A datatype conflict, with the counts the API actually reported.
  *
  * The wizard shows a "Recommended Change" button and nothing else, so a
- * recommendation that truncates most of the observed values looks identical to
- * one that costs nothing. The counts and the warning are the point of this
- * card — both come from the API's own conflict message.
+ * recommendation that truncates most of the observed values looks identical
+ * to one that costs nothing. The counts and the warning are the point of this
+ * card, and they stay — dense numbers read badly as a sentence. What went is
+ * the row of buttons: the type is named in words.
  */
 const ConflictCard: React.FC<ConflictCardProps> = ({
   path,
   candidates,
   valuesAtRisk,
-  onAction,
 }) => (
   <Paper variant="outlined" sx={{ p: 1.5 }}>
     <Stack spacing={1}>
@@ -39,7 +37,7 @@ const ConflictCard: React.FC<ConflictCardProps> = ({
         </Alert>
       )}
 
-      <Stack spacing={1}>
+      <Stack spacing={0.5}>
         {candidates.map((candidate) => (
           <Stack
             key={candidate.dataType}
@@ -49,20 +47,9 @@ const ConflictCard: React.FC<ConflictCardProps> = ({
             flexWrap="wrap"
             useFlexGap
           >
-            <Button
-              size="small"
-              variant={candidate.isSafest ? 'contained' : 'outlined'}
-              onClick={() =>
-                onAction({
-                  kind: 'resolve_conflict',
-                  path,
-                  mode: 'apply',
-                  dataType: candidate.dataType,
-                })
-              }
-            >
+            <Typography variant="body2" fontWeight="medium">
               {candidate.dataType}
-            </Button>
+            </Typography>
 
             {candidate.count !== undefined && (
               <Typography
@@ -87,20 +74,13 @@ const ConflictCard: React.FC<ConflictCardProps> = ({
       </Stack>
 
       {/*
-        Dismissing marks the conflict resolved without changing the type, i.e.
-        keeping whatever the API already decided. Offered because leaving a
-        conflict unresolved blocks the save.
+        Keeping the current type marks the conflict resolved without changing
+        anything, which is worth saying: an unresolved conflict blocks the
+        save, so "leave it" has to be a reachable answer.
       */}
-      <Button
-        size="small"
-        variant="text"
-        sx={{ alignSelf: 'flex-start' }}
-        onClick={() =>
-          onAction({ kind: 'resolve_conflict', path, mode: 'dismiss' })
-        }
-      >
-        Keep the current type
-      </Button>
+      <Typography variant="caption" component="p" color="text.secondary">
+        Tell me which it should be, or say &quot;keep the current type&quot;.
+      </Typography>
     </Stack>
   </Paper>
 );

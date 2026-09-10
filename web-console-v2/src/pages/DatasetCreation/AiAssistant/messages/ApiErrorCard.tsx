@@ -1,11 +1,9 @@
-import { Alert, AlertTitle, Button, Stack, Typography } from '@mui/material';
-import React, { useState } from 'react';
-import { Action } from '../engine/actions';
+import { Alert, AlertTitle, Typography } from '@mui/material';
+import React from 'react';
 import { Diagnosis } from '../engine/errorMap';
 
 export interface ApiErrorCardProps {
   diagnosis: Diagnosis;
-  onAction: (action: Action) => void;
 }
 
 /** Severity by what the user can do about it, not by HTTP status. */
@@ -31,12 +29,17 @@ const TITLE: Record<Diagnosis['recovery'], string> = {
  * A failed action, explained.
  *
  * The failure this replaces is a storage step that appeared to save and did
- * not, so the card leads with the explanation and offers the corrected retry
- * the diagnosis derived. The server's own message is kept behind "Details"
- * rather than led with: it names internal storage types and JSON pointers.
+ * not, so the card leads with the explanation. The retry used to be a button
+ * and is now a sentence: a failure is the moment the user most needs to know
+ * what to say next, and there is nothing to press anywhere in this
+ * conversation.
+ *
+ * The server's own message stays behind a disclosure rather than being led
+ * with — it names internal storage types and JSON pointers, and there is no
+ * reason for a screen reader to read it out unprompted. A disclosure reveals
+ * text; it does nothing to the dataset.
  */
-const ApiErrorCard: React.FC<ApiErrorCardProps> = ({ diagnosis, onAction }) => {
-  const [showDetail, setShowDetail] = useState(false);
+const ApiErrorCard: React.FC<ApiErrorCardProps> = ({ diagnosis }) => {
   const { retryAction, detail } = diagnosis;
 
   return (
@@ -44,35 +47,24 @@ const ApiErrorCard: React.FC<ApiErrorCardProps> = ({ diagnosis, onAction }) => {
       <AlertTitle>{TITLE[diagnosis.recovery]}</AlertTitle>
       <Typography variant="body2">{diagnosis.explanation}</Typography>
 
-      <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-        {retryAction && (
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => onAction(retryAction)}
-          >
-            Retry with the available option
-          </Button>
-        )}
-        {detail && (
-          <Button size="small" onClick={() => setShowDetail(!showDetail)}>
-            Details
-          </Button>
-        )}
-      </Stack>
+      {(retryAction || diagnosis.recovery === 'retry') && (
+        <Typography variant="body2" sx={{ mt: 1 }}>
+          {retryAction
+            ? 'Say "try again" and I will retry with the available option.'
+            : 'Say "try again" and I will send it again.'}
+        </Typography>
+      )}
 
-      {/*
-        Rendered only when asked for, rather than collapsed: the server's
-        message names internal storage types and JSON pointers, and there is
-        no reason for a screen reader to read it out unprompted.
-      */}
-      {detail && showDetail && (
-        <Typography
-          variant="caption"
-          component="pre"
-          sx={{ mt: 1, whiteSpace: 'pre-wrap' }}
-        >
-          {detail}
+      {detail && (
+        <Typography variant="caption" component="details" sx={{ mt: 1 }}>
+          <summary>Details</summary>
+          <Typography
+            variant="caption"
+            component="pre"
+            sx={{ whiteSpace: 'pre-wrap' }}
+          >
+            {detail}
+          </Typography>
         </Typography>
       )}
     </Alert>

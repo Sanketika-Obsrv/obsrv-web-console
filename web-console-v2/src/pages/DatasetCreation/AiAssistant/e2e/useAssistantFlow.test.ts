@@ -363,14 +363,15 @@ describe('joining to a master dataset', () => {
 });
 
 /**
- * T24's acceptance criterion: a dataset created without the user composing a
- * single instruction.
+ * T24's acceptance criterion, restated for a surface with nothing to click:
+ * a dataset created by typing alone.
  *
- * The loop answers whatever is asked — clicking the first option of every
- * choice, resolving each conflict, dropping the sample when asked for one —
- * and stops when the agenda has nothing left. Nothing here knows the order of
- * the questions, which is the point: if a step stops being reachable by
- * answering, this fails.
+ * The loop answers whatever is asked — the label of an option, the name of a
+ * type, "yes" — and hands over a file only for the sample, which cannot be
+ * typed. Nothing here knows the order of the questions, which is the point:
+ * if a step stops being reachable by answering, this fails. There used to be
+ * a second walk that clicked its way through instead; there is nothing left
+ * to click, so the typed walk is the only one.
  */
 describe('creating a dataset by answering only', () => {
   const ROWS = [
@@ -388,137 +389,21 @@ describe('creating a dataset by answering only', () => {
     },
   ];
 
-  it('reaches a saved dataset', async () => {
-    const { result } = renderHook(() => useAssistant(null));
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    const asked = (): Message | undefined =>
-      result.current.messages[result.current.messages.length - 1];
-
-    /** The questions answered, so a stuck agenda is reported as itself. */
-    const answered: string[] = [];
-
-    /**
-     * Waits for the previous turn to finish before answering the next
-     * question.
-     *
-     * Ordering matters more than it looks: `run` drops input while it is busy
-     * — deliberately, so a double click cannot write twice — so answering too
-     * early is silently ignored and the loop then waits for a turn that never
-     * started. Quiet first, then answer, then wait for the transcript to
-     * grow.
-     */
-    const quiet = () => waitFor(() => expect(result.current.busy).toBe(false));
-
-    const grew = (before: number) =>
-      waitFor(() =>
-        expect(result.current.messages.length).toBeGreaterThan(before),
-      );
-
-    for (let turn = 0; turn < 25; turn += 1) {
-      await quiet();
-
-      const question = asked();
-      const card = question?.card;
-      const before = result.current.messages.length;
-
-      if (!card) {
-        // Only the name question expects prose.
-        if (!/call this dataset/i.test(question?.text ?? '')) break;
-
-        answered.push('name');
-        await result.current.send('call it My Orders');
-        await grew(before);
-        continue;
-      }
-
-      if (card.kind === 'file_drop') {
-        answered.push('sample');
-        await result.current.attachSample(
-          ROWS as unknown as Record<string, unknown>[],
-          new File([JSON.stringify(ROWS)], 'orders.json', {
-            type: 'application/json',
-          }),
-        );
-      } else if (card.kind === 'choice') {
-        answered.push(card.options[0].label);
-        await result.current.dispatch(card.options[0].action);
-      } else if (card.kind === 'conflict') {
-        answered.push(`conflict:${card.path}`);
-        await result.current.dispatch({
-          kind: 'resolve_conflict',
-          path: card.path,
-          mode: 'apply',
-          ...(card.candidates.find((entry) => entry.isSafest)?.dataType
-            ? {
-                dataType: card.candidates.find((entry) => entry.isSafest)!
-                  .dataType,
-              }
-            : {}),
-        });
-      } else if (card.kind === 'confirm') {
-        answered.push('save');
-        await result.current.dispatch(card.confirmAction);
-        break;
-      } else {
-        break;
-      }
-
-      await waitFor(() => expect(result.current.busy).toBe(false));
-    }
-
-    // Asserted on the joined path so a failure names the question it stopped
-    // on rather than only reporting a missing status.
-    expect(answered.join(' -> ')).toContain('save');
-
-    /**
-     * The real-time store is the first storage option, and it makes
-     * `timestamp_key` mandatory. So reaching `save` at all proves the keys
-     * question was asked *and* answered — which is the bug this flow existed
-     * to fix, checked here in the flow rather than only in the agenda's unit
-     * tests.
-     */
-    expect(answered).toContain('order_ts');
-    expect(
-      (
-        api.dataset('my-orders')?.dataset_config as {
-          keys_config?: { timestamp_key?: string };
-        }
-      )?.keys_config?.timestamp_key,
-    ).toBe('order_ts');
-
-    // A storage key has to be present in every event, so the wizard marks it
-    // required. An assistant-built dataset that skipped this would validate
-    // differently from a wizard-built one.
-    expect(
-      (
-        api.dataset('my-orders')?.data_schema as {
-          properties?: Record<string, { isRequired?: boolean }>;
-        }
-      )?.properties?.order_ts?.isRequired,
-    ).toBe(true);
-
-    await waitFor(() =>
-      expect(api.dataset('my-orders')?.status).toBe('ReadyToPublish'),
-    );
-  });
-
-  /**
-   * The same walk, typed rather than clicked.
-   *
-   * Every answer is sent as text — the label of the option, the name of the
-   * type, "yes" — and only the sample is handed over as a file, because a
-   * file cannot be typed. What this proves beyond the loop above is that a
-   * typed answer is *acted on*: if any of them fell through to the resolver
-   * and came back as "I think you mean", the transcript would carry a second
-   * confirmation card and the count below would be wrong.
-   */
   it('reaches a saved dataset when every answer is typed', async () => {
     const { result } = renderHook(() => useAssistant(null));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
+    /**
+     * Waits for the previous turn to finish before answering the next
+     * question.
+     *
+     * Ordering matters more than it looks: `run` drops input while it is
+     * busy — deliberately, so two writes cannot race — so answering too
+     * early is silently ignored and the loop then waits for a turn that
+     * never started. Quiet first, then answer, then wait for the transcript
+     * to grow.
+     */
     const quiet = () => waitFor(() => expect(result.current.busy).toBe(false));
     const grew = (before: number) =>
       waitFor(() =>
@@ -536,9 +421,11 @@ describe('creating a dataset by answering only', () => {
       const card = question?.card;
       const before = result.current.messages.length;
 
-      if (card?.kind === 'file_drop') {
-        await result.current.attachSample(
-          ROWS as unknown as Record<string, unknown>[],
+      // The sample question carries no card any more: a sample is dropped on
+      // the pane or pasted into the box, and either way it is offered for
+      // confirmation before it is used.
+      if (!card && /sample of the data/i.test(question?.text ?? '')) {
+        await result.current.offerSample(
           new File([JSON.stringify(ROWS)], 'orders.json', {
             type: 'application/json',
           }),
@@ -564,8 +451,9 @@ describe('creating a dataset by answering only', () => {
       /**
        * A question that comes back after being answered is a stuck agenda,
        * and spinning through the turn budget hides which question it was.
+       * "yes" is exempt: it answers both the sample offer and the save.
        */
-      if (typed.filter((said) => said === say).length >= 2) {
+      if (say !== 'yes' && typed.filter((said) => said === say).length >= 2) {
         throw new Error(`The same question was asked three times: ${say}`);
       }
 
@@ -573,20 +461,51 @@ describe('creating a dataset by answering only', () => {
       await result.current.send(say);
       await grew(before);
 
-      if (card?.kind === 'confirm') break;
+      if (card?.kind === 'confirm' && card.confirmAction.kind === 'save') {
+        break;
+      }
     }
 
     expect(typed.join(' -> ')).toContain('yes');
+
+    /**
+     * The real-time store is the first storage option, and it makes
+     * `timestamp_key` mandatory. So reaching the save at all proves the keys
+     * question was asked *and* answered — the bug this flow existed to fix.
+     */
+    expect(typed).toContain('order_ts');
+    expect(
+      (
+        api.dataset('my-orders')?.dataset_config as {
+          keys_config?: { timestamp_key?: string };
+        }
+      )?.keys_config?.timestamp_key,
+    ).toBe('order_ts');
+
+    // A storage key has to be present in every event, so the wizard marks it
+    // required. An assistant-built dataset that skipped this would validate
+    // differently from a wizard-built one.
+    expect(
+      (
+        api.dataset('my-orders')?.data_schema as {
+          properties?: Record<string, { isRequired?: boolean }>;
+        }
+      )?.properties?.order_ts?.isRequired,
+    ).toBe(true);
 
     await waitFor(() =>
       expect(api.dataset('my-orders')?.status).toBe('ReadyToPublish'),
     );
 
-    // The review question is the only confirmation anyone should have seen.
+    /**
+     * Two confirmations, and no more: the sample offer and the save. A third
+     * would mean a typed answer fell through to the resolver and came back
+     * as "I think you mean".
+     */
     expect(
       result.current.messages.filter(
         (message) => message.card?.kind === 'confirm',
       ),
-    ).toHaveLength(1);
+    ).toHaveLength(2);
   });
 });

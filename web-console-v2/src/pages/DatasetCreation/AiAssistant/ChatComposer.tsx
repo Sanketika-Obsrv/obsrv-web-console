@@ -1,5 +1,5 @@
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
-import { Chip, IconButton, Stack, TextField, Typography } from '@mui/material';
+import { IconButton, Stack, TextField, Typography } from '@mui/material';
 import React, { useState } from 'react';
 import { t } from 'utils/i18n';
 
@@ -7,8 +7,6 @@ export interface ChatComposerProps {
   onSend: (text: string) => void;
   /** True while a turn is in flight; a second send would race two writes. */
   busy: boolean;
-  /** Example instructions, offered as one-click chips. */
-  suggestions?: string[];
 }
 
 /**
@@ -17,12 +15,14 @@ export interface ChatComposerProps {
  * Sending is blocked while a turn is in flight, because a turn is a
  * read-modify-write against the dataset and two in parallel would race. What
  * was typed is kept rather than cleared in that case, so nothing is lost.
+ *
+ * Nothing is offered to click. Example phrases used to sit above the box;
+ * they made the surface a menu of the sentences the assistant liked, which
+ * is the wizard it replaces wearing different clothes. Everything is said
+ * in words now, and a request it cannot take yet is answered with what is
+ * missing rather than hidden by never being offered.
  */
-const ChatComposer: React.FC<ChatComposerProps> = ({
-  onSend,
-  busy,
-  suggestions = [],
-}) => {
+const ChatComposer: React.FC<ChatComposerProps> = ({ onSend, busy }) => {
   const [text, setText] = useState('');
 
   const send = (value: string) => {
@@ -35,22 +35,6 @@ const ChatComposer: React.FC<ChatComposerProps> = ({
 
   return (
     <Stack spacing={1}>
-      {!busy && suggestions.length > 0 && (
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          {suggestions.map((suggestion) => (
-            <Chip
-              key={suggestion}
-              size="small"
-              variant="outlined"
-              clickable
-              component="button"
-              label={suggestion}
-              onClick={() => send(suggestion)}
-            />
-          ))}
-        </Stack>
-      )}
-
       {busy && (
         <Typography
           role="status"

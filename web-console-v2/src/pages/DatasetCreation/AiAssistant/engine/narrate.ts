@@ -13,6 +13,7 @@ import { Action, AgendaStepId } from './actions';
 import { availableStorageLabels, diagnose } from './errorMap';
 import { ExecutionFailureCode, ExecutionOutcome } from './executor';
 import { MessageCard } from '../messages/types';
+import { topicOf } from './prerequisites';
 import { Resolution } from './ruleResolver';
 
 export interface Narration {
@@ -271,12 +272,29 @@ export interface ResolutionContext {
   fieldPaths?: string[];
   /** The question the assistant is waiting on, when it is waiting on one. */
   asked?: string;
+  /** What the user said, so the reply can guess at what it was about. */
+  said?: string;
 }
 
 const OFF_TOPIC =
   'I can only work on this dataset — its name and type, its schema, and how it is processed and stored. That one is outside what I can do here.';
 
 const DID_NOT_UNDERSTAND = 'I did not understand that.';
+
+/**
+ * A guess at the subject, when the words carry one.
+ *
+ * Not an answer and not an action — a question back. Being wrong costs the
+ * user a word; saying nothing costs them a guess at what the assistant can
+ * even do.
+ */
+const guessAt = ({ onTopic, said }: ResolutionContext): string => {
+  if (onTopic === false || !said) return '';
+
+  const subject = topicOf(said);
+
+  return subject ? ` Did you mean something about ${subject}?` : '';
+};
 
 const helpFor = ({ fieldPaths = [], asked }: ResolutionContext): string => {
   if (asked) return ` I am asking: ${asked}`;
@@ -319,5 +337,8 @@ export const narrateResolution = (
    */
   const opening = context.onTopic === false ? OFF_TOPIC : DID_NOT_UNDERSTAND;
 
-  return { text: `${opening}${helpFor(context)}`, card };
+  return {
+    text: `${opening}${guessAt(context)}${helpFor(context)}`,
+    card,
+  };
 };

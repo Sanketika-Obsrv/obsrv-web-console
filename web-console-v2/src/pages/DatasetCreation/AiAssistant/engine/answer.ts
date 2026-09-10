@@ -103,6 +103,28 @@ const DECLINE_WORDS = new Set([
 const AFFIRMS =
   /^(?:yes|yeah|yep|yup|ok|okay|sure|do it|go ahead|go on|please do|save|publish|confirm|proceed|looks? (?:right|good)|that'?s right)\b/i;
 
+/** Calling a proposal off, as opposed to declining an offered option. */
+const CANCELS = /^(?:cancel|stop|forget it|never ?mind|not that)\b/i;
+
+/**
+ * Whether a reply agrees to what was proposed.
+ *
+ * Exported because a proposal is no longer a button: the turn loop reads a
+ * typed yes against the last thing the assistant offered, and it must read
+ * it exactly as a confirmation card would have.
+ */
+export const isAffirmative = (utterance: string): boolean =>
+  AFFIRMS.test(utterance.trim());
+
+/** Whether a reply calls a proposal off. */
+export const isNegative = (utterance: string): boolean => {
+  const trimmed = utterance.replace(TIME_PHRASE, 'now').trim();
+
+  return (
+    CANCELS.test(trimmed) || DECLINES.test(trimmed) || bareDecline(trimmed)
+  );
+};
+
 /**
  * Replies at a question that asks for a value, which are not values.
  *

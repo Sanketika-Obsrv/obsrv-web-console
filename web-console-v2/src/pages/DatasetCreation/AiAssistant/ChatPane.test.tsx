@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import ChatPane, { ChatPaneProps } from './ChatPane';
@@ -55,7 +55,7 @@ describe('while the conversation is being restored', () => {
   it('does not offer the empty-state hint yet', () => {
     show({ loading: true });
 
-    expect(screen.queryByText(/drop a sample/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/paste a sample/i)).not.toBeInTheDocument();
   });
 });
 
@@ -63,7 +63,7 @@ describe('an empty conversation', () => {
   it('explains how to start', () => {
     show();
 
-    expect(screen.getByText(/drop a sample/i)).toBeInTheDocument();
+    expect(screen.getByText(/paste a sample/i)).toBeInTheDocument();
   });
 
   it('says it is resuming when there is already a draft', () => {
@@ -122,7 +122,7 @@ describe('the transcript', () => {
   it('hides the empty-state hint once there are turns', () => {
     show({ messages: [message()] });
 
-    expect(screen.queryByText(/drop a sample/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/paste a sample/i)).not.toBeInTheDocument();
   });
 });
 
@@ -184,46 +184,46 @@ describe('when the conversation is not being saved', () => {
  * is refused for want of a name. That is the failure the agenda exists to
  * remove, still being staged by the pane.
  */
-describe('starting a dataset', () => {
-  const askedForSample = message({
-    id: 'ask-sample',
-    role: 'assistant',
-    text: 'Give me a sample of the data.',
-    card: { kind: 'file_drop' },
+/**
+ * A sample arrives by dropping the file on the conversation or pasting it
+ * into the box. The drop card is gone: it was the last control in the
+ * transcript with a button on it, and a standing copy of it used to be
+ * offered at the *name* question, where attaching a sample is refused for
+ * want of a name.
+ */
+describe('supplying a sample', () => {
+  const drop = (file: File) => {
+    const pane = screen.getByLabelText(/conversation/i);
+
+    fireEvent.drop(pane, { dataTransfer: { files: [file] } });
+  };
+
+  const orders = () =>
+    new File(['[{"order_id":"ORD-1"}]'], 'orders.json', {
+      type: 'application/json',
+    });
+
+  it('hands a dropped file up, wherever in the pane it lands', () => {
+    const onSampleFile = jest.fn();
+    show({ onSampleFile });
+
+    drop(orders());
+
+    expect(onSampleFile).toHaveBeenCalledWith(expect.any(File));
   });
 
-  it('offers a way to supply a sample when the assistant asks for one', () => {
-    show({ messages: [askedForSample] });
+  it('says a file can be dropped while one is being dragged over', () => {
+    show({ onSampleFile: jest.fn() });
 
-    expect(screen.getByLabelText(/choose a sample file/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/paste json/i)).toBeInTheDocument();
+    fireEvent.dragOver(screen.getByLabelText(/conversation/i), {
+      dataTransfer: { types: ['Files'] },
+    });
+
+    expect(screen.getByText(/drop it/i)).toBeInTheDocument();
   });
 
-  it('reports the rows it parsed', async () => {
-    const onSampleRows = jest.fn();
-    show({ messages: [askedForSample], onSampleRows });
-
-    await userEvent.upload(
-      screen.getByLabelText(/choose a sample file/i),
-      new File(['[{"order_id":"ORD-1"}]'], 'orders.json', {
-        type: 'application/json',
-      }),
-    );
-
-    await waitFor(() => expect(onSampleRows).toHaveBeenCalled());
-  });
-
-  it('does not offer one before it has been asked for', () => {
-    show({ messages: [message()] });
-
-    expect(
-      screen.queryByLabelText(/choose a sample file/i),
-    ).not.toBeInTheDocument();
-  });
-
-  /** Once a draft exists the schema is already detected. */
-  it('does not offer one once the draft exists', () => {
-    show({ datasetId: 'orders' });
+  it('offers no file picker anywhere', () => {
+    show({ messages: [message()], onSampleFile: jest.fn() });
 
     expect(
       screen.queryByLabelText(/choose a sample file/i),

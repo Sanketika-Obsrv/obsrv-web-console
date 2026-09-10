@@ -1,13 +1,17 @@
 /**
  * The transcript.
  *
- * Every card routes its choices through one `onAction`, which is what makes
- * the whole workflow reachable by clicking — the rule-only tier is a
- * first-class mode, not a degraded one.
+ * Nothing here is clickable except the credential form. Cards carry the
+ * options, counts and rows a question is about — dense data reads badly as
+ * prose — but every one of them is answered by typing, and the actions on
+ * the card exist so a typed answer can be matched against them.
+ *
+ * The credential form is the exception on purpose: a password typed into the
+ * chat box would be a user message, and user messages are persisted and
+ * exported. It submits through `onSubmitSecrets`, never as an action.
  */
 import { List, ListItem, Stack } from '@mui/material';
 import React from 'react';
-import { Action } from '../engine/actions';
 import { UiSpec } from '../engine/connectors';
 import { Message } from '../session/types';
 import ApiErrorCard from './ApiErrorCard';
@@ -16,7 +20,6 @@ import ConfirmCard from './ConfirmCard';
 import ConflictCard from './ConflictCard';
 import ExpressionResultCard from './ExpressionResultCard';
 import FieldTableCard from './FieldTableCard';
-import FileDropCard from './FileDropCard';
 import SamplePreviewCard from './SamplePreviewCard';
 import SecretFormCard from './SecretFormCard';
 import TextMessage from './TextMessage';
@@ -24,9 +27,6 @@ import { MessageCard } from './types';
 
 export interface MessageListProps {
   messages: Message[];
-  onAction: (action: Action) => void;
-  /** Receives a sample the user supplied through a `file_drop` card. */
-  onSampleRows: (rows: Record<string, unknown>[], file: File) => void;
   /**
    * Receives connector credentials from a `secret_form` card. Separate from
    * `onAction` on purpose: credentials must not travel as an action, because
@@ -42,46 +42,21 @@ export interface MessageListProps {
 
 interface CardProps {
   card: MessageCard;
-  /** True once this turn has dispatched an action; controls are withdrawn. */
-  answered: boolean;
-  onAction: (action: Action) => void;
-  onSampleRows: MessageListProps['onSampleRows'];
   onSubmitSecrets: MessageListProps['onSubmitSecrets'];
   connectorUiSpec: MessageListProps['connectorUiSpec'];
 }
 
 const Card: React.FC<CardProps> = ({
   card,
-  answered,
-  onAction,
-  onSampleRows,
   onSubmitSecrets,
   connectorUiSpec,
 }) => {
   switch (card.kind) {
-    case 'file_drop':
-      return <FileDropCard prompt={card.prompt} onRows={onSampleRows} />;
-
     case 'choice':
-      return (
-        <ChoiceCard
-          prompt={card.prompt}
-          options={card.options}
-          onAction={onAction}
-          answered={answered}
-        />
-      );
+      return <ChoiceCard prompt={card.prompt} options={card.options} />;
 
     case 'confirm':
-      return (
-        <ConfirmCard
-          title={card.title}
-          summary={card.summary}
-          confirmLabel={card.confirmLabel}
-          confirmAction={card.confirmAction}
-          onAction={onAction}
-        />
-      );
+      return <ConfirmCard title={card.title} summary={card.summary} />;
 
     case 'conflict':
       return (
@@ -89,7 +64,6 @@ const Card: React.FC<CardProps> = ({
           path={card.path}
           candidates={card.candidates}
           valuesAtRisk={card.valuesAtRisk}
-          onAction={onAction}
         />
       );
 
@@ -110,7 +84,7 @@ const Card: React.FC<CardProps> = ({
       );
 
     case 'api_error':
-      return <ApiErrorCard diagnosis={card.diagnosis} onAction={onAction} />;
+      return <ApiErrorCard diagnosis={card.diagnosis} />;
 
     case 'secret_form':
       return (
@@ -130,8 +104,6 @@ const Card: React.FC<CardProps> = ({
 
 const MessageList: React.FC<MessageListProps> = ({
   messages,
-  onAction,
-  onSampleRows,
   onSubmitSecrets,
   connectorUiSpec,
 }) => {
@@ -153,9 +125,6 @@ const MessageList: React.FC<MessageListProps> = ({
               <div data-testid={`card-${message.card.kind}`}>
                 <Card
                   card={message.card}
-                  answered={Boolean(message.action)}
-                  onAction={onAction}
-                  onSampleRows={onSampleRows}
                   onSubmitSecrets={onSubmitSecrets}
                   connectorUiSpec={connectorUiSpec}
                 />

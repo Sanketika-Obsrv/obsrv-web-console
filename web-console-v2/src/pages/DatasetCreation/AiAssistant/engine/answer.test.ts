@@ -358,16 +358,13 @@ describe('answering the name question', () => {
 });
 
 describe('questions with nothing to type', () => {
-  it('has no answer for a file drop', () => {
+  /**
+   * The sample question takes no typed answer: the data arrives pasted or
+   * dropped, and is recognised before the resolver sees it.
+   */
+  it('has no answer for the sample question', () => {
     expect(
-      answerTo(
-        {
-          step: 'sample',
-          text: 'give me a sample',
-          card: { kind: 'file_drop' },
-        },
-        'here',
-      ),
+      answerTo({ step: 'sample', text: 'give me a sample' }, 'here'),
     ).toBeUndefined();
   });
 

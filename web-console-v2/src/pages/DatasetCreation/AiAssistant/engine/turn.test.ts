@@ -1,4 +1,5 @@
 import { Action } from './actions';
+import { diagnose } from './errorMap';
 import { Prompt } from './agenda';
 import { buildFieldVocabulary } from './fieldVocabulary';
 import { ExecutionOutcome } from './executor';
@@ -889,5 +890,324 @@ describe('answering the question on the table', () => {
 
     expect(execute).not.toHaveBeenCalled();
     expect(result.messages[1].card?.kind).toBe('confirm');
+  });
+});
+
+/**
+ * Asked for by the user: the flow should take a request at any point, and
+ * say what is missing when it cannot be done yet, rather than refusing it as
+ * gibberish. "dedup on order_id" before a sample resolves to nothing at all,
+ * because a dataset with no fields has no `order_id` to key on.
+ */
+describe('a request that cannot be done yet', () => {
+  const empty = buildFieldVocabulary([]);
+
+  it('explains what is missing instead of saying it did not understand', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('dedup on order_id', {
+      vocabulary: empty,
+      execute,
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].text).toMatch(/sample/i);
+    expect(result.messages[1].text).not.toMatch(/did not understand/i);
+  });
+
+  it('names the thing that was asked for, so it reads as an answer', async () => {
+    const result = await runTurn('mask the email address', {
+      vocabulary: empty,
+      execute: async () => applied,
+    });
+
+    expect(result.messages[1].text).toMatch(/mask/i);
+  });
+
+  it('holds back an action it did resolve but cannot yet send', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('enable the real-time store', {
+      vocabulary: empty,
+      execute,
+      datasetExists: false,
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.action).toBeUndefined();
+    expect(result.messages[1].text).toMatch(/name/i);
+  });
+
+  /** Nothing to click: the way forward is the sample, not a confirmation. */
+  it('offers no confirmation for something it will not do', async () => {
+    const result = await runTurn('enable the real-time store', {
+      vocabulary: empty,
+      execute: async () => applied,
+      datasetExists: false,
+    });
+
+    expect(result.messages[1].card).toBeUndefined();
+  });
+
+  it('still refuses what is not dataset work at all', async () => {
+    const result = await runTurn('write me a poem about ducks', {
+      vocabulary: empty,
+      execute: async () => applied,
+    });
+
+    expect(result.messages[1].text).toMatch(/only work on this dataset/i);
+  });
+
+  it('does what was asked once the prerequisite is there', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn('dedup on order_id', {
+      vocabulary,
+      execute,
+      sampleRows: SAMPLE,
+    });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dedup',
+      enabled: true,
+      key: 'order_id',
+    });
+  });
+});
+
+/**
+ * With nothing to click, a proposal has to be answerable in words. The
+ * proposal is the last assistant turn, so it is the question on the table
+ * until something else happens.
+ */
+describe('confirming a proposal by typing', () => {
+  const proposal: Message[] = [
+    {
+      id: 'u1',
+      role: 'user',
+      text: 'never show me the same order twice',
+      createdAt: 0,
+    },
+    {
+      id: 'a1',
+      role: 'assistant',
+      createdAt: 0,
+      text: 'I think you mean: deduplicate on order_id.',
+      card: {
+        kind: 'confirm',
+        title: 'Deduplicate on order_id',
+        confirmAction: { kind: 'set_dedup', enabled: true, key: 'order_id' },
+      },
+    },
+  ];
+
+  const answer = (
+    said: string,
+    execute: (action: Action) => Promise<ExecutionOutcome> = async () =>
+      applied,
+  ) =>
+    runTurn(said, {
+      vocabulary,
+      execute,
+      sampleRows: SAMPLE,
+      history: proposal,
+    });
+
+  it('does what was proposed on a yes', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await answer('yes', execute);
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dedup',
+      enabled: true,
+      key: 'order_id',
+    });
+  });
+
+  it('takes the other ways people say yes', async () => {
+    for (const said of ['do it', 'go ahead', 'yes please', 'sure']) {
+      const execute = jest.fn(async () => applied);
+      await answer(said, execute);
+
+      expect({ said, called: execute.mock.calls.length }).toEqual({
+        said,
+        called: 1,
+      });
+    }
+  });
+
+  it('drops it on a no, without writing anything', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await answer('no', execute);
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].text).toMatch(/left it|not do/i);
+  });
+
+  it('takes the other ways people decline', async () => {
+    for (const said of ['cancel', 'no thanks', 'not that']) {
+      const execute = jest.fn(async () => applied);
+      await answer(said, execute);
+
+      expect({ said, called: execute.mock.calls.length }).toEqual({
+        said,
+        called: 0,
+      });
+    }
+  });
+
+  /** Saying something else abandons the proposal rather than queueing it. */
+  it('treats anything else as a fresh request', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await answer('make order_id required', execute);
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'toggle_required',
+      path: 'order_id',
+      required: true,
+    });
+  });
+
+  it('does not answer a proposal that something has already happened to', async () => {
+    const execute = jest.fn(async () => applied);
+    const settled: Message[] = [
+      ...proposal,
+      {
+        id: 'a2',
+        role: 'assistant',
+        createdAt: 0,
+        text: 'Deduplication is on, keyed on order_id.',
+        action: { kind: 'set_dedup', enabled: true, key: 'order_id' },
+      },
+    ];
+
+    await runTurn('yes', { vocabulary, execute, history: settled });
+
+    expect(execute).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The retry used to be a button on the error card. The failed action is
+ * recorded on the message it failed in, so re-sending it is a matter of
+ * finding that message.
+ */
+describe('retrying by typing', () => {
+  const failed: Message[] = [
+    {
+      id: 'u1',
+      role: 'user',
+      text: 'enable the real-time store',
+      createdAt: 0,
+    },
+    {
+      id: 'a1',
+      role: 'assistant',
+      createdAt: 0,
+      text: 'The server did not answer in time.',
+      failureCode: 'TIMEOUT',
+      action: { kind: 'set_storage', realtime: true },
+    },
+  ];
+
+  it('re-sends exactly what failed', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn('try again', { vocabulary, execute, history: failed });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_storage',
+      realtime: true,
+    });
+  });
+
+  it('takes the other ways people ask for it', async () => {
+    for (const said of [
+      'retry',
+      'resend it',
+      'do it again',
+      'try that again',
+    ]) {
+      const execute = jest.fn(async () => applied);
+      await runTurn(said, { vocabulary, execute, history: failed });
+
+      expect({ said, called: execute.mock.calls.length }).toEqual({
+        said,
+        called: 1,
+      });
+    }
+  });
+
+  it('says there is nothing to retry when nothing failed', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('try again', {
+      vocabulary,
+      execute,
+      history: [{ id: 'u1', role: 'user', text: 'hello', createdAt: 0 }],
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].text).toMatch(/nothing to (try again|retry)/i);
+  });
+
+  /**
+   * The diagnosis often knows better than the user: a store the cluster does
+   * not have comes back with a corrected action naming the store it does, so
+   * re-sending the original would fail in exactly the same way.
+   */
+  it('sends the correction the diagnosis derived, not the original', async () => {
+    const execute = jest.fn(async () => applied);
+    const refused: Message[] = [
+      { id: 'u1', role: 'user', text: 'enable the lakehouse', createdAt: 0 },
+      {
+        id: 'a1',
+        role: 'assistant',
+        createdAt: 0,
+        text: 'This cluster does not have Data Lakehouse (Hudi).',
+        failureCode: 'DATASET_UNSUPPORTED_STORAGE_TYPE',
+        action: { kind: 'set_storage', lakehouse: true },
+        card: {
+          kind: 'api_error',
+          diagnosis: diagnose({
+            code: 'DATASET_UNSUPPORTED_STORAGE_TYPE',
+            error:
+              'The storage type "lake_house" is not available. Please use one of the available storage types: realtime_store',
+          }),
+        },
+      },
+    ];
+
+    await runTurn('try again', { vocabulary, execute, history: refused });
+
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'set_storage', lakehouse: false }),
+    );
+  });
+
+  /** A failure that has since been put right is not the thing to re-send. */
+  it('retries the most recent failure, not an older one', async () => {
+    const execute = jest.fn(async () => applied);
+    const twice: Message[] = [
+      ...failed,
+      {
+        id: 'a2',
+        role: 'assistant',
+        createdAt: 0,
+        text: 'That name is taken.',
+        failureCode: 'DATASET_ID_TAKEN',
+        action: { kind: 'set_dataset_name', name: 'My Orders' },
+      },
+    ];
+
+    await runTurn('try again', { vocabulary, execute, history: twice });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dataset_name',
+      name: 'My Orders',
+    });
   });
 });

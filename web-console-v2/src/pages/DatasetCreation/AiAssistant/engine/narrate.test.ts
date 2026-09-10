@@ -241,6 +241,42 @@ describe('narrating what cannot be done', () => {
 
     expect(text).toMatch(/did not understand/i);
   });
+
+  /**
+   * Asked for by the user: convert what is typed into actions, and when it
+   * cannot, say so. A guess at the subject makes that a conversation rather
+   * than a wall — the user only has to correct the guess.
+   */
+  it('guesses the subject when the words point at one', () => {
+    const { text } = narrateResolution(
+      { status: 'unknown', confidence: 0 },
+      { onTopic: true, said: 'bump the dedup thing on the second one' },
+    );
+
+    expect(text).toMatch(/did not understand/i);
+    expect(text).toMatch(/deduplication/i);
+    expect(text).toMatch(/\?/);
+  });
+
+  it('guesses nothing when the words point nowhere', () => {
+    const { text } = narrateResolution(
+      { status: 'unknown', confidence: 0 },
+      { onTopic: true, said: 'bump the thing on the second one' },
+    );
+
+    expect(text).toMatch(/did not understand/i);
+    expect(text).not.toMatch(/did you mean/i);
+  });
+
+  it('does not guess a subject for something off topic', () => {
+    // "Save me a poem" is not a request to save the dataset.
+    const { text } = narrateResolution(
+      { status: 'unknown', confidence: 0 },
+      { onTopic: false, said: 'save me a poem about ducks' },
+    );
+
+    expect(text).not.toMatch(/did you mean/i);
+  });
 });
 
 describe('narrating a resolution that could not be acted on', () => {

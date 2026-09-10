@@ -121,8 +121,6 @@ export interface Prompt {
   /** The question, as the assistant says it. */
   text: string;
   card?: MessageCard;
-  /** Suggested replies, offered as chips. */
-  chips?: string[];
   /**
    * Builds the action from a typed value, for a question that asks for one.
    *
@@ -444,6 +442,23 @@ export const alternativeName = (name: string): string => {
   return match ? `${match[1]}${Number(match[2]) + 1}` : `${name.trim()} 2`;
 };
 
+/** `a`, `a or b`, `a, b or c` — for naming a handful of things in a sentence. */
+const joinNames = (names: string[]): string =>
+  names.length < 2
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
+
+/** The connectors the data could be pulled from instead, said in the question. */
+const connectorOffer = (state: AgendaState): string => {
+  const names = (state.connectorsAvailable ?? []).map(
+    (connector) => connector.name ?? connector.id,
+  );
+
+  if (!names.length) return '';
+
+  return ` I can also pull it from ${joinNames(names)} if you would rather connect a source.`;
+};
+
 const TYPE_HINTS: Record<(typeof DATASET_TYPES)[number], string> = {
   event: 'A stream of things that happened — clicks, logs, orders.',
   transaction: 'Records that can be updated after they arrive.',
@@ -462,8 +477,9 @@ const nameQuestion = (state: AgendaState): Prompt => {
   if (state.lastFailureCode === 'DATASET_ID_TAKEN' && state.lastName) {
     return {
       step: 'name',
-      text: 'What else shall we call it?',
-      chips: [alternativeName(state.lastName)],
+      // The alternative is said rather than offered: there is nothing to
+      // click anywhere in this conversation.
+      text: `What else shall we call it? "${alternativeName(state.lastName)}", perhaps.`,
       freeText: (name) => ({ kind: 'set_dataset_name', name }),
     };
   }
@@ -921,10 +937,9 @@ const denormQuestion = (state: AgendaState): Prompt => {
 
   return {
     step: 'denorm',
-    text: `What should the ${nameOf(masterDatasetId)} record be called in your data?`,
-    // The master's own id, so the suggestion is a name the server already
-    // uses rather than one invented here.
-    chips: [masterDatasetId],
+    // The master's own id is the suggestion, so it is a name the server
+    // already uses rather than one invented here.
+    text: `What should the ${nameOf(masterDatasetId)} record be called in your data? "${masterDatasetId}" works if you have no preference.`,
     freeText: (outField) => ({
       kind: 'set_denorm',
       path,
@@ -1040,13 +1055,15 @@ const QUESTION: Record<
 
   sample: (state) => ({
     step: 'sample',
-    text: 'Give me a sample of the data — JSON, JSONL or CSV — and I will work out the schema.',
-    card: { kind: 'file_drop' },
-    // Only offered when the list was actually read: a connector that cannot
-    // be listed is a dead end, and offering it wastes a turn.
-    chips: (state.connectorsAvailable ?? []).map(
-      (connector) => `use ${connector.name ?? connector.id}`,
-    ),
+    /*
+      No card. A sample arrives by pasting it into the box or dropping the
+      file on the conversation, and the question says so — the file-drop
+      card was the last thing in the chat with a button on it.
+
+      Connectors are named only when the list was actually read: one that
+      cannot be listed is a dead end, and offering it wastes a turn.
+    */
+    text: `Give me a sample of the data — paste it here, or drop a JSON or JSONL file anywhere in this pane, and I will work out the schema.${connectorOffer(state)}`,
   }),
 
   conflicts: conflictQuestion,

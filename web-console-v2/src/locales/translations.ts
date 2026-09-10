@@ -20,6 +20,8 @@ export const translations = {
       previewPaneLabel: 'Dataset preview',
       separatorLabel: 'Resize chat and preview panes',
       chatTitle: 'Dataset assistant',
+      conversationLabel: 'Conversation',
+      dropHint: 'Drop it anywhere here and I will read it.',
       previewTitle: 'Preview',
       progressLabel: 'Dataset configuration progress',
       resumeHeading: 'Resume a previous conversation',
@@ -32,7 +34,7 @@ export const translations = {
         'This browser is not saving the conversation, so it will be lost on reload.',
       newDatasetLabel: 'New dataset',
       newDatasetHint:
-        'Describe the dataset you want to create, or drop a sample JSONL file to get started.',
+        'Tell me what you would like to build. You can paste a sample of the data at any point, or drop the file anywhere in this pane.',
       resumingDraft:
         'Resuming this draft. Every change is saved to the dataset as you go.',
       exportTrail: 'Export the action trail',

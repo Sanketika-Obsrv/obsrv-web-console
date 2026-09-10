@@ -10,8 +10,12 @@ import ExpressionResultCard from './ExpressionResultCard';
 import FieldTableCard from './FieldTableCard';
 import SamplePreviewCard from './SamplePreviewCard';
 
-const noop = () => undefined;
-
+/**
+ * Nothing in the transcript is clickable any more, apart from the credential
+ * form. The cards still carry their options and counts — that is what a
+ * typed answer is matched against, and dense data reads badly as prose — but
+ * every one of them is answered by typing.
+ */
 describe('ChoiceCard', () => {
   const options = [
     {
@@ -25,72 +29,40 @@ describe('ChoiceCard', () => {
     },
   ];
 
-  it('offers every option as a button', () => {
-    render(
-      <ChoiceCard prompt="Deduplicate?" options={options} onAction={noop} />,
-    );
+  it('lists every option', () => {
+    render(<ChoiceCard prompt="Deduplicate?" options={options} />);
 
-    expect(
-      screen.getByRole('button', { name: /drop duplicates/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /keep duplicates/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Drop duplicates')).toBeInTheDocument();
+    expect(screen.getByText('Keep duplicates')).toBeInTheDocument();
   });
 
-  it('dispatches the action for the option chosen', async () => {
-    const onAction = jest.fn();
-    render(<ChoiceCard options={options} onAction={onAction} />);
+  it('offers nothing to click', () => {
+    render(<ChoiceCard prompt="Deduplicate?" options={options} />);
 
-    await userEvent.click(
-      screen.getByRole('button', { name: /drop duplicates/i }),
-    );
-
-    expect(onAction).toHaveBeenCalledWith(options[0].action);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('shows the reason behind an option', () => {
-    render(<ChoiceCard options={options} onAction={noop} />);
+    render(<ChoiceCard options={options} />);
 
     expect(
       screen.getByText(/order_id is unique in the sample/i),
     ).toBeInTheDocument();
   });
 
-  it('stops offering choices once one has been taken', async () => {
-    const { rerender } = render(
-      <ChoiceCard options={options} onAction={noop} />,
-    );
+  it('says how to answer, since there is nothing to press', () => {
+    render(<ChoiceCard options={options} />);
 
-    rerender(<ChoiceCard options={options} onAction={noop} answered />);
-
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
-  });
-
-  it('says which option was taken', () => {
-    render(
-      <ChoiceCard
-        options={options}
-        onAction={noop}
-        answered
-        chosenLabel="Drop duplicates"
-      />,
-    );
-
-    expect(screen.getByText(/drop duplicates/i)).toBeInTheDocument();
+    expect(screen.getByText(/type/i)).toBeInTheDocument();
   });
 });
 
 describe('ConfirmCard', () => {
-  const save = { kind: 'save' } as Action;
-
   it('summarises what is about to happen', () => {
     render(
       <ConfirmCard
         title="Save this dataset?"
         summary={['Dedup on order_id', 'Real-time Store']}
-        confirmAction={save}
-        onAction={noop}
       />,
     );
 
@@ -99,52 +71,12 @@ describe('ConfirmCard', () => {
     expect(screen.getByText('Real-time Store')).toBeInTheDocument();
   });
 
-  it('dispatches the action on confirm', async () => {
-    const onAction = jest.fn();
-    render(
-      <ConfirmCard
-        title="Save this dataset?"
-        confirmAction={save}
-        onAction={onAction}
-      />,
-    );
+  it('asks for a yes or a no in words', () => {
+    render(<ConfirmCard title="Save this dataset?" />);
 
-    await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
-
-    expect(onAction).toHaveBeenCalledWith(save);
-  });
-
-  it('dispatches nothing when cancelled', async () => {
-    const onAction = jest.fn();
-    const onCancel = jest.fn();
-    render(
-      <ConfirmCard
-        title="Save this dataset?"
-        confirmAction={save}
-        onAction={onAction}
-        onCancel={onCancel}
-      />,
-    );
-
-    await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
-
-    expect(onAction).not.toHaveBeenCalled();
-    expect(onCancel).toHaveBeenCalled();
-  });
-
-  it('uses the label it is given for the confirming button', () => {
-    render(
-      <ConfirmCard
-        title="Delete the draft?"
-        confirmLabel="Delete draft"
-        confirmAction={save}
-        onAction={noop}
-      />,
-    );
-
-    expect(
-      screen.getByRole('button', { name: 'Delete draft' }),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/yes/i)).toBeInTheDocument();
+    expect(screen.getByText(/no/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });
 
@@ -160,50 +92,26 @@ describe('ConflictCard', () => {
   ];
 
   it('names the field in conflict', () => {
-    render(
-      <ConflictCard
-        path="total_amount"
-        candidates={candidates}
-        onAction={noop}
-      />,
-    );
+    render(<ConflictCard path="total_amount" candidates={candidates} />);
 
     expect(screen.getByText(/total_amount/)).toBeInTheDocument();
   });
 
   it('shows the observed count for each candidate', () => {
-    render(
-      <ConflictCard
-        path="total_amount"
-        candidates={candidates}
-        onAction={noop}
-      />,
-    );
+    render(<ConflictCard path="total_amount" candidates={candidates} />);
 
     expect(screen.getByText(/108/)).toBeInTheDocument();
     expect(screen.getByText(/12/)).toBeInTheDocument();
   });
 
   it('marks which one the API recommends', () => {
-    render(
-      <ConflictCard
-        path="total_amount"
-        candidates={candidates}
-        onAction={noop}
-      />,
-    );
+    render(<ConflictCard path="total_amount" candidates={candidates} />);
 
     expect(screen.getByText(/recommended/i)).toBeInTheDocument();
   });
 
   it('marks the candidate that can hold every observed value', () => {
-    render(
-      <ConflictCard
-        path="total_amount"
-        candidates={candidates}
-        onAction={noop}
-      />,
-    );
+    render(<ConflictCard path="total_amount" candidates={candidates} />);
 
     expect(screen.getByText(/holds every value/i)).toBeInTheDocument();
   });
@@ -214,7 +122,6 @@ describe('ConflictCard', () => {
         path="total_amount"
         candidates={candidates}
         valuesAtRisk={108}
-        onAction={noop}
       />,
     );
 
@@ -222,73 +129,24 @@ describe('ConflictCard', () => {
   });
 
   it('stays quiet when the recommendation loses nothing', () => {
-    render(
-      <ConflictCard
-        path="total_amount"
-        candidates={candidates}
-        onAction={noop}
-      />,
-    );
+    render(<ConflictCard path="total_amount" candidates={candidates} />);
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('resolves the conflict with the type chosen', async () => {
-    const onAction = jest.fn();
-    render(
-      <ConflictCard
-        path="total_amount"
-        candidates={candidates}
-        onAction={onAction}
-      />,
-    );
+  it('says how to settle it, without a button to press', () => {
+    render(<ConflictCard path="total_amount" candidates={candidates} />);
 
-    await userEvent.click(screen.getByRole('button', { name: /double/i }));
-
-    expect(onAction).toHaveBeenCalledWith({
-      kind: 'resolve_conflict',
-      path: 'total_amount',
-      mode: 'apply',
-      dataType: 'double',
-    });
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    // Both ways out are named: pick a type, or keep what is there.
+    expect(screen.getByText(/keep the current type/i)).toBeInTheDocument();
   });
 
-  /**
-   * An unresolved conflict blocks the save, so there has to be a way out that
-   * does not change the type — dismissing keeps whatever the API decided.
-   */
-  it('can dismiss the conflict without changing the type', async () => {
-    const onAction = jest.fn();
-    render(
-      <ConflictCard
-        path="total_amount"
-        candidates={candidates}
-        onAction={onAction}
-      />,
-    );
+  it('names every candidate, not only the recommendation', () => {
+    render(<ConflictCard path="total_amount" candidates={candidates} />);
 
-    await userEvent.click(
-      screen.getByRole('button', { name: /keep the current type/i }),
-    );
-
-    expect(onAction).toHaveBeenCalledWith({
-      kind: 'resolve_conflict',
-      path: 'total_amount',
-      mode: 'dismiss',
-    });
-  });
-
-  it('offers every candidate, not only the recommendation', () => {
-    render(
-      <ConflictCard
-        path="total_amount"
-        candidates={candidates}
-        onAction={noop}
-      />,
-    );
-
-    expect(screen.getByRole('button', { name: /double/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /string/i })).toBeInTheDocument();
+    expect(screen.getByText('double')).toBeInTheDocument();
+    expect(screen.getByText('string')).toBeInTheDocument();
   });
 });
 
@@ -466,43 +324,46 @@ describe('ApiErrorCard', () => {
   });
 
   it('explains the failure in the console’s own wording', () => {
-    render(<ApiErrorCard diagnosis={unsupported} onAction={noop} />);
+    render(<ApiErrorCard diagnosis={unsupported} />);
 
     expect(screen.getByRole('alert')).toHaveTextContent(
       /does not have Data Lakehouse \(Hudi\)/,
     );
   });
 
-  it('offers the retry the diagnosis derived', async () => {
-    const onAction = jest.fn();
-    render(<ApiErrorCard diagnosis={unsupported} onAction={onAction} />);
+  /**
+   * The retry used to be a button. It is now a sentence, because the failure
+   * is the one moment the user most needs to know what to say next.
+   */
+  it('says how to re-send when a retry was derived', () => {
+    render(<ApiErrorCard diagnosis={unsupported} />);
 
-    await userEvent.click(screen.getByRole('button', { name: /retry/i }));
-
-    expect(onAction).toHaveBeenCalledWith(unsupported.retryAction);
+    expect(screen.getByRole('alert')).toHaveTextContent(/try again/i);
   });
 
-  it('offers no retry when none could be derived', () => {
+  it('promises no retry when none could be derived', () => {
     render(
       <ApiErrorCard
         diagnosis={diagnose({ code: 'WAT', error: 'Something went wrong' })}
-        onAction={noop}
       />,
     );
 
-    expect(
-      screen.queryByRole('button', { name: /retry/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/try again/i);
   });
 
+  /**
+   * The server's message names internal storage types and JSON pointers, so
+   * it stays behind a disclosure — which reveals text rather than doing
+   * anything to the dataset.
+   */
   it('keeps the server’s own message available without leading with it', async () => {
-    render(<ApiErrorCard diagnosis={unsupported} onAction={noop} />);
+    render(<ApiErrorCard diagnosis={unsupported} />);
 
-    expect(screen.queryByText(/lake_house/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/lake_house/)).not.toBeVisible();
 
-    await userEvent.click(screen.getByRole('button', { name: /details/i }));
+    await userEvent.click(screen.getByText(/details/i));
 
-    expect(screen.getByText(/lake_house/)).toBeInTheDocument();
+    expect(screen.getByText(/lake_house/)).toBeVisible();
   });
 
   it('says a concurrent edit is being handled rather than blaming the user', () => {
@@ -512,7 +373,6 @@ describe('ApiErrorCard', () => {
           code: 'DATASET_OUTDATED',
           error: 'The dataset is outdated.',
         })}
-        onAction={noop}
       />,
     );
 
@@ -526,7 +386,6 @@ describe('ApiErrorCard', () => {
           code: 'SESSION_EXPIRED',
           error: 'The response was the login page',
         })}
-        onAction={noop}
       />,
     );
 

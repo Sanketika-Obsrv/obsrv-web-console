@@ -106,32 +106,16 @@ describe('while a turn is running', () => {
   });
 });
 
-describe('suggestions', () => {
-  it('offers the examples it is given as one-click chips', async () => {
-    const { onSend } = show({
-      suggestions: ['make order_id required', 'enable the real-time store'],
-    });
+/**
+ * Asked for by the user: no chips above the box. The surface is a
+ * conversation, so the way to say something is to type it — an offered
+ * phrase is a menu, and a menu is the wizard this replaces.
+ */
+describe('the composer is conversation, not a menu', () => {
+  it('offers nothing to click but send', () => {
+    show();
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'make order_id required' }),
-    );
-
-    expect(onSend).toHaveBeenCalledWith('make order_id required');
-  });
-
-  it('offers nothing when there is nothing to suggest', () => {
-    show({ suggestions: [] });
-
-    expect(
-      screen.queryByRole('button', { name: /make order_id/ }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('hides the suggestions while a turn is running', () => {
-    show({ suggestions: ['save it'], busy: true });
-
-    expect(
-      screen.queryByRole('button', { name: 'save it' }),
-    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument();
   });
 });
