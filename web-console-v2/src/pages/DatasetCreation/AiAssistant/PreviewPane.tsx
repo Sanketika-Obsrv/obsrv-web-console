@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Checkbox,
   Chip,
   FormControlLabel,
@@ -11,6 +12,7 @@ import {
 } from '@mui/material';
 import AllConfigurations from 'pages/DatasetCreation/PreviewAndSave/AllConfigurations';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { datasetConfigStatus, useFetchDatasetsById } from 'services/dataset';
 import { Dataset } from 'types/dataset';
 import { DatasetStatus } from 'types/datasets';
@@ -146,12 +148,39 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({
         overflow: 'auto',
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Typography variant="h5">{t('aiAssistant.previewTitle')}</Typography>
-        <Chip
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        justifyContent="space-between"
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="h5">{t('aiAssistant.previewTitle')}</Typography>
+          <Chip
+            size="small"
+            label={datasetId ?? t('aiAssistant.newDatasetLabel')}
+          />
+        </Stack>
+
+        {/*
+          Always offered, at any point in the conversation. The assistant
+          coordinates the same APIs the wizard does, so leaving to finish by
+          hand has to work — and it is also the honest answer when the
+          assistant cannot help. Before a draft exists there is nothing to
+          edit, so it points at the wizard's own start instead.
+        */}
+        <Button
+          component={Link}
+          to={
+            datasetId
+              ? `/dataset/edit/ingestion/meta/${datasetId}`
+              : '/dataset/create'
+          }
           size="small"
-          label={datasetId ?? t('aiAssistant.newDatasetLabel')}
-        />
+          variant="text"
+        >
+          {t('aiAssistant.editInWizard')}
+        </Button>
       </Stack>
 
       {datasetId ? (

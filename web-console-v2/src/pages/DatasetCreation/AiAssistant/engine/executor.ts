@@ -22,7 +22,6 @@ import {
   UpdateDatasetPayload,
   createDataset,
   datasetExists,
-  datasetStatusTransition,
   generateDataSchema,
   generateUploadUrls,
   readDataset,
@@ -1144,18 +1143,19 @@ export const executeAction = async (
     });
   }
 
+  /**
+   * Saving is a read, not a write.
+   *
+   * Every change went to the server as it was made, and publishing is not
+   * the conversation's job — the dataset list and the wizard's preview are
+   * where a dataset is made live, and where the console's own confirmation
+   * lives. So this reads the document back for the closing check to report
+   * on, and changes nothing.
+   */
   if (action.kind === 'save' && datasetId) {
     try {
-      await datasetStatusTransition(datasetId, 'ReadyToPublish');
-    } catch (cause) {
-      return describeApiError(cause, 'PATCH_FAILED');
-    }
+      const refreshed = await readSnapshot(datasetId, AGENDA_READ_FIELDS);
 
-    try {
-      const refreshed = await readDataset<DatasetSnapshot>({
-        datasetId,
-        fields: 'dataset_id,status,version_key',
-      });
       return {
         ok: true,
         status: 'applied',

@@ -114,7 +114,15 @@ export const useSession = ({
       return existing;
     }
 
-    const started = await sessions.start({ mode: 'create' });
+    /*
+      A route that already carries a dataset id is an *update*: the document
+      exists, and its values are decisions somebody made rather than
+      defaults `create` wrote. The agenda reads the mode to decide whether
+      the document or the transcript settles a question.
+    */
+    const started = await sessions.start({
+      mode: datasetId ? 'update' : 'create',
+    });
     rememberActive(started.sessionId);
 
     return datasetId
@@ -222,7 +230,9 @@ export const useSession = ({
         if (session) await sessions.clear(session.sessionId);
 
         // Never leave the pane without a session to write to.
-        const started = await sessions.start({ mode: 'create' });
+        const started = await sessions.start({
+          mode: datasetId ? 'update' : 'create',
+        });
         rememberActive(started.sessionId);
         const replacement = datasetId
           ? ((await sessions.attachDataset(started.sessionId, datasetId)) ??

@@ -200,14 +200,20 @@ describe('currentStep', () => {
     expect(currentStep(state)).toBe('review');
   });
 
-  it('is done once the dataset is no longer a draft', () => {
+  /**
+   * The wrap-up closes when it has been answered, not when the status
+   * changes: the assistant no longer publishes, so the status never moves
+   * on its own account.
+   */
+  it('is done once the closing check has run', () => {
     const state: AgendaState = {
-      dataset: draft({ status: 'ReadyToPublish' }),
+      dataset: draft(),
       piiSuggested: [],
       history: [
         ...answeredThrough('schema', 'validation', 'transform'),
         applied({ kind: 'set_dedup', enabled: false }, 9),
         applied({ kind: 'set_storage', realtime: true }, 10),
+        applied({ kind: 'save' }, 11),
       ],
     };
 
@@ -1574,5 +1580,108 @@ describe('following the user between stages', () => {
     });
 
     expect(currentStep(state)).toBe('storage');
+  });
+});
+
+/**
+ * Opening a dataset the conversation did not create.
+ *
+ * Six of these questions decide "already answered" from the transcript,
+ * because a freshly created draft carries defaults nobody chose —
+ * `lakehouse_enabled`, `Strict` validation, `obsrv_meta.syncts` as the
+ * timestamp. That reasoning is exactly backwards for a dataset that already
+ * exists: there is no transcript, and the document *is* the record of what
+ * someone decided. Without this, opening a finished dataset started at
+ * "what would you like to call this dataset?" and walked all fourteen
+ * questions again.
+ */
+describe('a dataset that already exists', () => {
+  const configured = draft({
+    dedup_config: { drop_duplicates: false },
+    validation_config: { validate: true, mode: 'Strict' },
+    dataset_config: {
+      indexing_config: { olap_store_enabled: true },
+      keys_config: { timestamp_key: 'order_ts' },
+    },
+  });
+
+  const opened: AgendaState = {
+    dataset: configured,
+    documentAuthoritative: true,
+    piiSuggested: [],
+    history: [],
+  };
+
+  it('asks nothing when the document answers everything', () => {
+    expect(currentStep(opened)).toBeUndefined();
+    expect(nextPrompt(opened)).toBeUndefined();
+  });
+
+  /**
+   * A new session starts at `ingestion` whether or not anybody chose it, and
+   * a stage in focus deliberately re-opens what it has already settled — so
+   * without this the assistant asked an existing dataset its name.
+   */
+  it('does not treat the starting stage as a revisit', () => {
+    expect(currentStep({ ...opened, focus: 'ingestion' })).toBeUndefined();
+  });
+
+  it('still asks about what the document leaves unset', () => {
+    const noStore = {
+      ...opened,
+      dataset: draft({
+        ...configured,
+        dataset_config: { indexing_config: {}, keys_config: {} },
+      }),
+    };
+
+    expect(currentStep(noStore)).toBe('storage');
+  });
+
+  it('takes the timestamp the document holds, default or not', () => {
+    // On a new draft `obsrv_meta.syncts` is a default nobody chose. On a
+    // dataset that already exists it is what someone is running with.
+    const arrivalTime = {
+      ...opened,
+      dataset: draft({
+        ...configured,
+        dataset_config: {
+          indexing_config: { olap_store_enabled: true },
+          keys_config: { timestamp_key: 'obsrv_meta.syncts' },
+        },
+      }),
+    };
+
+    expect(currentStep(arrivalTime)).toBeUndefined();
+  });
+
+  it('still raises a conflict, which is a real blocker', () => {
+    const conflicted = {
+      ...opened,
+      dataset: draft({ ...configured, data_schema: conflictedSchema }),
+    };
+
+    expect(currentStep(conflicted)).toBe('conflicts');
+  });
+
+  it('still asks for a sample when there is no schema', () => {
+    const empty = {
+      ...opened,
+      dataset: draft({ ...configured, data_schema: undefined }),
+    };
+
+    expect(currentStep(empty)).toBe('sample');
+  });
+
+  /** Once the user says something, the conversation drives as it always did. */
+  it('goes back to the ordinary rules once there is a transcript', () => {
+    const moved: AgendaState = {
+      ...opened,
+      documentAuthoritative: false,
+      focus: 'processing',
+      history: [applied({ kind: 'goto_step', step: 'processing' }, 1)],
+    };
+
+    expect(currentStep(moved)).toBeDefined();
   });
 });

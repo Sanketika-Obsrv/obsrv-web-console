@@ -592,8 +592,8 @@ describe('what the session records for a reload to find', () => {
   });
 });
 
-describe('the whole path, ending in a saved dataset', () => {
-  it('reaches ReadyToPublish having only been typed at', async () => {
+describe('the whole path, ending in a checked draft', () => {
+  it('reaches a checked draft having only been typed at', async () => {
     renderAssistant();
 
     await say('call it My Orders');
@@ -608,9 +608,14 @@ describe('the whole path, ending in a saved dataset', () => {
     await say('use order_ts as the timestamp');
     await say('save it');
 
-    await waitFor(() =>
-      expect(api.dataset('my-orders')?.status).toBe('ReadyToPublish'),
-    );
+    /*
+      The closing check writes nothing: every change was written as it was
+      made, and publishing belongs to the dataset list and the wizard's
+      preview. So the draft is still a draft, and the last word says where
+      to publish it.
+    */
+    await waitFor(() => expect(lastReply()).toMatch(/publish it from/i));
+    expect(api.dataset('my-orders')?.status).toBe('Draft');
 
     const dataset = api.dataset('my-orders');
 

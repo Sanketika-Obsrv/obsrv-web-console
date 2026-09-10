@@ -279,6 +279,57 @@ describe('narrating what cannot be done', () => {
   });
 });
 
+/**
+ * Saving does not publish. The user asked that publishing stay where the
+ * console already does it — the dataset list, or the wizard's preview — so
+ * the closing turn says where to go and what is still unset.
+ */
+describe('narrating the closing check', () => {
+  const check = (dataset: Record<string, unknown>) =>
+    narrateOutcome(
+      { kind: 'save' },
+      { ok: true, status: 'applied', dataset, changedRefs: [] },
+    ).text;
+
+  const finished = {
+    dataset_id: 'my-orders',
+    name: 'My Orders',
+    type: 'event',
+    data_schema: { type: 'object', properties: { order_ts: {} } },
+    dataset_config: {
+      indexing_config: { olap_store_enabled: true },
+      keys_config: { timestamp_key: 'order_ts' },
+    },
+  };
+
+  it('says the draft is saved, and where to publish it', () => {
+    const text = check(finished);
+
+    expect(text).toMatch(/saved/i);
+    expect(text).toMatch(/publish/i);
+    expect(text).toMatch(/dataset list|wizard/i);
+  });
+
+  it('does not claim it published anything', () => {
+    // Saying how to make it live is right; saying it *is* live is not.
+    expect(check(finished)).not.toMatch(
+      /is (now )?live|made it live|published it|ready to publish/i,
+    );
+  });
+
+  it('reports what is still unset', () => {
+    const text = check({
+      ...finished,
+      dataset_config: {
+        indexing_config: { olap_store_enabled: true },
+        keys_config: {},
+      },
+    });
+
+    expect(text).toMatch(/timestamp/i);
+  });
+});
+
 describe('narrating a resolution that could not be acted on', () => {
   it('asks the clarifying question', () => {
     const { text } = narrateResolution({

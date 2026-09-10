@@ -39,6 +39,7 @@ import {
 } from './engine/fieldVocabulary';
 import { AgendaState, Prompt, askMessage, nextPrompt } from './engine/agenda';
 import { looksLikeData, summariseSample } from './engine/pastedData';
+import { recap } from './engine/recap';
 import { awaitingInput, runTurn } from './engine/turn';
 import { readSampleFile } from './messages/sampleParse';
 import {
@@ -357,6 +358,17 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
 
       return {
         ...(dataset ? { dataset } : {}),
+        /*
+          The document is the record of what was decided when this
+          conversation did not build it and nothing has been said yet.
+          `create` writes defaults nobody chose, which is why the transcript
+          normally settles the optional questions — but an existing dataset
+          has no transcript, and its values are somebody's decisions.
+        */
+        ...(current?.mode === 'update' &&
+        (current?.messages ?? []).every((message) => message.role !== 'user')
+          ? { documentAuthoritative: true }
+          : {}),
         ...(current?.pending ? { pending: current.pending } : {}),
         // The stage the conversation is on, so the agenda asks about where
         // the user actually is rather than where the plan starts. It follows
@@ -422,7 +434,35 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     opened.current.add(current.sessionId);
 
     if (current.messages.length === 0) {
-      void askNext();
+      // Building one: the question is the whole opening, and it is asked
+      // without a read in front of it so nothing delays the first turn.
+      if (current.mode !== 'update') {
+        void askNext();
+        return;
+      }
+
+      /*
+        Opening one that already exists: it is read back first. Without the
+        recap the assistant opens with a question about a document the user
+        can see and it cannot describe — and since the document settles most
+        of the agenda, that question is usually "what would you like to
+        change?", which needs the recap in front of it to mean anything.
+      */
+      void (async () => {
+        const state = await agendaState(current);
+        const said = recap(state.dataset);
+
+        if (said) await session.append({ role: 'assistant', text: said });
+
+        const next = await askNext();
+
+        if (!next) {
+          await session.append({
+            role: 'assistant',
+            text: 'What would you like to change?',
+          });
+        }
+      })();
       return;
     }
 

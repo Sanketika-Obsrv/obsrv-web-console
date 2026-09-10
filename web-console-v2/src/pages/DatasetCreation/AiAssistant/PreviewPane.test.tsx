@@ -24,6 +24,7 @@ jest.mock('services/dataset', () => ({
 
 import { render, screen } from '@testing-library/react';
 import { act } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { useFetchDatasetsById } from 'services/dataset';
 import PreviewPane from './PreviewPane';
 
@@ -60,6 +61,10 @@ const givenDataset = (data: any) =>
 
 const configurations = () => screen.getByTestId('all-configurations');
 
+/** The pane carries a link, so it needs a router around it. */
+const show = (element: React.ReactElement) =>
+  render(<MemoryRouter>{element}</MemoryRouter>);
+
 beforeEach(() => {
   jest.clearAllMocks();
   givenDataset(ingestionOnly);
@@ -67,7 +72,7 @@ beforeEach(() => {
 
 describe('before a draft exists', () => {
   it('explains that the preview mirrors the server', () => {
-    render(<PreviewPane datasetId={null} />);
+    show(<PreviewPane datasetId={null} />);
 
     expect(
       screen.getByText(/mirrors what is stored on the server/i),
@@ -75,7 +80,7 @@ describe('before a draft exists', () => {
   });
 
   it('does not render the configuration panels', () => {
-    render(<PreviewPane datasetId={null} />);
+    show(<PreviewPane datasetId={null} />);
 
     expect(screen.queryByTestId('all-configurations')).not.toBeInTheDocument();
   });
@@ -83,25 +88,25 @@ describe('before a draft exists', () => {
 
 describe('once a draft exists', () => {
   it('renders the configuration panels for that dataset', () => {
-    render(<PreviewPane datasetId="my-orders" />);
+    show(<PreviewPane datasetId="my-orders" />);
 
     expect(configurations()).toHaveAttribute('data-dataset-id', 'my-orders');
   });
 
   it('shows the dataset id', () => {
-    render(<PreviewPane datasetId="my-orders" />);
+    show(<PreviewPane datasetId="my-orders" />);
 
     expect(screen.getByText('my-orders')).toBeInTheDocument();
   });
 
   it('forwards the section the last action touched', () => {
-    render(<PreviewPane datasetId="my-orders" focusSection="storage" />);
+    show(<PreviewPane datasetId="my-orders" focusSection="storage" />);
 
     expect(configurations()).toHaveAttribute('data-focus-section', 'storage');
   });
 
   it('forwards the refs the last action changed', () => {
-    render(
+    show(
       <PreviewPane
         datasetId="my-orders"
         changedRefs={['properties.order_id']}
@@ -122,7 +127,7 @@ describe('once a draft exists', () => {
  */
 describe('progress', () => {
   it('marks only the steps the server data actually satisfies', () => {
-    render(<PreviewPane datasetId="my-orders" />);
+    show(<PreviewPane datasetId="my-orders" />);
 
     expect(screen.getByRole('checkbox', { name: 'Ingestion' })).toBeChecked();
     expect(
@@ -142,7 +147,7 @@ describe('progress', () => {
    * conversational flow from reaching that state.
    */
   it('reports storage complete when no store is enabled, as the list does', () => {
-    render(<PreviewPane datasetId="my-orders" />);
+    show(<PreviewPane datasetId="my-orders" />);
 
     expect(screen.getByRole('checkbox', { name: 'Storage' })).toBeChecked();
   });
@@ -150,7 +155,7 @@ describe('progress', () => {
   it('reports every step once the draft is fully configured', () => {
     givenDataset(fullyConfigured);
 
-    render(<PreviewPane datasetId="my-orders" />);
+    show(<PreviewPane datasetId="my-orders" />);
 
     ['Ingestion', 'Processing', 'Storage'].forEach((label) => {
       expect(screen.getByRole('checkbox', { name: label })).toBeChecked();
@@ -160,7 +165,7 @@ describe('progress', () => {
   it('publishes the percentage for assistive technology', () => {
     givenDataset(fullyConfigured);
 
-    render(<PreviewPane datasetId="my-orders" />);
+    show(<PreviewPane datasetId="my-orders" />);
 
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
@@ -172,7 +177,7 @@ describe('progress', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedFetch.mockReturnValue({ data: undefined, isPending: true } as any);
 
-    render(<PreviewPane datasetId="my-orders" />);
+    show(<PreviewPane datasetId="my-orders" />);
 
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
@@ -187,7 +192,7 @@ describe('highlight expiry', () => {
   afterEach(() => jest.useRealTimers());
 
   it('drops the highlight after the flash window', () => {
-    render(
+    show(
       <PreviewPane
         datasetId="my-orders"
         changedRefs={['properties.order_id']}
@@ -208,7 +213,7 @@ describe('highlight expiry', () => {
   });
 
   it('keeps the highlight until the window elapses', () => {
-    render(
+    show(
       <PreviewPane
         datasetId="my-orders"
         changedRefs={['properties.order_id']}
@@ -227,7 +232,7 @@ describe('highlight expiry', () => {
   });
 
   it('restarts the window when a new change arrives', () => {
-    const { rerender } = render(
+    const { rerender } = show(
       <PreviewPane
         datasetId="my-orders"
         changedRefs={['properties.order_id']}
@@ -240,11 +245,13 @@ describe('highlight expiry', () => {
     });
 
     rerender(
-      <PreviewPane
-        datasetId="my-orders"
-        changedRefs={['properties.total_amount']}
-        highlightMs={3000}
-      />,
+      <MemoryRouter>
+        <PreviewPane
+          datasetId="my-orders"
+          changedRefs={['properties.total_amount']}
+          highlightMs={3000}
+        />
+      </MemoryRouter>,
     );
 
     act(() => {
@@ -254,6 +261,32 @@ describe('highlight expiry', () => {
     expect(configurations()).toHaveAttribute(
       'data-changed-refs',
       'properties.total_amount',
+    );
+  });
+});
+
+/**
+ * Asked for by the user: a way out to the wizard, always available, at any
+ * point in the conversation. The assistant coordinates the same APIs the
+ * wizard does, so leaving mid-flow and carrying on by hand has to work — and
+ * it is also the answer when the assistant cannot help.
+ */
+describe('the way out to the wizard', () => {
+  it('is offered once there is a dataset to edit', () => {
+    show(<PreviewPane datasetId="my-orders" />);
+
+    expect(screen.getByRole('link', { name: /wizard/i })).toHaveAttribute(
+      'href',
+      '/dataset/edit/ingestion/meta/my-orders',
+    );
+  });
+
+  it("offers the wizard's own start when no dataset exists yet", () => {
+    show(<PreviewPane datasetId={null} />);
+
+    expect(screen.getByRole('link', { name: /wizard/i })).toHaveAttribute(
+      'href',
+      '/dataset/create',
     );
   });
 });

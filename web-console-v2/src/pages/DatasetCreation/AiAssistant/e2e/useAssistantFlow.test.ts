@@ -493,19 +493,144 @@ describe('creating a dataset by answering only', () => {
       )?.properties?.order_ts?.isRequired,
     ).toBe(true);
 
-    await waitFor(() =>
-      expect(api.dataset('my-orders')?.status).toBe('ReadyToPublish'),
-    );
+    /**
+     * The closing check writes nothing: publishing is the dataset list's job
+     * and the wizard's, not the conversation's. So the draft stays a draft,
+     * and the last word says where to publish it.
+     */
+    expect(api.dataset('my-orders')?.status).toBe('Draft');
+    expect(
+      result.current.messages.map((message) => message.text).join(' | '),
+    ).toMatch(/publish it from the dataset list/i);
 
     /**
-     * Two confirmations, and no more: the sample offer and the save. A third
-     * would mean a typed answer fell through to the resolver and came back
-     * as "I think you mean".
+     * Two confirmations, and no more: the sample offer and the closing
+     * check. A third would mean a typed answer fell through to the resolver
+     * and came back as "I think you mean".
      */
     expect(
       result.current.messages.filter(
         (message) => message.card?.kind === 'confirm',
       ),
     ).toHaveLength(2);
+  });
+});
+
+/**
+ * Opening a dataset the conversation did not build.
+ *
+ * The assistant was create-only: every question that the document cannot
+ * honestly answer — storage, validation, dedup, the timestamp key — was
+ * settled from the transcript, because `create` writes defaults nobody
+ * chose. An existing dataset has no transcript, so it was walked from "what
+ * would you like to call this dataset?" through all fourteen questions
+ * again. Now the document is the record, and the conversation starts from
+ * what is actually there.
+ */
+describe('opening a dataset that already exists', () => {
+  const CONFIGURED = {
+    dataset_id: 'telemetry-events',
+    name: 'Telemetry Events',
+    type: 'event',
+    status: 'Live',
+    data_schema: {
+      type: 'object',
+      properties: {
+        device_id: {
+          type: 'string',
+          data_type: 'string',
+          arrival_format: 'text',
+        },
+        reading: {
+          type: 'number',
+          data_type: 'double',
+          arrival_format: 'number',
+        },
+        recorded_at: {
+          type: 'string',
+          data_type: 'date-time',
+          arrival_format: 'text',
+        },
+      },
+    },
+    dedup_config: { drop_duplicates: true, dedup_key: 'device_id' },
+    validation_config: { validate: true, mode: 'Strict' },
+    dataset_config: {
+      indexing_config: { olap_store_enabled: true },
+      keys_config: { timestamp_key: 'recorded_at' },
+    },
+  };
+
+  const openIt = async () => {
+    api = createFakeConfigApi({ seeded: [CONFIGURED] });
+    (
+      httpModule as unknown as { httpHolder: { current: unknown } }
+    ).httpHolder.current = api.http;
+
+    const { result } = renderHook(() => useAssistant('telemetry-events'));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() =>
+      expect(result.current.messages.length).toBeGreaterThan(1),
+    );
+    // The opening turn has to finish before anything is sent: `run` drops
+    // input while it is busy, deliberately, so two writes cannot race.
+    await waitFor(() => expect(result.current.busy).toBe(false));
+
+    return result;
+  };
+
+  const said = (result: { current: { messages: Message[] } }) =>
+    result.current.messages.map((message) => message.text).join(' | ');
+
+  it('reads the dataset back instead of starting over', async () => {
+    const result = await openIt();
+
+    expect(said(result)).toMatch(/Telemetry Events/);
+    expect(said(result)).not.toMatch(/call this dataset/i);
+  });
+
+  it('asks what to change, since the document answers the rest', async () => {
+    const result = await openIt();
+
+    expect(said(result)).toMatch(/what would you like to change/i);
+  });
+
+  it('says a live dataset is edited through a draft', async () => {
+    const result = await openIt();
+
+    expect(said(result)).toMatch(/draft/i);
+    expect(said(result)).toMatch(/republish|publish/i);
+  });
+
+  it('acts on an instruction about it', async () => {
+    const result = await openIt();
+
+    await result.current.send('make device_id required');
+
+    await waitFor(() =>
+      expect(
+        (
+          api.dataset('telemetry-events')?.data_schema as {
+            properties?: Record<string, { isRequired?: boolean }>;
+          }
+        )?.properties?.device_id?.isRequired,
+      ).toBe(true),
+    );
+  });
+
+  it('never publishes it', async () => {
+    const result = await openIt();
+    const before = result.current.messages.length;
+
+    await result.current.send('save it');
+
+    await waitFor(() =>
+      expect(result.current.messages.length).toBeGreaterThan(before),
+    );
+    await waitFor(() => expect(result.current.busy).toBe(false));
+
+    expect(said(result)).toMatch(/publish it from the dataset list/i);
+    expect(api.dataset('telemetry-events')?.status).toBe('Live');
   });
 });

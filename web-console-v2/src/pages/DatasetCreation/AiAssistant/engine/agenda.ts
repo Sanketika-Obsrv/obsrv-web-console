@@ -110,6 +110,21 @@ export interface AgendaState {
    * because revisiting is how a setting gets changed.
    */
   focus?: WizardStep;
+  /**
+   * True when the document is the record of what was decided, rather than a
+   * draft this conversation built.
+   *
+   * Six questions below derive "already answered" from the transcript,
+   * because `create` writes defaults nobody chose — `lakehouse_enabled`,
+   * `Strict` validation, `obsrv_meta.syncts` as the timestamp — so on a new
+   * draft "answered no" and "never asked" look identical in the document.
+   * Opening a dataset that already exists inverts that: there is no
+   * transcript, and every value in the document is there because somebody
+   * put it there. Set when the assistant did not create this dataset and
+   * nothing has been said yet; from the first turn onwards the ordinary
+   * rules apply.
+   */
+  documentAuthoritative?: boolean;
   /** The failure from the turn that just ran, so a question can be re-asked. */
   lastFailureCode?: ExecutionFailureCode;
   /** The name that was refused, so an alternative can be offered. */
@@ -260,6 +275,16 @@ const KEY_FIELD: Record<KeySlot, string> = {
   partition: 'partition_key',
 };
 
+/** The stores the document says are switched on. */
+const requiredStores = (state: AgendaState): string[] => {
+  const indexing = (block(state, 'dataset_config').indexing_config ??
+    {}) as Record<string, boolean>;
+
+  return ['olap_store_enabled', 'lakehouse_enabled', 'cache_enabled'].filter(
+    (flag) => indexing[flag],
+  );
+};
+
 export const requiredKeys = (state: AgendaState): KeySlot[] => {
   const indexing = (block(state, 'dataset_config').indexing_config ??
     {}) as Record<string, boolean>;
@@ -304,7 +329,7 @@ const missingKeys = (state: AgendaState): KeySlot[] => {
     if (!held) return false;
 
     return slot === 'timestamp' && held === CREATED_TIMESTAMP_DEFAULT
-      ? keyChosenInTranscript(state)
+      ? state.documentAuthoritative || keyChosenInTranscript(state)
       : true;
   };
 
@@ -334,15 +359,19 @@ const PENDING: Record<AgendaStepId, (state: AgendaState) => boolean> = {
   // one edit — the assistant asks "anything else?" after each one, and a
   // single click ends it.
   schema: (state) =>
+    !state.documentAuthoritative &&
     Boolean(state.dataset?.data_schema) &&
     !answeredInTranscript(state, 'schema', []),
 
-  pii: (state) => piiOutstanding(state).length > 0,
+  pii: (state) =>
+    !state.documentAuthoritative && piiOutstanding(state).length > 0,
 
   validation: (state) =>
+    !state.documentAuthoritative &&
     !answeredInTranscript(state, 'validation', ['set_additional_fields']),
 
   transform: (state) =>
+    !state.documentAuthoritative &&
     !answeredInTranscript(state, 'transform', [
       'add_transformation',
       'add_derived_field',
@@ -351,10 +380,12 @@ const PENDING: Record<AgendaStepId, (state: AgendaState) => boolean> = {
   // Not raised until the master datasets are known, and never when there are
   // none: an offer to join against an empty list wastes a turn.
   denorm: (state) =>
+    !state.documentAuthoritative &&
     Boolean(state.masterDatasets?.length) &&
     !answeredInTranscript(state, 'denorm', ['set_denorm']),
 
   dedup: (state) =>
+    !state.documentAuthoritative &&
     block(state, 'dedup_config').drop_duplicates !== true &&
     !answeredInTranscript(state, 'dedup', ['set_dedup']),
 
@@ -362,11 +393,32 @@ const PENDING: Record<AgendaStepId, (state: AgendaState) => boolean> = {
   // fresh draft carries whether or not anyone chose them, so "answered no"
   // and "never asked" look identical there. The transcript is the only
   // honest source.
-  storage: (state) => !answeredInTranscript(state, 'storage', ['set_storage']),
+  /**
+   * Storage cannot be read from a *new* draft: `create` sets defaults that a
+   * fresh draft carries whether or not anyone chose them, so "answered no"
+   * and "never asked" look identical there and the transcript is the only
+   * honest source. On a dataset that already exists the flags are somebody's
+   * decision, and only a dataset with no store at all is missing an answer.
+   */
+  storage: (state) =>
+    state.documentAuthoritative
+      ? requiredStores(state).length === 0
+      : !answeredInTranscript(state, 'storage', ['set_storage']),
 
   keys: (state) => missingKeys(state).length > 0,
 
-  review: (state) => (state.dataset?.status ?? 'Draft') === 'Draft',
+  /**
+   * The wrap-up, asked once.
+   *
+   * It used to stay open until the dataset stopped being a draft, because
+   * saving transitioned it to ReadyToPublish. Saving no longer publishes —
+   * that belongs to the dataset list and the wizard's preview — so the
+   * question closes when the conversation shows it was answered, like every
+   * other question that the document cannot record.
+   */
+  review: (state) =>
+    !state.documentAuthoritative &&
+    !answeredInTranscript(state, 'review', ['save']),
 };
 
 /** Questions belonging to one stage of the wizard. */
@@ -423,11 +475,24 @@ export const currentStep = (state: AgendaState): AgendaStepId | undefined => {
   if (state.focus) {
     const here = questionsIn(state.focus);
 
+    /**
+     * Revisiting only makes sense once the user has moved somewhere.
+     *
+     * A new session starts at `ingestion` whether or not anybody chose it,
+     * so on a dataset that already exists this branch re-asked its name — a
+     * question the document answers — because a stage in focus deliberately
+     * re-opens what it has already settled.
+     */
+    const revisit = state.documentAuthoritative
+      ? undefined
+      : here.find(
+          (step) =>
+            !PER_ITEM.includes(step) && !answeredInThisVisit(state, step),
+        );
+
     return (
       here.find((step) => PENDING[step](state)) ??
-      here.find(
-        (step) => !PER_ITEM.includes(step) && !answeredInThisVisit(state, step),
-      ) ??
+      revisit ??
       AGENDA_STEPS.find((step) => PENDING[step](state))
     );
   }
@@ -1078,12 +1143,15 @@ const QUESTION: Record<
 
   review: (state) => ({
     step: 'review',
-    text: 'That is everything I need. Shall I save it?',
+    // Not "shall I save it?": every change was saved as it was made. What
+    // is left is to read it back and say what is still outstanding — and
+    // publishing happens in the dataset list or the wizard's preview.
+    text: 'That is everything I need. Shall I check it over?',
     card: {
       kind: 'confirm',
-      title: 'Save this dataset',
+      title: 'Check this dataset over',
       summary: reviewSummary(state),
-      confirmLabel: 'Save',
+      confirmLabel: 'Check it',
       confirmAction: { kind: 'save' },
     },
   }),

@@ -37,6 +37,7 @@ export const translations = {
         'Tell me what you would like to build. You can paste a sample of the data at any point, or drop the file anywhere in this pane.',
       resumingDraft:
         'Resuming this draft. Every change is saved to the dataset as you go.',
+      editInWizard: 'Edit in the wizard →',
       exportTrail: 'Export the action trail',
       exportTrailHint:
         'Downloads every action this conversation took, as JSON. Your sample rows and any credentials are left out.',

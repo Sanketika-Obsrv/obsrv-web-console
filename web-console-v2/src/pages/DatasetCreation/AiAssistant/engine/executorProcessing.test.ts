@@ -639,37 +639,43 @@ describe('set_keys', () => {
   });
 });
 
+/**
+ * Saving no longer publishes.
+ *
+ * Making a dataset live happens from the dataset list or the wizard's
+ * preview — the console's own confirmation lives there, and the user asked
+ * that the conversation not do it. Every change has already been written as
+ * it was made, so "save it" is a closing read.
+ */
 describe('save', () => {
-  it('transitions the draft to ReadyToPublish', async () => {
-    mocked.read.mockResolvedValue(draft({ status: 'ReadyToPublish' }));
-
+  it('reads the dataset back rather than changing its status', async () => {
     const result = await run({ kind: 'save' });
 
-    expect(mocked.transition).toHaveBeenCalledWith(
-      DATASET_ID,
-      'ReadyToPublish',
-    );
+    expect(mocked.transition).not.toHaveBeenCalled();
+    expect(mocked.update).not.toHaveBeenCalled();
+    expect(mocked.read).toHaveBeenCalled();
     expect(result.ok).toBe(true);
   });
 
-  it('surfaces the API error when the transition is rejected', async () => {
-    mocked.transition.mockRejectedValue({
+  it('carries the document back, so the check can say what is unset', async () => {
+    const result = await run({ kind: 'save' });
+
+    expect(result.ok).toBe(true);
+    if (result.ok && result.status === 'applied') {
+      expect(result.dataset.dataset_id).toBe(DATASET_ID);
+    }
+  });
+
+  it('surfaces the API error when the read fails', async () => {
+    mocked.read.mockRejectedValue({
       response: {
-        data: {
-          error: {
-            code: 'DATASET_UNSUPPORTED_STORAGE_TYPE',
-            message: 'The storage type "lake_house" is not available.',
-          },
-        },
+        data: { error: { code: 'DATASET_NOT_FOUND', message: 'gone' } },
       },
     });
 
     const result = await run({ kind: 'save' });
 
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.code).toBe('DATASET_UNSUPPORTED_STORAGE_TYPE');
-    }
   });
 
   it('does nothing without a dataset', async () => {
@@ -823,7 +829,7 @@ describe('what an applied change says about undoing itself', () => {
     ).toBeFalsy();
     expect(
       outcome.ok && outcome.status === 'applied' && outcome.undoBlocked,
-    ).toMatch(/status/i);
+    ).toMatch(/nothing to put back/i);
   });
 
   it('reads the name and type so a rename can be put back', async () => {

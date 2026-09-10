@@ -377,7 +377,7 @@ export const inverseOf = (
 
     case 'save':
       return refuse(
-        'Marking the dataset ready to publish is a status change, and moving a status backwards is not something the console offers.',
+        'The closing check only read the dataset back, so there is nothing to put back.',
       );
 
     case 'remove_transformation':

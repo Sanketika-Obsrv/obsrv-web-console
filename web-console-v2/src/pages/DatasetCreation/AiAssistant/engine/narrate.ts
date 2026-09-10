@@ -13,6 +13,7 @@ import { Action, AgendaStepId } from './actions';
 import { availableStorageLabels, diagnose } from './errorMap';
 import { ExecutionFailureCode, ExecutionOutcome } from './executor';
 import { MessageCard } from '../messages/types';
+import { outstandingWork } from './finalCheck';
 import { topicOf } from './prerequisites';
 import { Resolution } from './ruleResolver';
 
@@ -138,7 +139,7 @@ export const describeAction = (action: Action): string => {
     case 'skip_connector':
       return 'skipped connector setup';
     case 'save':
-      return 'saved the dataset';
+      return 'check the dataset over';
     case 'goto_step':
       return `moved to the ${action.step} step`;
 
@@ -235,6 +236,23 @@ export const narrateOutcome = (
 
   if (outcome.status === 'noop') {
     return { text: `Done — ${describeAction(action)}.` };
+  }
+
+  /**
+   * The closing check, which is the one action that writes nothing.
+   *
+   * Publishing belongs to the dataset list and the wizard's preview, so the
+   * reply says where to go rather than implying the conversation did it.
+   */
+  if (action.kind === 'save') {
+    const work = outstandingWork(outcome.dataset);
+    const wrongWith = work.length
+      ? ` ${work.length === 1 ? 'One thing is' : `${work.length} things are`} still outstanding: ${joinPhrases(work)}.`
+      : '';
+
+    return {
+      text: `Everything is saved to the draft — each change went to the server as we made it.${wrongWith} To make it live, publish it from the dataset list or the wizard's preview.`,
+    };
   }
 
   const created = outcome.datasetId

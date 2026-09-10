@@ -39,6 +39,14 @@ export interface FakeApiOptions {
    * offer when there is nothing to join to, and most flows should not see it.
    */
   masters?: { dataset_id: string; name?: string }[];
+  /**
+   * Datasets the cluster already holds, in full.
+   *
+   * For the flows that *open* a dataset rather than build one: the document
+   * is what the agenda reads, so it has to be the real shape rather than an
+   * id in `existingIds`.
+   */
+  seeded?: Partial<StoredDataset>[];
 }
 
 interface StoredDataset extends Json {
@@ -133,9 +141,32 @@ export const createFakeConfigApi = ({
   storageTypes = { lake_house: false, realtime_store: true },
   existingIds = [],
   masters = [],
+  seeded = [],
 }: FakeApiOptions = {}): FakeConfigApi => {
   const datasets = new Map<string, StoredDataset>();
   const taken = new Set(existingIds);
+
+  for (const dataset of seeded) {
+    const stored: StoredDataset = {
+      dataset_id: 'seeded',
+      name: 'Seeded',
+      type: 'event',
+      status: 'Draft',
+      version_key: 'seeded-vk',
+      data_schema: { type: 'object', properties: {} },
+      dataset_config: {},
+      dedup_config: {},
+      denorm_config: {},
+      validation_config: {},
+      transformations_config: [],
+      connectors_config: [],
+      sample_data: {},
+      ...dataset,
+    };
+
+    datasets.set(stored.dataset_id, stored);
+    taken.add(stored.dataset_id);
+  }
 
   for (const master of masters) {
     datasets.set(master.dataset_id, {

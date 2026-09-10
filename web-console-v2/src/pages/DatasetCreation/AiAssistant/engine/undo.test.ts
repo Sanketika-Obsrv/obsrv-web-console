@@ -404,8 +404,9 @@ describe('inverting the ingestion actions', () => {
     );
   });
 
-  it('refuses to undo a save', () => {
-    expect(refusal({ kind: 'save' })).toMatch(/status|save|publish/i);
+  /** The closing check reads the dataset back and writes nothing. */
+  it('refuses to undo the closing check', () => {
+    expect(refusal({ kind: 'save' })).toMatch(/nothing to put back/i);
   });
 
   it('refuses to undo an undo of a transformation', () => {
