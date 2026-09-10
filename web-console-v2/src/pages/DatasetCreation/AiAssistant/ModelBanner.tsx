@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import React from 'react';
 import { LoadProgress } from './model/engineClient';
+import { MODELS, ModelSpec } from './model/catalog';
 import { Capability } from './model/tiers';
 
 export interface ModelBannerProps {
@@ -19,7 +20,15 @@ export interface ModelBannerProps {
   cached: boolean;
   /** Roughly how much will be downloaded, for an honest prompt. */
   downloadMb: number;
-  onEnable: () => void;
+  /**
+   * Models this browser could actually hold, smallest first.
+   *
+   * Anything beyond the first is offered as an alternative rather than an
+   * upgrade: the small model is the recommendation, and a bigger download is
+   * only worth mentioning where there is room for it.
+   */
+  choices?: ModelSpec[];
+  onEnable: (model?: ModelSpec) => void;
   onRemove: () => void;
   error?: string;
 }
@@ -38,10 +47,12 @@ const ModelBanner: React.FC<ModelBannerProps> = ({
   ready,
   cached,
   downloadMb,
+  choices = [MODELS[0]],
   onEnable,
   onRemove,
   error,
 }) => {
+  const [smallest, ...alternatives] = choices;
   if (error) {
     return (
       <Alert severity="warning">
@@ -103,11 +114,25 @@ const ModelBanner: React.FC<ModelBannerProps> = ({
       >
         {cached
           ? 'The model is already downloaded in this browser.'
-          : `Optional: download a small model (about ${downloadMb} MB) so instructions can be phrased freely. Everything works without it.`}
+          : `Optional: download a small model (about ${downloadMb} MB) so instructions can be phrased freely. Everything works without it.${alternatives
+              .map(
+                (model) =>
+                  ` ${model.label} understands more and costs about ${model.downloadMB} MB.`,
+              )
+              .join('')}`}
       </Typography>
-      <Button size="small" variant="outlined" onClick={onEnable}>
+      <Button
+        size="small"
+        variant="outlined"
+        onClick={() => onEnable(smallest)}
+      >
         {cached ? 'Use the model' : 'Download the model'}
       </Button>
+      {alternatives.map((model) => (
+        <Button key={model.id} size="small" onClick={() => onEnable(model)}>
+          {`${model.label} instead`}
+        </Button>
+      ))}
     </Stack>
   );
 };

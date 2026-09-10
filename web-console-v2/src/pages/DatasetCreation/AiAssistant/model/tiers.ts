@@ -7,7 +7,9 @@
  * offer the model?" honestly, and never to block the assistant.
  */
 
-/** 0 = rules only, 1 = the small model, 2 = a larger one if it ever ships. */
+import { MODELS, bytesNeeded } from './catalog';
+
+/** 0 = rules only, 1 = the small model, 2 = the larger one. */
 export type ModelTier = 0 | 1 | 2 | 3;
 
 export interface Capability {
@@ -92,5 +94,21 @@ export const detectCapability = async ({
     };
   }
 
-  return { tier: 1, hasWebGPU: true, storageQuota: quota };
+  /**
+   * The tier is the *highest* model this browser could hold.
+   *
+   * Which model actually runs is the user's choice; this only decides which
+   * choices are honest to offer. An unknown quota stays at tier 1 — a
+   * browser that will not say how much room it has is not one to bet a
+   * gigabyte on, and the smaller model is the recommended one regardless.
+   */
+  const roomForLarger =
+    quota !== undefined &&
+    MODELS.some((model) => model.tier === 2 && quota >= bytesNeeded(model));
+
+  return {
+    tier: roomForLarger ? 2 : 1,
+    hasWebGPU: true,
+    ...(quota !== undefined ? { storageQuota: quota } : {}),
+  };
 };

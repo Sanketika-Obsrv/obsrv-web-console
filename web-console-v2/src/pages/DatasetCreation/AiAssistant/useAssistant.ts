@@ -46,6 +46,7 @@ import {
   loadEngine,
   removeModel,
 } from './model/engineClient';
+import { DEFAULT_MODEL, MODELS, ModelSpec } from './model/catalog';
 import { resolveWithModel } from './model/modelResolver';
 import { Capability, detectCapability } from './model/tiers';
 import { auditFileName, buildAuditTrail } from './session/auditTrail';
@@ -93,9 +94,12 @@ export interface AssistantApi {
   modelProgress?: LoadProgress;
   modelReady: boolean;
   modelCached: boolean;
+  /** The model in use, and every model this browser could run instead. */
+  model: ModelSpec;
+  modelChoices: ModelSpec[];
   modelError?: string;
-  /** Downloads and starts the model. Only ever from an explicit control. */
-  enableModel: () => Promise<void>;
+  /** Downloads and starts a model. Only ever from an explicit control. */
+  enableModel: (model?: ModelSpec) => Promise<void>;
   /** Unloads it and frees the cached weights. */
   disableModel: () => Promise<void>;
   /**
@@ -167,6 +171,8 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   // re-rendering must not recreate or drop it.
   const engine = useRef<ModelEngine | undefined>(undefined);
   const [modelReady, setModelReady] = useState(false);
+  /** Which model is in use, which decides the size quoted and what to free. */
+  const [model, setModel] = useState<ModelSpec>(DEFAULT_MODEL);
 
   /**
    * Conversations already reported, so a re-render does not report again.
@@ -459,6 +465,14 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                     {
                       utterance,
                       step,
+                      // The question narrows the model's job from "what does
+                      // this person want" to "what does this answer mean".
+                      ...(asked.current
+                        ? {
+                            question: asked.current.step,
+                            questionText: asked.current.text,
+                          }
+                        : {}),
                       hasDraft: Boolean(datasetId),
                       vocabulary,
                       history: session.messages,
@@ -682,14 +696,16 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
    * bandwidth and disk. A failure is reported and the assistant carries on
    * with the rules.
    */
-  const enableModel = useCallback(async () => {
+  const enableModel = useCallback(async (wanted: ModelSpec = DEFAULT_MODEL) => {
     setModelError(undefined);
     setModelProgress({ progress: 0, text: 'Preparing…' });
 
     try {
       engine.current = await loadEngine({
+        model: wanted,
         onProgress: (progress) => setModelProgress(progress),
       });
+      setModel(wanted);
       setModelReady(true);
       setModelCached(true);
     } catch (cause) {
@@ -708,11 +724,11 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     engine.current = undefined;
     setModelReady(false);
 
-    // Frees the space rather than leaving ~450 MB behind after the user has
-    // said they do not want it.
-    await removeModel().catch(() => undefined);
+    // Frees the space rather than leaving the weights behind after the user
+    // has said they do not want them.
+    await removeModel(model.id).catch(() => undefined);
     setModelCached(false);
-  }, []);
+  }, [model.id]);
 
   /**
    * Writes the action trail to a file.
@@ -770,6 +786,10 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     modelProgress,
     modelReady,
     modelCached,
+    model,
+    modelChoices: MODELS.filter(
+      (choice) => choice.tier <= (capability?.tier ?? 0),
+    ),
     modelError,
     enableModel,
     disableModel,

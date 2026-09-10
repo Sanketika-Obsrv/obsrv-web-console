@@ -11,17 +11,24 @@
  * before this ships: an air-gapped or egress-restricted deployment cannot
  * reach them, and would run at tier 0 permanently.
  */
+import { DEFAULT_MODEL, ModelSpec } from './catalog';
 import { Capability, detectCapability } from './tiers';
 
-/** Confirmed present in `prebuiltAppConfig` at 0.2.85. */
-export const MODEL_ID = 'Qwen3-0.6B-q4f16_1-MLC';
+/**
+ * The default, and what the ids and sizes now come from.
+ *
+ * Kept as named exports because the page and the banner still speak in one
+ * model's terms; which model that is comes from `catalog`, whose figures are
+ * checked against the installed package rather than written here.
+ */
+export const MODEL_ID = DEFAULT_MODEL.id;
 
 /**
  * Roughly what the weights cost to fetch, for telling the user before they
  * agree to it. The model's own metadata reports 1,403 MB of *VRAM*, which is
  * a different number and not the one to quote at a download prompt.
  */
-export const MODEL_DOWNLOAD_MB = 450;
+export const MODEL_DOWNLOAD_MB = DEFAULT_MODEL.downloadMB;
 
 export interface LoadProgress {
   /** 0..1 where the library reports it. */
@@ -48,23 +55,29 @@ export interface ModelEngine {
  * Asked before offering a download, so a returning user is not warned about
  * a ~450 MB fetch that will not happen.
  */
-export const isModelCached = async (): Promise<boolean> => {
+export const isModelCached = async (
+  modelId: string = MODEL_ID,
+): Promise<boolean> => {
   try {
     const { hasModelInCache } = await import('@mlc-ai/web-llm');
-    return await hasModelInCache(MODEL_ID);
+    return await hasModelInCache(modelId);
   } catch {
     return false;
   }
 };
 
 /** Removes the weights, so "stop using the model" can free the space. */
-export const removeModel = async (): Promise<void> => {
+export const removeModel = async (
+  modelId: string = MODEL_ID,
+): Promise<void> => {
   const { deleteModelAllInfoInCache } = await import('@mlc-ai/web-llm');
-  await deleteModelAllInfoInCache(MODEL_ID);
+  await deleteModelAllInfoInCache(modelId);
 };
 
 export interface LoadOptions {
   onProgress?: (progress: LoadProgress) => void;
+  /** Which model to load. Defaults to the small one. */
+  model?: ModelSpec;
 }
 
 /**
@@ -75,6 +88,7 @@ export interface LoadOptions {
  */
 export const loadEngine = async ({
   onProgress,
+  model = DEFAULT_MODEL,
 }: LoadOptions = {}): Promise<ModelEngine> => {
   const capability = await detectCapability();
 
@@ -84,9 +98,17 @@ export const loadEngine = async ({
     );
   }
 
+  // Asked for a model this browser was not judged able to hold. Refused
+  // rather than attempted: a failure here costs the user the whole download.
+  if (model.tier > capability.tier) {
+    throw new Error(
+      `There is not enough room in this browser for ${model.label}.`,
+    );
+  }
+
   const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
 
-  const engine = await CreateMLCEngine(MODEL_ID, {
+  const engine = await CreateMLCEngine(model.id, {
     initProgressCallback: (report) =>
       onProgress?.({ progress: report.progress, text: report.text }),
   });

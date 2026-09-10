@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ModelBanner, { ModelBannerProps } from './ModelBanner';
+import { MODELS, ModelSpec } from './model/catalog';
 
 const show = (props: Partial<ModelBannerProps> = {}) => {
   const onEnable = jest.fn();
@@ -108,5 +109,49 @@ describe('when the model cannot run here', () => {
     show({ error: 'The model failed to load.' });
 
     expect(screen.getByRole('alert')).toHaveTextContent(/still works/i);
+  });
+});
+
+/**
+ * The larger model is an alternative, not an upgrade path the user is
+ * pushed down: the small one stays the recommendation, and the bigger one
+ * is only mentioned where there is actually room for it.
+ */
+describe('offering a larger model', () => {
+  const larger = MODELS.find((model) => model.tier === 2) as ModelSpec;
+
+  it('says nothing about it when the browser has no room', () => {
+    show({ choices: [MODELS[0]] });
+
+    expect(screen.queryByText(new RegExp(larger.label, 'i'))).toBeNull();
+  });
+
+  it('offers it by name and size when there is room', () => {
+    show({ choices: MODELS });
+
+    expect(
+      screen.getByRole('button', { name: new RegExp(larger.label, 'i') }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(new RegExp(`${larger.downloadMB} MB`, 'i')),
+    ).toBeInTheDocument();
+  });
+
+  it('downloads the one that was asked for', async () => {
+    const { onEnable } = show({ choices: MODELS });
+
+    await userEvent.click(
+      screen.getByRole('button', { name: new RegExp(larger.label, 'i') }),
+    );
+
+    expect(onEnable).toHaveBeenCalledWith(larger);
+  });
+
+  it('keeps the small model as the plain choice', async () => {
+    const { onEnable } = show({ choices: MODELS });
+
+    await userEvent.click(screen.getByRole('button', { name: /^download/i }));
+
+    expect(onEnable).toHaveBeenCalledWith(MODELS[0]);
   });
 });

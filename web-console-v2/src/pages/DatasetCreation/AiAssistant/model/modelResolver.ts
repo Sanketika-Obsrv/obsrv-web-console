@@ -15,13 +15,23 @@
  * If any of that fails, the rules answer instead. A 0.6B model that produces
  * nothing useful should be invisible, not fatal.
  */
-import { Action, WizardStep, createActionValidator } from '../engine/actions';
+import {
+  Action,
+  AgendaStepId,
+  WizardStep,
+  createActionValidator,
+} from '../engine/actions';
+import { ACCEPTS } from '../engine/agenda';
 import { FieldVocabulary, resolveField } from '../engine/fieldVocabulary';
 import { Resolution, resolveUtterance } from '../engine/ruleResolver';
 import { Message } from '../session/types';
 import { ModelEngine } from './engineClient';
 import { SYSTEM_PROMPT, buildPrompt } from './prompt';
-import { STEP_ACTIONS, buildStepSchema } from './stepSchema';
+import {
+  STEP_ACTIONS,
+  buildQuestionSchema,
+  buildStepSchema,
+} from './stepSchema';
 
 /** Confidence for a model answer whose field resolved exactly. */
 const MODEL_CONFIDENCE = 0.85;
@@ -31,6 +41,15 @@ export interface ModelResolveInput {
   /** True once the draft exists; narrows what the model may propose. */
   hasDraft?: boolean;
   step: WizardStep;
+  /**
+   * The agenda question on the table, when there is one.
+   *
+   * Narrows both halves of the request: the model is shown the question and
+   * worked answers to it, and is held to the actions that answer it. The
+   * wizard step remains the fallback for a turn with nothing asked.
+   */
+  question?: AgendaStepId;
+  questionText?: string;
   vocabulary: FieldVocabulary;
   history?: Message[];
   connectors?: { id: string; name?: string }[];
@@ -168,10 +187,15 @@ export const resolveWithModel = async (
     reply = await engine.complete(`${SYSTEM_PROMPT}\n\n${buildPrompt(input)}`, {
       type: 'json_object',
       schema: JSON.stringify(
-        buildStepSchema(input.step, {
-          connectorProperties: input.connectorProperties,
-          hasDraft: input.hasDraft,
-        }),
+        input.question
+          ? buildQuestionSchema(input.question, {
+              connectorProperties: input.connectorProperties,
+              hasDraft: input.hasDraft,
+            })
+          : buildStepSchema(input.step, {
+              connectorProperties: input.connectorProperties,
+              hasDraft: input.hasDraft,
+            }),
       ),
     });
   } catch {
@@ -189,9 +213,17 @@ export const resolveWithModel = async (
 
   if (!checked.ok) return fallBackToRules();
 
-  // Constrained decoding is a hint, not a guarantee: the schema is passed to
-  // the engine, but a model can still emit an action for another step.
-  if (!STEP_ACTIONS[input.step].includes(checked.action.kind)) {
+  /**
+   * Constrained decoding is a hint, not a guarantee: the schema is passed to
+   * the engine, but a model can still emit an action for another step — or,
+   * with a question on the table, for another question. Checked against the
+   * same list the schema was built from.
+   */
+  const permitted = input.question
+    ? [...ACCEPTS[input.question], 'clarify', 'goto_step']
+    : STEP_ACTIONS[input.step];
+
+  if (!permitted.includes(checked.action.kind)) {
     return fallBackToRules();
   }
 

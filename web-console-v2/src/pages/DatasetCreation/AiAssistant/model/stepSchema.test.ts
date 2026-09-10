@@ -1,5 +1,10 @@
-import { WizardStep } from '../engine/actions';
-import { STEP_ACTIONS, buildStepSchema, estimateTokens } from './stepSchema';
+import { AGENDA_STEPS, WizardStep } from '../engine/actions';
+import {
+  STEP_ACTIONS,
+  buildQuestionSchema,
+  buildStepSchema,
+  estimateTokens,
+} from './stepSchema';
 
 /** The model's context window, from `prebuiltAppConfig`. */
 const CONTEXT = 4096;
@@ -189,5 +194,50 @@ describe('withdrawing actions that are already done', () => {
     expect(
       kindsIn(buildStepSchema('schema', { hasDraft: true })).sort(),
     ).toEqual(kindsIn(buildStepSchema('schema')).sort());
+  });
+});
+
+/**
+ * Scoping to the *question* rather than the wizard page.
+ *
+ * A page holds several questions — processing alone holds masking,
+ * validation, transformations, denormalisation and de-duplication — so
+ * scoping to the page still offers the model six ways to be wrong about a
+ * yes-or-no question. The agenda knows which one was asked.
+ */
+describe('buildQuestionSchema', () => {
+  it('offers only what answers the question', () => {
+    const schema = buildQuestionSchema('dedup');
+
+    expect(kindsIn(schema).sort()).toEqual(
+      ['clarify', 'goto_step', 'set_dedup', 'skip_step'].sort(),
+    );
+  });
+
+  it('is smaller than the page it belongs to', () => {
+    expect(estimateTokens(buildQuestionSchema('dedup'))).toBeLessThan(
+      estimateTokens(buildStepSchema('processing')),
+    );
+  });
+
+  it('keeps the way out on every question', () => {
+    for (const question of AGENDA_STEPS) {
+      expect(kindsIn(buildQuestionSchema(question))).toContain('clarify');
+    }
+  });
+
+  it('never offers naming again once the draft exists', () => {
+    expect(
+      kindsIn(buildQuestionSchema('name', { hasDraft: true })),
+    ).not.toContain('set_dataset_name');
+  });
+
+  it('produces a usable schema for every question', () => {
+    for (const question of AGENDA_STEPS) {
+      const schema = buildQuestionSchema(question);
+
+      expect((schema.oneOf as unknown[]).length).toBeGreaterThan(0);
+      expect(estimateTokens(schema)).toBeLessThan(1200);
+    }
   });
 });

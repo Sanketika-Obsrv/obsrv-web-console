@@ -1,5 +1,6 @@
 import { buildFieldVocabulary } from '../engine/fieldVocabulary';
 import { ModelEngine } from './engineClient';
+import { Resolution } from '../engine/ruleResolver';
 import { extractJson, resolveWithModel } from './modelResolver';
 
 const FIELDS = [
@@ -17,6 +18,9 @@ const FIELDS = [
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const vocabulary = buildFieldVocabulary(FIELDS as any);
+
+/** A fallback that declines, so only the model's answer is under test. */
+const unresolved: Resolution = { status: 'unknown', confidence: 0 };
 
 const engineReplying = (reply: string | (() => never)): ModelEngine => ({
   complete: async () => (typeof reply === 'string' ? reply : reply()),
@@ -426,5 +430,82 @@ describe('when the model asks a question', () => {
     );
 
     expect(resolution.needsConfirmation).toBeFalsy();
+  });
+});
+
+/**
+ * With a question on the table the model is given the question, not the
+ * wizard page — and is held to the actions that answer it.
+ */
+describe('answering the question the assistant asked', () => {
+  const asking = {
+    utterance: 'no',
+    step: 'processing' as const,
+    question: 'dedup' as const,
+    questionText: 'Shall I drop duplicate records?',
+    hasDraft: true,
+    vocabulary,
+  };
+
+  it('gives the model the question and its examples', async () => {
+    const seen: string[] = [];
+    const engine = {
+      complete: async (prompt: string) => {
+        seen.push(prompt);
+        return '{"kind":"skip_step","step":"dedup"}';
+      },
+      unload: async () => undefined,
+    };
+
+    await resolveWithModel(asking, { engine, fallback: () => unresolved });
+
+    expect(seen[0]).toContain('Shall I drop duplicate records?');
+    expect(seen[0]).toContain('set_dedup');
+  });
+
+  it('constrains the reply to the actions that answer it', async () => {
+    const schemas: string[] = [];
+    const engine = {
+      complete: async (_prompt: string, format?: unknown) => {
+        schemas.push((format as { schema: string }).schema);
+        return '{"kind":"skip_step","step":"dedup"}';
+      },
+      unload: async () => undefined,
+    };
+
+    await resolveWithModel(asking, { engine, fallback: () => unresolved });
+
+    expect(schemas[0]).toContain('set_dedup');
+    // `set_pii` shares the processing page and answers a different question.
+    expect(schemas[0]).not.toContain('set_pii');
+  });
+
+  it('refuses an action that does not answer the question', async () => {
+    const engine = {
+      complete: async () =>
+        '{"kind":"set_pii","path":"order_id","action":"mask","skipOnFailure":true}',
+      unload: async () => undefined,
+    };
+
+    const resolution = await resolveWithModel(asking, {
+      engine,
+      fallback: () => unresolved,
+    });
+
+    expect(resolution.status).not.toBe('resolved');
+  });
+
+  it('accepts one that does', async () => {
+    const engine = {
+      complete: async () => '{"kind":"skip_step","step":"dedup"}',
+      unload: async () => undefined,
+    };
+
+    const resolution = await resolveWithModel(asking, {
+      engine,
+      fallback: () => unresolved,
+    });
+
+    expect(resolution.action).toEqual({ kind: 'skip_step', step: 'dedup' });
   });
 });

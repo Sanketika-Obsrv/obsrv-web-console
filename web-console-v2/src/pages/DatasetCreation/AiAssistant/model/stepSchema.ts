@@ -18,7 +18,13 @@
  *
  * Result: ~437-859 tokens per step, constant however wide the dataset is.
  */
-import { ActionKind, WizardStep, buildActionSchema } from '../engine/actions';
+import {
+  ActionKind,
+  AgendaStepId,
+  WizardStep,
+  buildActionSchema,
+} from '../engine/actions';
+import { ACCEPTS } from '../engine/agenda';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -110,6 +116,36 @@ export const buildStepSchema = (
   );
 
   // `fieldPaths` is intentionally not forwarded: that is the pinning.
+  const full = buildActionSchema({ connectorProperties });
+  const variants = (full.oneOf as unknown[]).filter((variant) =>
+    allowed.includes(kindOf(variant) as ActionKind),
+  );
+
+  return {
+    ...full,
+    properties: { kind: { type: 'string', enum: allowed } },
+    oneOf: variants,
+  };
+};
+
+/**
+ * The action schema for one *question*, which is narrower still.
+ *
+ * A wizard page holds several questions — processing alone holds masking,
+ * validation, transformations, denormalisation and de-duplication — so
+ * scoping to the page still offers six ways to be wrong about a yes-or-no
+ * question. `ACCEPTS` is the agenda's own list of what answers each
+ * question, so this cannot drift from what the assistant will act on: an
+ * action outside it would be refused downstream anyway.
+ */
+export const buildQuestionSchema = (
+  question: AgendaStepId,
+  { connectorProperties, hasDraft }: StepSchemaOptions = {},
+): JsonSchema => {
+  const allowed = [...new Set([...ACCEPTS[question], ...ALWAYS])].filter(
+    (kind) => !hasDraft || !ONCE_ONLY.includes(kind),
+  );
+
   const full = buildActionSchema({ connectorProperties });
   const variants = (full.oneOf as unknown[]).filter((variant) =>
     allowed.includes(kindOf(variant) as ActionKind),

@@ -1,7 +1,16 @@
-import { WizardStep } from '../engine/actions';
+import { AGENDA_STEPS, WizardStep } from '../engine/actions';
 import { Message } from '../session/types';
-import { SYSTEM_PROMPT, buildPrompt, estimatePromptTokens } from './prompt';
-import { buildStepSchema, estimateTokens } from './stepSchema';
+import {
+  EXAMPLES,
+  SYSTEM_PROMPT,
+  buildPrompt,
+  estimatePromptTokens,
+} from './prompt';
+import {
+  buildQuestionSchema,
+  buildStepSchema,
+  estimateTokens,
+} from './stepSchema';
 
 const CONTEXT = 4096;
 
@@ -129,6 +138,80 @@ describe('the total request fits the context window', () => {
       })
       // Room for the model's own reply, generously.
       .filter((entry) => entry.headroom < 1500);
+
+    expect(tight).toEqual([]);
+  });
+});
+
+/**
+ * The prompt when there is a question on the table.
+ *
+ * The model's job shrinks from "what does this person want" to "what does
+ * this answer mean", which is the whole reason the agenda exists — so the
+ * question has to actually reach the model.
+ */
+describe('answering a question', () => {
+  const asked = (over: Partial<Parameters<typeof buildPrompt>[0]> = {}) =>
+    buildPrompt({
+      step: 'processing',
+      question: 'dedup',
+      questionText:
+        'Shall I drop duplicate records? order_id is my best guess.',
+      utterance: 'yes, on order_id',
+      ...over,
+    });
+
+  it('quotes the question the user is answering', () => {
+    expect(asked()).toContain('Shall I drop duplicate records?');
+  });
+
+  it('says the reply is an answer, not an instruction', () => {
+    expect(asked().toLowerCase()).toContain('answer');
+  });
+
+  it('shows how a reply to this question turns into an action', () => {
+    const prompt = asked();
+
+    expect(prompt).toContain('set_dedup');
+  });
+
+  it('shows examples for the question asked and no other', () => {
+    const prompt = asked({ question: 'storage', questionText: 'Where?' });
+
+    expect(prompt).toContain('set_storage');
+    expect(prompt).not.toContain('set_dedup');
+  });
+
+  it('has an example for every question', () => {
+    for (const question of AGENDA_STEPS) {
+      expect(EXAMPLES[question].length).toBeGreaterThan(0);
+    }
+  });
+
+  it('stays affordable, worst case', () => {
+    const wide = Array.from({ length: 200 }, (_u, i) => `field_${i}`);
+    const history = Array.from({ length: 20 }, (_u, i) =>
+      turn('user', `a fairly wordy instruction number ${i} about the dataset`),
+    );
+
+    const tight = AGENDA_STEPS.map((question) => {
+      const total =
+        estimateTokens(buildQuestionSchema(question)) +
+        estimatePromptTokens(SYSTEM_PROMPT) +
+        estimatePromptTokens(
+          buildPrompt({
+            step: 'processing',
+            question,
+            questionText:
+              'Which field in your data matches a record in Customers?',
+            utterance: 'order_id',
+            fieldPaths: wide,
+            history,
+          }),
+        );
+
+      return { question, headroom: CONTEXT - total };
+    }).filter((entry) => entry.headroom < 1500);
 
     expect(tight).toEqual([]);
   });

@@ -8,10 +8,43 @@ const withGpu = (adapter: unknown = {}) => ({
 
 describe('detecting what this browser can do', () => {
   it('offers the model when WebGPU, an adapter and storage are all present', async () => {
-    expect(await detectCapability(withGpu())).toMatchObject({
-      tier: 1,
-      hasWebGPU: true,
+    const capability = await detectCapability(withGpu());
+
+    expect(capability.hasWebGPU).toBe(true);
+    expect(capability.tier).toBeGreaterThan(0);
+  });
+
+  /**
+   * The tier is the *highest* model this browser could hold, not the one it
+   * will be given. Which model is used is the user's choice; this only says
+   * which choices are honest to offer.
+   */
+  it('offers the larger model when there is room for it', async () => {
+    const capability = await detectCapability({
+      ...withGpu(),
+      estimateStorage: async () => ({ quota: 8 * 1024 * 1024 * 1024 }),
     });
+
+    expect(capability.tier).toBe(2);
+  });
+
+  it('stops at the smaller model when there is only room for that', async () => {
+    const capability = await detectCapability({
+      ...withGpu(),
+      estimateStorage: async () => ({ quota: 700 * 1024 * 1024 }),
+    });
+
+    expect(capability.tier).toBe(1);
+  });
+
+  /** A quota the browser will not state is not a quota to bet 1.1 GB on. */
+  it('does not offer the larger model on an unknown quota', async () => {
+    const capability = await detectCapability({
+      ...withGpu(),
+      estimateStorage: async () => ({}),
+    });
+
+    expect(capability.tier).toBe(1);
   });
 
   it('falls back to rules when there is no WebGPU', async () => {
