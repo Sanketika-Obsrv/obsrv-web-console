@@ -257,14 +257,41 @@ export const requiredKeys = (state: AgendaState): KeySlot[] => {
   return slots;
 };
 
-/** Mandatory key slots the document does not yet hold a value for. */
+/**
+ * The event arrival time, which `datasets/create` pre-fills as the timestamp
+ * key on every draft.
+ *
+ * It is a legitimate answer and a terrible default: read literally, the
+ * timestamp question arrives already answered, and a dataset with a perfectly
+ * good `order_ts` gets indexed by the moment Obsrv received the event on
+ * nobody's decision. So it only counts once the conversation shows someone
+ * choosing it — the same rule storage follows, for the same reason. Found by
+ * walking the flow against a live cluster.
+ */
+const CREATED_TIMESTAMP_DEFAULT = 'obsrv_meta.syncts';
+
+const keyChosenInTranscript = (state: AgendaState): boolean =>
+  appliedActions(state.history).some(
+    (action) => action.kind === 'set_keys' && Boolean(action.timestamp),
+  );
+
+/** Mandatory key slots the document does not yet hold an answer for. */
 const missingKeys = (state: AgendaState): KeySlot[] => {
   const keys = (block(state, 'dataset_config').keys_config ?? {}) as Record<
     string,
     string
   >;
 
-  return requiredKeys(state).filter((slot) => !keys[KEY_FIELD[slot]]);
+  const answered = (slot: KeySlot): boolean => {
+    const held = keys[KEY_FIELD[slot]];
+    if (!held) return false;
+
+    return slot === 'timestamp' && held === CREATED_TIMESTAMP_DEFAULT
+      ? keyChosenInTranscript(state)
+      : true;
+  };
+
+  return requiredKeys(state).filter((slot) => !answered(slot));
 };
 
 const conflicts = (state: AgendaState): string[] =>
@@ -492,6 +519,16 @@ const dedupQuestion = (state: AgendaState): Prompt => {
   };
 };
 
+/**
+ * Every option names all three stores, including the ones it turns off.
+ *
+ * An answer to "where should this be stored?" is a complete answer, and
+ * `set_storage` leaves an unnamed store as it was — which is the merge an
+ * *instruction* ("also enable the lakehouse") needs and the opposite of what
+ * an answer needs. A fresh draft carries `lakehouse_enabled: true` whether or
+ * not the cluster has a lakehouse, so "real-time store" became a request for
+ * a lakehouse nobody mentioned, and the API refused the write. Found live.
+ */
 const storageQuestion = (): Prompt => ({
   step: 'storage',
   text: 'Where should this data be stored?',
@@ -499,16 +536,31 @@ const storageQuestion = (): Prompt => ({
     {
       label: 'Real-time store',
       hint: 'Fast queries over recent data.',
-      action: { kind: 'set_storage', realtime: true },
+      action: {
+        kind: 'set_storage',
+        realtime: true,
+        lakehouse: false,
+        cache: false,
+      },
     },
     {
       label: 'Lakehouse',
       hint: 'Cheaper, for history and large scans.',
-      action: { kind: 'set_storage', lakehouse: true },
+      action: {
+        kind: 'set_storage',
+        realtime: false,
+        lakehouse: true,
+        cache: false,
+      },
     },
     {
       label: 'Both',
-      action: { kind: 'set_storage', realtime: true, lakehouse: true },
+      action: {
+        kind: 'set_storage',
+        realtime: true,
+        lakehouse: true,
+        cache: false,
+      },
     },
   ]),
 });
@@ -532,11 +584,26 @@ const reviewSummary = (state: AgendaState): string[] => {
     indexing.lakehouse_enabled && 'lakehouse',
     indexing.cache_enabled && 'cache',
   ].filter(Boolean);
+  /**
+   * The category lives inside `transformation_function`, which is where the
+   * API puts it. Read from the top level it was always undefined, so a
+   * masked field counted as none and the one decision the user made about
+   * their personal data went unmentioned on the screen before the save.
+   * Found live.
+   */
   const masked = (
     (state.dataset?.transformations_config ?? []) as {
-      category?: string;
+      transformation_function?: { category?: string };
     }[]
-  ).filter((entry) => entry.category === 'pii').length;
+  ).filter((entry) => entry.transformation_function?.category === 'pii').length;
+
+  const joined = (
+    (block(state, 'denorm_config').denorm_fields ?? []) as {
+      dataset_id?: string;
+    }[]
+  )
+    .map((field) => field.dataset_id)
+    .filter(Boolean);
 
   return [
     `Name: ${state.dataset?.name ?? '(unnamed)'}`,
@@ -546,6 +613,7 @@ const reviewSummary = (state: AgendaState): string[] => {
       ? `Duplicates: dropped on ${String(dedup.dedup_key)}`
       : 'Duplicates: kept',
     stores.length ? `Storage: ${stores.join(', ')}` : 'Storage: none selected',
+    ...(joined.length ? [`Joined to: ${joined.join(', ')}`] : []),
     ...(masked ? [`Protected fields: ${masked}`] : []),
   ];
 };

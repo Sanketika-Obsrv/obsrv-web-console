@@ -242,17 +242,34 @@ export const ANSWERS: AnswerFixture[] = [
   {
     step: 'storage',
     utterance: 'real-time',
-    expected: { kind: 'set_storage', realtime: true },
+    // Each option answers the whole question, naming the stores it turns
+    // off as well as the one it turns on.
+    expected: {
+      kind: 'set_storage',
+      realtime: true,
+      lakehouse: false,
+      cache: false,
+    },
   },
   {
     step: 'storage',
     utterance: 'lakehouse',
-    expected: { kind: 'set_storage', lakehouse: true },
+    expected: {
+      kind: 'set_storage',
+      realtime: false,
+      lakehouse: true,
+      cache: false,
+    },
   },
   {
     step: 'storage',
     utterance: 'both',
-    expected: { kind: 'set_storage', realtime: true, lakehouse: true },
+    expected: {
+      kind: 'set_storage',
+      realtime: true,
+      lakehouse: true,
+      cache: false,
+    },
   },
   {
     step: 'storage',

@@ -173,27 +173,35 @@ describe('when the conversation is not being saved', () => {
 });
 
 /**
- * Attaching a sample is the step that creates the draft, so it has to be
- * reachable before anything else has happened. Nothing else in the flow
- * produces a file-drop card, so without this the dataset could never be
- * created at all.
+ * Attaching a sample is the step that creates the draft, and it arrives the
+ * way every other step does: the assistant asks, and its question carries
+ * the drop card.
+ *
+ * There used to be a standing drop card here as well, from when nothing
+ * asked for a sample and the user had to know to supply one. Driving the
+ * real UI showed what it costs now — a second copy of the same control under
+ * every question, offered at the *name* question, where attaching a sample
+ * is refused for want of a name. That is the failure the agenda exists to
+ * remove, still being staged by the pane.
  */
 describe('starting a dataset', () => {
-  it('offers a way to supply a sample when the conversation is empty', () => {
-    show();
-
-    expect(screen.getByLabelText(/choose a sample file/i)).toBeInTheDocument();
+  const askedForSample = message({
+    id: 'ask-sample',
+    role: 'assistant',
+    text: 'Give me a sample of the data.',
+    card: { kind: 'file_drop' },
   });
 
-  it('accepts pasted JSON too', () => {
-    show();
+  it('offers a way to supply a sample when the assistant asks for one', () => {
+    show({ messages: [askedForSample] });
 
+    expect(screen.getByLabelText(/choose a sample file/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/paste json/i)).toBeInTheDocument();
   });
 
   it('reports the rows it parsed', async () => {
     const onSampleRows = jest.fn();
-    show({ onSampleRows });
+    show({ messages: [askedForSample], onSampleRows });
 
     await userEvent.upload(
       screen.getByLabelText(/choose a sample file/i),
@@ -205,24 +213,21 @@ describe('starting a dataset', () => {
     await waitFor(() => expect(onSampleRows).toHaveBeenCalled());
   });
 
-  /** Once a draft exists the schema is already detected. */
-  it('does not offer it once the draft exists', () => {
-    show({ datasetId: 'orders' });
+  it('does not offer one before it has been asked for', () => {
+    show({ messages: [message()] });
 
     expect(
       screen.queryByLabelText(/choose a sample file/i),
     ).not.toBeInTheDocument();
   });
 
-  /**
-   * Found by driving the real UI: naming the dataset first put a message in
-   * the transcript, which hid the empty state — and with it the only way to
-   * attach a sample. The flow dead-ended with no route to creating a draft.
-   */
-  it('keeps offering it after the conversation has started', () => {
-    show({ messages: [message()] });
+  /** Once a draft exists the schema is already detected. */
+  it('does not offer one once the draft exists', () => {
+    show({ datasetId: 'orders' });
 
-    expect(screen.getByLabelText(/choose a sample file/i)).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/choose a sample file/i),
+    ).not.toBeInTheDocument();
   });
 });
 

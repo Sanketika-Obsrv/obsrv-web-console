@@ -80,7 +80,18 @@ const SAMPLE_ROWS = [
  * `setupTests` — so a single `waitFor` could consume the entire budget and
  * the test would die before its assertion resolved.
  */
-jest.setTimeout(60000);
+jest.setTimeout(120000);
+
+/**
+ * The waits here are generous on purpose.
+ *
+ * Each step of the flow is a real round trip through the hook, the executor
+ * and the fake API, and this file runs alongside every other suite — where
+ * it takes roughly five times as long as it does alone. Two tests started
+ * failing on the clock, not on behaviour, when the type question added one
+ * more turn to the walk to a draft.
+ */
+const SETTLE = 20000;
 
 let api: FakeConfigApi;
 
@@ -129,7 +140,7 @@ const say = async (text: string) => {
   await waitFor(
     () =>
       expect(screen.queryByText(/working on that/i)).not.toBeInTheDocument(),
-    { timeout: 15000 },
+    { timeout: SETTLE },
   );
 
   if (process.env.E2E_DEBUG) {
@@ -144,11 +155,34 @@ const say = async (text: string) => {
  * relying on focus.
  */
 const pasteSample = async (rows: unknown[]) => {
-  await waitFor(() =>
-    expect(screen.queryByText(/working on that/i)).not.toBeInTheDocument(),
+  await waitFor(
+    () =>
+      expect(screen.queryByText(/working on that/i)).not.toBeInTheDocument(),
+    { timeout: SETTLE },
   );
 
-  const box = screen.getByLabelText(/paste json/i);
+  /**
+   * The drop card belongs to the sample *question*, so it appears when the
+   * assistant asks for a sample — not before. Between the name and that
+   * question stands the type, so it is answered here rather than at nine
+   * call sites, and only when it is what is actually on the table.
+   */
+  if (!screen.queryByLabelText(/paste json/i)) {
+    const event = screen.queryByRole('button', { name: /^Event$/ });
+
+    if (event) {
+      await userEvent.click(event);
+      await waitFor(
+        () =>
+          expect(
+            screen.queryByText(/working on that/i),
+          ).not.toBeInTheDocument(),
+        { timeout: SETTLE },
+      );
+    }
+  }
+
+  const box = await screen.findByLabelText(/paste json/i);
 
   await userEvent.click(box);
   userEvent.paste(box, JSON.stringify(rows));
@@ -211,13 +245,13 @@ const withDraft = async () => {
   await say('call it My Orders');
   await pasteSample(SAMPLE_ROWS);
   await waitFor(() => expect(api.dataset('my-orders')).toBeDefined(), {
-    timeout: 10000,
+    timeout: SETTLE,
   });
 
   const preview = screen.getByRole('region', { name: /dataset preview/i });
   await waitFor(
     () => expect(within(preview).getByText('order_id')).toBeInTheDocument(),
-    { timeout: 10000 },
+    { timeout: SETTLE },
   );
 };
 
@@ -783,11 +817,12 @@ describe('exporting the action trail', () => {
     ).toEqual([
       // Held client-side until there was a draft, and recorded either way.
       'set_dataset_name',
+      'set_dataset_type',
       'attach_sample',
       'toggle_required',
       'set_dedup',
     ]);
-    expect(trail.summary.changes).toBe(4);
+    expect(trail.summary.changes).toBe(5);
   });
 
   it('records an undo as part of the trail, and marks what it undid', async () => {
@@ -809,12 +844,14 @@ describe('exporting the action trail', () => {
       changes.map((entry: { action: { kind: string } }) => entry.action.kind),
     ).toEqual([
       'set_dataset_name',
+      'set_dataset_type',
       'attach_sample',
       'toggle_required',
       'toggle_required',
     ]);
-    expect(changes[2].undone).toBe(true);
-    expect(changes[3].undone).toBeUndefined();
+    // Indices moved by one when the type became a question of its own.
+    expect(changes[3].undone).toBe(true);
+    expect(changes[4].undone).toBeUndefined();
   });
 
   it('leaves the sample rows out of the file', async () => {

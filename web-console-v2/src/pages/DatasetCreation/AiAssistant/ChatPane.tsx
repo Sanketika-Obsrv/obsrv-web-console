@@ -13,7 +13,6 @@ import ChatComposer from './ChatComposer';
 import ModelBanner, { ModelBannerProps } from './ModelBanner';
 import { Action } from './engine/actions';
 import { UiSpec } from './engine/connectors';
-import FileDropCard from './messages/FileDropCard';
 import MessageList from './messages/MessageList';
 import SessionResumeList from './session/SessionResumeList';
 import { AiSession, Message } from './session/types';
@@ -149,14 +148,14 @@ const ChatPane: React.FC<ChatPaneProps> = ({
         )}
 
         {/*
-          Attaching a sample is what creates the draft, so it stays available
-          for as long as there is no draft — not only while the conversation
-          is empty. Naming the dataset first must not remove the only way to
-          supply a sample.
+          No standing file drop. It was here when nothing asked for a sample
+          and the user had to know to supply one; now the assistant asks, and
+          its question carries the drop card. Leaving this in showed a second
+          copy of the same control underneath every question — and offered it
+          at the *name* question, where attaching a sample is refused for
+          want of a name. That is the failure the agenda was built to remove.
+          Seen against a live cluster.
         */}
-        {!datasetId && (
-          <FileDropCard onRows={onSampleRows ?? (() => undefined)} />
-        )}
       </Stack>
     )}
 

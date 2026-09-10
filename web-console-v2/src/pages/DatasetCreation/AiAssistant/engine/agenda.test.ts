@@ -564,9 +564,12 @@ describe('the storage question', () => {
       options: { action: Action }[];
     };
 
+    // Complete answers: each option names the stores it turns off too.
     expect(card.options.map((option) => option.action)).toContainEqual({
       kind: 'set_storage',
       realtime: true,
+      lakehouse: false,
+      cache: false,
     });
   });
 });
@@ -1050,5 +1053,156 @@ describe('the keys question', () => {
       kind: 'skip_step',
       step: 'keys',
     });
+  });
+});
+
+/**
+ * Four things the live walkthrough found, all the same shape: the server's
+ * *defaults* are indistinguishable from someone's answer, and the summary
+ * read the document in a shape it does not have.
+ */
+describe('what a fresh draft arrives already carrying', () => {
+  const answered = answeredThrough('schema', 'validation', 'transform');
+
+  /**
+   * `datasets/create` sets `timestamp_key: obsrv_meta.syncts` — the event
+   * arrival time — on every draft. Read literally, the timestamp question is
+   * already answered and is never asked, so a dataset with a perfectly good
+   * `order_ts` gets indexed by arrival time on nobody's decision. Seen live.
+   */
+  it('asks for the timestamp even though create pre-filled one', () => {
+    const state: AgendaState = {
+      dataset: draft({
+        data_schema: schemaWith({
+          order_ts: {
+            type: 'string',
+            data_type: 'date-time',
+            arrival_format: 'text',
+          },
+        }),
+        dataset_config: {
+          indexing_config: { olap_store_enabled: true },
+          keys_config: { timestamp_key: 'obsrv_meta.syncts' },
+        },
+      }),
+      history: [
+        ...answered,
+        applied({ kind: 'skip_step', step: 'dedup' }, 40),
+        applied({ kind: 'set_storage', realtime: true }, 41),
+      ],
+    };
+
+    expect(currentStep(state)).toBe('keys');
+    expect(nextPrompt(state)?.text).toMatch(/which field is the timestamp/i);
+  });
+
+  it('stops asking once the arrival time is actually chosen', () => {
+    const state: AgendaState = {
+      dataset: draft({
+        dataset_config: {
+          indexing_config: { olap_store_enabled: true },
+          keys_config: { timestamp_key: 'obsrv_meta.syncts' },
+        },
+      }),
+      history: [
+        ...answered,
+        applied({ kind: 'skip_step', step: 'dedup' }, 40),
+        applied({ kind: 'set_storage', realtime: true }, 41),
+        applied({ kind: 'set_keys', timestamp: 'Event Arrival Time' }, 42),
+      ],
+    };
+
+    expect(currentStep(state)).not.toBe('keys');
+  });
+
+  /**
+   * A fresh draft carries `lakehouse_enabled: true` whether or not the
+   * cluster has a lakehouse. Answering "real-time store" with only that flag
+   * left the other one as it was, so the answer became a request for a
+   * lakehouse the user never mentioned — and the API refused the write.
+   * Seen live.
+   */
+  it('answers the storage question with all three stores, not one', () => {
+    const card = nextPrompt({
+      dataset: draft(),
+      history: [...answered, applied({ kind: 'skip_step', step: 'dedup' }, 40)],
+    })?.card;
+
+    if (card?.kind !== 'choice') throw new Error('expected a choice');
+
+    expect(card.options.map((option) => option.action)).toEqual([
+      { kind: 'set_storage', realtime: true, lakehouse: false, cache: false },
+      { kind: 'set_storage', realtime: false, lakehouse: true, cache: false },
+      { kind: 'set_storage', realtime: true, lakehouse: true, cache: false },
+    ]);
+  });
+});
+
+describe('the summary before saving', () => {
+  const ready = (over: Partial<DatasetSnapshot> = {}): AgendaState => ({
+    dataset: draft({
+      dataset_config: {
+        indexing_config: { olap_store_enabled: true },
+        keys_config: { timestamp_key: 'order_ts' },
+      },
+      ...over,
+    }),
+    history: [
+      ...answeredThrough('schema', 'validation', 'transform', 'dedup'),
+      applied({ kind: 'set_storage', realtime: true }, 50),
+      applied({ kind: 'set_keys', timestamp: 'order_ts' }, 51),
+    ],
+  });
+
+  const summaryOf = (state: AgendaState): string[] => {
+    const card = nextPrompt(state)?.card;
+    if (card?.kind !== 'confirm') throw new Error('expected a confirmation');
+    return card.summary ?? [];
+  };
+
+  /**
+   * The API nests the category inside `transformation_function`, and the
+   * summary read it from the top level — so a masked field was counted as
+   * zero and the one decision the user was asked to make about their
+   * personal data went unmentioned on the screen that precedes the save.
+   * Seen live.
+   */
+  it('counts the masked fields where the API actually puts the category', () => {
+    const state = ready({
+      transformations_config: [
+        {
+          field_key: 'customer_email',
+          transformation_function: {
+            type: 'mask',
+            expr: 'customer_email',
+            datatype: 'string',
+            category: 'pii',
+          },
+          mode: 'Strict',
+        },
+      ],
+    });
+
+    expect(summaryOf(state)).toContain('Protected fields: 1');
+  });
+
+  it('says what the dataset is joined to', () => {
+    const state = ready({
+      denorm_config: {
+        denorm_fields: [
+          {
+            denorm_key: 'order_id',
+            denorm_out_field: 'customer_details',
+            dataset_id: 'customers',
+          },
+        ],
+      },
+    });
+
+    expect(summaryOf(state)).toContain('Joined to: customers');
+  });
+
+  it('says nothing about joins when there are none', () => {
+    expect(summaryOf(ready()).join(' ')).not.toMatch(/joined/i);
   });
 });
