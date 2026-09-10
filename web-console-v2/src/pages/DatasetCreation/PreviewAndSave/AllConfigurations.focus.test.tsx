@@ -15,7 +15,12 @@ jest.mock('services/http', () => ({ http: { get: jest.fn() } }));
 import { render as rtlRender, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { getAllFields, useFetchDatasetsById } from 'services/dataset';
+import {
+  datasetRead,
+  getAllFields,
+  useFetchDatasetsById,
+} from 'services/dataset';
+import { http } from 'services/http';
 import AllConfigurations from './AllConfigurations';
 
 /** `AllConfigurations` reads `useLocation`, so it needs a router in scope. */
@@ -27,6 +32,7 @@ const mocked = {
     typeof useFetchDatasetsById
   >,
   fields: getAllFields as jest.MockedFunction<typeof getAllFields>,
+  read: datasetRead as jest.MockedFunction<typeof datasetRead>,
 };
 
 const DATASET = {
@@ -69,6 +75,9 @@ beforeEach(() => {
   } as any);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mocked.fields.mockResolvedValue({ data: [FIELDS] } as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mocked.read.mockResolvedValue({ data: { result: {} } } as any);
+  (http.get as jest.Mock).mockResolvedValue({ data: { result: {} } });
 });
 
 describe('datasetId prop', () => {
@@ -85,6 +94,135 @@ describe('datasetId prop', () => {
     render(<AllConfigurations datasetId="" status="Draft" />);
 
     expect(mocked.fields).not.toHaveBeenCalled();
+  });
+
+  /**
+   * A `try/catch` around the *call* of an async function catches nothing:
+   * the rejection escapes as an unhandled promise, which the dev server
+   * renders as a full-screen "Uncaught runtime errors" overlay. Seen in the
+   * browser, where a preview of a dataset the API would not return made the
+   * assistant look broken while the conversation itself was fine.
+   */
+  it('survives a connector read that fails', async () => {
+    const rejections: unknown[] = [];
+    const record = (event: PromiseRejectionEvent) => {
+      event.preventDefault();
+      rejections.push(event.reason);
+    };
+    window.addEventListener('unhandledrejection', record);
+
+    mocked.fetch.mockReturnValue({
+      data: { ...DATASET, connectors_config: [{ connector_id: 'postgres' }] },
+      isPending: false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    (http.get as jest.Mock).mockRejectedValue(new Error('boom'));
+
+    render(<AllConfigurations datasetId="my-orders" status="Draft" />);
+
+    await waitFor(() => expect(http.get).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    window.removeEventListener('unhandledrejection', record);
+    expect(rejections).toEqual([]);
+  });
+
+  /**
+   * The assistant writes denormalisations now, so this path runs whenever a
+   * joined dataset is previewed — and the master it names may not be
+   * readable.
+   */
+  it('survives a master dataset read that fails, and still names the ones that worked', async () => {
+    const rejections: unknown[] = [];
+    const record = (event: PromiseRejectionEvent) => {
+      event.preventDefault();
+      rejections.push(event.reason);
+    };
+    window.addEventListener('unhandledrejection', record);
+
+    mocked.fetch.mockReturnValue({
+      data: {
+        ...DATASET,
+        denorm_config: {
+          denorm_fields: [
+            {
+              denorm_key: 'order_id',
+              denorm_out_field: 'customer_details',
+              dataset_id: 'customers',
+            },
+          ],
+        },
+      },
+      isPending: false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    mocked.read.mockRejectedValue(new Error('gone'));
+
+    render(<AllConfigurations datasetId="my-orders" status="Draft" />);
+
+    await waitFor(() => expect(mocked.read).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    window.removeEventListener('unhandledrejection', record);
+    expect(rejections).toEqual([]);
+  });
+
+  /**
+   * The names were fetched but never shown: the loop pushed into an array
+   * that had already been handed to `setState`, so the panel rendered the
+   * ids with no names attached.
+   */
+  it('shows the master dataset name once it has been read', async () => {
+    mocked.fetch.mockReturnValue({
+      data: {
+        ...DATASET,
+        denorm_config: {
+          denorm_fields: [
+            {
+              denorm_key: 'order_id',
+              denorm_out_field: 'customer_details',
+              dataset_id: 'customers',
+            },
+          ],
+        },
+      },
+      isPending: false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    mocked.read.mockResolvedValue({
+      data: { result: { name: 'Customers', data_schema: {} } },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    render(<AllConfigurations datasetId="my-orders" status="Draft" />);
+
+    await waitFor(() =>
+      expect(screen.getByText('Customers')).toBeInTheDocument(),
+    );
+  });
+
+  it('survives a fields read that fails', async () => {
+    const rejections: unknown[] = [];
+    const record = (event: PromiseRejectionEvent) => {
+      event.preventDefault();
+      rejections.push(event.reason);
+    };
+    window.addEventListener('unhandledrejection', record);
+
+    mocked.fields.mockRejectedValue(
+      new Error('Request failed with status code 404'),
+    );
+
+    render(<AllConfigurations datasetId="my-orders" status="Draft" />);
+
+    await waitFor(() => expect(mocked.fields).toHaveBeenCalled());
+    // A microtask turn for the rejection to surface if it is going to.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    window.removeEventListener('unhandledrejection', record);
+    expect(rejections).toEqual([]);
+    // The rest of the preview still renders from the dataset itself.
+    expect(screen.getByText('My Orders')).toBeInTheDocument();
   });
 });
 

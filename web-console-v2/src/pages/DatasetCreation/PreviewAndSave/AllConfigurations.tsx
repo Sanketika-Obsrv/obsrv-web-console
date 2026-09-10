@@ -78,7 +78,8 @@ const DenormRow = ({ value }: any) => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {value.data_schema.properties && _.entries(value.data_schema.properties).map(([key, value]) => (
+                                    {/* The master's schema is absent when that dataset could not be read; the join is still worth showing. */}
+                                    {_.entries(_.get(value, ['data_schema', 'properties'], {})).map(([key, value]) => (
                                         <>
                                         <TableRow key={key} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                             <TableCell align="left">{key}</TableCell>
@@ -136,17 +137,23 @@ const AllConfigurations = ({
     useEffect(() => {
         // No draft yet: the AI flow mounts the preview before `datasets/create`.
         if (!datasetId) return;
-        try {
-            const processFields = async (datasetId: string) => {
-                const response = await getAllFields(datasetId, status || DatasetStatus.Draft);
-                if (response) {
-                    setDataSchema(response?.data[0]);
-                }
-            };
-            processFields(datasetId);
-        } catch (e) {
-            console.error('Error while fetching schema:', e);
-        }
+
+        /**
+         * `.catch` rather than `try/catch`: the try only wrapped the *call*,
+         * so a rejected read escaped as an unhandled promise — which the dev
+         * server renders as a full-screen "Uncaught runtime errors" overlay.
+         * A dataset the API will not return is an ordinary outcome here (the
+         * AI flow mounts the preview the moment a draft id exists), and the
+         * rest of the preview renders from the dataset itself.
+         */
+        const processFields = async (datasetId: string) => {
+            const response = await getAllFields(datasetId, status || DatasetStatus.Draft);
+            if (response) {
+                setDataSchema(response?.data[0]);
+            }
+        };
+
+        processFields(datasetId).catch(() => setDataSchema(undefined));
     }, [datasetId]);
 
     useEffect(() => {
@@ -164,12 +171,14 @@ const AllConfigurations = ({
             if (connectorConfigData.length > 0) {
                 setConnectorConfig(connectorConfigData[0]);
                 const connectorId = connectorConfigData[0].connector_id;
+                // Unhandled, this surfaces as a runtime-error overlay rather
+                // than a preview missing one label.
                 http.get(`${endpoints.READ_CONNECTORS}/${connectorId}`).then((response: any) => {
                     const connectorData = _.get(response, ['data', 'result'])
                     if (connectorData) {
                         setConnectorMeta(connectorData)
                     }
-                })
+                }).catch(() => undefined)
             }
             const dataDenormalizations:any[] = [];
             const sensitiveFields:any[] = [];
@@ -195,16 +204,25 @@ const AllConfigurations = ({
                 setTransformFields(transformations);
             }
             if(denormData.length > 0) {
-                _.forEach(denormData, async (denorm) => {
-                    const datasetResponse = await datasetRead({ datasetId: `${denorm.dataset_id}?fields=data_schema,name` }).then(response => _.get(response, 'data.result'));
-                    const denormData = {
+                /**
+                 * Awaited together rather than in a `forEach` with an async
+                 * callback: that pushed into an array which had already been
+                 * handed to `setState`, so the names arrived after the render
+                 * that was meant to show them, and a master that could not be
+                 * read rejected with nobody listening. A master the user
+                 * cannot read is an ordinary outcome — the join is still
+                 * shown, by id.
+                 */
+                Promise.all(_.map(denormData, async (denorm: Record<string, unknown>) => {
+                    const datasetResponse = await datasetRead({ datasetId: `${denorm.dataset_id}?fields=data_schema,name` })
+                        .then(response => _.get(response, 'data.result'))
+                        .catch(() => undefined);
+                    return {
                         ...denorm,
                         name: _.get(datasetResponse, 'name'),
                         data_schema: _.get(datasetResponse, 'data_schema')
                     }
-                    dataDenormalizations.push(denormData);
-                })
-                setDataDenormalizations(dataDenormalizations)
+                })).then(setDataDenormalizations)
             }
         }
     }, [response.data])

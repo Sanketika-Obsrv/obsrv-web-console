@@ -621,6 +621,27 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
         // Last, so the question is decided from the session as it is *after*
         // this turn recorded itself, and from a fresh read of the dataset.
         if (!awaitingInput(result.messages)) await askNext();
+      } catch (cause) {
+        /**
+         * The backstop.
+         *
+         * `runTurn` turns an executor failure into a message and the session
+         * store degrades to memory rather than rejecting, so reaching here
+         * means something unforeseen — a bug of ours, a browser API
+         * refusing. Whatever it is, it must not leave as an uncaught
+         * rejection: the development server renders that as a full-screen
+         * runtime error, and production drops it silently along with the
+         * turn. Reported here in the conversation, where the user is looking.
+         */
+        await session
+          .append({
+            role: 'assistant',
+            text: `Something went wrong handling that: ${
+              cause instanceof Error ? cause.message : 'unknown error'
+            }. Nothing was changed by it — try again, or say it differently.`,
+            failureCode: 'TURN_FAILED',
+          })
+          .catch(() => undefined);
       } finally {
         setBusy(false);
       }
