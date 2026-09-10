@@ -53,14 +53,11 @@ const AiAssistantPage: React.FC = () => {
             busy={assistant.busy}
             onExportTrail={assistant.exportTrail}
             model={{
-              capability: assistant.modelCapability,
               progress: assistant.modelProgress,
               ready: assistant.modelReady,
               cached: assistant.modelCached,
-              choices: assistant.modelChoices,
               error: assistant.modelError,
-              onEnable: assistant.enableModel,
-              onRemove: assistant.disableModel,
+              onRetry: assistant.retryModel,
             }}
           />
         }

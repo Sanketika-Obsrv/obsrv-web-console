@@ -97,13 +97,16 @@ export const detectCapability = async ({
   /**
    * The tier is the *highest* model this browser could hold.
    *
-   * Which model actually runs is the user's choice; this only decides which
-   * choices are honest to offer. An unknown quota stays at tier 1 — a
-   * browser that will not say how much room it has is not one to bet a
-   * gigabyte on, and the smaller model is the recommended one regardless.
+   * An unknown quota counts as enough room. It used to cap the browser at
+   * tier 1, on the grounds that a browser which will not say how much room
+   * it has is not one to bet a gigabyte on — but the model is required now,
+   * and several browsers decline to estimate behind privacy settings, so
+   * that rule would refuse the assistant outright to people whose machines
+   * are perfectly capable. A quota that is *known* and too small is still a
+   * refusal, above.
    */
   const roomForLarger =
-    quota !== undefined &&
+    quota === undefined ||
     MODELS.some((model) => model.tier === 2 && quota >= bytesNeeded(model));
 
   return {

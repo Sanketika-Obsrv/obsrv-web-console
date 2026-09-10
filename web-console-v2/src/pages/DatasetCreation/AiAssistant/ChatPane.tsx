@@ -152,11 +152,21 @@ const ChatPane: React.FC<ChatPaneProps> = ({
 
       {model && <ModelBanner {...model} />}
 
+      {/*
+      The conversation waits for the model.
+      
+      Typed instructions are the only way in, and reading them is what the
+      model does, so a composer offered before it is ready would accept
+      something nothing could act on. The preview pane keeps rendering
+      beside this, with its link to the wizard — which is the answer both
+      for the wait and for a browser that cannot run the model at all.
+    */}
+
       {!persisting && (
         <Alert severity="warning">{t('aiAssistant.notPersisted')}</Alert>
       )}
 
-      {loading ? (
+      {model && !model.ready ? null : loading ? (
         <Typography role="status" variant="body2" color="text.secondary">
           {t('aiAssistant.restoringSession')}
         </Typography>
@@ -201,8 +211,18 @@ const ChatPane: React.FC<ChatPaneProps> = ({
         </Typography>
       )}
 
-      <Divider />
-      <ChatComposer onSend={onSend ?? (() => undefined)} busy={busy} />
+      {/*
+        Nothing to type into until the model is running: reading typed
+        instructions is what it does, so a composer offered before then
+        would take something nothing could act on. The preview pane stays up
+        beside this, with its link to the wizard.
+      */}
+      {(!model || model.ready) && (
+        <>
+          <Divider />
+          <ChatComposer onSend={onSend ?? (() => undefined)} busy={busy} />
+        </>
+      )}
     </Paper>
   );
 };

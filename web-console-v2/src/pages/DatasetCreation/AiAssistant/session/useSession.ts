@@ -12,6 +12,7 @@ import { createIdbStorage, isIndexedDbAvailable } from './idbStorage';
 import { createMemoryStorage } from './memoryStorage';
 import { NewMessage, SessionStore, createSessionStore } from './sessionStore';
 import { AiSession, Message } from './types';
+import { ModelTier } from '../model/tiers';
 
 /**
  * Where the active session id is remembered before `datasets/create` runs.
@@ -63,6 +64,8 @@ export interface SessionApi {
   setSampleRows(rows: unknown[]): Promise<void>;
   clearSample(): Promise<void>;
   noteVersionKey(versionKey: string): Promise<void>;
+  /** Records which model tier drove this conversation, for telemetry. */
+  setModelTier(modelTier: ModelTier): Promise<void>;
   markConnectorConfigured(): Promise<void>;
   /** Records a name or type chosen before the draft exists. */
   setPending(pending: AiSession['pending']): Promise<void>;
@@ -211,6 +214,8 @@ export const useSession = ({
       clearSample: () => apply((id) => sessions.clearSample(id)),
       noteVersionKey: (versionKey) =>
         apply((id) => sessions.noteVersionKey(id, versionKey)),
+      setModelTier: (modelTier) =>
+        apply((id) => sessions.setModelTier(id, modelTier)),
       markConnectorConfigured: () =>
         apply((id) => sessions.markConnectorConfigured(id)),
       setPending: (pending) => apply((id) => sessions.setPending(id, pending)),

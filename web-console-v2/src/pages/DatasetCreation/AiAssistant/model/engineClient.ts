@@ -11,7 +11,7 @@
  * before this ships: an air-gapped or egress-restricted deployment cannot
  * reach them, and would run at tier 0 permanently.
  */
-import { DEFAULT_MODEL, ModelSpec } from './catalog';
+import { ModelSpec, REQUIRED_MODEL } from './catalog';
 import { Capability, detectCapability } from './tiers';
 
 /**
@@ -21,14 +21,14 @@ import { Capability, detectCapability } from './tiers';
  * model's terms; which model that is comes from `catalog`, whose figures are
  * checked against the installed package rather than written here.
  */
-export const MODEL_ID = DEFAULT_MODEL.id;
+export const MODEL_ID = REQUIRED_MODEL.id;
 
 /**
  * Roughly what the weights cost to fetch, for telling the user before they
  * agree to it. The model's own metadata reports 1,403 MB of *VRAM*, which is
  * a different number and not the one to quote at a download prompt.
  */
-export const MODEL_DOWNLOAD_MB = DEFAULT_MODEL.downloadMB;
+export const MODEL_DOWNLOAD_MB = REQUIRED_MODEL.downloadMB;
 
 export interface LoadProgress {
   /** 0..1 where the library reports it. */
@@ -76,19 +76,22 @@ export const removeModel = async (
 
 export interface LoadOptions {
   onProgress?: (progress: LoadProgress) => void;
-  /** Which model to load. Defaults to the small one. */
+  /** Which model to load. Defaults to the one the assistant requires. */
   model?: ModelSpec;
 }
 
 /**
- * Loads the model in a Web Worker.
+ * Loads the model.
  *
- * The worker matters: inference on the main thread would freeze the console
- * while the assistant thinks, which for a 0.6B model is long enough to notice.
+ * On the main thread, which this comment used to claim it was not. Moving
+ * inference to a Web Worker would be worth doing — a 1.7B model thinking on
+ * the main thread is long enough to notice — but it means worker bundling
+ * under CRA, which is unverified in a deployed console and is not part of
+ * making the model required.
  */
 export const loadEngine = async ({
   onProgress,
-  model = DEFAULT_MODEL,
+  model = REQUIRED_MODEL,
 }: LoadOptions = {}): Promise<ModelEngine> => {
   const capability = await detectCapability();
 

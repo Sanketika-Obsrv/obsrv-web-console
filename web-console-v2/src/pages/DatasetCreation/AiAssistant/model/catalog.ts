@@ -48,7 +48,17 @@ export const MODELS: ModelSpec[] = [
   },
 ];
 
-export const DEFAULT_MODEL = MODELS[0];
+/**
+ * The model the assistant runs on.
+ *
+ * One model, not a choice. Instructions are typed now — there is nothing to
+ * click — so understanding loose phrasing is the product rather than an
+ * optional extra, and measured live the 0.6B misreads it often enough to be
+ * the wrong default. The smaller entry stays in the catalog because the
+ * tiers still describe what a browser could hold.
+ */
+export const REQUIRED_MODEL =
+  MODELS.find((model) => model.id === 'Qwen3-1.7B-q4f16_1-MLC') ?? MODELS[0];
 
 /** The best model this browser may run, which is not always the biggest. */
 export const modelForTier = (tier: ModelTier): ModelSpec | undefined =>

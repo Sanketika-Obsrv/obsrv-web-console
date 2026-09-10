@@ -41,6 +41,29 @@ jest.mock('services/http', () => {
   };
 });
 
+/**
+ * The model is mandatory, and jsdom has no WebGPU — so without these the
+ * pane would sit on its loading banner and every test below would fail
+ * against a composer that is deliberately not there. The engine itself is a
+ * stub that understands nothing: the rules run first, and what this file
+ * asserts is the wiring from a typed instruction to what the server ends up
+ * holding, not the model's judgement.
+ */
+jest.mock('../model/tiers', () => ({
+  ...jest.requireActual('../model/tiers'),
+  detectCapability: async () => ({ tier: 2, hasWebGPU: true }),
+}));
+
+jest.mock('../model/engineClient', () => ({
+  ...jest.requireActual('../model/engineClient'),
+  isModelCached: async () => true,
+  removeModel: async () => undefined,
+  loadEngine: async () => ({
+    complete: async () => '',
+    unload: async () => undefined,
+  }),
+}));
+
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -120,6 +143,15 @@ const renderAssistant = () =>
 const composer = () => screen.getByRole('textbox', { name: /message/i });
 
 /**
+ * The composer appears once the model is running.
+ *
+ * The model is required and loads on mount, so every interaction waits for
+ * it — in these tests it is a stub that resolves on the next tick, and in a
+ * browser it is a download.
+ */
+const readyComposer = () => screen.findByRole('textbox', { name: /message/i });
+
+/**
  * Types an instruction and waits for the turn to finish.
  *
  * Waits for the composer to be accepting input first: it is deliberately
@@ -127,6 +159,7 @@ const composer = () => screen.getByRole('textbox', { name: /message/i });
  * then would execute without being recorded.
  */
 const say = async (text: string) => {
+  await readyComposer();
   await waitFor(() =>
     expect(screen.queryByText(/working on that/i)).not.toBeInTheDocument(),
   );
@@ -157,6 +190,7 @@ const say = async (text: string) => {
  * element rather than relying on focus.
  */
 const pasteSample = async (rows: unknown[]) => {
+  await readyComposer();
   await waitFor(
     () =>
       expect(screen.queryByText(/working on that/i)).not.toBeInTheDocument(),
@@ -870,5 +904,40 @@ describe('exporting the action trail', () => {
     );
 
     expect(JSON.stringify(await read())).not.toContain('a@example.com');
+  });
+});
+
+/**
+ * The model is not optional, and nobody is asked to enable it.
+ *
+ * It used to be an offer, with the rules as a first-class fallback. Every
+ * instruction is typed now, so reading loose phrasing is the product — and
+ * a surface that takes typing before it can read is a surface that loses
+ * what was typed.
+ */
+describe('the model the assistant runs on', () => {
+  it('loads on its own, and the composer waits for it', async () => {
+    renderAssistant();
+
+    // Nothing to type into yet, and nothing to click to start the load.
+    expect(
+      screen.queryByRole('textbox', { name: /message/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /download|use the model/i }),
+    ).not.toBeInTheDocument();
+
+    await readyComposer();
+
+    expect(
+      screen.queryByLabelText(/model load progress/i),
+    ).not.toBeInTheDocument();
+  });
+
+  /** The way out is up from the first paint, download or no download. */
+  it('offers the wizard while the model is still loading', () => {
+    renderAssistant();
+
+    expect(screen.getByRole('link', { name: /wizard/i })).toBeInTheDocument();
   });
 });

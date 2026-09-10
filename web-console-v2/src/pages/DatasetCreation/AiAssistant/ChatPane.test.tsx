@@ -251,3 +251,58 @@ describe('exporting the action trail', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+/**
+ * The model is required, so the conversation waits for it.
+ *
+ * Not the whole page: the preview and its "Edit in the wizard" link are up
+ * from the first paint, which is what makes waiting tolerable and what
+ * answers a browser that cannot run the model at all.
+ */
+describe('waiting for the model', () => {
+  const loading = {
+    ready: false,
+    cached: false,
+    onRetry: jest.fn(),
+    progress: { progress: 0.4, text: 'Fetching param cache' },
+  };
+
+  it('reports the load instead of taking instructions', () => {
+    show({ model: loading });
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', { name: /message/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show a transcript it cannot answer', () => {
+    show({ model: loading, messages: [message()] });
+
+    expect(screen.queryByText('call it My Orders')).not.toBeInTheDocument();
+  });
+
+  it('takes instructions once the model is running', () => {
+    show({ model: { ready: true, cached: true, onRetry: jest.fn() } });
+
+    expect(
+      screen.getByRole('textbox', { name: /message/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('explains a model that cannot load, and still takes nothing', () => {
+    show({
+      model: {
+        ready: false,
+        cached: false,
+        onRetry: jest.fn(),
+        error: 'This browser has no WebGPU.',
+      },
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/WebGPU/);
+    expect(
+      screen.queryByRole('textbox', { name: /message/i }),
+    ).not.toBeInTheDocument();
+  });
+});

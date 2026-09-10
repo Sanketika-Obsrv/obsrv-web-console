@@ -47,10 +47,8 @@ import {
   ModelEngine,
   isModelCached,
   loadEngine,
-  removeModel,
 } from './model/engineClient';
-import { DEFAULT_MODEL, MODELS, ModelSpec } from './model/catalog';
-import { forgetModel, rememberModel, rememberedModel } from './model/choice';
+import { REQUIRED_MODEL } from './model/catalog';
 import { resolveWithModel } from './model/modelResolver';
 import { Capability, detectCapability } from './model/tiers';
 import { auditFileName, buildAuditTrail } from './session/auditTrail';
@@ -85,17 +83,13 @@ export interface AssistantApi {
   /** What this browser could do, detected without downloading anything. */
   modelCapability?: Capability;
   modelProgress?: LoadProgress;
+  /** False until the model is running; the conversation waits on it. */
   modelReady: boolean;
-  /** Ids of the models whose weights are already in this browser. */
-  modelCached: string[];
-  /** The model in use, and every model this browser could run instead. */
-  model: ModelSpec;
-  modelChoices: ModelSpec[];
+  /** True when the weights are already in this browser. */
+  modelCached: boolean;
   modelError?: string;
-  /** Downloads and starts a model. Only ever from an explicit control. */
-  enableModel: (model?: ModelSpec) => Promise<void>;
-  /** Unloads it and frees the cached weights. */
-  disableModel: () => Promise<void>;
+  /** Loads it again, because a download can simply fail. */
+  retryModel: () => Promise<void>;
   /**
    * Required connector properties still unanswered, described for asking.
    * Postgres marks nine of ten required, so this list matters.
@@ -157,22 +151,13 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   const asked = useRef<Prompt | undefined>(undefined);
 
   const [capability, setCapability] = useState<Capability>();
-  const [modelCached, setModelCached] = useState<string[]>([]);
+  const [modelCached, setModelCached] = useState(false);
   const [modelProgress, setModelProgress] = useState<LoadProgress>();
   const [modelError, setModelError] = useState<string>();
   // The engine lives in a ref: it is a large object with a GPU context, and
   // re-rendering must not recreate or drop it.
   const engine = useRef<ModelEngine | undefined>(undefined);
   const [modelReady, setModelReady] = useState(false);
-  /**
-   * Which model is in use, which decides what to free and what to load.
-   *
-   * Restored from the last explicit choice: downloading a gigabyte and then
-   * being offered the small one again on the next visit is not a choice
-   * being respected.
-   */
-  const [model, setModel] = useState<ModelSpec>(rememberedModel);
-
   /**
    * Conversations already reported, so a re-render does not report again.
    * A ref rather than state: reporting is a side effect with no bearing on
@@ -211,25 +196,13 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   useEffect(() => {
     let cancelled = false;
 
-    // Both of these are cheap and download nothing: they only report what
-    // this browser could do and which weights are already here. Asked per
-    // model, because "cached" was reported for the small one and read as
-    // true of both.
-    Promise.all([
-      detectCapability(),
-      Promise.all(
-        MODELS.map(async (candidate) => ({
-          id: candidate.id,
-          cached: await isModelCached(candidate.id),
-        })),
-      ),
-    ])
+    // Both are cheap and download nothing: they only report what this
+    // browser could do and whether the weights are already here.
+    Promise.all([detectCapability(), isModelCached(REQUIRED_MODEL.id)])
       .then(([detected, cached]) => {
         if (cancelled) return;
         setCapability(detected);
-        setModelCached(
-          cached.filter((entry) => entry.cached).map((entry) => entry.id),
-        );
+        setModelCached(cached);
       })
       .catch(() => {
         if (cancelled) return;
@@ -773,21 +746,31 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
    * bandwidth and disk. A failure is reported and the assistant carries on
    * with the rules.
    */
-  const enableModel = useCallback(async (wanted: ModelSpec = DEFAULT_MODEL) => {
+  /**
+   * Loads the model the assistant runs on.
+   *
+   * There is no choice of model and no opting out: every instruction is
+   * typed, and reading them is what the model does. It is started without
+   * being asked for, and the banner reports the cost while it happens.
+   */
+  const loadRequiredModel = useCallback(async () => {
+    if (engine.current) return;
+
     setModelError(undefined);
     setModelProgress({ progress: 0, text: 'Preparing…' });
 
     try {
       engine.current = await loadEngine({
-        model: wanted,
+        model: REQUIRED_MODEL,
         onProgress: (progress) => setModelProgress(progress),
       });
-      setModel(wanted);
       setModelReady(true);
-      setModelCached((present) =>
-        present.includes(wanted.id) ? present : [...present, wanted.id],
-      );
-      rememberModel(wanted.id);
+      setModelCached(true);
+
+      // Recorded so telemetry reports the tier that actually ran. It was
+      // never called, so every session was reported as rule-only even with
+      // the model driving it.
+      await session.setModelTier(REQUIRED_MODEL.tier);
     } catch (cause) {
       setModelError(
         cause instanceof Error
@@ -797,19 +780,35 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     } finally {
       setModelProgress(undefined);
     }
-  }, []);
+  }, [session]);
 
-  const disableModel = useCallback(async () => {
-    await engine.current?.unload().catch(() => undefined);
-    engine.current = undefined;
-    setModelReady(false);
+  /**
+   * Starts the load as soon as the browser has been asked what it can do.
+   *
+   * Guarded by a ref rather than by state: the effect re-runs whenever the
+   * session changes, and two loads of a gigabyte would be two downloads.
+   */
+  const loadStarted = useRef(false);
 
-    // Frees the space rather than leaving the weights behind after the user
-    // has said they do not want them.
-    await removeModel(model.id).catch(() => undefined);
-    setModelCached((present) => present.filter((id) => id !== model.id));
-    forgetModel();
-  }, [model.id]);
+  useEffect(() => {
+    if (!capability || loadStarted.current) return;
+
+    if (capability.tier < REQUIRED_MODEL.tier) {
+      setModelError(
+        capability.reason ??
+          `This browser cannot run ${REQUIRED_MODEL.label}, which the assistant needs to read your instructions.`,
+      );
+      return;
+    }
+
+    loadStarted.current = true;
+    void loadRequiredModel();
+  }, [capability, loadRequiredModel]);
+
+  const retryModel = useCallback(async () => {
+    loadStarted.current = true;
+    await loadRequiredModel();
+  }, [loadRequiredModel]);
 
   /**
    * Writes the action trail to a file.
@@ -941,13 +940,8 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     modelProgress,
     modelReady,
     modelCached,
-    model,
-    modelChoices: MODELS.filter(
-      (choice) => choice.tier <= (capability?.tier ?? 0),
-    ),
     modelError,
-    enableModel,
-    disableModel,
+    retryModel,
     connectorNeedsValues: fillableProps(uiSpec)
       .filter(
         (prop) =>

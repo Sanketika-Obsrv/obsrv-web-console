@@ -37,14 +37,19 @@ describe('detecting what this browser can do', () => {
     expect(capability.tier).toBe(1);
   });
 
-  /** A quota the browser will not state is not a quota to bet 1.1 GB on. */
-  it('does not offer the larger model on an unknown quota', async () => {
+  /**
+   * The model is required now, so an unknown quota cannot cap the tier
+   * below it: a browser that declines to estimate — which several do behind
+   * privacy settings — would otherwise be refused the assistant outright.
+   * A quota that is *known* and too small is still a refusal.
+   */
+  it('assumes room when the browser will not state a quota', async () => {
     const capability = await detectCapability({
       ...withGpu(),
       estimateStorage: async () => ({}),
     });
 
-    expect(capability.tier).toBe(1);
+    expect(capability.tier).toBe(2);
   });
 
   it('falls back to rules when there is no WebGPU', async () => {
@@ -111,7 +116,7 @@ describe('detecting what this browser can do', () => {
       estimateStorage: async () => ({}),
     });
 
-    expect(capability.tier).toBe(1);
+    expect(capability.tier).toBeGreaterThan(0);
   });
 
   it('reports tier 0 outside a browser entirely', async () => {
