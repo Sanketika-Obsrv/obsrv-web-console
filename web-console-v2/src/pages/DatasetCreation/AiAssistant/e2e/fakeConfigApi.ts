@@ -133,6 +133,8 @@ export interface FakeConfigApi {
   };
   /** The stored dataset, for asserting what the flow actually wrote. */
   dataset: (datasetId: string) => StoredDataset | undefined;
+  /** Makes a Live master appear after the assistant is already open. */
+  publishMaster: (master: { dataset_id: string; name?: string }) => void;
   /** Every request made, for asserting on call sequence. */
   calls: { method: string; url: string; body?: Json }[];
 }
@@ -168,10 +170,24 @@ export const createFakeConfigApi = ({
     taken.add(stored.dataset_id);
   }
 
-  for (const master of masters) {
-    datasets.set(master.dataset_id, {
-      dataset_id: master.dataset_id,
-      name: master.name ?? master.dataset_id,
+  /**
+   * Makes a Live master dataset appear.
+   *
+   * Exposed as well as used for seeding, because in the real system a master
+   * becomes Live *after* the assistant is already open — publishing happens
+   * in the wizard's preview and then the dataset list — and the assistant has
+   * to notice.
+   */
+  const publishMaster = ({
+    dataset_id,
+    name,
+  }: {
+    dataset_id: string;
+    name?: string;
+  }) => {
+    datasets.set(dataset_id, {
+      dataset_id,
+      name: name ?? dataset_id,
       type: 'master',
       status: 'Live',
       version_key: 'master-vk',
@@ -184,8 +200,13 @@ export const createFakeConfigApi = ({
       connectors_config: [],
       sample_data: {},
     });
-    taken.add(master.dataset_id);
+    taken.add(dataset_id);
+  };
+
+  for (const master of masters) {
+    publishMaster(master);
   }
+
   const calls: FakeConfigApi['calls'] = [];
   let versionCounter = 1000;
 
@@ -801,6 +822,7 @@ export const createFakeConfigApi = ({
       put: async () => ({ status: 200, data: {} }),
     },
     dataset: (datasetId) => datasets.get(datasetId),
+    publishMaster,
     calls,
   };
 };

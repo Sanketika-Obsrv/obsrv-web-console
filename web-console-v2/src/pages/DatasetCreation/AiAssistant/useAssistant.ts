@@ -237,32 +237,61 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   }, []);
 
   /**
-   * Lists the master datasets once, for the denormalisation question.
+   * Lists the master datasets, for the denormalisation question.
    *
    * Live only, and `type: 'master'` only — the same filter the wizard's
    * processing page applies, because those are the only datasets a
-   * denormalisation can look values up in. A failure leaves the list
-   * `undefined`, which the agenda reads as "not known" and so does not ask,
-   * rather than as "there are none".
+   * denormalisation can look values up in. A failure leaves the list as it
+   * was: `undefined` before the first success, which the agenda reads as "not
+   * known" and so does not ask, rather than as "there are none"; and a list
+   * already held is better than forgetting it because one refetch failed.
+   */
+  const refreshMasters = useCallback(async () => {
+    try {
+      const result = await listDatasets<{
+        data?: { dataset_id: string; name?: string; type?: string }[];
+      }>({ status: ['Live'] });
+
+      setMasterDatasets(
+        (result?.data ?? []).filter((entry) => entry.type === 'master'),
+      );
+    } catch {
+      // Deliberately nothing. See above.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshMasters();
+  }, [refreshMasters]);
+
+  /**
+   * Re-lists them, because the list goes stale under the user's feet.
+   *
+   * The assistant does not publish: a master it creates is a draft, and
+   * making it Live happens in the wizard's preview and then the dataset list.
+   * Listed only on mount, a master published during the conversation stayed
+   * invisible until the page was reloaded — so the denormalisation question
+   * would offer everything except the dataset the user had just made for it.
+   *
+   * Two moments cover that: coming back to the tab, and reaching the
+   * processing stage, which is where the question is asked.
    */
   useEffect(() => {
-    let cancelled = false;
-
-    listDatasets<{
-      data?: { dataset_id: string; name?: string; type?: string }[];
-    }>({ status: ['Live'] })
-      .then((result) => {
-        if (cancelled) return;
-        setMasterDatasets(
-          (result?.data ?? []).filter((entry) => entry.type === 'master'),
-        );
-      })
-      .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
+    const onFocus = () => {
+      void refreshMasters();
     };
-  }, []);
+
+    window.addEventListener('focus', onFocus);
+
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refreshMasters]);
+
+  const conversationStep = session.session?.step;
+
+  useEffect(() => {
+    if (conversationStep !== 'processing') return;
+    void refreshMasters();
+  }, [conversationStep, refreshMasters]);
 
   /** Reads the chosen connector's schema whenever the choice changes. */
   const chosenConnectorId = session.session?.connector?.id;

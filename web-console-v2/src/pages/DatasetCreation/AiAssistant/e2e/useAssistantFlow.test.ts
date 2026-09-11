@@ -22,10 +22,10 @@ jest.mock('services/http', () => {
   };
 });
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { fetchSystemSettings } from 'services/configData';
 import * as httpModule from 'services/http';
-import { useAssistant } from '../useAssistant';
+import { AssistantApi, useAssistant } from '../useAssistant';
 import { createFakeConfigApi } from './fakeConfigApi';
 import { pathFromRef } from '../engine/previewFocus';
 import { DataSchema, unresolvedConflicts } from '../engine/schemaEditor';
@@ -359,6 +359,138 @@ describe('joining to a master dataset', () => {
 
     // And the conversation moves on rather than asking for another join.
     expect(asked()?.text).not.toMatch(/master dataset/i);
+  });
+
+  type Hook = { current: AssistantApi };
+
+  /** Name it, call it an event dataset, hand over the sample. */
+  const beginOrders = async (result: Hook) => {
+    const quiet = () => waitFor(() => expect(result.current.busy).toBe(false));
+
+    const answer = async (said: string) => {
+      const before = result.current.messages.length;
+      await result.current.send(said);
+      await waitFor(() =>
+        expect(result.current.messages.length).toBeGreaterThan(before),
+      );
+      await quiet();
+    };
+
+    await answer('call it My Orders');
+    await answer('Event');
+
+    await result.current.attachSample(
+      ROWS as unknown as Record<string, unknown>[],
+      new File([JSON.stringify(ROWS)], 'orders.json', {
+        type: 'application/json',
+      }),
+    );
+    await waitFor(() => expect(result.current.datasetId).toBe('my-orders'));
+    await quiet();
+  };
+
+  /**
+   * Declines whatever can be declined until the question matches, taking the
+   * first option where there is no way out.
+   */
+  const declineUntil = async (
+    result: Hook,
+    matches: (text: string) => boolean,
+  ) => {
+    const quiet = () => waitFor(() => expect(result.current.busy).toBe(false));
+    const last = () =>
+      result.current.messages[result.current.messages.length - 1] as
+        Message | undefined;
+
+    for (let turn = 0; turn < 10; turn += 1) {
+      if (matches(last()?.text ?? '')) break;
+
+      const card = last()?.card;
+      if (card?.kind !== 'choice') break;
+
+      const move =
+        card.options.find((option) => option.action.kind === 'skip_step') ??
+        card.options[0];
+
+      const before = result.current.messages.length;
+      await result.current.dispatch(move.action);
+      await waitFor(() =>
+        expect(result.current.messages.length).toBeGreaterThan(before),
+      );
+      await quiet();
+    }
+
+    return last();
+  };
+
+  const listCalls = () =>
+    api.calls.filter((call) => call.url.includes('datasets/list')).length;
+
+  /**
+   * The assistant does not publish, so a master becomes Live somewhere else
+   * — the wizard's preview, then the dataset list — while this conversation
+   * sits open. Listed only on mount, that master stayed invisible and the
+   * join offer named everything except the dataset just made for it.
+   */
+  it('offers a master that went live after the conversation started', async () => {
+    const { result } = renderHook(() => useAssistant(null));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await beginOrders(result);
+
+    api.publishMaster({ dataset_id: 'customers', name: 'Customers' });
+
+    const before = listCalls();
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    await waitFor(() => expect(listCalls()).toBeGreaterThan(before));
+
+    const question = await declineUntil(result, (text) =>
+      /Customers/.test(text),
+    );
+
+    expect(question?.text).toContain('Customers');
+  });
+
+  it('keeps the masters it has when a later listing fails', async () => {
+    api = createFakeConfigApi({
+      masters: [{ dataset_id: 'customers', name: 'Customers' }],
+    });
+    const holder = (
+      httpModule as unknown as { httpHolder: { current: unknown } }
+    ).httpHolder;
+    holder.current = api.http;
+
+    const { result } = renderHook(() => useAssistant(null));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await beginOrders(result);
+
+    // Everything keeps working except listing, which is the failure that
+    // must not be read as "the cluster has no master datasets".
+    let refused = 0;
+    holder.current = {
+      ...api.http,
+      post: async (url: string, body?: Record<string, unknown>) => {
+        if (url.includes('datasets/list')) {
+          refused += 1;
+          throw new Error('gateway timed out');
+        }
+        return api.http.post(url, body);
+      },
+    };
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    await waitFor(() => expect(refused).toBeGreaterThan(0));
+
+    const question = await declineUntil(result, (text) =>
+      /Customers/.test(text),
+    );
+
+    expect(question?.text).toContain('Customers');
   });
 });
 
