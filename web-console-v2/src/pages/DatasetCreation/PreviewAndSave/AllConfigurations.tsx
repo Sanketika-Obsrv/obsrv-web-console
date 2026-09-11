@@ -29,6 +29,14 @@ interface AllConfigurationsProps {
     focusSection?: PreviewSection;
     /** JSON Schema refs changed by the last action, flashed in the schema table. */
     changedRefs?: string[];
+    /**
+     * Changes a caller has made since this mounted.
+     *
+     * The field list is read here rather than through React Query, so
+     * invalidating the dataset query does not reach it. Optional: the wizard
+     * remounts this page and needs nothing.
+     */
+    reloadKey?: number;
 }
 
 interface TransformationRow {
@@ -104,6 +112,7 @@ const AllConfigurations = ({
     status: statusProp,
     focusSection,
     changedRefs,
+    reloadKey,
 }: AllConfigurationsProps = {}) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const { datasetId: datasetIdParam }: any = useParams();
@@ -154,7 +163,10 @@ const AllConfigurations = ({
         };
 
         processFields(datasetId).catch(() => setDataSchema(undefined));
-    }, [datasetId]);
+        // `reloadKey` changes when something has been written, which is the
+        // only signal this component gets: the AI assistant writes outside
+        // React Query, so a field marked required stayed unrequired here.
+    }, [datasetId, reloadKey]);
 
     useEffect(() => {
         if (response.data) {

@@ -23,11 +23,26 @@ jest.mock('services/http', () => {
 });
 
 import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createElement, ReactNode } from 'react';
 import { fetchSystemSettings } from 'services/configData';
 import * as httpModule from 'services/http';
 import { useAssistant } from '../useAssistant';
 import { createFakeConfigApi } from './fakeConfigApi';
 import * as turnModule from '../engine/turn';
+
+/**
+ * The assistant invalidates the preview's reads after a write, so it needs a
+ * query client in context. One per render, so nothing leaks between tests.
+ */
+const renderAssistant = (datasetId: string | null = null) => {
+  const client = new QueryClient();
+
+  return renderHook(() => useAssistant(datasetId), {
+    wrapper: ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children),
+  });
+};
 
 /**
  * These drive the whole stack, so they are slower than a unit test. Jest's
@@ -82,7 +97,7 @@ describe('a turn that throws', () => {
   });
 
   it('says so rather than escaping as a runtime error', async () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await result.current.send('call it My Orders');
@@ -97,7 +112,7 @@ describe('a turn that throws', () => {
   });
 
   it('stops being busy, so the next thing typed is still accepted', async () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await result.current.send('call it My Orders');

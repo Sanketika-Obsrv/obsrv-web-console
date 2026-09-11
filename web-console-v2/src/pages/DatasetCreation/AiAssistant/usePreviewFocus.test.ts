@@ -161,3 +161,48 @@ describe('usePreviewFocus', () => {
     expect(result.current.recordAction).toBe(first);
   });
 });
+
+/**
+ * The count is what tells the preview its reads are stale. It must move only
+ * when something was actually written, or every declined question would cost
+ * a re-read of the dataset.
+ */
+describe('counting the changes', () => {
+  it('starts at nothing written', () => {
+    const { result } = renderHook(() => usePreviewFocus());
+
+    expect(result.current.revision).toBe(0);
+  });
+
+  it('counts a change that was applied', () => {
+    const { result } = renderHook(() => usePreviewFocus());
+
+    act(() =>
+      result.current.recordAction(
+        { kind: 'toggle_required', path: 'mid', required: true },
+        { ok: true, status: 'applied', dataset: {}, changedRefs: [] },
+      ),
+    );
+
+    expect(result.current.revision).toBe(1);
+  });
+
+  it('does not count a failure or a no-op', () => {
+    const { result } = renderHook(() => usePreviewFocus());
+
+    act(() =>
+      result.current.recordAction(
+        { kind: 'toggle_required', path: 'mid', required: true },
+        { ok: false, code: 'TURN_FAILED', error: 'no' },
+      ),
+    );
+    act(() =>
+      result.current.recordAction(
+        { kind: 'toggle_required', path: 'mid', required: true },
+        { ok: true, status: 'noop' },
+      ),
+    );
+
+    expect(result.current.revision).toBe(0);
+  });
+});

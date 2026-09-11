@@ -23,6 +23,8 @@ jest.mock('services/http', () => {
 });
 
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createElement, ReactNode } from 'react';
 import { fetchSystemSettings } from 'services/configData';
 import * as httpModule from 'services/http';
 import { AssistantApi, useAssistant } from '../useAssistant';
@@ -31,6 +33,19 @@ import { pathFromRef } from '../engine/previewFocus';
 import { DataSchema, unresolvedConflicts } from '../engine/schemaEditor';
 import { timestampCandidates } from '../engine/schemaSuggestions';
 import { Message } from '../session/types';
+
+/**
+ * The assistant invalidates the preview's reads after a write, so it needs a
+ * query client in context. One per render, so nothing leaks between tests.
+ */
+const renderAssistant = (datasetId: string | null = null) => {
+  const client = new QueryClient();
+
+  return renderHook(() => useAssistant(datasetId), {
+    wrapper: ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children),
+  });
+};
 
 /**
  * These drive the whole stack, so they are slower than a unit test. Jest's
@@ -60,7 +75,7 @@ beforeEach(async () => {
  * is asserted on the transcript rather than on any one module.
  */
 it('opens with a question and asks the next one after each answer', async () => {
-  const { result } = renderHook(() => useAssistant(null));
+  const { result } = renderAssistant();
 
   await waitFor(() =>
     expect(result.current.messages.map((m) => m.text)).toEqual([
@@ -81,7 +96,7 @@ it('opens with a question and asks the next one after each answer', async () => 
 });
 
 it('offers the next answer as something clickable', async () => {
-  const { result } = renderHook(() => useAssistant(null));
+  const { result } = renderAssistant();
 
   await waitFor(() => expect(result.current.loading).toBe(false));
   await result.current.send('call it My Orders');
@@ -101,14 +116,14 @@ it('offers the next answer as something clickable', async () => {
  */
 describe('before the session is ready', () => {
   it('reports itself busy while restoring', () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     expect(result.current.loading).toBe(true);
     expect(result.current.busy).toBe(true);
   });
 
   it('executes nothing that it could not record', async () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     // Deliberately sent before the session has loaded.
     await result.current.send('call it My Orders');
@@ -125,7 +140,7 @@ describe('before the session is ready', () => {
   });
 
   it('accepts the same instruction once ready', async () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     await result.current.send('call it My Orders');
@@ -139,7 +154,7 @@ describe('before the session is ready', () => {
   });
 
   it('stops being busy once restored', async () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     await waitFor(() => expect(result.current.busy).toBe(false));
   });
@@ -181,7 +196,7 @@ describe('a dataset with more than one type conflict', () => {
     ).map(pathFromRef);
 
   const draftWithConflicts = async () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     await result.current.send('call it My Orders');
@@ -267,7 +282,7 @@ describe('joining to a master dataset', () => {
       httpModule as unknown as { httpHolder: { current: unknown } }
     ).httpHolder.current = api.http;
 
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -433,7 +448,7 @@ describe('joining to a master dataset', () => {
    * join offer named everything except the dataset just made for it.
    */
   it('offers a master that went live after the conversation started', async () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     await beginOrders(result);
@@ -462,7 +477,7 @@ describe('joining to a master dataset', () => {
     ).httpHolder;
     holder.current = api.http;
 
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     await beginOrders(result);
@@ -522,7 +537,7 @@ describe('creating a dataset by answering only', () => {
   ];
 
   it('reaches a saved dataset when every answer is typed', async () => {
-    const { result } = renderHook(() => useAssistant(null));
+    const { result } = renderAssistant();
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -699,7 +714,7 @@ describe('opening a dataset that already exists', () => {
       httpModule as unknown as { httpHolder: { current: unknown } }
     ).httpHolder.current = api.http;
 
-    const { result } = renderHook(() => useAssistant('telemetry-events'));
+    const { result } = renderAssistant('telemetry-events');
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     await waitFor(() =>

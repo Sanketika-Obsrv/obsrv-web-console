@@ -66,6 +66,7 @@ const AiAssistantPage: React.FC = () => {
             datasetId={assistant.datasetId}
             focusSection={assistant.focusSection}
             changedRefs={assistant.changedRefs}
+            revision={assistant.previewRevision}
           />
         }
       />

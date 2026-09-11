@@ -12,6 +12,7 @@ jest.mock('pages/DatasetCreation/PreviewAndSave/AllConfigurations', () => ({
       data-dataset-id={String(props.datasetId ?? '')}
       data-focus-section={String(props.focusSection ?? '')}
       data-changed-refs={((props.changedRefs as string[]) ?? []).join(',')}
+      data-reload-key={String(props.reloadKey ?? '')}
     />
   ),
 }));
@@ -287,6 +288,44 @@ describe('the way out to the wizard', () => {
     expect(screen.getByRole('link', { name: /wizard/i })).toHaveAttribute(
       'href',
       '/dataset/create',
+    );
+  });
+});
+
+/**
+ * `AllConfigurations` reads the field list itself, in an effect keyed on the
+ * dataset id, so it read once and never again — and "mark mid as required"
+ * changed the server without changing the screen. The reload key is the only
+ * signal it gets.
+ */
+describe('telling the configuration tables to read again', () => {
+  it('passes the revision down', () => {
+    givenDataset({ dataset_id: 'my-orders', name: 'My Orders' });
+
+    render(
+      <MemoryRouter>
+        <PreviewPane datasetId="my-orders" revision={3} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('all-configurations')).toHaveAttribute(
+      'data-reload-key',
+      '3',
+    );
+  });
+
+  it('passes nothing when nothing has been written', () => {
+    givenDataset({ dataset_id: 'my-orders', name: 'My Orders' });
+
+    render(
+      <MemoryRouter>
+        <PreviewPane datasetId="my-orders" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('all-configurations')).toHaveAttribute(
+      'data-reload-key',
+      '',
     );
   });
 });

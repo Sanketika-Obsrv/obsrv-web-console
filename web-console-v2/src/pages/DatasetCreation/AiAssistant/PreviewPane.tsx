@@ -28,6 +28,14 @@ export interface PreviewPaneProps {
   focusSection?: PreviewSection;
   /** JSON Schema refs the last action changed, flashed in the schema table. */
   changedRefs?: string[];
+  /**
+   * Changes written so far.
+   *
+   * `AllConfigurations` reads the field list itself, in an effect keyed on
+   * the dataset id — so it read once and never again, and a field marked
+   * required stayed unrequired on screen. This is what tells it to look.
+   */
+  revision?: number;
   highlightMs?: number;
 }
 
@@ -113,6 +121,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({
   datasetId,
   focusSection,
   changedRefs,
+  revision,
   highlightMs = DEFAULT_HIGHLIGHT_MS,
 }) => {
   const [highlighted, setHighlighted] = useState<string[] | undefined>(
@@ -191,6 +200,7 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({
             status={DatasetStatus.Draft}
             focusSection={focusSection}
             changedRefs={highlighted}
+            reloadKey={revision}
           />
         </>
       ) : (

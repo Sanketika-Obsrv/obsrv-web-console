@@ -11,6 +11,7 @@
  * 4. tell the preview which section changed
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getAllFields } from 'services/dataset';
 import { downloadJsonFile } from 'utils/downloadUtils';
 import {
@@ -74,6 +75,8 @@ export interface AssistantApi {
   busy: boolean;
   focusSection: ReturnType<typeof usePreviewFocus>['focusSection'];
   changedRefs: ReturnType<typeof usePreviewFocus>['changedRefs'];
+  /** Changes written so far, so the preview knows its reads are stale. */
+  previewRevision: number;
   send: (text: string) => Promise<void>;
   dispatch: (action: Action) => Promise<void>;
   attachSample: (rows: Record<string, unknown>[], file: File) => Promise<void>;
@@ -117,7 +120,13 @@ const stepForUtterance = (utterance: string): WizardStep | undefined => {
 
 export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   const session = useSession({ datasetId: routeDatasetId });
-  const { focusSection, changedRefs, recordAction } = usePreviewFocus();
+  const queryClient = useQueryClient();
+  const {
+    focusSection,
+    changedRefs,
+    revision: previewRevision,
+    recordAction,
+  } = usePreviewFocus();
 
   const [busy, setBusy] = useState(false);
   const [vocabulary, setVocabulary] = useState<FieldVocabulary>(() =>
@@ -629,6 +638,21 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
         if (result.action && result.outcome) {
           recordAction(result.action, result.outcome);
 
+          /*
+            The preview reads the dataset through React Query; the executor
+            writes through plain axios, because it runs outside React. So
+            nothing connected the two, and the pane went on showing the read
+            it made when it mounted — "mark mid as required" changed the
+            server and not the screen. A prefix match, since the pane and
+            the configuration tables ask for different projections of the
+            same dataset and each has its own cache entry.
+          */
+          if (result.outcome.ok && result.outcome.status === 'applied') {
+            await queryClient.invalidateQueries({
+              queryKey: ['fetchDatasetsById', datasetId],
+            });
+          }
+
           const currentStep = session.session?.step ?? 'ingestion';
 
           reportAction({
@@ -773,6 +797,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       // `contextNow` already changes with it.
       datasetId,
       modelReady,
+      queryClient,
       recordAction,
       refreshVocabulary,
       session,
@@ -1036,6 +1061,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     busy: busy || session.loading,
     focusSection,
     changedRefs,
+    previewRevision,
     send,
     dispatch: run,
     attachSample,
