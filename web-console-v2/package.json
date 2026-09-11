@@ -88,7 +88,8 @@
       "node_modules/(?!(pretty-ms|parse-ms|pretty-bytes)/)"
     ],
     "moduleNameMapper": {
-      "^react-router/dom$": "<rootDir>/node_modules/react-router/dist/development/dom-export.js"
+      "^react-router/dom$": "<rootDir>/node_modules/react-router/dist/development/dom-export.js",
+      "spawnEngineWorker$": "<rootDir>/src/pages/DatasetCreation/AiAssistant/model/__mocks__/spawnEngineWorker.ts"
     }
   },
   "overrides": {

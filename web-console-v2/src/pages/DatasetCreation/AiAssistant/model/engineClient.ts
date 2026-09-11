@@ -5,13 +5,18 @@
  * the package is ~14 MB of library code, and most users of the console will
  * never open the assistant at all. A static import would put that in the main
  * bundle for everyone. The dynamic import keeps it in its own chunk, fetched
- * only when someone actually asks for the model.
+ * only when someone actually asks for the model. (The type-only import at the
+ * top is erased at compile time and costs nothing; `engineWorker` imports the
+ * library statically, but webpack bundles a worker entry separately, so that
+ * copy is not in the main chunk either.)
  *
  * The weights themselves come from huggingface.co, which is worth knowing
  * before this ships: an air-gapped or egress-restricted deployment cannot
  * reach them, and would run at tier 0 permanently.
  */
+import type { MLCEngineInterface } from '@mlc-ai/web-llm';
 import { ModelSpec, REQUIRED_MODEL } from './catalog';
+import { spawnEngineWorker } from './spawnEngineWorker';
 import { Capability, detectCapability } from './tiers';
 
 /**
@@ -47,7 +52,22 @@ export type EngineStatus =
 export interface ModelEngine {
   complete(prompt: string, responseFormat?: unknown): Promise<string>;
   unload(): Promise<void>;
+  /**
+   * Where the weights ended up. `loadEngine` always sets it; it is optional
+   * so that a test needing nothing but `complete` can still hand over a
+   * two-line fake.
+   */
+  readonly thread?: EngineThread;
 }
+
+/**
+ * Which thread ran the model.
+ *
+ * Worth reporting rather than assuming: the worker is the intended path, and
+ * `main` means the fallback fired, which is the difference between a
+ * responsive composer and one that freezes while the model thinks.
+ */
+export type EngineThread = 'worker' | 'main';
 
 /**
  * Whether the weights are already in this browser's cache.
@@ -81,13 +101,56 @@ export interface LoadOptions {
 }
 
 /**
- * Loads the model.
+ * The assistant's surface over one of web-llm's engines.
  *
- * On the main thread, which this comment used to claim it was not. Moving
- * inference to a Web Worker would be worth doing — a 1.7B model thinking on
- * the main thread is long enough to notice — but it means worker bundling
- * under CRA, which is unverified in a deployed console and is not part of
- * making the model required.
+ * Written once because both engines implement `MLCEngineInterface`: the
+ * worker engine is a proxy that posts the same calls across the boundary, so
+ * `chat.completions.create` and `unload` read identically from here.
+ *
+ * `dispose` is how the worker gets cleaned up. `unload()` alone releases the
+ * weights inside the worker but leaves the worker itself running, which is
+ * the leak that was fixed once already — a page left with a gigabyte and a
+ * half still resident.
+ */
+const wrapEngine = (
+  engine: MLCEngineInterface,
+  thread: EngineThread,
+  dispose?: () => void,
+): ModelEngine => ({
+  thread,
+  complete: async (prompt, responseFormat) => {
+    const reply = await engine.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      // Constrained decoding: the action schema is the grammar, which is
+      // what stops a 0.6B model inventing action shapes.
+      ...(responseFormat ? { response_format: responseFormat as never } : {}),
+    });
+
+    return reply.choices[0]?.message?.content ?? '';
+  },
+  unload: async () => {
+    try {
+      await engine.unload();
+    } finally {
+      dispose?.();
+    }
+  },
+});
+
+/**
+ * Loads the model, in a Web Worker.
+ *
+ * Off the main thread because a 1.7B model thinking is long enough to
+ * notice: on the main thread the composer stopped answering keystrokes while
+ * a turn was resolved. `WebWorkerMLCEngine` keeps the same interface and
+ * forwards load progress back across the boundary, so the banner reports the
+ * download exactly as before.
+ *
+ * The main thread stays as a fallback rather than being deleted. The model
+ * is mandatory — no model, no conversation — so a browser extension, a
+ * content-security policy or a deployment that mangles the worker chunk must
+ * not be allowed to take the whole assistant down. There, inference runs
+ * where it used to and only responsiveness suffers.
  */
 export const loadEngine = async ({
   onProgress,
@@ -109,24 +172,29 @@ export const loadEngine = async ({
     );
   }
 
-  const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
+  const { CreateMLCEngine, CreateWebWorkerMLCEngine } =
+    await import('@mlc-ai/web-llm');
 
-  const engine = await CreateMLCEngine(model.id, {
-    initProgressCallback: (report) =>
-      onProgress?.({ progress: report.progress, text: report.text }),
-  });
+  const initProgressCallback = (report: { progress: number; text: string }) =>
+    onProgress?.({ progress: report.progress, text: report.text });
 
-  return {
-    complete: async (prompt, responseFormat) => {
-      const reply = await engine.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        // Constrained decoding: the action schema is the grammar, which is
-        // what stops a 0.6B model inventing action shapes.
-        ...(responseFormat ? { response_format: responseFormat as never } : {}),
-      });
+  let worker: Worker | undefined;
 
-      return reply.choices[0]?.message?.content ?? '';
-    },
-    unload: () => engine.unload(),
-  };
+  try {
+    worker = spawnEngineWorker();
+    const spawned = worker;
+    const engine = await CreateWebWorkerMLCEngine(spawned, model.id, {
+      initProgressCallback,
+    });
+
+    return wrapEngine(engine, 'worker', () => spawned.terminate());
+  } catch {
+    // Half-built: the worker exists but the engine inside it does not, so
+    // nothing will ever collect it.
+    worker?.terminate();
+  }
+
+  const engine = await CreateMLCEngine(model.id, { initProgressCallback });
+
+  return wrapEngine(engine, 'main');
 };
