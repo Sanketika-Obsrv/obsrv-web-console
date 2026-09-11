@@ -257,6 +257,17 @@ const asksSomethingElse = (input: string, answered: Action): boolean => {
   return Boolean(kinds) && !kinds!.includes(answered.kind);
 };
 
+/** Two actions are the same decision when they carry the same values. */
+const sameAction = (one: Action, other: Action): boolean => {
+  const keys = new Set([...Object.keys(one), ...Object.keys(other)]);
+
+  return [...keys].every(
+    (key) =>
+      (one as Record<string, unknown>)[key] ===
+      (other as Record<string, unknown>)[key],
+  );
+};
+
 const runAction = async (
   action: Action,
   deps: TurnDeps,
@@ -495,22 +506,20 @@ export const runTurn = async (
   }
 
   /**
-   * An answer to the question is acted on as it stands.
+   * Reading the reply comes first, and the model does the reading.
    *
-   * It is tried before resolving because the question is better evidence
-   * than the words: "no" means nothing on its own and means "keep the
-   * duplicates" right after the deduplication question. `answerTo` returns
-   * nothing for a command or a request, so those still reach the resolver.
+   * It used to be the other way round: the question's own matcher ran first
+   * and won outright, and for a question that takes prose that meant
+   * whatever was typed became the value. "I want create telemetry dataset"
+   * named a dataset exactly that. The matcher compares a reply against
+   * options the assistant itself wrote, which is sound for a choice and
+   * hopeless for a sentence.
+   *
+   * So the resolver reads the answer against the question — with the
+   * question's own action schema as the model's grammar — and the matcher
+   * is what answers when it cannot.
    */
-  const answered = answerTo(deps.prompt, input);
-
-  if (answered && !asksSomethingElse(input, answered)) {
-    const { outcome, message } = await runAction(answered, deps);
-
-    return { messages: [said, message], action: answered, outcome };
-  }
-
-  const resolution = deps.resolve
+  const read = deps.resolve
     ? await deps.resolve(input)
     : resolveUtterance(input, {
         vocabulary: deps.vocabulary,
@@ -519,6 +528,38 @@ export const runTurn = async (
         connectorProperties: deps.connectorProperties,
         masterDatasets: deps.masterDatasets,
       });
+
+  /** What the question's own matcher makes of the reply, if anything. */
+  const matched = answerTo(deps.prompt, input);
+  const literal =
+    matched && !asksSomethingElse(input, matched) ? matched : undefined;
+
+  if (read.status !== 'resolved' && literal) {
+    const { outcome, message } = await runAction(literal, deps);
+
+    return { messages: [said, message], action: literal, outcome };
+  }
+
+  /**
+   * Two readings that agree need no confirming.
+   *
+   * Every model reading arrives as a proposal, which is right for an
+   * inference and wrong for an answer — confirming "Event" at the type
+   * question is asking the user to say the same thing twice. But an offered
+   * option is not enough on its own to skip the confirmation: "write me a
+   * poem about ducks" was once read as "leave the schema as it is", which
+   * is an offered option, and performed. What makes it an answer is that
+   * the *matcher* reaches it too, from the words as typed. When both
+   * readings agree, there is nothing left to check.
+   */
+  const resolution =
+    read.status === 'resolved' &&
+    read.action &&
+    read.needsConfirmation &&
+    literal &&
+    sameAction(literal, read.action)
+      ? { ...read, needsConfirmation: false }
+      : read;
 
   /**
    * A request the flow cannot honour yet is answered with what is missing.

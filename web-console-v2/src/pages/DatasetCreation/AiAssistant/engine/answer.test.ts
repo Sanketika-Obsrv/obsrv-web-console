@@ -282,18 +282,22 @@ describe('answering the name question', () => {
     });
   });
 
-  it('strips the way people say it', () => {
+  /**
+   * The matcher no longer strips a preface, and that is the point.
+   *
+   * It used to remove "call it", "go with", "let's call it" and a trailing
+   * "please" — a list of the phrasings someone thought of. The sentence
+   * nobody thought of, "I want create telemetry dataset", went through
+   * whole and became a dataset id. Reading the words is the model's job
+   * now; this matcher only recognises the assistant's own options coming
+   * back, and reports the reply as typed for everything else. Naming from
+   * "call it My Orders" is covered by the resolver rule
+   * (`ruleResolver.test.ts`) and by the model.
+   */
+  it('reports a prefaced answer as it was typed', () => {
     expect(answerTo(NAME, 'call it My Orders')).toEqual({
       kind: 'set_dataset_name',
-      name: 'My Orders',
-    });
-    expect(answerTo(NAME, 'go with orders_2026')).toEqual({
-      kind: 'set_dataset_name',
-      name: 'orders_2026',
-    });
-    expect(answerTo(NAME, "let's call it my-orders please")).toEqual({
-      kind: 'set_dataset_name',
-      name: 'my-orders',
+      name: 'call it My Orders',
     });
   });
 

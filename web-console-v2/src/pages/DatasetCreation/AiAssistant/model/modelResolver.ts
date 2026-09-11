@@ -172,17 +172,22 @@ export const resolveWithModel = async (
   const fallBackToRules = () => (fallback ?? defaultFallback)(input);
 
   /**
-   * The rules go first.
+   * The model goes first.
    *
-   * Measured live: at 0.6B the model is *worse* than the rules on phrasings
-   * the rules already handle — it produced `set_arrival_format` for an
-   * instruction about duplicates. A rule match is a pattern the words
-   * actually fit, so there is nothing for a guess to improve on. The model
-   * earns its place only on utterances the rules decline.
+   * It used to be the other way round, and the reason was honest at the
+   * time: at 0.6B the model was *worse* than the rules on phrasings the
+   * rules already handled. But rules are hand-written phrasings, and they
+   * only ever cover the sentence someone thought of. "I want create
+   * telemetry dataset" was answered by naming a dataset that whole sentence,
+   * because the prose reader stripped the prefixes it knew and kept the
+   * rest. Widening that list fixes one sentence and not the next.
+   *
+   * So the model reads the answer against the question, with the question's
+   * own action schema as its grammar, and the rules are what answers when it
+   * cannot: unavailable, unparseable, or an action this question does not
+   * accept. A reading that is not literally what the user typed is proposed
+   * rather than performed — see `needsConfirmation`.
    */
-  const byRules = fallBackToRules();
-  if (byRules.status === 'resolved') return byRules;
-
   let reply: string;
 
   try {
@@ -229,9 +234,19 @@ export const resolveWithModel = async (
     return fallBackToRules();
   }
 
-  // A name the user never asked for is worse than no answer.
+  /**
+   * A name the user never asked for is worse than no answer — unless naming
+   * is the question.
+   *
+   * The cue words are there for an unprompted utterance, where a model with
+   * naming on its menu will name the dataset after whatever it was given.
+   * At the name question the question *is* the cue, and requiring the user
+   * to say "call it" as well would be the hand-written phrasing this reader
+   * exists to do without.
+   */
   if (
     checked.action.kind === 'set_dataset_name' &&
+    input.question !== 'name' &&
     !NAMING_CUE.test(input.utterance)
   ) {
     return fallBackToRules();

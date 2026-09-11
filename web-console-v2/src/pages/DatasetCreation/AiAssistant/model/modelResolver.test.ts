@@ -320,21 +320,59 @@ describe('a name the user never asked for', () => {
 });
 
 /**
- * Measured live: at 0.6B the model is *worse* than the rules on phrasings the
- * rules already handle. "I never want to see the same order twice" produced
- * `set_arrival_format` on an unrelated field. A rule match is a pattern the
- * words actually fit, so there is nothing for a guess to improve on.
+ * The order used to be the other way round, and the reason was honest at the
+ * time: at 0.6B the model was worse than the rules on phrasings the rules
+ * already handled. But the rules are hand-written phrasings, and they only
+ * cover the sentences someone thought of — "I want create telemetry dataset"
+ * became a dataset called that. The model reads the words now; the rules are
+ * what answers when it cannot.
  */
-describe('the rules go first', () => {
-  it('never asks the model when the rules already match', async () => {
-    const complete = jest.fn(async () => '{"kind":"save"}');
+describe('the model goes first', () => {
+  it('asks the model even when a rule would match', async () => {
+    const complete = jest.fn(
+      async () =>
+        '{"kind":"toggle_required","path":"order_id","required":true}',
+    );
 
     const resolution = await resolveWithModel(
       { utterance: 'make order_id required', step: 'schema', vocabulary },
       { engine: { complete, unload: async () => undefined } },
     );
 
-    expect(complete).not.toHaveBeenCalled();
+    expect(complete).toHaveBeenCalled();
+    expect(resolution.action).toEqual({
+      kind: 'toggle_required',
+      path: 'order_id',
+      required: true,
+    });
+  });
+
+  it('falls back to the rules when the model returns nothing usable', async () => {
+    const resolution = await resolveWithModel(
+      { utterance: 'make order_id required', step: 'schema', vocabulary },
+      { engine: engineReplying('not json at all') },
+    );
+
+    expect(resolution.action).toEqual({
+      kind: 'toggle_required',
+      path: 'order_id',
+      required: true,
+    });
+  });
+
+  it('falls back to the rules when the model throws', async () => {
+    const resolution = await resolveWithModel(
+      { utterance: 'make order_id required', step: 'schema', vocabulary },
+      {
+        engine: {
+          complete: async () => {
+            throw new Error('no webgpu');
+          },
+          unload: async () => undefined,
+        },
+      },
+    );
+
     expect(resolution.action).toEqual({
       kind: 'toggle_required',
       path: 'order_id',

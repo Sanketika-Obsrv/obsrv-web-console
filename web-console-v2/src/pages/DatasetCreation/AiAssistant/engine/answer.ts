@@ -135,12 +135,6 @@ export const isNegative = (utterance: string): boolean => {
 const COMMANDS =
   /^(?:undo|revert|redo|help|why|what|which|how|when|who|explain|tell me|start over|cancel|stop|quit|wait|back|go back|nevermind|never mind|save|publish)\b/i;
 
-/** How people preface a value. */
-const VALUE_PREFIX =
-  /^(?:(?:let'?s|lets|we(?:'ll| will)?|i(?:'d| would)? like to|please)\s+)?(?:(?:call|name)\s+(?:it|this|the dataset)|go with|use)\s+/i;
-
-const VALUE_SUFFIX = /\s*(?:please|thanks|thank you)\s*[.!]?$/i;
-
 const MAX_VALUE = 100;
 
 /**
@@ -346,9 +340,7 @@ const answerToProse = (
   if (COMMANDS.test(said) || ADDRESSED.test(said)) return undefined;
   if (said.split(/\s+/).length > MAX_VALUE_WORDS) return undefined;
 
-  const value = said.replace(VALUE_PREFIX, '').replace(VALUE_SUFFIX, '').trim();
-
-  return value ? freeText(value) : undefined;
+  return freeText(said);
 };
 
 /**

@@ -10,8 +10,23 @@ import _ from 'lodash';
 /** Characters the console refuses in a dataset name. */
 const INVALID_NAME_CHARS = /[!@#$%^&*()+{}[\]:;<>,?~\\|]/;
 
+/**
+ * How long a name can be before it is plainly not one.
+ *
+ * Not an attempt to read the words — whatever the name means is the model's
+ * business. This is the last line of defence for the id, which is derived
+ * from the name and cannot be changed afterwards: "I want create telemetry
+ * dataset" reached `create` and became `i-want-create-telemetry-dataset`.
+ * A dataset called eight words is possible; a sentence is not a name.
+ */
+const MAX_NAME_WORDS = 8;
+const MAX_NAME_LENGTH = 100;
+
 export const isValidDatasetName = (name: string): boolean =>
-  Boolean(name?.trim()) && !INVALID_NAME_CHARS.test(name);
+  Boolean(name?.trim()) &&
+  !INVALID_NAME_CHARS.test(name) &&
+  name.trim().length <= MAX_NAME_LENGTH &&
+  name.trim().split(/\s+/).length <= MAX_NAME_WORDS;
 
 /** Slug the console derives from a dataset name, e.g. "My Orders" -> "my-orders". */
 export const datasetIdFromName = (name: string): string =>

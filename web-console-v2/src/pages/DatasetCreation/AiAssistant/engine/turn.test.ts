@@ -1417,3 +1417,88 @@ describe('a request said while a different question is waiting', () => {
     });
   });
 });
+
+/**
+ * Reported: at "What would you like to call this dataset?" the user typed
+ * "I want create telemetry dataset" and got a dataset called exactly that,
+ * id `i-want-create-telemetry-dataset`. The matcher had taken the reply as
+ * the value because it matched none of the prefaces it knew how to strip.
+ *
+ * The model reads the answer now, and where its reading and the matcher's
+ * disagree the reading is proposed rather than written.
+ */
+describe('a sentence answering a question that asks for a value', () => {
+  const NAME_QUESTION: Prompt = {
+    step: 'name',
+    text: 'What would you like to call this dataset?',
+    freeText: (name) => ({ kind: 'set_dataset_name', name }),
+  };
+
+  /** A model that reads the name out of whatever it is given. */
+  const reads = (name: string) => async () => ({
+    status: 'resolved' as const,
+    confidence: 0.8,
+    needsConfirmation: true,
+    action: { kind: 'set_dataset_name' as const, name },
+  });
+
+  it('is proposed, not written', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('I want create telemetry dataset', {
+      vocabulary,
+      execute,
+      prompt: NAME_QUESTION,
+      resolve: reads('telemetry'),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].card).toMatchObject({
+      kind: 'confirm',
+      confirmAction: { kind: 'set_dataset_name', name: 'telemetry' },
+    });
+  });
+
+  it('is written once it is confirmed', async () => {
+    const execute = jest.fn(async () => applied);
+    const history: Message[] = [
+      {
+        id: 'a1',
+        role: 'assistant',
+        createdAt: 0,
+        text: 'I think you mean: name the dataset "telemetry".',
+        card: {
+          kind: 'confirm',
+          title: 'Name the dataset',
+          summary: ['name the dataset "telemetry"'],
+          confirmAction: { kind: 'set_dataset_name', name: 'telemetry' },
+        },
+      },
+    ];
+
+    await runTurn('yes', { vocabulary, execute, history });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dataset_name',
+      name: 'telemetry',
+    });
+  });
+
+  /** The answer given as the answer still costs one turn, not two. */
+  it('writes a bare value without asking', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('Telemetry Events', {
+      vocabulary,
+      execute,
+      prompt: NAME_QUESTION,
+      resolve: reads('Telemetry Events'),
+    });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dataset_name',
+      name: 'Telemetry Events',
+    });
+    expect(result.messages[1].card?.kind).not.toBe('confirm');
+  });
+});

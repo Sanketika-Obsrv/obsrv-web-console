@@ -31,15 +31,31 @@ export const ANSWERS: AnswerFixture[] = [
     expected: { kind: 'set_dataset_name', name: 'My Orders' },
     note: 'The bare answer, which no instruction pattern can match.',
   },
+  /*
+    The matcher reports a prefaced reply verbatim, and that is correct here:
+    reading "call it My Orders" as the name "My Orders" is the resolver's
+    job — a rule for this phrasing, the model for the ones nobody wrote a
+    rule for. The turn loop then sees the two readings disagree and proposes
+    the model's rather than writing either.
+  */
   {
     step: 'name',
     utterance: 'call it My Orders',
-    expected: { kind: 'set_dataset_name', name: 'My Orders' },
+    expected: { kind: 'set_dataset_name', name: 'call it My Orders' },
   },
   {
     step: 'name',
     utterance: 'go with orders_2026',
-    expected: { kind: 'set_dataset_name', name: 'orders_2026' },
+    expected: { kind: 'set_dataset_name', name: 'go with orders_2026' },
+  },
+  {
+    step: 'name',
+    utterance: 'I want create telemetry dataset',
+    expected: {
+      kind: 'set_dataset_name',
+      name: 'I want create telemetry dataset',
+    },
+    note: 'Reported: this was written as the name. The matcher still reports it verbatim — what stops it now is that the model reads "telemetry" and the disagreement makes it a proposal.',
   },
   {
     step: 'name',
