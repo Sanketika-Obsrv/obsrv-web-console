@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, { useState } from 'react';
+import { useStickToBottom } from './useStickToBottom';
 import { t } from 'utils/i18n';
 import ChatComposer from './ChatComposer';
 import ModelBanner, { ModelBannerProps } from './ModelBanner';
@@ -80,6 +81,14 @@ const ChatPane: React.FC<ChatPaneProps> = ({
 }) => {
   const [draggingOver, setDraggingOver] = useState(false);
 
+  /*
+    Keyed on the count and the last id: a turn appends its messages one at a
+    time, so each append is its own render and each should follow.
+  */
+  const transcript = useStickToBottom(
+    `${messages.length}:${messages[messages.length - 1]?.id ?? ''}`,
+  );
+
   /**
    * Only a file drag is worth reacting to. Dragging selected text across the
    * pane is not an attempt to supply a sample, and lighting the pane up for
@@ -118,7 +127,12 @@ const ChatPane: React.FC<ChatPaneProps> = ({
         m: 1,
         p: 2,
         gap: 1,
-        overflow: 'auto',
+        /*
+          Not `overflow: 'auto'`. The transcript below is the thing that
+          scrolls; when the overflow escaped to here instead, the composer
+          scrolled away with it.
+        */
+        overflow: 'hidden',
         ...(draggingOver
           ? { outline: '2px dashed', outlineOffset: '-4px' }
           : {}),
@@ -171,7 +185,21 @@ const ChatPane: React.FC<ChatPaneProps> = ({
           {t('aiAssistant.restoringSession')}
         </Typography>
       ) : (
-        <Stack spacing={1} sx={{ flex: 1, overflow: 'auto' }}>
+        <Stack
+          spacing={1}
+          ref={transcript.ref}
+          onScroll={transcript.onScroll}
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            /*
+              A flex item's `min-height: auto` keeps it as tall as its
+              content, so without this the transcript never scrolls — it
+              grows, and the overflow lands on an ancestor.
+            */
+            minHeight: 0,
+          }}
+        >
           {messages.length === 0 ? (
             <>
               <Typography variant="body2" color="text.secondary">

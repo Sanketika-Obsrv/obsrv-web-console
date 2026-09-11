@@ -110,7 +110,16 @@ const SplitLayout: React.FC<SplitLayoutProps> = ({
         component="section"
         aria-label={leftLabel}
         style={{ width: `${leftPercent}%` }}
-        sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}
+        /*
+          `minHeight: 0` so a pane that scrolls can: without it a flex item
+          stays as tall as its content and the overflow escapes upwards.
+        */
+        sx={{
+          minWidth: 0,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
       >
         {left}
       </Box>
