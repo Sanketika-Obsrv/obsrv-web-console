@@ -58,7 +58,34 @@ const SKIP_WORDING: Record<AgendaStepId, (path?: string) => string> = {
   review: () => 'left the dataset unsaved',
 };
 
-export const describeAction = (action: Action): string => {
+/** Where each storage flag lands in the document the server returns. */
+const INDEXING_FIELD: Record<'lakehouse' | 'realtime' | 'cache', string> = {
+  lakehouse: 'lakehouse_enabled',
+  realtime: 'olap_store_enabled',
+  cache: 'cache_enabled',
+};
+
+/**
+ * What the dataset actually ended up with, when there is a document to read.
+ *
+ * The action is what was asked for, and for storage that is not always what
+ * was written: the console forces the cache store on for a master dataset, so
+ * "the real-time store" was answered with "Cache disabled" while the payload
+ * turned it on. Found in the browser, building a master dataset.
+ */
+const storedFlags = (
+  applied: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined => {
+  const config = applied?.dataset_config as
+    { indexing_config?: Record<string, unknown> } | undefined;
+
+  return config?.indexing_config;
+};
+
+export const describeAction = (
+  action: Action,
+  applied?: Record<string, unknown>,
+): string => {
   switch (action.kind) {
     case 'set_dataset_name':
       return `named the dataset "${action.name}"`;
@@ -113,12 +140,16 @@ export const describeAction = (action: Action): string => {
       return `removed the denormalisation on ${action.path}`;
 
     case 'set_storage': {
+      const stored = storedFlags(applied);
       const changes = (['lakehouse', 'realtime', 'cache'] as const)
         .filter((flag) => action[flag] !== undefined)
-        .map(
-          (flag) =>
-            `${storeLabel(flag)} ${action[flag] ? 'enabled' : 'disabled'}`,
-        );
+        .map((flag) => {
+          const written = stored
+            ? Boolean(stored[INDEXING_FIELD[flag]])
+            : Boolean(action[flag]);
+
+          return `${storeLabel(flag)} ${written ? 'enabled' : 'disabled'}`;
+        });
       return `updated storage: ${changes.join(', ')}`;
     }
     case 'set_keys': {
@@ -207,9 +238,11 @@ export const narrateUndo = (
 ): Narration => ({
   text: partial
     ? `I put part of that back — I ${joinPhrases(
-        restored.map(describeAction),
+        restored.map((action) => describeAction(action)),
       )} — and then hit a problem.`
-    : `Undone. I ${joinPhrases(restored.map(describeAction))}.`,
+    : `Undone. I ${joinPhrases(
+        restored.map((action) => describeAction(action)),
+      )}.`,
 });
 
 export const narrateOutcome = (
@@ -266,7 +299,10 @@ export const narrateOutcome = (
     : '';
 
   return {
-    text: `Done — ${describeAction(action)}.${created}${replayed}`,
+    text: `Done — ${describeAction(
+      action,
+      outcome.dataset as Record<string, unknown> | undefined,
+    )}.${created}${replayed}`,
   };
 };
 

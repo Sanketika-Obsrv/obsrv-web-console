@@ -486,3 +486,44 @@ describe('describeProposal', () => {
     expect(describeProposal({ kind: 'undo' })).toMatch(/undo/);
   });
 });
+
+/**
+ * Storage is narrated from what the server holds, not from what was asked.
+ *
+ * The console forces the cache store on for a master dataset, so answering
+ * "the real-time store" while building one was reported as "Cache disabled"
+ * over a payload that had just enabled it. Found in the browser.
+ */
+describe('reporting storage', () => {
+  const action = {
+    kind: 'set_storage' as const,
+    realtime: true,
+    lakehouse: false,
+    cache: false,
+  };
+
+  const applied = (cacheEnabled: boolean) => ({
+    ok: true as const,
+    status: 'applied' as const,
+    dataset: {
+      dataset_config: {
+        indexing_config: {
+          olap_store_enabled: true,
+          lakehouse_enabled: false,
+          cache_enabled: cacheEnabled,
+        },
+      },
+    },
+    changedRefs: [],
+  });
+
+  it('says the cache is on when the server turned it on', () => {
+    expect(narrateOutcome(action, applied(true)).text).toMatch(/Cache enabled/);
+  });
+
+  it('still says it is off when it is off', () => {
+    expect(narrateOutcome(action, applied(false)).text).toMatch(
+      /Cache disabled/,
+    );
+  });
+});
