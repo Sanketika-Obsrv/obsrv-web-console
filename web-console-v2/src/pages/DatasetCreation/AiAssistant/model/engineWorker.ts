@@ -16,6 +16,11 @@ import { WebWorkerMLCEngineHandler } from '@mlc-ai/web-llm';
 
 const handler = new WebWorkerMLCEngineHandler();
 
-self.onmessage = (event: MessageEvent) => {
+/*
+  `globalThis` rather than `self`: they are the same object in a worker, but
+  create-react-app's build-time lint bans `self` outright, and the production
+  build is the only place that rule runs.
+*/
+globalThis.onmessage = (event: MessageEvent) => {
   handler.onmessage(event);
 };
