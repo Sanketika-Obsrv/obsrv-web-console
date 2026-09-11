@@ -24,7 +24,11 @@ import {
   narrateUndo,
 } from './narrate';
 import { countDuplicates, evaluateExpression } from './preflight';
-import { unmetForAction, unmetForUtterance } from './prerequisites';
+import {
+  kindsForUtterance,
+  unmetForAction,
+  unmetForUtterance,
+} from './prerequisites';
 import { isAboutDataset } from './topicality';
 import { sectionForAction } from './previewFocus';
 import { MessageCard } from '../messages/types';
@@ -47,6 +51,8 @@ export interface TurnDeps {
   connectorsUnavailable?: boolean;
   /** The chosen connector's non-secret property keys. */
   connectorProperties?: string[];
+  /** Live master datasets, so a join said in words can name one. */
+  masterDatasets?: { dataset_id: string; name?: string }[];
   /**
    * False before `datasets/create` has run, when there is no document to
    * change. Defaults to true, since every turn after the first has one.
@@ -225,6 +231,30 @@ const retryTarget = (history: Message[] = []): Action | undefined => {
       : undefined;
 
   return corrected ?? failed.action;
+};
+
+/**
+ * Whether the words ask for something other than the answer they matched.
+ *
+ * A choice is matched on the words it contains, which is what lets "dedupe
+ * on order_id" answer the deduplication question. The same leniency read
+ * "also pull in the Assistant Customers record on customer_id as
+ * customer_details" as an answer to that question and wrote `customer_id` as
+ * the deduplication key: a change nobody asked for, applied without a
+ * confirmation, because an answer is never proposed. Found in the browser.
+ *
+ * So when the words name a topic of their own, the action they matched has to
+ * belong to it. Declining and moving on are exempt: "no transformations" is a
+ * transformation topic answered by skipping the step, and that is an answer.
+ */
+const asksSomethingElse = (input: string, answered: Action): boolean => {
+  if (answered.kind === 'skip_step' || answered.kind === 'goto_step') {
+    return false;
+  }
+
+  const kinds = kindsForUtterance(input);
+
+  return Boolean(kinds) && !kinds!.includes(answered.kind);
 };
 
 const runAction = async (
@@ -474,7 +504,7 @@ export const runTurn = async (
    */
   const answered = answerTo(deps.prompt, input);
 
-  if (answered) {
+  if (answered && !asksSomethingElse(input, answered)) {
     const { outcome, message } = await runAction(answered, deps);
 
     return { messages: [said, message], action: answered, outcome };
@@ -487,6 +517,7 @@ export const runTurn = async (
         connectors: deps.connectors,
         connectorsUnavailable: deps.connectorsUnavailable,
         connectorProperties: deps.connectorProperties,
+        masterDatasets: deps.masterDatasets,
       });
 
   /**

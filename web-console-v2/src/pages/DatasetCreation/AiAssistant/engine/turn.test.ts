@@ -1315,3 +1315,105 @@ describe('retrying by typing', () => {
     });
   });
 });
+
+/**
+ * The question on the table is good evidence, but it is not a licence.
+ *
+ * A choice is matched on the words a reply contains, which is what lets
+ * "dedupe on order_id" answer the deduplication question. Said in the
+ * browser at that same question, "also pull in the Assistant Customers
+ * record on customer_id as customer_details" matched its `customer_id`
+ * option and was written as the deduplication key — a change nobody asked
+ * for, and one that skipped confirmation entirely, because an answer is
+ * performed rather than proposed.
+ */
+describe('a request said while a different question is waiting', () => {
+  const DEDUP: Prompt = {
+    step: 'dedup',
+    text: 'Shall I drop duplicate records?',
+    card: {
+      kind: 'choice',
+      options: [
+        {
+          label: 'order_id',
+          action: { kind: 'set_dedup', enabled: true, key: 'order_id' },
+        },
+        {
+          label: 'customer.customer_id',
+          action: {
+            kind: 'set_dedup',
+            enabled: true,
+            key: 'customer.customer_id',
+          },
+        },
+        {
+          label: 'Keep duplicates',
+          action: { kind: 'skip_step', step: 'dedup' },
+        },
+      ],
+    },
+  };
+
+  const TRANSFORMS: Prompt = {
+    step: 'transform',
+    text: 'Do you want to transform any field on the way in?',
+    card: {
+      kind: 'choice',
+      options: [
+        {
+          label: 'No transformations',
+          action: { kind: 'skip_step', step: 'transform' },
+        },
+      ],
+    },
+  };
+
+  it('is not written as an answer to that question', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn(
+      'also pull in the customers record on customer.customer_id as customer_details',
+      { vocabulary, execute, prompt: DEDUP },
+    );
+
+    expect(execute).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'set_dedup' }),
+    );
+  });
+
+  /** An answer that happens to name the topic is still an answer. */
+  it('still takes an answer about the question itself', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn('dedupe on order_id', {
+      vocabulary,
+      execute,
+      prompt: DEDUP,
+    });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dedup',
+      enabled: true,
+      key: 'order_id',
+    });
+  });
+
+  /**
+   * Declining names the topic and answers it by skipping, which is why
+   * skipping and moving between stages are exempt.
+   */
+  it('still takes a decline that names the topic', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn('no transformations', {
+      vocabulary,
+      execute,
+      prompt: TRANSFORMS,
+    });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'skip_step',
+      step: 'transform',
+    });
+  });
+});

@@ -1,9 +1,11 @@
 import { AGENDA_STEPS, WizardStep } from '../engine/actions';
+import { kindsForUtterance } from '../engine/prerequisites';
 import {
   STEP_ACTIONS,
   buildQuestionSchema,
   buildStepSchema,
   estimateTokens,
+  stepForKinds,
 } from './stepSchema';
 
 /** The model's context window, from `prebuiltAppConfig`. */
@@ -239,5 +241,43 @@ describe('buildQuestionSchema', () => {
       expect((schema.oneOf as unknown[]).length).toBeGreaterThan(0);
       expect(estimateTokens(schema)).toBeLessThan(1200);
     }
+  });
+});
+
+/**
+ * The grammar follows the request, not only the conversation.
+ *
+ * Scoping to the current step is what keeps the model from answering with a
+ * plausible wrong action, but it also made an out-of-stage request
+ * inexpressible: at the storage question, "denormalise assistant-customers
+ * on customer_id as customer_details" resolved to nothing, because
+ * `set_denorm` belongs to processing. Seen in the browser.
+ */
+describe('the step a request belongs to', () => {
+  const stepOf = (said: string) => {
+    const kinds = kindsForUtterance(said);
+    return kinds ? stepForKinds(kinds) : undefined;
+  };
+
+  it('sends a join to the processing step, wherever it was said', () => {
+    expect(stepOf('denormalise customers on customer_id as details')).toBe(
+      'processing',
+    );
+    expect(stepOf('also pull in the customers record')).toBe('processing');
+  });
+
+  it('routes the other topics to the step that can do them', () => {
+    expect(stepOf('drop duplicates on order_id')).toBe('processing');
+    expect(stepOf('mask the email')).toBe('processing');
+    expect(stepOf('enable the lakehouse')).toBe('storage');
+    expect(stepOf('partition by placed_at')).toBe('storage');
+    expect(stepOf('make order_id required')).toBe('schema');
+    expect(stepOf('use the kafka connector')).toBe('connector');
+    expect(stepOf('save it')).toBe('preview');
+  });
+
+  it('leaves the conversation step standing when no topic is named', () => {
+    expect(stepOf('customer_id')).toBeUndefined();
+    expect(stepOf('yes please')).toBeUndefined();
   });
 });

@@ -53,6 +53,8 @@ export interface ModelResolveInput {
   vocabulary: FieldVocabulary;
   history?: Message[];
   connectors?: { id: string; name?: string }[];
+  /** Live master datasets, so the rules can read a join written in words. */
+  masterDatasets?: { dataset_id: string; name?: string }[];
   connectorProperties?: string[];
 }
 
@@ -279,4 +281,5 @@ const defaultFallback = (input: ModelResolveInput): Resolution =>
     vocabulary: input.vocabulary,
     connectors: input.connectors,
     connectorProperties: input.connectorProperties,
+    masterDatasets: input.masterDatasets,
   });

@@ -91,3 +91,16 @@ describe('telling dataset work from everything else', () => {
     expect(about('the weather affects reading')).toBe(true);
   });
 });
+
+/**
+ * The words the prerequisite table matches a join on have to count as
+ * dataset work too, or an on-topic request gets the off-topic refusal —
+ * which is what "join on sku_code" got in the browser, naming a field that
+ * does not exist.
+ */
+describe('joining to a master dataset', () => {
+  it('counts as dataset work', () => {
+    expect(about('join on sku_code')).toBe(true);
+    expect(about('enrich it from the master')).toBe(true);
+  });
+});

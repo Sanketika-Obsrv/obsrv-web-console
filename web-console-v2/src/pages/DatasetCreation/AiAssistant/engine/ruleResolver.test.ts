@@ -559,3 +559,79 @@ describe('asking for the credential form', () => {
     ).toMatch(/secure form/i);
   });
 });
+
+/**
+ * A join said in one sentence.
+ *
+ * The agenda asks for the master, the field and the output field in three
+ * turns, and only once: a second join can be asked for in words or not at
+ * all. In the browser the model made `set_additional_fields` of
+ * "join assistant-customers on customer_id as customer_details", so this is
+ * a rule rather than a guess.
+ */
+describe('joining to a master dataset in words', () => {
+  const MASTERS = [
+    { dataset_id: 'assistant-customers', name: 'Assistant Customers' },
+    { dataset_id: 'assistant-products', name: 'Assistant Products' },
+  ];
+
+  const join = (utterance: string) =>
+    resolveUtterance(utterance, { vocabulary, masterDatasets: MASTERS });
+
+  it('reads the master, the field and the output field', () => {
+    expect(
+      join('join assistant-customers on customer.customer_id as details'),
+    ).toMatchObject({
+      status: 'resolved',
+      action: {
+        kind: 'set_denorm',
+        path: 'customer.customer_id',
+        masterDatasetId: 'assistant-customers',
+        outField: 'details',
+      },
+    });
+  });
+
+  it('takes the master by its name as well as its id', () => {
+    expect(
+      join('also pull in the Assistant Products record on order_id'),
+    ).toMatchObject({
+      status: 'resolved',
+      action: {
+        kind: 'set_denorm',
+        masterDatasetId: 'assistant-products',
+        // The wizard defaults it to the master's id, and so does this.
+        outField: 'assistant-products',
+      },
+    });
+  });
+
+  it('declines a master it has never heard of', () => {
+    expect(join('join whatever-this-is on order_id as x').status).not.toBe(
+      'resolved',
+    );
+  });
+
+  /** Two masters could be meant, so neither is chosen. */
+  it('declines when the words name more than one master', () => {
+    expect(
+      join('join assistant-customers and assistant-products on order_id')
+        .status,
+    ).not.toBe('resolved');
+  });
+
+  it('declines a field this dataset does not have', () => {
+    expect(join('join assistant-customers on sku_code as x').status).not.toBe(
+      'resolved',
+    );
+  });
+
+  /** Without the list there is nothing to name, so the rule stands aside. */
+  it('declines before the master datasets have been listed', () => {
+    expect(
+      resolveUtterance('join assistant-customers on order_id as x', {
+        vocabulary,
+      }).status,
+    ).not.toBe('resolved');
+  });
+});

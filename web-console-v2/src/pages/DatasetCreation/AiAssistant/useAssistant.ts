@@ -41,6 +41,7 @@ import {
 import { AgendaState, Prompt, askMessage, nextPrompt } from './engine/agenda';
 import { looksLikeData, summariseSample } from './engine/pastedData';
 import { recap } from './engine/recap';
+import { kindsForUtterance } from './engine/prerequisites';
 import { awaitingInput, runTurn } from './engine/turn';
 import { readSampleFile } from './messages/sampleParse';
 import {
@@ -51,6 +52,7 @@ import {
 } from './model/engineClient';
 import { REQUIRED_MODEL } from './model/catalog';
 import { resolveWithModel } from './model/modelResolver';
+import { stepForKinds } from './model/stepSchema';
 import { Capability, detectCapability } from './model/tiers';
 import { auditFileName, buildAuditTrail } from './session/auditTrail';
 import { useSession } from './session/useSession';
@@ -100,6 +102,18 @@ export interface AssistantApi {
   /** Writes this conversation's action trail to a file. */
   exportTrail: () => void;
 }
+
+/**
+ * Which step's grammar should read this utterance.
+ *
+ * `undefined` when the words name no topic, so the conversation's own step
+ * stands — the common case, and the one the step scoping exists for.
+ */
+const stepForUtterance = (utterance: string): WizardStep | undefined => {
+  const kinds = kindsForUtterance(utterance);
+
+  return kinds ? stepForKinds(kinds) : undefined;
+};
 
 export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   const session = useSession({ datasetId: routeDatasetId });
@@ -537,19 +551,37 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           connectors,
           connectorsUnavailable,
           connectorProperties: fillableProps(uiSpec).map((prop) => prop.key),
+          // So a join written in one sentence can name the dataset it joins
+          // to; the agenda's three-turn question only covers the first one.
+          ...(masterDatasets ? { masterDatasets } : {}),
           // The model replaces one step of the pipeline — resolution — and
           // returns the same shape the rules do, falling back to them on any
           // doubt. Everything downstream is unchanged.
           ...(loaded && modelReady
             ? {
-                resolve: (utterance: string) =>
-                  resolveWithModel(
+                resolve: (utterance: string) => {
+                  /*
+                    The step the words are about, when they name a topic of
+                    its own. The model's grammar is a step's action list, and
+                    the question narrows it further to what that question
+                    accepts — so a request from another stage has no word for
+                    itself in either. Found in the browser: at the storage
+                    question, "denormalise assistant-customers on
+                    customer_id as customer_details" resolved to nothing,
+                    because `set_denorm` is on the processing menu and the
+                    storage question accepts neither. Where the words name
+                    their own topic, that topic supplies the grammar and the
+                    question steps aside.
+                  */
+                  const requested = stepForUtterance(utterance);
+
+                  return resolveWithModel(
                     {
                       utterance,
-                      step,
+                      step: requested ?? step,
                       // The question narrows the model's job from "what does
                       // this person want" to "what does this answer mean".
-                      ...(asked.current
+                      ...(asked.current && !requested
                         ? {
                             question: asked.current.step,
                             questionText: asked.current.text,
@@ -562,9 +594,11 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                       connectorProperties: fillableProps(uiSpec).map(
                         (prop) => prop.key,
                       ),
+                      ...(masterDatasets ? { masterDatasets } : {}),
                     },
                     { engine: loaded },
-                  ),
+                  );
+                },
               }
             : {}),
           execute: (action) => executeAction(action, contextNow()),
@@ -734,6 +768,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       connectors,
       connectorsUnavailable,
       contextNow,
+      masterDatasets,
       // Read directly for `hasDraft`, so it has to be declared even though
       // `contextNow` already changes with it.
       datasetId,

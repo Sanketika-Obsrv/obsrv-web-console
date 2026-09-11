@@ -76,6 +76,28 @@ export const STEP_ACTIONS: Record<WizardStep, ActionKind[]> = {
   preview: [...ALWAYS, 'save', 'undo', 'explain'],
 };
 
+/**
+ * The step that can do these actions.
+ *
+ * Scoping the model's grammar to the current step is what stops it answering
+ * with a plausible wrong action — but it also means an action belonging to
+ * another step cannot be expressed at all. Found in the browser: at the
+ * storage question, "denormalise assistant-customers on customer_id as
+ * customer_details" came back unresolved, because `set_denorm` is on the
+ * processing step's menu and nothing else's. The request was perfectly
+ * clear; the grammar had no word for it.
+ *
+ * So when the words name a topic of their own, the *topic's* step supplies
+ * the grammar. Actions reachable from anywhere are ignored here, since they
+ * are on every menu and would match the first step every time.
+ */
+export const stepForKinds = (kinds: ActionKind[]): WizardStep | undefined =>
+  (Object.keys(STEP_ACTIONS) as WizardStep[]).find((step) =>
+    STEP_ACTIONS[step].some(
+      (kind) => kinds.includes(kind) && !ALWAYS.includes(kind),
+    ),
+  );
+
 export interface StepSchemaOptions {
   /**
    * True once `datasets/create` has run.

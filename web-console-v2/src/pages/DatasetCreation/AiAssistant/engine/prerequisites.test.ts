@@ -1,5 +1,9 @@
 import { Action } from './actions';
-import { unmetForAction, unmetForUtterance } from './prerequisites';
+import {
+  kindsForUtterance,
+  unmetForAction,
+  unmetForUtterance,
+} from './prerequisites';
 
 /** A dataset exists and its schema has been worked out. */
 const READY = { hasDataset: true, hasSchema: true };
@@ -154,5 +158,34 @@ describe('what a request needs when nothing could be resolved from it', () => {
     expect(
       unmetForUtterance('use the postgres connector', NO_SAMPLE),
     ).toBeUndefined();
+  });
+});
+
+describe('the actions the words are asking for', () => {
+  it('reads a join however it is phrased', () => {
+    for (const said of [
+      'join on customer_id',
+      'denormalise from the customers master dataset',
+      'also pull in the customers record as customer_details',
+      'bring in the product details',
+      'look up the customer',
+    ]) {
+      expect(kindsForUtterance(said)).toContain('set_denorm');
+    }
+  });
+
+  /**
+   * The sample question offers to pull data *from* a connector, which is not
+   * a join, so "pull" alone must not read as one.
+   */
+  it('does not read pulling from a source as a join', () => {
+    expect(kindsForUtterance('pull it from postgres')).toContain(
+      'select_connector',
+    );
+  });
+
+  it('says nothing when the words name no topic of its own', () => {
+    expect(kindsForUtterance('customer_id')).toBeUndefined();
+    expect(kindsForUtterance('yes please')).toBeUndefined();
   });
 });

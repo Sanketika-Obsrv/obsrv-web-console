@@ -46,6 +46,14 @@ export interface ResolverContext {
    * before there is a connector.
    */
   connectorProperties?: string[];
+  /**
+   * Live master datasets, so a join can name one.
+   *
+   * Absent until the list has been read, which is the difference between
+   * "there is nothing to join to" and "I do not know yet" — the rule
+   * declines in both cases rather than inventing a dataset id.
+   */
+  masterDatasets?: { dataset_id: string; name?: string }[];
 }
 
 export type ResolutionStatus = 'resolved' | 'ambiguous' | 'unknown';
@@ -438,6 +446,37 @@ const RULES: Rule[] = [
       })),
   },
 
+  // — Denormalisation —
+  /**
+   * A join said in one breath.
+   *
+   * The agenda asks for the three parts in three turns, which covers the
+   * first join and nothing else: once one is in the transcript the question
+   * is answered and never returns, so a second join can only be asked for in
+   * words. Left to the model that failed — at 1.7B, "join assistant-customers
+   * on customer_id as customer_details" came back as
+   * `set_additional_fields`, proposed and declined. The phrasing is regular
+   * enough to read with a pattern, and a rule beats a guess.
+   */
+  {
+    pattern:
+      /\b(?:join|denorm\w*|enrich(?:\s+it)?\s+(?:with|from)|pull in|bring in|look ?up)\b\s*(.*?)\s*\b(?:on|by|using|matching)\s+([\w.]+)\s*(?:\b(?:as|into|called|named)\s+([\w.]+))?\s*$/i,
+    resolve: ([, named, term, outField], context) => {
+      const master = matchMaster(context.masterDatasets, named);
+      if (!master) return null;
+
+      return withField(context, term, (path) => ({
+        kind: 'set_denorm',
+        path,
+        masterDatasetId: master.dataset_id,
+        // The wizard defaults the output field to the master's id, and so
+        // does the agenda's own question; saying it is optional here means
+        // the same sentence works with or without the "as …".
+        outField: outField?.trim() || master.dataset_id,
+      }));
+    },
+  },
+
   // — Dedup —
   {
     pattern:
@@ -677,6 +716,30 @@ const RULES: Rule[] = [
     resolve: () => resolved({ kind: 'save' }, FIELDLESS_CONFIDENCE),
   },
 ];
+
+/**
+ * The master dataset the words name, by id or by name.
+ *
+ * Matched on containment rather than equality: "the Assistant Customers
+ * record" names it as surely as "assistant-customers" does. Nothing is
+ * returned when two could be meant — a join written to the wrong dataset is
+ * worse than a question back.
+ */
+const matchMaster = (
+  masters: { dataset_id: string; name?: string }[] | undefined,
+  named: string,
+): { dataset_id: string; name?: string } | undefined => {
+  const said = (named ?? '').trim().toLowerCase();
+  if (!masters?.length || !said) return undefined;
+
+  const hits = masters.filter((master) =>
+    [master.dataset_id, master.name]
+      .filter((value): value is string => Boolean(value))
+      .some((value) => said.includes(value.toLowerCase())),
+  );
+
+  return hits.length === 1 ? hits[0] : undefined;
+};
 
 export const resolveUtterance = (
   utterance: string,

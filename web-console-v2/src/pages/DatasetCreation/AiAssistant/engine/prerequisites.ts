@@ -90,7 +90,12 @@ const TOPICS: Topic[] = [
     subject: 'joining to a master dataset',
     requirement: 'schema',
     kinds: ['set_denorm', 'select_denorm', 'remove_denorm'],
-    pattern: /denorm|\bjoin\b|enrich|master dataset/i,
+    /*
+      "pull in" rather than "pull": the sample question offers to "pull it
+      from PostgreSQL", which is a connector and not a join.
+    */
+    pattern:
+      /denorm|\bjoin\b|enrich|master dataset|\bpull in\b|\bbring in\b|look ?up/i,
   },
   {
     label: 'A storage key',
@@ -207,6 +212,22 @@ export const unmetForAction = (
  */
 export const topicOf = (utterance: string): string | undefined =>
   TOPICS.find((topic) => topic.pattern.test(utterance))?.subject;
+
+/**
+ * The actions the words are asking for, when the words name a topic.
+ *
+ * Used to stop the question on the table from swallowing a request that is
+ * about something else. Found in the browser: "also pull in the Assistant
+ * Customers record on customer_id as customer_details", said while the
+ * deduplication question was waiting, matched that question's `customer_id`
+ * option and was written as a deduplication key — a change nobody asked for,
+ * and one that never went through a confirmation because, as far as the turn
+ * loop could tell, it was an answer.
+ */
+export const kindsForUtterance = (
+  utterance: string,
+): Action['kind'][] | undefined =>
+  TOPICS.find((topic) => topic.pattern.test(utterance))?.kinds;
 
 /**
  * What this request is waiting on, read from the words alone.
