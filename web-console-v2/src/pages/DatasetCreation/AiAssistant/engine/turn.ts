@@ -7,7 +7,7 @@
  * reason about.
  */
 import { Prompt } from './agenda';
-import { Action } from './actions';
+import { Action, sameAction } from './actions';
 import { ExecutionOutcome } from './executor';
 import {
   answerTo,
@@ -255,17 +255,6 @@ const asksSomethingElse = (input: string, answered: Action): boolean => {
   const kinds = kindsForUtterance(input);
 
   return Boolean(kinds) && !kinds!.includes(answered.kind);
-};
-
-/** Two actions are the same decision when they carry the same values. */
-const sameAction = (one: Action, other: Action): boolean => {
-  const keys = new Set([...Object.keys(one), ...Object.keys(other)]);
-
-  return [...keys].every(
-    (key) =>
-      (one as Record<string, unknown>)[key] ===
-      (other as Record<string, unknown>)[key],
-  );
 };
 
 const runAction = async (

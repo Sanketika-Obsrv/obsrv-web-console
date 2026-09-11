@@ -547,3 +547,21 @@ export const createActionValidator = (options: ActionSchemaOptions = {}) => {
 
 /** Convenience validator with no vocabulary constraints. */
 export const validateAction = createActionValidator();
+
+/**
+ * Whether two readings are the same decision.
+ *
+ * Used where independent readers are compared — the model against the rules,
+ * the model against the question's own matcher. Agreement is what lets an
+ * action be performed rather than proposed, so this is deliberately strict:
+ * every value either side carries has to match.
+ */
+export const sameAction = (one: Action, other: Action): boolean => {
+  const keys = new Set([...Object.keys(one), ...Object.keys(other)]);
+
+  return [...keys].every(
+    (key) =>
+      (one as Record<string, unknown>)[key] ===
+      (other as Record<string, unknown>)[key],
+  );
+};

@@ -39,7 +39,13 @@ import {
   FieldVocabulary,
   buildFieldVocabulary,
 } from './engine/fieldVocabulary';
-import { AgendaState, Prompt, askMessage, nextPrompt } from './engine/agenda';
+import {
+  ACCEPTS,
+  AgendaState,
+  Prompt,
+  askMessage,
+  nextPrompt,
+} from './engine/agenda';
 import { looksLikeData, summariseSample } from './engine/pastedData';
 import { recap } from './engine/recap';
 import { kindsForUtterance } from './engine/prerequisites';
@@ -583,14 +589,28 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                     question steps aside.
                   */
                   const requested = stepForUtterance(utterance);
+                  /*
+                    Only a topic from *elsewhere* displaces the question.
+                    "mark mid as required" names the schema, which is the
+                    stage the schema question belongs to, and dropping the
+                    question there cost the model its worked examples — they
+                    are per question — and it read the instruction as a
+                    change of arrival format.
+                  */
+                  const elsewhere =
+                    requested &&
+                    asked.current &&
+                    requested !==
+                      stepForKinds([...ACCEPTS[asked.current.step]]);
+                  const keepQuestion = asked.current && !elsewhere;
 
                   return resolveWithModel(
                     {
                       utterance,
-                      step: requested ?? step,
+                      step: (keepQuestion ? undefined : requested) ?? step,
                       // The question narrows the model's job from "what does
                       // this person want" to "what does this answer mean".
-                      ...(asked.current && !requested
+                      ...(keepQuestion && asked.current
                         ? {
                             question: asked.current.step,
                             questionText: asked.current.text,

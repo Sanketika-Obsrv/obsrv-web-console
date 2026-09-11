@@ -61,8 +61,19 @@ export interface PromptInput {
  * asked, so the cost is one example, not fourteen.
  */
 export const EXAMPLES: Record<AgendaStepId, string[]> = {
+  /*
+    Four, where every other question gets one or two. The reported bug was
+    here: "I want create telemetry dataset" came back with that whole
+    sentence as the name, because the only example showed a reply that was
+    already nothing but a name. What a person types at this question is
+    usually a sentence with a name inside it, so the examples have to show
+    the name being taken out of one.
+  */
   name: [
     '"call it My Orders" -> {"kind":"set_dataset_name","name":"My Orders"}',
+    '"I want create telemetry dataset" -> {"kind":"set_dataset_name","name":"telemetry"}',
+    '"can you make me one for web checkout events" -> {"kind":"set_dataset_name","name":"web checkout events"}',
+    '"lets do air quality readings please" -> {"kind":"set_dataset_name","name":"air quality readings"}',
   ],
   type: ['"master data" -> {"kind":"set_dataset_type","datasetType":"master"}'],
   connector: [
@@ -77,6 +88,9 @@ export const EXAMPLES: Record<AgendaStepId, string[]> = {
   ],
   schema: [
     '"make order_id required" -> {"kind":"toggle_required","path":"order_id","required":true}',
+    // Measured: without this one, "mark mid as required" came back as a
+    // change of arrival format. The "as" is what threw it.
+    '"mark customer_id as required" -> {"kind":"toggle_required","path":"customer_id","required":true}',
     '"looks right" -> {"kind":"skip_step","step":"schema"}',
   ],
   pii: [
@@ -107,6 +121,7 @@ export const SYSTEM_PROMPT = [
   'You turn one instruction about an Obsrv dataset into one JSON action.',
   'Reply with a single JSON object and nothing else.',
   'Never invent a field name, a value or an action that was not asked for.',
+  'Answer with the value the user means, not their whole sentence.',
   'If the instruction is unclear or names something you cannot see, reply with a clarify action asking for what you need.',
 ].join(' ');
 

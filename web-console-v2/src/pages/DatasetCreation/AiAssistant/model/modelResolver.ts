@@ -22,6 +22,7 @@ import {
   createActionValidator,
 } from '../engine/actions';
 import { ACCEPTS } from '../engine/agenda';
+import { sameAction } from '../engine/actions';
 import { FieldVocabulary, resolveField } from '../engine/fieldVocabulary';
 import { Resolution, resolveUtterance } from '../engine/ruleResolver';
 import { Message } from '../session/types';
@@ -191,7 +192,19 @@ export const resolveWithModel = async (
   let reply: string;
 
   try {
-    reply = await engine.complete(`${SYSTEM_PROMPT}\n\n${buildPrompt(input)}`, {
+    /*
+      The field names have to be passed explicitly. `buildPrompt` takes
+      `fieldPaths`, `ModelResolveInput` carries a whole `vocabulary`, and
+      because the field is optional nothing complained — so the hint the
+      prompt is built around was empty on every call, and the model was
+      naming fields it had never been shown.
+    */
+    const prompt = buildPrompt({
+      ...input,
+      fieldPaths: input.vocabulary.paths,
+    });
+
+    reply = await engine.complete(`${SYSTEM_PROMPT}\n\n${prompt}`, {
       type: 'json_object',
       schema: JSON.stringify(
         input.question
@@ -288,7 +301,35 @@ export const resolveWithModel = async (
     };
   }
 
-  return resolvePaths(checked.action, input.vocabulary);
+  const reading = resolvePaths(checked.action, input.vocabulary);
+
+  /**
+   * The rules read it too, and what happens next depends on whether they
+   * agree.
+   *
+   * Agreement is the evidence a confirmation would have asked for: "make
+   * order_id required" is not a guess when two readers arrive at it
+   * independently, so it is performed. Without this, moving the model to the
+   * front would have put a yes in front of every instruction.
+   *
+   * Disagreement goes to the rules. A rule is an exact pattern over the
+   * words as typed and names the field it found; the model is inference, and
+   * measured here it is the one that gets these wrong — "mark mid as
+   * required" came back from the 1.7B as a change of arrival format. Where
+   * no rule matches, which is most of what people type and all of what this
+   * reordering was for, the model's reading stands and is proposed.
+   */
+  if (reading.status === 'resolved' && reading.action) {
+    const byRules = fallBackToRules();
+
+    if (byRules.status === 'resolved' && byRules.action) {
+      return sameAction(byRules.action, reading.action)
+        ? { ...reading, needsConfirmation: false }
+        : byRules;
+    }
+  }
+
+  return reading;
 };
 
 const defaultFallback = (input: ModelResolveInput): Resolution =>

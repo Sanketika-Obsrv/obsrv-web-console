@@ -547,3 +547,68 @@ describe('answering the question the assistant asked', () => {
     expect(resolution.action).toEqual({ kind: 'skip_step', step: 'dedup' });
   });
 });
+
+/**
+ * Moving the model to the front must not put a confirmation in front of every
+ * instruction. Where the rules read the same action independently, the two
+ * readings agreeing is the evidence a confirmation would have asked for.
+ */
+describe('when the model and the rules agree', () => {
+  it('performs rather than proposes', async () => {
+    const resolution = await resolveWithModel(
+      { utterance: 'make order_id required', step: 'schema', vocabulary },
+      {
+        engine: engineReplying(
+          '{"kind":"toggle_required","path":"order_id","required":true}',
+        ),
+      },
+    );
+
+    expect(resolution.needsConfirmation).toBeFalsy();
+    expect(resolution.action).toEqual({
+      kind: 'toggle_required',
+      path: 'order_id',
+      required: true,
+    });
+  });
+
+  it('still confirms when only the model read it', async () => {
+    const resolution = await resolveWithModel(
+      {
+        utterance: 'that column should be a whole number',
+        step: 'schema',
+        vocabulary,
+      },
+      {
+        engine: engineReplying(
+          '{"kind":"set_data_type","path":"total_amount","dataType":"integer"}',
+        ),
+      },
+    );
+
+    expect(resolution.needsConfirmation).toBe(true);
+  });
+
+  /**
+   * Measured in the browser: "mark mid as required" came back from the 1.7B
+   * as a change of arrival format. A rule is an exact pattern over the words
+   * as typed, so where the two disagree the rule is the reading.
+   */
+  it('prefers the rule where the two disagree', async () => {
+    const resolution = await resolveWithModel(
+      { utterance: 'make order_id required', step: 'schema', vocabulary },
+      {
+        engine: engineReplying(
+          '{"kind":"set_arrival_format","path":"order_id","arrivalFormat":"text"}',
+        ),
+      },
+    );
+
+    expect(resolution.action).toEqual({
+      kind: 'toggle_required',
+      path: 'order_id',
+      required: true,
+    });
+    expect(resolution.needsConfirmation).toBeFalsy();
+  });
+});
