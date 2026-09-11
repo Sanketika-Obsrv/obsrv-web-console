@@ -17,6 +17,7 @@ import {
   listConnectors,
   listDatasets,
   readConnector,
+  readDataset,
 } from 'services/datasetApi';
 import { DatasetStatus } from 'types/datasets';
 import { Action, WizardStep } from './engine/actions';
@@ -332,16 +333,15 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       return {
         ...(dataset ? { dataset } : {}),
         /*
-          The document is the record of what was decided when this
-          conversation did not build it and nothing has been said yet.
-          `create` writes defaults nobody chose, which is why the transcript
-          normally settles the optional questions — but an existing dataset
-          has no transcript, and its values are somebody's decisions.
+          The document is the record of what was decided whenever this
+          conversation did not build the dataset. `create` writes defaults
+          nobody chose, which is why the transcript normally settles the
+          optional questions — but on a dataset that already existed those
+          values are somebody's decisions, and that stays true for the whole
+          conversation. Scoped to the first turn at first, which meant the
+          second turn on a live dataset asked it for its name.
         */
-        ...(current?.mode === 'update' &&
-        (current?.messages ?? []).every((message) => message.role !== 'user')
-          ? { documentAuthoritative: true }
-          : {}),
+        ...(current?.mode === 'update' ? { documentAuthoritative: true } : {}),
         ...(current?.pending ? { pending: current.pending } : {}),
         // The stage the conversation is on, so the agenda asks about where
         // the user actually is rather than where the plan starts. It follows
@@ -423,7 +423,24 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       */
       void (async () => {
         const state = await agendaState(current);
-        const said = recap(state.dataset);
+
+        /*
+          Whether it is live cannot be read off the document: a `mode=edit`
+          read returns the draft copy, whose own status is "Draft". So the
+          live copy is asked for separately, and a failure means there is
+          none — which is the ordinary case for a draft.
+        */
+        const liveElsewhere = current.datasetId
+          ? await readDataset({
+              datasetId: current.datasetId,
+              status: DatasetStatus.Live,
+              fields: 'dataset_id,status',
+            })
+              .then(() => true)
+              .catch(() => false)
+          : false;
+
+        const said = recap(state.dataset, { liveElsewhere });
 
         if (said) await session.append({ role: 'assistant', text: said });
 
@@ -479,6 +496,13 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           // a document to change is answered with what is missing rather
           // than attempted against nothing.
           datasetExists: Boolean(datasetId),
+          // A name and a type held client-side mean the draft is one sample
+          // away, so that is what a blocked request should ask for.
+          draftPending: Boolean(
+            !datasetId &&
+            session.session?.pending?.name &&
+            session.session?.pending?.datasetType,
+          ),
           // What was asked, so a typed answer is read as an answer.
           ...(asked.current ? { prompt: asked.current } : {}),
           connectors,
@@ -804,6 +828,24 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     loadStarted.current = true;
     void loadRequiredModel();
   }, [capability, loadRequiredModel]);
+
+  /**
+   * Lets the weights go when the assistant is left.
+   *
+   * The engine holds its weights in GPU and host memory for as long as it
+   * exists, and nothing used to release them: navigating away from the
+   * assistant left a gigabyte-and-a-half resident in the tab. Found while
+   * testing, when the machine ran out of memory with the page long since
+   * navigated away.
+   */
+  useEffect(
+    () => () => {
+      const loaded = engine.current;
+      engine.current = undefined;
+      void loaded?.unload().catch(() => undefined);
+    },
+    [],
+  );
 
   const retryModel = useCallback(async () => {
     loadStarted.current = true;

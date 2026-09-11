@@ -346,7 +346,13 @@ export const diagnose = ({ code, error }: ActionFailure): Diagnosis => {
     return {
       ...base,
       explanation: error || 'That change cannot be applied as requested.',
-      recovery: 'revise',
+      /*
+        A failed id check is the one guard the user can do nothing about but
+        ask again: the check itself did not answer, so nothing was decided.
+        Seen in the browser, where the reply said "try again in a moment"
+        and then offered no way to.
+      */
+      recovery: code === 'ID_CHECK_FAILED' ? 'retry' : 'revise',
       selfHeal: false,
     };
   }

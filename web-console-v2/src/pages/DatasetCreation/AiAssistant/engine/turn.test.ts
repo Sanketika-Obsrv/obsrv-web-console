@@ -412,12 +412,19 @@ describe('warning about a dedup key that is not unique', () => {
 /**
  * Measured live with Qwen3-0.6B: "I never want to see the same order twice"
  * produced `set_arrival_format` on an unrelated field, and it was applied.
- * An inferred action is now proposed rather than performed — confirming costs
- * a click, a wrong write costs the user a change they have to find and undo.
+ * An inferred action is proposed rather than performed — confirming costs one
+ * word, a wrong write costs the user a change they have to find and undo.
+ *
+ * The utterance here names a field, so it is dataset work by any reading:
+ * off-topic input is refused outright rather than proposed, however
+ * confidently the model answers it.
  */
 describe('an inferred action is proposed, not performed', () => {
   const inferred = async (execute: (a: Action) => Promise<ExecutionOutcome>) =>
-    runTurn('something only a model would parse', {
+    // Names a field, so it is dataset work by any reading: with no question
+    // on the table, input that is about nothing is refused rather than
+    // proposed.
+    runTurn('keep total_amount as words instead', {
       vocabulary,
       execute,
       resolve: async () => ({
@@ -852,10 +859,20 @@ describe('answering the question on the table', () => {
    * — the question narrowed the possibilities to the point where a wrong
    * reading is a wrong reading of a yes or no.
    */
-  it('performs an inferred action that answers the question', async () => {
+  /**
+   * A guess is confirmed even when it answers the question.
+   *
+   * On-agenda guesses used to be performed outright, on the grounds that the
+   * question had already narrowed the field. Found in the browser: at the
+   * schema question, "write me a poem about ducks" was turned into "left the
+   * schema as it is", and at the validation question "bump the dedup thing
+   * on the second one" became "allowed fields that are not in the schema".
+   * Both were silent writes from noise. A yes costs one word.
+   */
+  it('proposes an inferred action even when it answers the question', async () => {
     const execute = jest.fn(async () => applied);
 
-    await runTurn('put it in the lake', {
+    const result = await runTurn('put it in the lake', {
       vocabulary,
       execute,
       prompt: STORAGE,
@@ -867,10 +884,54 @@ describe('answering the question on the table', () => {
       }),
     });
 
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].card).toMatchObject({ kind: 'confirm' });
+  });
+
+  /** A rule match is a pattern the words fit, so it still acts directly. */
+  it('still performs what the rules matched outright', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn('lakehouse', {
+      vocabulary,
+      execute,
+      prompt: STORAGE,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.95,
+        action: { kind: 'set_storage', lakehouse: true },
+      }),
+    });
+
     expect(execute).toHaveBeenCalledWith({
       kind: 'set_storage',
       lakehouse: true,
     });
+  });
+
+  /**
+   * Found in the browser at the schema question: the model answered a
+   * request aimed at the assistant as though it were an answer, and it was
+   * applied. A request like this is refused whatever the model made of it.
+   */
+  it('refuses a request aimed at it, even when the model answered the question', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('write me a poem about ducks', {
+      vocabulary,
+      execute,
+      prompt: STORAGE,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.8,
+        needsConfirmation: true,
+        action: { kind: 'skip_step', step: 'storage' },
+      }),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].text).toMatch(/only work on this dataset/i);
+    expect(result.messages[1].card).toBeUndefined();
   });
 
   it('still confirms an inferred action about something else', async () => {
@@ -947,6 +1008,49 @@ describe('a request that cannot be done yet', () => {
     });
 
     expect(result.messages[1].card).toBeUndefined();
+  });
+
+  /**
+   * Found in the browser: "dedup on sensor_id" before a sample came back as
+   * "A connector needs a dataset first". With no schema the rules decline,
+   * the model is asked, and it guessed a connector action — which the
+   * prerequisite reply then described. A guess is worse evidence than the
+   * words the user actually typed.
+   */
+  it('answers about what was asked, not about what was guessed', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('dedup on sensor_id', {
+      vocabulary: empty,
+      execute,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.85,
+        needsConfirmation: true,
+        action: { kind: 'select_connector', connectorId: 'kafka' },
+      }),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[1].text).toMatch(/duplicat/i);
+    expect(result.messages[1].text).not.toMatch(/connector/i);
+  });
+
+  /** A guess is still the only evidence when the words carry no topic. */
+  it('falls back to the guess when the words say nothing', async () => {
+    const result = await runTurn('do that thing', {
+      vocabulary: empty,
+      execute: async () => applied,
+      datasetExists: false,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.85,
+        needsConfirmation: true,
+        action: { kind: 'set_storage', realtime: true },
+      }),
+    });
+
+    expect(result.messages[1].text).toMatch(/storage/i);
   });
 
   it('still refuses what is not dataset work at all', async () => {

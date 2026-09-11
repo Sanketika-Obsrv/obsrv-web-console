@@ -1626,6 +1626,39 @@ describe('a dataset that already exists', () => {
     expect(currentStep({ ...opened, focus: 'ingestion' })).toBeUndefined();
   });
 
+  /**
+   * Found in the browser, one turn later: the document stayed authoritative
+   * only until the user said something, so the second turn on a live
+   * dataset asked it for its name. The document is the record for the whole
+   * conversation; what the user says only adds to it.
+   */
+  it('keeps asking nothing once the conversation has started', () => {
+    const spoken: AgendaState = {
+      ...opened,
+      focus: 'ingestion',
+      history: [
+        { id: 'u1', role: 'user', text: 'hello', createdAt: 1 },
+        { id: 'a1', role: 'assistant', text: 'Hello.', createdAt: 2 },
+      ],
+    };
+
+    expect(currentStep(spoken)).toBeUndefined();
+  });
+
+  /**
+   * Moving somewhere deliberately is still how a setting gets changed, so a
+   * stage the user asked for re-opens even where the document has answers.
+   */
+  it('re-opens a stage the user moved to', () => {
+    const moved: AgendaState = {
+      ...opened,
+      focus: 'storage',
+      history: [applied({ kind: 'goto_step', step: 'storage' }, 1)],
+    };
+
+    expect(currentStep(moved)).toBe('storage');
+  });
+
   it('still asks about what the document leaves unset', () => {
     const noStore = {
       ...opened,

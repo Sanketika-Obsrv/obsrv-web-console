@@ -154,6 +154,19 @@ const MAX_VALUE = 100;
 const ADDRESSED =
   /^(?:write|tell|show|send|give|find|search|play|fetch|translate|summari[sz]e|draw|calculate|compute|order|book|email|call up|remind)\s+(?:me|us|him|her|them|this|that|it|an?\b|the\b)/i;
 
+/**
+ * Whether this is a request aimed at the assistant rather than at the
+ * dataset.
+ *
+ * Exported because the turn loop needs it too: found in the browser, "write
+ * me a poem about ducks" at the schema question came back from the model as
+ * an answer to that question, and was applied. The model is asked to answer
+ * whatever is on the table, so it will always find something — deciding
+ * that this is not dataset work has to happen before its answer is trusted.
+ */
+export const isAddressedRequest = (utterance: string): boolean =>
+  ADDRESSED.test(utterance.trim());
+
 /** A name is short. Six words is generous for one; a request is longer. */
 const MAX_VALUE_WORDS = 6;
 

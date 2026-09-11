@@ -24,6 +24,15 @@ export interface AssistantState {
   hasDataset: boolean;
   /** True once a schema has been worked out, so fields can be named. */
   hasSchema: boolean;
+  /**
+   * True when a name and a type have been chosen but the draft does not
+   * exist yet.
+   *
+   * The draft is created by the sample arriving, so in that state asking
+   * for a name is asking for what the user has just given — found in the
+   * browser, having just named the dataset.
+   */
+  draftPending?: boolean;
 }
 
 export interface Unmet {
@@ -154,17 +163,22 @@ const met = (requirement: Requirement, state: AssistantState): boolean =>
     ? state.hasDataset
     : state.hasDataset && state.hasSchema;
 
-const explain = (topic: Topic): string =>
-  topic.requirement === 'dataset'
-    ? `${topic.label} needs a dataset first — tell me its name, and whether it holds event, transaction or master data. Then we can come back to this.`
-    : `${topic.label} needs a schema first, so I know which fields you have. Give me a sample of the data — JSON or JSONL — and we can come back to this.`;
+const explain = (topic: Topic, state: AssistantState): string => {
+  if (topic.requirement === 'schema') {
+    return `${topic.label} needs a schema first, so I know which fields you have. Give me a sample of the data — JSON or JSONL — and we can come back to this.`;
+  }
+
+  return state.draftPending
+    ? `${topic.label} needs the draft to exist, and the sample is what creates it. Give me a sample of the data — JSON or JSONL — and we can come back to this.`
+    : `${topic.label} needs a dataset first — tell me its name, and whether it holds event, transaction or master data. Then we can come back to this.`;
+};
 
 const unmetFor = (
   topic: Topic | undefined,
   state: AssistantState,
 ): Unmet | undefined =>
   topic && !met(topic.requirement, state)
-    ? { requirement: topic.requirement, text: explain(topic) }
+    ? { requirement: topic.requirement, text: explain(topic, state) }
     : undefined;
 
 /**

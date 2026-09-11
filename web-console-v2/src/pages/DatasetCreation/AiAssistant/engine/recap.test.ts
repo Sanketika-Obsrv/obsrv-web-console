@@ -52,15 +52,27 @@ describe('the opening recap', () => {
    * the dataset list or the wizard. Saying so once, up front, is the
    * difference between a change that looks lost and one that is understood.
    */
+  /**
+   * Found in the browser: a live dataset read with `mode=edit` comes back as
+   * its *draft copy*, whose own status is "Draft" — so from the document
+   * alone a live dataset looks like a draft, and the caveat that matters
+   * most never fired. Whether it is live has to be established separately.
+   */
   it('says a live dataset changes through a draft', () => {
-    const said = recap(live);
+    const said = recap({ ...live, status: 'Draft' }, { liveElsewhere: true });
 
     expect(said).toMatch(/live/i);
     expect(said).toMatch(/draft/i);
     expect(said).toMatch(/publish/i);
   });
 
-  it('says nothing about drafts and publishing for a draft', () => {
+  it('does not call it a draft when it is live', () => {
+    expect(
+      recap({ ...live, status: 'Draft' }, { liveElsewhere: true }),
+    ).not.toMatch(/event data, draft/i);
+  });
+
+  it('says nothing about drafts and publishing for a plain draft', () => {
     const said = recap({ ...live, status: 'Draft' });
 
     expect(said).not.toMatch(/publish/i);

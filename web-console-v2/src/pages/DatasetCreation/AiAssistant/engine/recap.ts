@@ -60,6 +60,18 @@ const settings = (dataset: DatasetSnapshot): string[] => {
   ];
 };
 
+export interface RecapContext {
+  /**
+   * True when a live copy of this dataset exists.
+   *
+   * It cannot be read off the document: a `mode=edit` read returns the
+   * *draft copy*, whose own status is "Draft", so from here a live dataset
+   * looks exactly like a draft. Found in the browser, where a live dataset
+   * was called a draft and the caveat that matters most never fired.
+   */
+  liveElsewhere?: boolean;
+}
+
 /**
  * The live-dataset caveat.
  *
@@ -69,23 +81,28 @@ const settings = (dataset: DatasetSnapshot): string[] => {
  * once, at the start, is the difference between a change that looks lost and
  * one that is understood.
  */
-const liveCaveat = (dataset: DatasetSnapshot): string =>
-  dataset.status === 'Live'
+const liveCaveat = (context: RecapContext): string =>
+  context.liveElsewhere
     ? ' It is live, so my changes go to a draft copy and take effect only when it is republished — from the dataset list or the wizard.'
     : '';
 
-export const recap = (dataset?: DatasetSnapshot): string => {
+export const recap = (
+  dataset?: DatasetSnapshot,
+  context: RecapContext = {},
+): string => {
   if (!dataset) return '';
 
   const name = String(dataset.name ?? dataset.dataset_id ?? 'This dataset');
   const kind = dataset.type ? `${String(dataset.type)} data` : 'unknown type';
-  const status = String(dataset.status ?? 'Draft').toLowerCase();
+  const status = context.liveElsewhere
+    ? 'live'
+    : String(dataset.status ?? 'Draft').toLowerCase();
 
   const opening = `${name} — ${kind}, ${status}.`;
 
   if (!dataset.data_schema) {
     return `${opening} There is no schema yet, so no sample has been read.${liveCaveat(
-      dataset,
+      context,
     )}`;
   }
 
@@ -100,5 +117,5 @@ export const recap = (dataset?: DatasetSnapshot): string => {
   const work = outstandingWork(dataset);
   const missing = work.length ? ` Still outstanding: ${join(work)}.` : '';
 
-  return `${opening} ${has}${missing}${liveCaveat(dataset)}`;
+  return `${opening} ${has}${missing}${liveCaveat(context)}`;
 };

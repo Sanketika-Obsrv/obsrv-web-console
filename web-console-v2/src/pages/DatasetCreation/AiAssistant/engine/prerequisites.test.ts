@@ -7,6 +7,8 @@ const READY = { hasDataset: true, hasSchema: true };
 const NO_SAMPLE = { hasDataset: true, hasSchema: false };
 /** Nothing at all: the very first turn. */
 const EMPTY = { hasDataset: false, hasSchema: false };
+/** Named and typed, but the draft is created by the sample arriving. */
+const NAMED = { hasDataset: false, hasSchema: false, draftPending: true };
 
 describe('what an action needs before it can be done', () => {
   it('says a sample is missing rather than attempting the change', () => {
@@ -29,6 +31,23 @@ describe('what an action needs before it can be done', () => {
 
     expect(unmet?.requirement).toBe('dataset');
     expect(unmet?.text).toMatch(/name/i);
+  });
+
+  /**
+   * Found in the browser: with a name and a type already chosen, "needs a
+   * dataset first — tell me its name" asks for what the user has just
+   * given. What is actually missing is the sample, since that is what
+   * creates the draft.
+   */
+  it('asks for the sample once the name and type are in hand', () => {
+    const unmet = unmetForAction(
+      { kind: 'set_storage', realtime: true },
+      NAMED,
+    );
+
+    expect(unmet?.requirement).toBe('dataset');
+    expect(unmet?.text).toMatch(/sample/i);
+    expect(unmet?.text).not.toMatch(/tell me its name/i);
   });
 
   it('lets the two questions that start a dataset through', () => {

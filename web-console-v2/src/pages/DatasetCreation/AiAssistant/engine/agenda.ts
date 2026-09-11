@@ -442,6 +442,10 @@ const sinceMoving = (state: AgendaState): Action[] => {
   return actions.slice(moved + 1);
 };
 
+/** Whether the user has asked to be in a stage, rather than starting there. */
+const movedDeliberately = (state: AgendaState): boolean =>
+  appliedActions(state.history).some((action) => action.kind === 'goto_step');
+
 const answeredInThisVisit = (state: AgendaState, step: AgendaStepId): boolean =>
   sinceMoving(state).some((action) =>
     // A decline answers the question it names and no other. Matching on the
@@ -481,9 +485,14 @@ export const currentStep = (state: AgendaState): AgendaStepId | undefined => {
      * A new session starts at `ingestion` whether or not anybody chose it,
      * so on a dataset that already exists this branch re-asked its name — a
      * question the document answers — because a stage in focus deliberately
-     * re-opens what it has already settled.
+     * re-opens what it has already settled. Suppressed until a `goto_step`
+     * says the user meant to be there, which is what keeps "go back to
+     * storage" working on a dataset the conversation did not build.
      */
-    const revisit = state.documentAuthoritative
+    const suppressRevisit =
+      state.documentAuthoritative && !movedDeliberately(state);
+
+    const revisit = suppressRevisit
       ? undefined
       : here.find(
           (step) =>

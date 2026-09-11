@@ -6,10 +6,15 @@
  * session here — the caller owns persistence, which keeps this pure enough to
  * reason about.
  */
-import { ACCEPTS, Prompt } from './agenda';
+import { Prompt } from './agenda';
 import { Action } from './actions';
 import { ExecutionOutcome } from './executor';
-import { answerTo, isAffirmative, isNegative } from './answer';
+import {
+  answerTo,
+  isAddressedRequest,
+  isAffirmative,
+  isNegative,
+} from './answer';
 import { FieldVocabulary } from './fieldVocabulary';
 import {
   NOTHING_TO_UNDO,
@@ -47,6 +52,8 @@ export interface TurnDeps {
    * change. Defaults to true, since every turn after the first has one.
    */
   datasetExists?: boolean;
+  /** True when a name and a type are chosen but the draft does not exist. */
+  draftPending?: boolean;
   /**
    * The question the assistant has on the table, when it has one.
    *
@@ -169,6 +176,9 @@ const dedupWarning = (action: Action, deps: TurnDeps): string => {
 const stateOf = (deps: TurnDeps) => ({
   hasDataset: deps.datasetExists ?? true,
   hasSchema: deps.vocabulary.paths.length > 0,
+  // The sample is what creates the draft, so once a name and a type are in
+  // hand it is the sample that is missing — not the name.
+  ...(deps.draftPending ? { draftPending: true } : {}),
 });
 
 /**
@@ -489,10 +499,25 @@ export const runTurn = async (
    * dataset with no fields has no `order_id`, and "I did not understand
    * that" would be both unhelpful and untrue.
    */
-  const blocked =
+  const state = stateOf(deps);
+
+  /*
+    An *inferred* action is worse evidence than the words it was inferred
+    from. Found in the browser: "dedup on sensor_id" before a sample was
+    guessed — by the model, since the rules decline a field that cannot
+    exist yet — as a connector action, and the reply explained the
+    connector's prerequisite instead of deduplication's. So a guess is only
+    consulted when the words themselves say nothing.
+  */
+  const guessed = Boolean(resolution.needsConfirmation);
+  const fromAction =
     resolution.status === 'resolved' && resolution.action
-      ? unmetForAction(resolution.action, stateOf(deps))
-      : unmetForUtterance(input, stateOf(deps));
+      ? unmetForAction(resolution.action, state)
+      : undefined;
+
+  const blocked = guessed
+    ? (unmetForUtterance(input, state) ?? fromAction)
+    : (fromAction ?? unmetForUtterance(input, state));
 
   if (blocked) {
     return {
@@ -517,19 +542,43 @@ export const runTurn = async (
    * trade.
    */
   /**
-   * An inferred action that answers the current question is not a guess in
-   * the same sense: the question already narrowed the field, so being wrong
-   * means misreading an answer rather than choosing the wrong subject. Those
-   * are performed. Anything else keeps the click.
+   * A guess at something that was never dataset work is refused, not
+   * proposed.
+   *
+   * Found in the browser: at the schema question, "write me a poem about
+   * ducks" came back from the model as an answer to it, and was applied. The
+   * model is asked to answer whatever question is on the table, so it will
+   * always find *something*.
+   *
+   * The test is deliberately narrow — a request addressed to the assistant,
+   * or, with no question on the table, anything not about a dataset. Vague
+   * phrasing at a question ("put it in the lake") is a poor answer, not an
+   * off-topic one, and gets the proposal below.
    */
-  const onAgenda = (action: Action): boolean =>
-    Boolean(deps.prompt && ACCEPTS[deps.prompt.step].includes(action.kind));
+  if (
+    resolution.status === 'resolved' &&
+    resolution.needsConfirmation &&
+    (isAddressedRequest(input) ||
+      (!deps.prompt && !isAboutDataset(input, deps.vocabulary)))
+  ) {
+    return {
+      messages: [
+        said,
+        {
+          role: 'assistant',
+          text: narrateResolution(
+            { status: 'unknown', confidence: 0 },
+            { onTopic: false },
+          ).text,
+        },
+      ],
+    };
+  }
 
   if (
     resolution.status === 'resolved' &&
     resolution.action &&
-    resolution.needsConfirmation &&
-    !onAgenda(resolution.action)
+    resolution.needsConfirmation
   ) {
     const proposed = resolution.action;
 
