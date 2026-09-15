@@ -26,9 +26,17 @@ import { sameAction } from '../engine/actions';
 import { DatasetFacts, alreadySatisfied } from '../engine/datasetFacts';
 import { FieldVocabulary, resolveField } from '../engine/fieldVocabulary';
 import { Resolution, resolveUtterance } from '../engine/ruleResolver';
+import { RouterResult, sanitiseRoute } from '../engine/router';
+import { WIZARD_STEP_BY_AGENDA_STEP } from '../engine/previewFocus';
 import { Message } from '../session/types';
 import { ModelEngine } from './engineClient';
 import { SYSTEM_PROMPT, buildPrompt } from './prompt';
+import {
+  ROUTER_SCHEMA,
+  ROUTER_SYSTEM_PROMPT,
+  buildRouterPrompt,
+  readRouterReply,
+} from './router';
 import {
   STEP_ACTIONS,
   buildQuestionSchema,
@@ -60,6 +68,16 @@ export interface ModelResolveInput {
    */
   question?: AgendaStepId;
   questionText?: string;
+  /**
+   * The option labels the question's own card printed, when it is a choice.
+   *
+   * Threaded through the same as `questionText`: call A (`model/router.ts`)
+   * reads a reply against the words the card actually showed, and needs this
+   * whether or not a second, question-scoped call follows it.
+   */
+  optionLabels?: string[];
+  /** The title of a confirm card still awaiting a reply, if there is one. */
+  pendingCardTitle?: string;
   vocabulary: FieldVocabulary;
   history?: Message[];
   connectors?: { id: string; name?: string }[];
@@ -338,3 +356,116 @@ const defaultFallback = (input: ModelResolveInput): Resolution =>
     connectorProperties: input.connectorProperties,
     masterDatasets: input.masterDatasets,
   });
+
+/**
+ * Classifies the turn first, then extracts an action only when the
+ * classification asks for one — an `ask`/`other` reading costs one call,
+ * not two, since there is nothing to extract.
+ *
+ * Purely additive: nothing in `engine/turn.ts` calls this yet. A later
+ * commit is what points `TurnDeps.route` here; until then this exists
+ * beside `resolveWithModel`, which callers keep using unchanged.
+ */
+export const resolveTurn = async (
+  input: ModelResolveInput,
+  deps: ModelResolveDeps,
+): Promise<RouterResult> => {
+  let raw: string;
+
+  try {
+    const routerPrompt = buildRouterPrompt({
+      utterance: input.utterance,
+      question: input.question,
+      questionText: input.questionText,
+      optionLabels: input.optionLabels,
+      pendingCardTitle: input.pendingCardTitle,
+      history: input.history,
+    });
+
+    raw = await deps.engine.complete(
+      `${ROUTER_SYSTEM_PROMPT}\n\n${routerPrompt}`,
+      { type: 'json_object', schema: JSON.stringify(ROUTER_SCHEMA) },
+    );
+  } catch {
+    // Mirrors `resolveWithModel`'s own posture towards a model that errors
+    // mid-turn: the turn must not be lost. But there is no rule-based
+    // reading of "what kind of message was this", the way there is a
+    // rule-based reading of an instruction — so there is nothing honest to
+    // fall back to except the same answer a rejected reading gets below.
+    return { intent: 'other' };
+  }
+
+  const reading = readRouterReply(raw);
+
+  /**
+   * Unparseable, invalid, or absent: nothing classified this turn, so
+   * nothing is assumed about it. Falling back to the rules here would be
+   * guessing at a classification the model failed to produce — exactly the
+   * guess the project already refuses to make from phrase-matching alone.
+   */
+  if (!reading) return { intent: 'other' };
+
+  const routed = sanitiseRoute(reading);
+  if (!routed) return { intent: 'other' };
+
+  // Nothing to extract for the user's own question, a remark outside the
+  // job, or a capability the engine declines by construction — this is the
+  // latency win the whole split exists for.
+  if (
+    routed.intent === 'ask' ||
+    routed.intent === 'other' ||
+    routed.outOfScope
+  ) {
+    return routed;
+  }
+
+  /**
+   * Which question the second, extracting call is scoped to: the one
+   * already on the table for an answer, or the one the router named for a
+   * request — or for a reply to a card that carries a follow-on request
+   * alongside its decision. `reply_to_card` with no named step is the
+   * accept/decline case, which the turn loop settles on its own; there is
+   * nothing here to extract.
+   */
+  const targetStep = routed.intent === 'answer' ? input.question : routed.step;
+  if (!targetStep) return routed;
+
+  /**
+   * Reused unchanged when the target is the question already asked, since
+   * `input` is already scoped correctly for it. Rebuilt when the router
+   * named a different step: `questionText` is dropped rather than carried
+   * over, because it is the *other* question's own wording, and showing it
+   * here would claim a question was asked that never was. The narrower
+   * schema and the permitted-kinds check downstream both key off `question`
+   * alone, so extraction is still correctly scoped without it — only the
+   * prompt's few-shot framing is what is lost, which is the honest trade.
+   */
+  const scoped: ModelResolveInput =
+    targetStep === input.question
+      ? input
+      : {
+          ...input,
+          question: targetStep,
+          questionText: undefined,
+          step: WIZARD_STEP_BY_AGENDA_STEP[targetStep] ?? input.step,
+        };
+
+  const resolution = await resolveWithModel(scoped, deps);
+
+  if (resolution.status !== 'resolved' || !resolution.action) {
+    // Nothing extracted — a clarify, an unknown field, an ambiguity. The
+    // caller's own fallback narration handles that; inventing a placeholder
+    // action here would be the same guess this function exists to avoid.
+    return routed;
+  }
+
+  return {
+    ...routed,
+    actions: [
+      {
+        action: resolution.action,
+        confirm: Boolean(resolution.needsConfirmation),
+      },
+    ],
+  };
+};

@@ -2,6 +2,7 @@ import { Action } from './actions';
 import {
   kindsForUtterance,
   unmetForAction,
+  unmetForStep,
   unmetForUtterance,
 } from './prerequisites';
 
@@ -187,5 +188,59 @@ describe('the actions the words are asking for', () => {
   it('says nothing when the words name no topic of its own', () => {
     expect(kindsForUtterance('customer_id')).toBeUndefined();
     expect(kindsForUtterance('yes please')).toBeUndefined();
+  });
+});
+
+/**
+ * A router names a *step* rather than a resolved action, before an
+ * extraction call has run at all. `unmetForStep` has to answer the same
+ * question `unmetForAction` does — what is this waiting on? — from the step
+ * alone, so a "request" or "reply_to_card" reading naming a step nobody can
+ * act on yet gets the same honest prerequisite reply an action would have.
+ */
+describe('what an agenda question needs before it can be answered', () => {
+  it('never blocks naming or typing the dataset', () => {
+    expect(unmetForStep('name', EMPTY)).toBeUndefined();
+    expect(unmetForStep('type', EMPTY)).toBeUndefined();
+
+    // Even where every other step would be blocked, these two never are.
+    expect(unmetForStep('name', NAMED)).toBeUndefined();
+    expect(unmetForStep('type', NAMED)).toBeUndefined();
+  });
+
+  it('says a sample is missing for a schema-editing step, same as the action would', () => {
+    const byStep = unmetForStep('schema', NO_SAMPLE);
+    const byAction = unmetForAction(
+      { kind: 'toggle_required', path: 'order_id', required: true },
+      NO_SAMPLE,
+    );
+
+    expect(byStep).toEqual(byAction);
+  });
+
+  it('says the same for the conflicts step, which shares the schema requirement', () => {
+    const byStep = unmetForStep('conflicts', NO_SAMPLE);
+    const byAction = unmetForAction(
+      { kind: 'resolve_conflict', path: 'amount', mode: 'dismiss' },
+      NO_SAMPLE,
+    );
+
+    expect(byStep).toEqual(byAction);
+  });
+
+  it('says the dataset does not exist yet for a storage-requiring step', () => {
+    const byStep = unmetForStep('storage', EMPTY);
+    const byAction = unmetForAction(
+      { kind: 'set_storage', realtime: true },
+      EMPTY,
+    );
+
+    expect(byStep?.requirement).toBe('dataset');
+    expect(byStep).toEqual(byAction);
+  });
+
+  it('asks for nothing once the step is not blocked', () => {
+    expect(unmetForStep('dedup', READY)).toBeUndefined();
+    expect(unmetForStep('storage', READY)).toBeUndefined();
   });
 });

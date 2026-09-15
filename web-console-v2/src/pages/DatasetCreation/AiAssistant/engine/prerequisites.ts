@@ -14,7 +14,7 @@
  * - A refusal with no way forward leaves the user guessing. Every reply here
  *   names what is missing and what supplies it.
  */
-import { Action } from './actions';
+import { Action, AgendaStepId } from './actions';
 
 /** What the request is waiting on. */
 export type Requirement = 'dataset' | 'schema';
@@ -49,6 +49,14 @@ interface Topic {
   requirement: Requirement;
   kinds: Action['kind'][];
   /**
+   * The agenda questions this requirement actually covers, so a step named by
+   * the router — before it has been read into an action — can be checked the
+   * same way `unmetForAction` checks a resolved one. Cross-referenced against
+   * `ACCEPTS` in `agenda.ts`: a step belongs here when the actions it accepts
+   * are (some of) this topic's `kinds`.
+   */
+  steps: AgendaStepId[];
+  /**
    * How the topic is asked for in words, for a request that resolved to no
    * action at all. Matching is deliberately narrow: a topic nothing matches
    * falls through to the ordinary "I did not understand" reply, which is a
@@ -69,6 +77,7 @@ const TOPICS: Topic[] = [
     subject: 'deduplication',
     requirement: 'schema',
     kinds: ['set_dedup'],
+    steps: ['dedup'],
     pattern: /\bdedup\w*|duplicat|same \w+ twice/i,
   },
   {
@@ -76,6 +85,7 @@ const TOPICS: Topic[] = [
     subject: 'masking a field',
     requirement: 'schema',
     kinds: ['set_pii'],
+    steps: ['pii'],
     pattern: /\bpii\b|\bmask\b|encrypt|redact/i,
   },
   {
@@ -83,6 +93,7 @@ const TOPICS: Topic[] = [
     subject: 'a transformation',
     requirement: 'schema',
     kinds: ['add_transformation', 'add_derived_field', 'remove_transformation'],
+    steps: ['transform'],
     pattern: /transform|jsonata|derived field|expression/i,
   },
   {
@@ -90,6 +101,7 @@ const TOPICS: Topic[] = [
     subject: 'joining to a master dataset',
     requirement: 'schema',
     kinds: ['set_denorm', 'select_denorm', 'remove_denorm'],
+    steps: ['denorm'],
     /*
       "pull in" rather than "pull": the sample question offers to "pull it
       from PostgreSQL", which is a connector and not a join.
@@ -102,6 +114,7 @@ const TOPICS: Topic[] = [
     subject: 'the storage keys',
     requirement: 'schema',
     kinds: ['set_keys'],
+    steps: ['keys'],
     pattern: /partition|primary key|timestamp (key|field|column)/i,
   },
   {
@@ -117,6 +130,9 @@ const TOPICS: Topic[] = [
       'delete_field',
       'resolve_conflict',
     ],
+    // `resolve_conflict` is what `conflicts` accepts; the rest are the
+    // ordinary schema edit, per `ACCEPTS.schema` in `agenda.ts`.
+    steps: ['schema', 'conflicts'],
     pattern:
       /\brequired\b|\boptional\b|data ?type|\brename\b|(add|remove|delete|drop) (a |the )?\w*\s?field/i,
   },
@@ -125,6 +141,7 @@ const TOPICS: Topic[] = [
     subject: 'saving',
     requirement: 'schema',
     kinds: ['save'],
+    steps: ['review'],
     pattern: /\bsave\b|\bpublish\b|\bfinish\b/i,
   },
   {
@@ -132,6 +149,7 @@ const TOPICS: Topic[] = [
     subject: 'storage',
     requirement: 'dataset',
     kinds: ['set_storage'],
+    steps: ['storage'],
     pattern: /real[- ]?time store|lakehouse|\bstorage\b|\bdruid\b|\bhudi\b/i,
   },
   {
@@ -139,6 +157,7 @@ const TOPICS: Topic[] = [
     subject: 'validation',
     requirement: 'dataset',
     kinds: ['set_additional_fields'],
+    steps: ['validation'],
     pattern: /validation|extra fields|additional fields/i,
   },
   {
@@ -146,6 +165,7 @@ const TOPICS: Topic[] = [
     subject: 'the sample',
     requirement: 'dataset',
     kinds: ['attach_sample'],
+    steps: ['sample'],
     pattern: /\bsample\b|\bupload\b|\bcsv\b|\bjsonl?\b/i,
   },
   {
@@ -158,6 +178,7 @@ const TOPICS: Topic[] = [
       'request_connector_secrets',
       'skip_connector',
     ],
+    steps: ['connector'],
     pattern: /connector|\bkafka\b|postgres|\bjdbc\b|\bs3\b/i,
   },
 ];
@@ -202,6 +223,27 @@ export const unmetForAction = (
     TOPICS.find((topic) => topic.kinds.includes(action.kind)),
     state,
   );
+
+/**
+ * What a given agenda question needs before it can be answered, read off the
+ * same requirement table `unmetForAction` uses — so a step named by a
+ * router, rather than an action already resolved to a kind, can be checked
+ * the same way.
+ *
+ * Naming and typing the dataset are how it comes to exist, so — like the two
+ * openers `unmetForAction` lets through unconditionally — they are never
+ * blocked, whatever state the conversation is in.
+ */
+export const unmetForStep = (
+  step: AgendaStepId,
+  state: AssistantState,
+): Unmet | undefined =>
+  step === 'name' || step === 'type'
+    ? undefined
+    : unmetFor(
+        TOPICS.find((topic) => topic.steps.includes(step)),
+        state,
+      );
 
 /**
  * What the words are about, when they are about something this flow does.

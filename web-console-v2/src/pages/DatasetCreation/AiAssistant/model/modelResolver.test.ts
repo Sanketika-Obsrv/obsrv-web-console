@@ -2,7 +2,7 @@ import { DatasetFacts } from '../engine/datasetFacts';
 import { buildFieldVocabulary } from '../engine/fieldVocabulary';
 import { ModelEngine } from './engineClient';
 import { Resolution } from '../engine/ruleResolver';
-import { extractJson, resolveWithModel } from './modelResolver';
+import { extractJson, resolveTurn, resolveWithModel } from './modelResolver';
 
 const FIELDS = [
   { column: 'order_id', data_type: 'string' },
@@ -657,5 +657,245 @@ describe('a resolved action already true of the dataset', () => {
       kind: 'set_dataset_name',
       name: 'telemetry',
     });
+  });
+});
+
+/**
+ * `resolveTurn` — call A (the router) first, call B (`resolveWithModel`,
+ * unchanged) only where call A says there is something to extract.
+ *
+ * The fake engine below tells the two calls apart the only way a real one
+ * could: by which grammar it was handed. The router's grammar is the fixed,
+ * five-way `ROUTER_SCHEMA`, whose properties include `intent`; every
+ * question-scoped extraction schema `buildQuestionSchema` builds keys on
+ * `kind` and has no `intent` property at all.
+ */
+describe('resolveTurn — the router first, the extractor only when it is needed', () => {
+  interface RecordedCall {
+    format?: { type: string; schema: string };
+  }
+
+  /** Replies with `routerReply` to call A and `extractionReply` to call B. */
+  const scriptedEngine = (
+    routerReply: string,
+    extractionReply?: string,
+  ): { engine: ModelEngine; calls: RecordedCall[] } => {
+    const calls: RecordedCall[] = [];
+    const engine: ModelEngine = {
+      complete: async (_prompt, responseFormat) => {
+        const format = responseFormat as RecordedCall['format'];
+        calls.push({ format });
+
+        return format?.schema.includes('"intent"')
+          ? routerReply
+          : (extractionReply ?? '{}');
+      },
+      unload: async () => undefined,
+    };
+
+    return { engine, calls };
+  };
+
+  it('makes exactly one call for an ask reading, and extracts nothing', async () => {
+    const { engine, calls } = scriptedEngine(
+      JSON.stringify({
+        intent: 'ask',
+        reply: 'A master dataset is reference data.',
+      }),
+    );
+
+    const result = await resolveTurn(
+      {
+        utterance: 'what is a master dataset?',
+        step: 'processing',
+        question: 'dedup',
+        questionText: 'Shall I drop duplicate records?',
+        vocabulary,
+      },
+      { engine },
+    );
+
+    expect(calls.length).toBe(1);
+    expect(result.intent).toBe('ask');
+    expect(result.actions ?? []).toEqual([]);
+  });
+
+  it('makes exactly one call for an other reading', async () => {
+    const { engine, calls } = scriptedEngine(
+      JSON.stringify({ intent: 'other', reply: 'Good morning.' }),
+    );
+
+    const result = await resolveTurn(
+      { utterance: 'good morning', step: 'processing', vocabulary },
+      { engine },
+    );
+
+    expect(calls.length).toBe(1);
+    expect(result.intent).toBe('other');
+    expect(result.actions ?? []).toEqual([]);
+  });
+
+  it('runs a second call for an answer, agreeing with the rules, and does not ask for confirmation', async () => {
+    const { engine, calls } = scriptedEngine(
+      JSON.stringify({ intent: 'answer' }),
+      '{"kind":"toggle_required","path":"order_id","required":true}',
+    );
+    const agreeingRules = (): Resolution => ({
+      status: 'resolved',
+      confidence: 1,
+      action: { kind: 'toggle_required', path: 'order_id', required: true },
+    });
+
+    const result = await resolveTurn(
+      {
+        utterance: 'make order_id required',
+        step: 'schema',
+        question: 'schema',
+        questionText: 'Anything else to change?',
+        vocabulary,
+      },
+      { engine, fallback: agreeingRules },
+    );
+
+    expect(calls.length).toBe(2);
+    expect(calls[1].format?.schema).toContain('toggle_required');
+    expect(result.actions).toEqual([
+      {
+        action: { kind: 'toggle_required', path: 'order_id', required: true },
+        confirm: false,
+      },
+    ]);
+  });
+
+  it('marks confirm true for an answer the rules read differently', async () => {
+    const { engine } = scriptedEngine(
+      JSON.stringify({ intent: 'answer' }),
+      '{"kind":"set_arrival_format","path":"order_id","arrivalFormat":"text"}',
+    );
+    const disagreeingRules = (): Resolution => ({
+      status: 'resolved',
+      confidence: 1,
+      action: { kind: 'toggle_required', path: 'order_id', required: true },
+    });
+
+    const result = await resolveTurn(
+      {
+        utterance: 'make order_id required',
+        step: 'schema',
+        question: 'schema',
+        questionText: 'Anything else to change?',
+        vocabulary,
+      },
+      { engine, fallback: disagreeingRules },
+    );
+
+    expect(result.actions).toEqual([
+      {
+        action: {
+          kind: 'set_arrival_format',
+          path: 'order_id',
+          arrivalFormat: 'text',
+        },
+        confirm: true,
+      },
+    ]);
+  });
+
+  it('scopes the second call to the step a request names, not the question on the table', async () => {
+    const { engine, calls } = scriptedEngine(
+      JSON.stringify({ intent: 'request', step: 'name' }),
+      '{"kind":"set_dataset_name","name":"orders_v2"}',
+    );
+
+    const result = await resolveTurn(
+      {
+        utterance: 'actually, call it orders_v2',
+        step: 'processing',
+        question: 'dedup',
+        questionText: 'Shall I drop duplicate records?',
+        vocabulary,
+      },
+      { engine, fallback: () => unresolved },
+    );
+
+    expect(calls.length).toBe(2);
+    expect(calls[1].format?.schema).toContain('set_dataset_name');
+    expect(calls[1].format?.schema).not.toContain('set_dedup');
+    expect(result.actions).toEqual([
+      {
+        action: { kind: 'set_dataset_name', name: 'orders_v2' },
+        confirm: true,
+      },
+    ]);
+  });
+
+  it('runs the second call for a reply_to_card that also names a step', async () => {
+    const { engine, calls } = scriptedEngine(
+      JSON.stringify({ intent: 'reply_to_card', step: 'dedup' }),
+      '{"kind":"set_dedup","enabled":true,"key":"order_id"}',
+    );
+
+    const result = await resolveTurn(
+      {
+        utterance: 'yes, and also drop duplicates on order_id',
+        step: 'processing',
+        vocabulary,
+      },
+      { engine, fallback: () => unresolved },
+    );
+
+    expect(calls.length).toBe(2);
+    expect(result.actions).toEqual([
+      {
+        action: { kind: 'set_dedup', enabled: true, key: 'order_id' },
+        confirm: true,
+      },
+    ]);
+  });
+
+  it('makes exactly one call for a reply_to_card naming no step, leaving the accept/decline to the turn loop', async () => {
+    const { engine, calls } = scriptedEngine(
+      JSON.stringify({ intent: 'reply_to_card' }),
+    );
+
+    const result = await resolveTurn(
+      { utterance: 'yes', step: 'processing', vocabulary },
+      { engine },
+    );
+
+    expect(calls.length).toBe(1);
+    expect(result.actions ?? []).toEqual([]);
+  });
+
+  it('returns {intent:"other"} without a second call when the router call itself throws', async () => {
+    const fallback = jest.fn(() => unresolved);
+    const engine: ModelEngine = {
+      complete: async () => {
+        throw new Error('no webgpu');
+      },
+      unload: async () => undefined,
+    };
+
+    const result = await resolveTurn(
+      { utterance: 'anything', step: 'schema', vocabulary },
+      { engine, fallback },
+    );
+
+    expect(result).toEqual({ intent: 'other' });
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it('returns {intent:"other"} on an unparseable router reply, without falling back to the rules', async () => {
+    const fallback = jest.fn(() => unresolved);
+    const { engine, calls } = scriptedEngine('not json at all');
+
+    const result = await resolveTurn(
+      { utterance: 'anything', step: 'schema', vocabulary },
+      { engine, fallback },
+    );
+
+    expect(calls.length).toBe(1);
+    expect(result).toEqual({ intent: 'other' });
+    expect(fallback).not.toHaveBeenCalled();
   });
 });
