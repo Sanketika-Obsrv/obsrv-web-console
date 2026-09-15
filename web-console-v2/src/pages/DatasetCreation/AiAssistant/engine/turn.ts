@@ -430,6 +430,16 @@ export const awaitingInput = (messages: NewMessage[]): boolean =>
  *
  * A card click has nothing to resolve and nothing the user typed, so it
  * produces the assistant turn alone.
+ *
+ * This never echoes the user's own words back in `messages`. It used to —
+ * building the echo here meant the caller could only write it to the
+ * transcript once this whole turn, inference and every server round trip
+ * included, had resolved, so what was typed sat in limbo for as long as a
+ * turn took. The caller now appends it itself before calling this, which is
+ * also why `deps.history` matters: it has to be read before that append, so
+ * what a turn reasons over — the last thing proposed, the last thing that
+ * failed — is the transcript as it stood when the user typed, not one that
+ * already contains their own words.
  */
 export const runTurn = async (
   input: string | Action,
@@ -441,8 +451,6 @@ export const runTurn = async (
     const { outcome, message } = await runAction(input, deps);
     return { messages: [message], action: input, outcome };
   }
-
-  const said: NewMessage = { role: 'user', text: input };
 
   /**
    * A proposal is answered in words, since there is nothing to click.
@@ -458,12 +466,12 @@ export const runTurn = async (
   if (proposed && isAffirmative(input)) {
     const { outcome, message } = await runAction(proposed, deps);
 
-    return { messages: [said, message], action: proposed, outcome };
+    return { messages: [message], action: proposed, outcome };
   }
 
   if (proposed && isNegative(input)) {
     return {
-      messages: [said, { role: 'assistant', text: 'Left it as it was.' }],
+      messages: [{ role: 'assistant', text: 'Left it as it was.' }],
     };
   }
 
@@ -480,7 +488,6 @@ export const runTurn = async (
     if (!target) {
       return {
         messages: [
-          said,
           {
             role: 'assistant',
             text: 'There is nothing to try again — nothing has failed yet.',
@@ -491,7 +498,7 @@ export const runTurn = async (
 
     const { outcome, message } = await runAction(target, deps);
 
-    return { messages: [said, message], action: target, outcome };
+    return { messages: [message], action: target, outcome };
   }
 
   /**
@@ -526,7 +533,7 @@ export const runTurn = async (
   if (read.status !== 'resolved' && literal) {
     const { outcome, message } = await runAction(literal, deps);
 
-    return { messages: [said, message], action: literal, outcome };
+    return { messages: [message], action: literal, outcome };
   }
 
   /**
@@ -583,7 +590,6 @@ export const runTurn = async (
   if (blocked) {
     return {
       messages: [
-        said,
         {
           role: 'assistant',
           text: blocked.text,
@@ -624,7 +630,6 @@ export const runTurn = async (
   ) {
     return {
       messages: [
-        said,
         {
           role: 'assistant',
           text: narrateResolution(
@@ -645,7 +650,6 @@ export const runTurn = async (
 
     return {
       messages: [
-        said,
         {
           role: 'assistant',
           text: `I think you mean: ${describeProposal(proposed)}.`,
@@ -664,9 +668,7 @@ export const runTurn = async (
   }
 
   if (resolution.status === 'resolved' && resolution.action?.kind === 'undo') {
-    const undone = await runUndo(deps);
-
-    return { ...undone, messages: [said, ...undone.messages] };
+    return runUndo(deps);
   }
 
   if (resolution.status !== 'resolved' || !resolution.action) {
@@ -688,7 +690,6 @@ export const runTurn = async (
 
     return {
       messages: [
-        said,
         {
           role: 'assistant',
           text: narration.text,
@@ -701,7 +702,7 @@ export const runTurn = async (
   const { outcome, message } = await runAction(resolution.action, deps);
 
   return {
-    messages: [said, message],
+    messages: [message],
     action: resolution.action,
     outcome,
   };

@@ -109,6 +109,53 @@ it('offers the next answer as something clickable', async () => {
 });
 
 /**
+ * The bug this test exists to catch: the user's own words used to be built
+ * *inside* `runTurn` and were only written to the session once the whole
+ * turn — model inference, then every server round trip — had resolved. The
+ * text vanished from the composer and reappeared several seconds later.
+ * `useAssistant` now appends the echo itself, ahead of the request, so it
+ * must already be on screen while a turn is still in flight. The `dataset/
+ * exists` GET that `set_dataset_name` triggers is held open with a deferred
+ * promise to give a window in which "still in flight" can be observed.
+ */
+it("keeps the user's own message in the transcript while the turn is still running", async () => {
+  const { result } = renderAssistant();
+
+  await waitFor(() => expect(result.current.loading).toBe(false));
+
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  const real = api.http;
+  (
+    httpModule as unknown as { httpHolder: { current: unknown } }
+  ).httpHolder.current = {
+    ...real,
+    get: async (url: string) => {
+      if (url.includes('/api/dataset/exists/')) await gate;
+      return real.get(url);
+    },
+  };
+
+  const sent = result.current.send('call it My Orders');
+
+  await waitFor(() =>
+    expect(result.current.messages.map((m) => m.text)).toContain(
+      'call it My Orders',
+    ),
+  );
+  // Still mid-turn: the gated GET has not been released yet.
+  expect(result.current.busy).toBe(true);
+
+  release();
+  await sent;
+
+  await waitFor(() => expect(result.current.busy).toBe(false));
+});
+
+/**
  * Found by the end-to-end test: an instruction sent while the session was
  * still loading reached the API but had its turns dropped, because
  * `useSession.apply` no-ops before the session exists. The action ran with no

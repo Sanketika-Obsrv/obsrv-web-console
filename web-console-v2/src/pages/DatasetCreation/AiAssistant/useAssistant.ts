@@ -548,6 +548,21 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
         const step = (session.session?.step ?? 'ingestion') as WizardStep;
         const loaded = engine.current;
 
+        // Read before the echo below is appended, so what a turn reasons
+        // over — the last thing proposed, the last thing that failed — is
+        // the transcript as it stood when the user typed, not one that
+        // already contains their own words.
+        const history = session.messages;
+
+        // Appended immediately, ahead of the request, so what the user
+        // typed is on screen for as long as the turn takes to answer,
+        // rather than reappearing only once it resolves. A card click
+        // carries no typed words, so only a string input gets an echo —
+        // matching what `runTurn` used to build internally before this.
+        if (typeof input === 'string') {
+          await session.append({ role: 'user', text: input });
+        }
+
         const result = await runTurn(input, {
           vocabulary,
           // False before `datasets/create` has run, so a request that needs
@@ -618,7 +633,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                         : {}),
                       hasDraft: Boolean(datasetId),
                       vocabulary,
-                      history: session.messages,
+                      history,
                       connectors,
                       connectorProperties: fillableProps(uiSpec).map(
                         (prop) => prop.key,
@@ -633,7 +648,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           execute: (action) => executeAction(action, contextNow()),
           // The transcript is the undo stack: each change carries the actions
           // that would put it back.
-          history: session.messages,
+          history,
           // The rows the user supplied, for local checks only. They are never
           // sent from here — the sample reaches the server as a file upload.
           sampleRows: (session.session?.sampleRows ?? []) as Record<

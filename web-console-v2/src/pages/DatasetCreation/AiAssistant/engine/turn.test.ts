@@ -42,13 +42,19 @@ const turn = (
 ) => runTurn(text, { vocabulary, execute, sampleRows: SAMPLE });
 
 describe('a turn that resolves', () => {
-  it('records what the user said', async () => {
+  /**
+   * The caller appends what the user typed before `runTurn` ever sees it, so
+   * it can be on screen for the whole turn rather than only once this
+   * resolves — see the doc comment on `runTurn`. This is the plain-action
+   * case of that guarantee: nothing here should hand the caller a second
+   * copy to append.
+   */
+  it('does not echo the user back — the caller already has it on screen', async () => {
     const result = await turn('make order_id required');
 
-    expect(result.messages[0]).toMatchObject({
-      role: 'user',
-      text: 'make order_id required',
-    });
+    expect(result.messages.some((message) => message.role === 'user')).toBe(
+      false,
+    );
   });
 
   it('executes the resolved action', async () => {
@@ -66,14 +72,14 @@ describe('a turn that resolves', () => {
   it('answers with what it did', async () => {
     const result = await turn('make order_id required');
 
-    expect(result.messages[1]).toMatchObject({ role: 'assistant' });
-    expect(result.messages[1].text).toMatch(/order_id/);
+    expect(result.messages[0]).toMatchObject({ role: 'assistant' });
+    expect(result.messages[0].text).toMatch(/order_id/);
   });
 
   it('records the action on the assistant turn, as an audit trail', async () => {
     const result = await turn('make order_id required');
 
-    expect(result.messages[1].action).toEqual({
+    expect(result.messages[0].action).toEqual({
       kind: 'toggle_required',
       path: 'order_id',
       required: true,
@@ -94,7 +100,7 @@ describe('a turn that resolves', () => {
   it('tags the turn with the section it touched', async () => {
     const result = await turn('make order_id required');
 
-    expect(result.messages[1].section).toBe('ingestion');
+    expect(result.messages[0].section).toBe('ingestion');
   });
 });
 
@@ -106,23 +112,23 @@ describe('a turn whose action was rejected', () => {
       'The storage type "lake_house" is not available. Please use one of the available storage types: realtime_store',
   };
 
-  it('still records both turns', async () => {
+  it("records the one turn — the assistant's — since the user's own is the caller's to keep", async () => {
     const result = await turn('enable the lakehouse', async () => rejected);
 
-    expect(result.messages).toHaveLength(2);
+    expect(result.messages).toHaveLength(1);
   });
 
   it('marks the assistant turn as failed', async () => {
     const result = await turn('enable the lakehouse', async () => rejected);
 
-    expect(result.messages[1].failureCode).toBe(
+    expect(result.messages[0].failureCode).toBe(
       'DATASET_UNSUPPORTED_STORAGE_TYPE',
     );
   });
 
   it('attaches the error card with its retry', async () => {
     const result = await turn('enable the lakehouse', async () => rejected);
-    const { card } = result.messages[1];
+    const { card } = result.messages[0];
 
     expect(card?.kind).toBe('api_error');
     if (card?.kind !== 'api_error') return;
@@ -132,7 +138,15 @@ describe('a turn whose action was rejected', () => {
   it('explains rather than echoing the server text', async () => {
     const result = await turn('enable the lakehouse', async () => rejected);
 
-    expect(result.messages[1].text).not.toContain('lake_house');
+    expect(result.messages[0].text).not.toContain('lake_house');
+  });
+
+  it('does not return a user-role message for this failure either', async () => {
+    const result = await turn('enable the lakehouse', async () => rejected);
+
+    expect(result.messages.some((message) => message.role === 'user')).toBe(
+      false,
+    );
   });
 });
 
@@ -148,7 +162,7 @@ describe('a turn that could not be resolved', () => {
   it('says it did not understand', async () => {
     const result = await turn('make the thing better');
 
-    expect(result.messages[1].text).toMatch(/did not understand/i);
+    expect(result.messages[0].text).toMatch(/did not understand/i);
   });
 
   it('reports no action, so the preview stays put', async () => {
@@ -166,12 +180,12 @@ describe('a turn that was ambiguous', () => {
     const result = await turn('set id to string', execute);
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].text).toMatch(/which field/i);
+    expect(result.messages[0].text).toMatch(/which field/i);
   });
 
   it('offers the candidates as buttons that re-run the instruction', async () => {
     const result = await turn('set id to string');
-    const { card } = result.messages[1];
+    const { card } = result.messages[0];
 
     expect(card?.kind).toBe('choice');
     if (card?.kind !== 'choice') return;
@@ -239,8 +253,8 @@ describe('an executor that throws', () => {
       throw new Error('boom');
     });
 
-    expect(result.messages).toHaveLength(2);
-    expect(result.messages[1].failureCode).toBeDefined();
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].failureCode).toBeDefined();
   });
 
   it('does not claim the change was applied', async () => {
@@ -248,7 +262,7 @@ describe('an executor that throws', () => {
       throw new Error('boom');
     });
 
-    expect(result.messages[1].text).not.toMatch(/^Done/);
+    expect(result.messages[0].text).not.toMatch(/^Done/);
   });
 });
 
@@ -383,7 +397,7 @@ describe('warning about a dedup key that is not unique', () => {
   it('says how many rows would be dropped', async () => {
     const result = await turn('dedup on order_id');
 
-    expect(result.messages[1].text).toMatch(/1 of 3|1 row/i);
+    expect(result.messages[0].text).toMatch(/1 of 3|1 row/i);
   });
 
   it('stays quiet when the key is unique in the sample', async () => {
@@ -449,7 +463,7 @@ describe('an inferred action is proposed, not performed', () => {
 
   it('offers it as a confirmation', async () => {
     const result = await inferred(async () => applied);
-    const { card } = result.messages[1];
+    const { card } = result.messages[0];
 
     expect(card?.kind).toBe('confirm');
     if (card?.kind !== 'confirm') return;
@@ -463,14 +477,22 @@ describe('an inferred action is proposed, not performed', () => {
   it('says what it would do, in the present tense', async () => {
     const result = await inferred(async () => applied);
 
-    expect(result.messages[1].text).toMatch(/set total_amount to string/i);
-    expect(result.messages[1].text).not.toMatch(/^Done/);
+    expect(result.messages[0].text).toMatch(/set total_amount to string/i);
+    expect(result.messages[0].text).not.toMatch(/^Done/);
   });
 
   it('reports no outcome, so the preview does not move', async () => {
     const result = await inferred(async () => applied);
 
     expect(result.outcome).toBeUndefined();
+  });
+
+  it("is not itself a user-role message — a proposal is the caller's to show", async () => {
+    const result = await inferred(async () => applied);
+
+    expect(result.messages.some((message) => message.role === 'user')).toBe(
+      false,
+    );
   });
 
   /** Confirming dispatches the action directly, which does execute. */
@@ -517,8 +539,16 @@ describe('undo', () => {
   it('says there is nothing to undo when nothing has changed', async () => {
     const result = await undo([]);
 
-    expect(result.messages[1].text).toMatch(/nothing to undo/i);
+    expect(result.messages[0].text).toMatch(/nothing to undo/i);
     expect(result.action).toBeUndefined();
+  });
+
+  it('does not return a user-role message for the undo either', async () => {
+    const result = await undo([change()]);
+
+    expect(result.messages.some((message) => message.role === 'user')).toBe(
+      false,
+    );
   });
 
   it('re-PATCHes the recorded inverse through the executor', async () => {
@@ -536,7 +566,7 @@ describe('undo', () => {
   it('says what it put back', async () => {
     const result = await undo([change()]);
 
-    expect(result.messages[1].text).toBe('Undone. I set order_id to string.');
+    expect(result.messages[0].text).toBe('Undone. I set order_id to string.');
   });
 
   it('names the change it spent, so it cannot be undone twice', async () => {
@@ -557,7 +587,7 @@ describe('undo', () => {
       ],
     }));
 
-    expect(result.messages[1].inverse).toEqual([
+    expect(result.messages[0].inverse).toEqual([
       { kind: 'set_data_type', path: 'order_id', dataType: 'double' },
     ]);
   });
@@ -572,7 +602,7 @@ describe('undo', () => {
 
     const result = await undo([change(), blocked], execute);
 
-    expect(result.messages[1]).toMatchObject({
+    expect(result.messages[0]).toMatchObject({
       text: 'I cannot take back the sample.',
       failureCode: 'NOT_UNDOABLE',
     });
@@ -608,7 +638,7 @@ describe('undo', () => {
       'add_field',
       'toggle_required',
     ]);
-    expect(result.messages[1].text).toBe(
+    expect(result.messages[0].text).toBe(
       'Undone. I added customer.email and made customer.email required.',
     );
   });
@@ -643,9 +673,9 @@ describe('undo', () => {
 
     const result = await undo([deleted], execute);
 
-    expect(result.messages[1].text).toMatch(/put part of that back/i);
-    expect(result.messages[1].text).toContain('added customer.email');
-    expect(result.messages[2].failureCode).toBe('PATCH_FAILED');
+    expect(result.messages[0].text).toMatch(/put part of that back/i);
+    expect(result.messages[0].text).toContain('added customer.email');
+    expect(result.messages[1].failureCode).toBe('PATCH_FAILED');
     expect(result.undoneMessageId).toBeUndefined();
   });
 
@@ -725,7 +755,7 @@ describe('something that is not dataset work', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].text).toMatch(/only work on this dataset/i);
+    expect(result.messages[0].text).toMatch(/only work on this dataset/i);
   });
 
   it('still asks about a dataset instruction it could not parse', async () => {
@@ -734,7 +764,7 @@ describe('something that is not dataset work', () => {
       execute: async () => applied,
     });
 
-    expect(result.messages[1].text).not.toMatch(/only work on this dataset/i);
+    expect(result.messages[0].text).not.toMatch(/only work on this dataset/i);
   });
 
   /** An example has to come from the dataset in hand, not from a fixture. */
@@ -750,8 +780,8 @@ describe('something that is not dataset work', () => {
       execute: async () => applied,
     });
 
-    expect(result.messages[1].text).toMatch(/sensor_id/);
-    expect(result.messages[1].text).not.toMatch(/order_id/);
+    expect(result.messages[0].text).toMatch(/sensor_id/);
+    expect(result.messages[0].text).not.toMatch(/order_id/);
   });
 
   it('points at the question rather than at examples', async () => {
@@ -765,7 +795,7 @@ describe('something that is not dataset work', () => {
       },
     });
 
-    expect(result.messages[1].text).toContain('Which field is the timestamp?');
+    expect(result.messages[0].text).toContain('Which field is the timestamp?');
   });
 });
 
@@ -810,7 +840,7 @@ describe('answering the question on the table', () => {
       kind: 'set_storage',
       lakehouse: true,
     });
-    expect(result.messages[1].card?.kind).not.toBe('confirm');
+    expect(result.messages[0].card?.kind).not.toBe('confirm');
   });
 
   it('takes prose as the answer where the question asked for prose', async () => {
@@ -839,7 +869,7 @@ describe('answering the question on the table', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].text).toMatch(/nothing/i);
+    expect(result.messages[0].text).toMatch(/nothing/i);
   });
 
   it('resolves anything the question did not offer as a request', async () => {
@@ -885,7 +915,7 @@ describe('answering the question on the table', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].card).toMatchObject({ kind: 'confirm' });
+    expect(result.messages[0].card).toMatchObject({ kind: 'confirm' });
   });
 
   /** A rule match is a pattern the words fit, so it still acts directly. */
@@ -930,8 +960,8 @@ describe('answering the question on the table', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].text).toMatch(/only work on this dataset/i);
-    expect(result.messages[1].card).toBeUndefined();
+    expect(result.messages[0].text).toMatch(/only work on this dataset/i);
+    expect(result.messages[0].card).toBeUndefined();
   });
 
   it('still confirms an inferred action about something else', async () => {
@@ -950,7 +980,7 @@ describe('answering the question on the table', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].card?.kind).toBe('confirm');
+    expect(result.messages[0].card?.kind).toBe('confirm');
   });
 });
 
@@ -972,8 +1002,8 @@ describe('a request that cannot be done yet', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].text).toMatch(/sample/i);
-    expect(result.messages[1].text).not.toMatch(/did not understand/i);
+    expect(result.messages[0].text).toMatch(/sample/i);
+    expect(result.messages[0].text).not.toMatch(/did not understand/i);
   });
 
   it('names the thing that was asked for, so it reads as an answer', async () => {
@@ -982,7 +1012,7 @@ describe('a request that cannot be done yet', () => {
       execute: async () => applied,
     });
 
-    expect(result.messages[1].text).toMatch(/mask/i);
+    expect(result.messages[0].text).toMatch(/mask/i);
   });
 
   it('holds back an action it did resolve but cannot yet send', async () => {
@@ -996,7 +1026,7 @@ describe('a request that cannot be done yet', () => {
 
     expect(execute).not.toHaveBeenCalled();
     expect(result.action).toBeUndefined();
-    expect(result.messages[1].text).toMatch(/name/i);
+    expect(result.messages[0].text).toMatch(/name/i);
   });
 
   /** Nothing to click: the way forward is the sample, not a confirmation. */
@@ -1007,7 +1037,7 @@ describe('a request that cannot be done yet', () => {
       datasetExists: false,
     });
 
-    expect(result.messages[1].card).toBeUndefined();
+    expect(result.messages[0].card).toBeUndefined();
   });
 
   /**
@@ -1032,8 +1062,8 @@ describe('a request that cannot be done yet', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].text).toMatch(/duplicat/i);
-    expect(result.messages[1].text).not.toMatch(/connector/i);
+    expect(result.messages[0].text).toMatch(/duplicat/i);
+    expect(result.messages[0].text).not.toMatch(/connector/i);
   });
 
   /** A guess is still the only evidence when the words carry no topic. */
@@ -1050,7 +1080,7 @@ describe('a request that cannot be done yet', () => {
       }),
     });
 
-    expect(result.messages[1].text).toMatch(/storage/i);
+    expect(result.messages[0].text).toMatch(/storage/i);
   });
 
   it('still refuses what is not dataset work at all', async () => {
@@ -1059,7 +1089,7 @@ describe('a request that cannot be done yet', () => {
       execute: async () => applied,
     });
 
-    expect(result.messages[1].text).toMatch(/only work on this dataset/i);
+    expect(result.messages[0].text).toMatch(/only work on this dataset/i);
   });
 
   it('does what was asked once the prerequisite is there', async () => {
@@ -1147,7 +1177,7 @@ describe('confirming a proposal by typing', () => {
     const result = await answer('no', execute);
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].text).toMatch(/left it|not do/i);
+    expect(result.messages[0].text).toMatch(/left it|not do/i);
   });
 
   it('takes the other ways people decline', async () => {
@@ -1255,7 +1285,7 @@ describe('retrying by typing', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].text).toMatch(/nothing to (try again|retry)/i);
+    expect(result.messages[0].text).toMatch(/nothing to (try again|retry)/i);
   });
 
   /**
@@ -1453,7 +1483,7 @@ describe('a sentence answering a question that asks for a value', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.messages[1].card).toMatchObject({
+    expect(result.messages[0].card).toMatchObject({
       kind: 'confirm',
       confirmAction: { kind: 'set_dataset_name', name: 'telemetry' },
     });
@@ -1499,6 +1529,6 @@ describe('a sentence answering a question that asks for a value', () => {
       kind: 'set_dataset_name',
       name: 'Telemetry Events',
     });
-    expect(result.messages[1].card?.kind).not.toBe('confirm');
+    expect(result.messages[0].card?.kind).not.toBe('confirm');
   });
 });
