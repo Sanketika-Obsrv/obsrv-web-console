@@ -26,6 +26,7 @@ import {
 } from './prerequisites';
 import { isAboutDataset } from './topicality';
 import { sectionForAction } from './previewFocus';
+import { RouterResult } from './router';
 import { MessageCard } from '../messages/types';
 import { NewMessage } from '../session/sessionStore';
 import { Resolution, resolveUtterance } from './ruleResolver';
@@ -76,6 +77,18 @@ export interface TurnDeps {
    * undo stack. Passing it in keeps this module free of session access.
    */
   history?: Message[];
+  /**
+   * Classifies the turn before anything else reads it — an answer, a fresh
+   * request, a reply to a pending card, the user's own question, or a remark
+   * outside the job — and, where the classification calls for one, the
+   * action or actions the model already extracted for it.
+   *
+   * Absent is exactly today's behaviour: everything below this point in the
+   * module runs precisely as it always has. Present, it is tried first, and
+   * only a reading this function cannot settle on its own falls through to
+   * the same pipeline it would have run without one — see `handleRouted`.
+   */
+  route?: (utterance: string) => Promise<RouterResult>;
 }
 
 /** One action that reached the executor, paired with what it reported. */
@@ -221,7 +234,7 @@ type ConfirmCard = Extract<MessageCard, { kind: 'confirm' }>;
  * the whole card, not just the action it would run, is what lets a reply be
  * read against the words the card itself printed, via `readOffer`.
  */
-const pendingConfirmation = (
+export const pendingConfirmation = (
   history: Message[] = [],
 ): ConfirmCard | undefined => {
   const last = [...history]
@@ -257,6 +270,34 @@ const retryTarget = (history: Message[] = []): Action | undefined => {
       : undefined;
 
   return corrected ?? failed.action;
+};
+
+/**
+ * Re-sends whatever last failed.
+ *
+ * Factored out so a router reading of `control: 'retry'` can reach exactly
+ * this, rather than the phrase match below being the only door in — the
+ * words "try again" and the router's own classification of the same intent
+ * must end up running the same thing.
+ */
+const runRetry = async (deps: TurnDeps): Promise<TurnResult> => {
+  const target = retryTarget(deps.history);
+
+  if (!target) {
+    return {
+      messages: [
+        {
+          role: 'assistant',
+          text: 'There is nothing to try again — nothing has failed yet.',
+        },
+      ],
+      applied: [],
+    };
+  }
+
+  const { outcome, message } = await runAction(target, deps);
+
+  return { messages: [message], applied: ran(target, outcome) };
 };
 
 /**
@@ -330,6 +371,232 @@ const runAction = async (
         : {}),
     },
   };
+};
+
+/** The confirm card an inferred action becomes, before it is run. */
+const proposeAction = (action: Action): NewMessage => ({
+  role: 'assistant',
+  text: `I think you mean: ${describeProposal(action)}.`,
+  card: {
+    kind: 'confirm',
+    title: describeProposal(action),
+    confirmLabel: 'Do it',
+    confirmAction: action,
+  },
+  ...(sectionForAction(action) ? { section: sectionForAction(action) } : {}),
+});
+
+/**
+ * What `explain` says, without running anything.
+ *
+ * A stub sentence naming the topic — the real narration is a later commit's
+ * job, alongside `narrate.ts`. What matters here is only that this is a
+ * `say`-only message: `explain` changes nothing, so it must never reach
+ * `deps.execute` or `applied`, whichever tier resolved it.
+ */
+const explainMessage = (
+  action: Extract<Action, { kind: 'explain' }>,
+): NewMessage => ({
+  role: 'assistant',
+  text: action.topic
+    ? `About ${action.topic}: ask me something more specific and I will look at it.`
+    : 'Ask me something more specific and I will look at it.',
+});
+
+/**
+ * Kinds whose effect cannot be asked for again once it is gone — a deleted
+ * field, a removed transformation, a removed join. These always propose,
+ * whatever a `confirm` flag says: the router is a reading of the words, not
+ * a judge of what is safe to do without a click, and the engine keeps that
+ * judgment for itself.
+ */
+const DESTRUCTIVE_KINDS: ReadonlySet<Action['kind']> = new Set([
+  'delete_field',
+  'remove_transformation',
+  'remove_denorm',
+]);
+
+/** What one candidate action produced, and whether a plan behind it should stop. */
+interface StepOutcome {
+  message: NewMessage;
+  applied: AppliedAction[];
+  /**
+   * True when nothing further in the same plan should run: a blocked
+   * prerequisite, a proposal now waiting on a click, and a failed write all
+   * stop a plan the same way a failed restoration already stops `runUndo` —
+   * only a clean, completed run is safe to follow with the next step.
+   */
+  stop: boolean;
+}
+
+/**
+ * Turns one candidate action — the router's own, a follow-on carried
+ * alongside a reply-to-card decision, or (see the call in `runTurn` below)
+ * the no-router resolver's single resolved action — into a message and,
+ * when it actually reached the executor, the applied entry that belongs in
+ * the transcript.
+ *
+ * One place for the destructive-kind safety valve, the prerequisite gate and
+ * the propose-vs-run fork, so a plan of several actions is not three
+ * slightly different copies of the same decision.
+ */
+const runOneStep = async (
+  candidate: { action: Action; confirm?: boolean },
+  deps: TurnDeps,
+): Promise<StepOutcome> => {
+  const { action, confirm } = candidate;
+
+  // Conversation-only: never blocked, never proposed, never executed.
+  if (action.kind === 'explain') {
+    return { message: explainMessage(action), applied: [], stop: true };
+  }
+
+  const blocked = unmetForAction(action, stateOf(deps));
+
+  if (blocked) {
+    return {
+      message: {
+        role: 'assistant',
+        text: blocked.text,
+        failureCode:
+          blocked.requirement === 'dataset' ? 'NO_DATASET' : 'NO_SCHEMA',
+      },
+      applied: [],
+      stop: true,
+    };
+  }
+
+  if (confirm || DESTRUCTIVE_KINDS.has(action.kind)) {
+    return { message: proposeAction(action), applied: [], stop: true };
+  }
+
+  const { outcome, message } = await runAction(action, deps);
+
+  return { message, applied: ran(action, outcome), stop: !outcome?.ok };
+};
+
+/**
+ * Runs a plan of candidate actions in order, stopping at the first one that
+ * does not cleanly complete.
+ *
+ * This is the compound case a reply to a card can carry alongside its
+ * decision — "no, change the name to telemetry" is a decline plus a rename —
+ * and it is the shape the router's own extracted `actions` already come in,
+ * even when there is only one.
+ */
+const runPlan = async (
+  candidates: { action: Action; confirm?: boolean }[],
+  deps: TurnDeps,
+): Promise<{ messages: NewMessage[]; applied: AppliedAction[] }> => {
+  const messages: NewMessage[] = [];
+  const applied: AppliedAction[] = [];
+
+  for (const candidate of candidates) {
+    const step = await runOneStep(candidate, deps);
+
+    messages.push(step.message);
+    applied.push(...step.applied);
+
+    if (step.stop) break;
+  }
+
+  return { messages, applied };
+};
+
+/** Reused wherever a pending card is declined, so the sentence cannot drift. */
+const LEFT_IT_AS_IT_WAS = 'Left it as it was.';
+
+/** Said for an `ask`/`other` turn with nothing of its own to say. */
+const NOT_SURE_FALLBACK = "I'm not sure what you mean.";
+
+/** Said for a capability the engine declines by construction. */
+const OUT_OF_SCOPE_FALLBACK = 'That is not something I can do from here.';
+
+/**
+ * What a router reading settles on its own, before any of today's no-router
+ * pipeline runs — or `undefined`, when it settles nothing and the rest of
+ * `runTurn` should read the same `input` exactly as it would with no router
+ * at all.
+ *
+ * That `undefined` case is deliberate, not an omission: a `reply_to_card`
+ * with no pending card to answer, or with no `decision` the router committed
+ * to, is the router's own uncertainty, and it gets the same non-answer
+ * `readOffer` already gives when it cannot read a reply either — falling
+ * through, not guessing.
+ */
+const handleRouted = async (
+  routed: RouterResult,
+  deps: TurnDeps,
+): Promise<TurnResult | undefined> => {
+  if (routed.control === 'undo') return runUndo(deps);
+  if (routed.control === 'retry') return runRetry(deps);
+
+  // Nothing to write for the user's own question, a remark outside the job,
+  // or a capability the engine declines by construction.
+  if (
+    routed.intent === 'ask' ||
+    routed.intent === 'other' ||
+    routed.outOfScope
+  ) {
+    const fallback = routed.outOfScope
+      ? OUT_OF_SCOPE_FALLBACK
+      : NOT_SURE_FALLBACK;
+
+    return {
+      messages: [{ role: 'assistant', text: routed.reply ?? fallback }],
+      applied: [],
+    };
+  }
+
+  if (routed.intent === 'reply_to_card') {
+    const pendingCard = pendingConfirmation(deps.history);
+    if (!pendingCard) return undefined;
+
+    if (routed.decision === 'decline') {
+      const plan = await runPlan(routed.actions ?? [], deps);
+
+      return {
+        messages: [
+          { role: 'assistant', text: LEFT_IT_AS_IT_WAS },
+          ...plan.messages,
+        ],
+        applied: plan.applied,
+      };
+    }
+
+    if (routed.decision === 'accept') {
+      const { outcome, message } = await runAction(
+        pendingCard.confirmAction,
+        deps,
+      );
+      const cardApplied = ran(pendingCard.confirmAction, outcome);
+
+      if (!outcome?.ok) return { messages: [message], applied: cardApplied };
+
+      const plan = await runPlan(routed.actions ?? [], deps);
+
+      return {
+        messages: [message, ...plan.messages],
+        applied: [...cardApplied, ...plan.applied],
+      };
+    }
+
+    // No decision named: an inconclusive router reading, not a coin flip.
+    return undefined;
+  }
+
+  if (routed.intent === 'answer' || routed.intent === 'request') {
+    // Nothing extracted — a clarify, an ambiguity, a field that did not
+    // resolve. The no-router narration below already knows how to say that
+    // honestly; inventing a placeholder here would only repeat its job.
+    if (!routed.actions?.length) return undefined;
+
+    const plan = await runPlan(routed.actions, deps);
+
+    return { messages: plan.messages, applied: plan.applied };
+  }
+
+  return undefined;
 };
 
 /**
@@ -489,6 +756,26 @@ export const runTurn = async (
   }
 
   /**
+   * The router, when there is one, goes before anything else — the confirm-
+   * card gate, "try again", the resolver. It is tried first because it is
+   * the more complete reading: it has already told an answer from a fresh
+   * request from a reply to a card from a remark outside the job, which is
+   * exactly the set of distinctions the code below has to work out for
+   * itself, one branch at a time, from the same few signals.
+   *
+   * `undefined` from `handleRouted` means the router settled nothing this
+   * turn was worth acting on directly — a `reply_to_card` with no pending
+   * card, or with no decision it committed to, most often — and the rest of
+   * this function runs exactly as it would with no router at all.
+   */
+  if (deps.route) {
+    const routed = await deps.route(input);
+    const handled = await handleRouted(routed, deps);
+
+    if (handled) return handled;
+  }
+
+  /**
    * A proposal is answered in words, since there is nothing to click.
    *
    * It is read before the agenda's own question because a proposal is the
@@ -520,7 +807,7 @@ export const runTurn = async (
 
   if (pendingCard && offer === 'decline') {
     return {
-      messages: [{ role: 'assistant', text: 'Left it as it was.' }],
+      messages: [{ role: 'assistant', text: LEFT_IT_AS_IT_WAS }],
       applied: [],
     };
   }
@@ -533,23 +820,7 @@ export const runTurn = async (
    * the same way it is the undo stack.
    */
   if (RETRIES.test(input.trim())) {
-    const target = retryTarget(deps.history);
-
-    if (!target) {
-      return {
-        messages: [
-          {
-            role: 'assistant',
-            text: 'There is nothing to try again — nothing has failed yet.',
-          },
-        ],
-        applied: [],
-      };
-    }
-
-    const { outcome, message } = await runAction(target, deps);
-
-    return { messages: [message], applied: ran(target, outcome) };
+    return runRetry(deps);
   }
 
   /**
@@ -751,35 +1022,33 @@ export const runTurn = async (
     };
   }
 
+  /**
+   * A destructive kind always proposes here too, not only when it reaches
+   * `runOneStep` by way of a router — `DESTRUCTIVE_KINDS` is the engine's
+   * own safety valve, and an exact rule match is confident evidence of what
+   * the words meant, not of whether undoing the result is worth a click.
+   */
   if (
     resolution.status === 'resolved' &&
     resolution.action &&
-    resolution.needsConfirmation
+    (resolution.needsConfirmation ||
+      DESTRUCTIVE_KINDS.has(resolution.action.kind))
   ) {
-    const proposed = resolution.action;
-
-    return {
-      messages: [
-        {
-          role: 'assistant',
-          text: `I think you mean: ${describeProposal(proposed)}.`,
-          card: {
-            kind: 'confirm',
-            title: describeProposal(proposed),
-            confirmLabel: 'Do it',
-            confirmAction: proposed,
-          },
-          ...(sectionForAction(proposed)
-            ? { section: sectionForAction(proposed) }
-            : {}),
-        },
-      ],
-      applied: [],
-    };
+    return { messages: [proposeAction(resolution.action)], applied: [] };
   }
 
   if (resolution.status === 'resolved' && resolution.action?.kind === 'undo') {
     return runUndo(deps);
+  }
+
+  // Conversation-only, here exactly as it is from the router: `explain`
+  // writes nothing, so it must never reach `deps.execute` below, whichever
+  // tier — the rules or the model — is the one that resolved it.
+  if (
+    resolution.status === 'resolved' &&
+    resolution.action?.kind === 'explain'
+  ) {
+    return { messages: [explainMessage(resolution.action)], applied: [] };
   }
 
   if (resolution.status !== 'resolved' || !resolution.action) {

@@ -3,7 +3,8 @@ import { diagnose } from './errorMap';
 import { Prompt } from './agenda';
 import { buildFieldVocabulary } from './fieldVocabulary';
 import { ExecutionOutcome } from './executor';
-import { awaitingInput, runTurn } from './turn';
+import { awaitingInput, runTurn, TurnDeps } from './turn';
+import { RouterResult } from './router';
 import { MessageCard } from '../messages/types';
 import { Message } from '../session/types';
 
@@ -1113,6 +1114,31 @@ describe('answering the question on the table', () => {
     expect(execute).not.toHaveBeenCalled();
     expect(result.messages[0].card?.kind).toBe('confirm');
   });
+
+  it('proposes a destructive action even when the rules resolved it outright, no router involved', async () => {
+    const execute = jest.fn(async () => applied);
+
+    // An exact rule match ("delete the X field") is confident evidence of
+    // what the words meant, not of whether undoing a deleted field is worth
+    // skipping a click for — `needsConfirmation` is falsy here on purpose,
+    // the way an exact match always resolves.
+    const result = await runTurn('delete the order_id field', {
+      vocabulary,
+      execute,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.95,
+        action: { kind: 'delete_field', path: 'order_id' },
+      }),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.applied).toEqual([]);
+    expect(result.messages[0].card).toMatchObject({
+      kind: 'confirm',
+      confirmAction: { kind: 'delete_field', path: 'order_id' },
+    });
+  });
 });
 
 /**
@@ -1731,5 +1757,449 @@ describe('a sentence answering a question that asks for a value', () => {
       name: 'Telemetry Events',
     });
     expect(result.messages[0].card?.kind).not.toBe('confirm');
+  });
+});
+
+/**
+ * `TurnDeps.route` is the seam this piece adds: when it is present, `runTurn`
+ * tries it before anything else on a typed turn, and every existing branch
+ * above — the confirm-card gate, the retry phrase, the resolver fallback —
+ * still runs unchanged whenever the router leaves a turn unsettled.
+ */
+describe('the router', () => {
+  /** Compiles only if `route` is optional on `TurnDeps` — nothing runs this. */
+  const typeCheck: TurnDeps = { vocabulary, execute: async () => applied };
+  void typeCheck;
+
+  const dedupProposal: Message[] = [
+    { id: 'u1', role: 'user', text: 'no dupes please', createdAt: 0 },
+    {
+      id: 'a1',
+      role: 'assistant',
+      createdAt: 0,
+      text: 'I think you mean: deduplicate on order_id.',
+      card: {
+        kind: 'confirm',
+        title: 'Deduplicate on order_id',
+        confirmAction: { kind: 'set_dedup', enabled: true, key: 'order_id' },
+      },
+    },
+  ];
+
+  const routed = (
+    text: string,
+    route: () => Promise<RouterResult>,
+    overrides: Partial<TurnDeps> = {},
+  ) =>
+    runTurn(text, {
+      vocabulary,
+      execute: async () => applied,
+      route,
+      ...overrides,
+    });
+
+  describe('a compound reply to a card', () => {
+    it('declines the card, then runs the follow-on that came with it', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'NO , change name to telemetry',
+        async () => ({
+          intent: 'reply_to_card',
+          decision: 'decline',
+          actions: [
+            {
+              action: { kind: 'set_dataset_name', name: 'telemetry' },
+              confirm: false,
+            },
+          ],
+        }),
+        { execute, history: dedupProposal },
+      );
+
+      expect(execute).toHaveBeenCalledTimes(1);
+      expect(execute).toHaveBeenCalledWith({
+        kind: 'set_dataset_name',
+        name: 'telemetry',
+      });
+      // Never the dedup key the card itself was waiting on — the decline
+      // dropped that, and only the follow-on ran.
+      expect(execute).not.toHaveBeenCalledWith({
+        kind: 'set_dedup',
+        enabled: true,
+        key: 'order_id',
+      });
+
+      expect(result.messages).toHaveLength(2);
+      expect(result.messages[0].text).toMatch(/left it/i);
+      expect(result.messages[1].text).toMatch(/telemetry/i);
+
+      expect(result.applied).toEqual([
+        {
+          action: { kind: 'set_dataset_name', name: 'telemetry' },
+          outcome: applied,
+        },
+      ]);
+    });
+
+    it('proposes the follow-on instead of running it, when it still needs a yes', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'NO , change name to telemetry',
+        async () => ({
+          intent: 'reply_to_card',
+          decision: 'decline',
+          actions: [
+            {
+              action: { kind: 'set_dataset_name', name: 'telemetry' },
+              confirm: true,
+            },
+          ],
+        }),
+        { execute, history: dedupProposal },
+      );
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.messages).toHaveLength(2);
+      expect(result.messages[0].text).toMatch(/left it/i);
+      expect(result.messages[1].card).toMatchObject({
+        kind: 'confirm',
+        confirmAction: { kind: 'set_dataset_name', name: 'telemetry' },
+      });
+      expect(result.applied).toEqual([]);
+    });
+
+    it('stops a plan at the first follow-on that fails, keeping what already ran', async () => {
+      const execute = jest
+        .fn<Promise<ExecutionOutcome>, [Action]>()
+        .mockResolvedValueOnce(applied)
+        .mockResolvedValueOnce({
+          ok: false,
+          code: 'PATCH_FAILED',
+          error: 'The dataset is outdated.',
+        });
+
+      const result = await routed(
+        'no, rename it and make it an event dataset',
+        async () => ({
+          intent: 'reply_to_card',
+          decision: 'decline',
+          actions: [
+            {
+              action: { kind: 'set_dataset_name', name: 'telemetry' },
+              confirm: false,
+            },
+            {
+              action: { kind: 'set_dataset_type', datasetType: 'event' },
+              confirm: false,
+            },
+          ],
+        }),
+        { execute, history: dedupProposal },
+      );
+
+      expect(execute).toHaveBeenCalledTimes(2);
+      // "Left it as it was", the rename, then the failure — nothing beyond it.
+      expect(result.messages).toHaveLength(3);
+      expect(result.applied).toHaveLength(2);
+      expect(result.applied[0].outcome.ok).toBe(true);
+      expect(result.applied[1].outcome.ok).toBe(false);
+      expect(result.applied[1].outcome.ok).toBe(false);
+      expect(result.messages[2].failureCode).toBe('PATCH_FAILED');
+    });
+
+    it('falls through to the ordinary confirm-card reading when there is no pending card', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'yes',
+        async () => ({ intent: 'reply_to_card', decision: 'accept' }),
+        { execute, history: [] },
+      );
+
+      // Nothing was pending, so the router's own reading of this turn as a
+      // reply to a card means nothing — it falls through and "yes" resolves
+      // as an ordinary, unresolvable instruction.
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+    });
+
+    it('falls through to the ordinary confirm-card reading when the router did not commit to a decision', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'maybe',
+        async () => ({ intent: 'reply_to_card' }),
+        { execute, history: dedupProposal },
+      );
+
+      // The router named no decision, so this is read exactly as it would be
+      // with no router at all: `readOffer` finds neither "yes" nor "no" in
+      // "maybe", and the card is left open rather than guessed at.
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.messages[0].text).not.toMatch(/left it/i);
+    });
+  });
+
+  describe('a turn that writes nothing', () => {
+    it('says what "other" replied to, verbatim, and touches nothing', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'good morning',
+        async () => ({ intent: 'other', reply: 'Good morning.' }),
+        { execute },
+      );
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+      expect(result.messages).toEqual([
+        { role: 'assistant', text: 'Good morning.' },
+      ]);
+    });
+
+    it('falls back to a minimal line when "other" carries no reply', async () => {
+      const result = await routed('hmm', async () => ({ intent: 'other' }));
+
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].role).toBe('assistant');
+      expect(result.messages[0].text.length).toBeGreaterThan(0);
+      expect(result.applied).toEqual([]);
+    });
+
+    it("says the same for the user's own question, an 'ask'", async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'what is a master dataset?',
+        async () => ({
+          intent: 'ask',
+          reply: 'A master dataset is reference data other datasets join to.',
+        }),
+        { execute },
+      );
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+      expect(result.messages[0].text).toMatch(/master dataset/i);
+    });
+
+    it('declines an out-of-scope capability without ever saving', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'publish it',
+        async () => ({ intent: 'request', outOfScope: 'publish' }),
+        { execute },
+      );
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+      expect(result.applied.some(({ action }) => action.kind === 'save')).toBe(
+        false,
+      );
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].role).toBe('assistant');
+    });
+  });
+
+  describe('an answer or a request the router already extracted', () => {
+    it('runs the action the router scoped to the question on the table', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'Event',
+        async () => ({
+          intent: 'answer',
+          actions: [
+            {
+              action: { kind: 'set_dataset_type', datasetType: 'event' },
+              confirm: false,
+            },
+          ],
+        }),
+        { execute },
+      );
+
+      expect(execute).toHaveBeenCalledWith({
+        kind: 'set_dataset_type',
+        datasetType: 'event',
+      });
+      expect(result.applied).toEqual([
+        {
+          action: { kind: 'set_dataset_type', datasetType: 'event' },
+          outcome: applied,
+        },
+      ]);
+    });
+
+    it('falls through to the ordinary narration when nothing was extracted', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'quack quack',
+        async () => ({ intent: 'request', step: 'storage', actions: [] }),
+        { execute },
+      );
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+      expect(result.messages[0].text.length).toBeGreaterThan(0);
+    });
+
+    it('blocks an extracted action that fails the prerequisite check, same as the no-router path', async () => {
+      const execute = jest.fn(async () => applied);
+      const empty = buildFieldVocabulary([]);
+
+      const result = await runTurn('dedup on order_id', {
+        vocabulary: empty,
+        execute,
+        route: async () => ({
+          intent: 'answer',
+          actions: [
+            {
+              action: { kind: 'set_dedup', enabled: true, key: 'order_id' },
+              confirm: false,
+            },
+          ],
+        }),
+      });
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+      expect(result.messages[0].text).toMatch(/sample/i);
+    });
+
+    it('still proposes a destructive action even when the router marked it as settled', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'remove order_id',
+        async () => ({
+          intent: 'answer',
+          actions: [
+            {
+              action: { kind: 'delete_field', path: 'order_id' },
+              confirm: false,
+            },
+          ],
+        }),
+        { execute },
+      );
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.messages[0].card).toMatchObject({
+        kind: 'confirm',
+        confirmAction: { kind: 'delete_field', path: 'order_id' },
+      });
+      expect(result.applied).toEqual([]);
+    });
+  });
+
+  describe('explain, from either tier', () => {
+    it('never reaches the executor when the rules resolve it', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await runTurn('what is pii', {
+        vocabulary,
+        execute,
+        resolve: async () => ({
+          status: 'resolved',
+          confidence: 0.9,
+          action: { kind: 'explain', topic: 'pii' },
+        }),
+      });
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].text).toMatch(/pii/i);
+    });
+
+    it('never reaches the executor when the router scoped it instead', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'what is pii',
+        async () => ({
+          intent: 'answer',
+          actions: [
+            { action: { kind: 'explain', topic: 'pii' }, confirm: false },
+          ],
+        }),
+        { execute },
+      );
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].text).toMatch(/pii/i);
+    });
+  });
+
+  describe('conversation controls read by the router', () => {
+    it('undoes the same way a typed "undo" already does', async () => {
+      const execute = jest.fn(async () => applied);
+      const history: Message[] = [
+        {
+          id: 'm1',
+          role: 'assistant',
+          createdAt: 0,
+          text: 'Done — set order_id to string.',
+          action: {
+            kind: 'set_data_type',
+            path: 'order_id',
+            dataType: 'string',
+          },
+          inverse: [
+            { kind: 'set_data_type', path: 'order_id', dataType: 'double' },
+          ],
+        },
+      ];
+
+      await routed(
+        'put that back',
+        async () => ({ intent: 'other', control: 'undo' }),
+        { execute, history },
+      );
+
+      expect(execute).toHaveBeenCalledWith({
+        kind: 'set_data_type',
+        path: 'order_id',
+        dataType: 'double',
+      });
+    });
+
+    it('retries the same way typing "try again" already does', async () => {
+      const execute = jest.fn(async () => applied);
+      const history: Message[] = [
+        {
+          id: 'u1',
+          role: 'user',
+          text: 'enable the real-time store',
+          createdAt: 0,
+        },
+        {
+          id: 'a1',
+          role: 'assistant',
+          createdAt: 0,
+          text: 'The server did not answer in time.',
+          failureCode: 'TIMEOUT',
+          action: { kind: 'set_storage', realtime: true },
+        },
+      ];
+
+      await routed(
+        'go on then, once more',
+        async () => ({ intent: 'other', control: 'retry' }),
+        { execute, history },
+      );
+
+      expect(execute).toHaveBeenCalledWith({
+        kind: 'set_storage',
+        realtime: true,
+      });
+    });
   });
 });

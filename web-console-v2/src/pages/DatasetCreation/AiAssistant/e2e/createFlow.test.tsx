@@ -48,6 +48,16 @@ jest.mock('services/http', () => {
  * stub that understands nothing: the rules run first, and what this file
  * asserts is the wiring from a typed instruction to what the server ends up
  * holding, not the model's judgement.
+ *
+ * `runTurn` calls the model twice when a router is wired in — once to
+ * classify the turn, once (only when the classification calls for it) to
+ * extract an action — and both calls go through this same stub. A reply of
+ * `{"intent":"request"}` satisfies the first call (it validates against the
+ * router's schema, names no step, and so carries no actions), which is what
+ * lets `handleRouted` fall the turn straight through to the rules exactly as
+ * it always has; and it fails the second call's action schema exactly the
+ * way the old empty string did, for the same reason — it has no `kind` — so
+ * the rules are still what actually settles every instruction here.
  */
 jest.mock('../model/tiers', () => ({
   ...jest.requireActual('../model/tiers'),
@@ -59,7 +69,7 @@ jest.mock('../model/engineClient', () => ({
   isModelCached: async () => true,
   removeModel: async () => undefined,
   loadEngine: async () => ({
-    complete: async () => '',
+    complete: async () => '{"intent":"request"}',
     unload: async () => undefined,
   }),
 }));

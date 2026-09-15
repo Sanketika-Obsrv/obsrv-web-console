@@ -50,7 +50,7 @@ import {
 import { looksLikeData, summariseSample } from './engine/pastedData';
 import { recap } from './engine/recap';
 import { kindsForUtterance } from './engine/prerequisites';
-import { awaitingInput, runTurn } from './engine/turn';
+import { awaitingInput, pendingConfirmation, runTurn } from './engine/turn';
 import { readSampleFile } from './messages/sampleParse';
 import {
   LoadProgress,
@@ -59,7 +59,7 @@ import {
   loadEngine,
 } from './model/engineClient';
 import { REQUIRED_MODEL } from './model/catalog';
-import { resolveWithModel } from './model/modelResolver';
+import { resolveTurn, resolveWithModel } from './model/modelResolver';
 import { stepForKinds } from './model/stepSchema';
 import { Capability, detectCapability } from './model/tiers';
 import { auditFileName, buildAuditTrail } from './session/auditTrail';
@@ -658,6 +658,56 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                             question: asked.current.step,
                             questionText: asked.current.text,
                           }
+                        : {}),
+                      hasDraft: Boolean(datasetId),
+                      vocabulary,
+                      history,
+                      connectors,
+                      connectorProperties: fillableProps(uiSpec).map(
+                        (prop) => prop.key,
+                      ),
+                      ...(masterDatasets ? { masterDatasets } : {}),
+                    },
+                    { engine: loaded },
+                  );
+                },
+                /**
+                 * Call A. Reads what *kind* of turn this is before anything
+                 * downstream tries to act on it, so `runTurn`'s router
+                 * branch can settle an `ask`, an `other`, a reply to a card,
+                 * or an out-of-scope request without ever reaching call B —
+                 * the two-call split `resolveTurn` exists for.
+                 *
+                 * Given the same question, vocabulary and history `resolve`
+                 * already threads through, but none of `resolve`'s own
+                 * step-override reasoning: that exists to pick the right
+                 * grammar for an *extracting* call, and here the router
+                 * itself is what decides which step, if any, this turn is
+                 * about — from its own reading of the words, not from a
+                 * local guess at their topic.
+                 */
+                route: (utterance: string) => {
+                  const pendingCard = pendingConfirmation(history);
+
+                  return resolveTurn(
+                    {
+                      utterance,
+                      step,
+                      ...(asked.current
+                        ? {
+                            question: asked.current.step,
+                            questionText: asked.current.text,
+                          }
+                        : {}),
+                      ...(asked.current?.card?.kind === 'choice'
+                        ? {
+                            optionLabels: asked.current.card.options.map(
+                              (option) => option.label,
+                            ),
+                          }
+                        : {}),
+                      ...(pendingCard
+                        ? { pendingCardTitle: pendingCard.title }
                         : {}),
                       hasDraft: Boolean(datasetId),
                       vocabulary,
