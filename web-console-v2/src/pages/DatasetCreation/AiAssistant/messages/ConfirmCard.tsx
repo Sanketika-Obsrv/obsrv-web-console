@@ -1,5 +1,6 @@
 import { List, ListItem, Paper, Stack, Typography } from '@mui/material';
 import React from 'react';
+import { CONFIRM_LABELS } from '../engine/answer';
 
 export interface ConfirmCardProps {
   title: string;
@@ -32,7 +33,13 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ title, summary }) => (
       )}
 
       <Typography variant="caption" component="p" color="text.secondary">
-        Say yes to go ahead, or no to leave it.
+        {/*
+          Read from the same words `readOffer` matches a reply against, so
+          the two can never say something different from what is printed
+          here.
+        */}
+        Say {CONFIRM_LABELS.accept} to go ahead, or {CONFIRM_LABELS.decline} to
+        leave it.
       </Typography>
     </Stack>
   </Paper>

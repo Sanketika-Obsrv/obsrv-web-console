@@ -15,7 +15,7 @@
  */
 import { Action, DATA_TYPES, DataType } from './actions';
 import { Prompt } from './agenda';
-import { ChoiceOption } from '../messages/types';
+import { ChoiceOption, MessageCard } from '../messages/types';
 
 /** Words that carry no choice, so they are ignored when comparing. */
 const STOPWORDS = new Set([
@@ -100,43 +100,6 @@ const DECLINE_WORDS = new Set([
   'yet',
 ]);
 
-const AFFIRMS =
-  /^(?:yes|yeah|yep|yup|ok|okay|sure|do it|go ahead|go on|please do|save|publish|confirm|proceed|looks? (?:right|good)|that'?s right)\b/i;
-
-/** Calling a proposal off, as opposed to declining an offered option. */
-const CANCELS = /^(?:cancel|stop|forget it|never ?mind|not that)\b/i;
-
-/**
- * Whether a reply agrees to what was proposed.
- *
- * Exported because a proposal is no longer a button: the turn loop reads a
- * typed yes against the last thing the assistant offered, and it must read
- * it exactly as a confirmation card would have.
- */
-export const isAffirmative = (utterance: string): boolean =>
-  AFFIRMS.test(utterance.trim());
-
-/** Whether a reply calls a proposal off. */
-export const isNegative = (utterance: string): boolean => {
-  const trimmed = utterance.replace(TIME_PHRASE, 'now').trim();
-
-  return (
-    CANCELS.test(trimmed) || DECLINES.test(trimmed) || bareDecline(trimmed)
-  );
-};
-
-/**
- * Replies at a question that asks for a value, which are not values.
- *
- * A question with no options takes the whole utterance, which makes it the
- * one place a command has to be let past — otherwise "undo" names the
- * dataset "undo".
- */
-const COMMANDS =
-  /^(?:undo|revert|redo|help|why|what|which|how|when|who|explain|tell me|start over|cancel|stop|quit|wait|back|go back|nevermind|never mind|save|publish)\b/i;
-
-const MAX_VALUE = 100;
-
 /**
  * A request aimed at the assistant, rather than a value for it to use.
  *
@@ -160,9 +123,6 @@ const ADDRESSED =
  */
 export const isAddressedRequest = (utterance: string): boolean =>
   ADDRESSED.test(utterance.trim());
-
-/** A name is short. Six words is generous for one; a request is longer. */
-const MAX_VALUE_WORDS = 6;
 
 const words = (text: string): string[] =>
   text
@@ -259,6 +219,51 @@ const bareDecline = (utterance: string): boolean =>
   NEGATES.test(utterance.trim()) &&
   content(utterance).every((word) => DECLINE_WORDS.has(word));
 
+/**
+ * The words a confirm card offers, so a reply is read against exactly what
+ * was printed — never a list of ways a user might phrase yes or no.
+ * `ConfirmCard.tsx` builds its caption from this same constant, so the two
+ * cannot drift apart.
+ */
+export const CONFIRM_LABELS = { accept: 'yes', decline: 'no' } as const;
+
+export type OfferReply = 'accept' | 'decline';
+
+/**
+ * Whether a reply is wholly accounted for by one printed word — either the
+ * reply *is* the word, or it says nothing beyond it.
+ *
+ * The tier where the word merely turns up among other words is deliberately
+ * left out. That is the bug `readOffer` exists to fix: "no, change name to
+ * telemetry" contains "no", and is not a reply to the card at all.
+ */
+const isBareLabel = (label: string, utterance: string): boolean => {
+  const target = words(label);
+  const spoken = content(utterance);
+
+  return target.join(' ') === spoken.join(' ') || subset(spoken, target);
+};
+
+/**
+ * A reply to a confirmation, read against the words the card itself
+ * printed.
+ *
+ * Anything more than the label is not a reply to the card at all — "NO,
+ * change name to telemetry" carries a rename, and reading its leading "no"
+ * as a decline discarded that rename silently. Found in the browser.
+ */
+export const readOffer = (
+  card: Extract<MessageCard, { kind: 'confirm' }>,
+  utterance: string,
+): OfferReply | undefined => {
+  if (!card || !utterance?.trim()) return undefined;
+
+  if (isBareLabel(CONFIRM_LABELS.accept, utterance)) return 'accept';
+  if (isBareLabel(CONFIRM_LABELS.decline, utterance)) return 'decline';
+
+  return undefined;
+};
+
 const answerToChoice = (
   options: ChoiceOption[],
   raw: string,
@@ -310,59 +315,63 @@ const answerToConflict = (
   // Only offered candidates are honoured. A type the sample never held would
   // narrow values the user actually has, which is the one thing the conflict
   // question exists to prevent.
-  if (named.length > 1) return undefined;
-
-  /**
-   * Dismissing is a write — it marks the conflict resolved with whatever type
-   * the API already chose — so it takes saying so. A plain "no" is not an
-   * answer to "which should it be?", and treating it as one would settle the
-   * field's type on the user's behalf.
-   */
-  return /^(?:keep|leave|dismiss)\b/i.test(utterance.trim()) ||
-    /current type|as it is|as is|unchanged/i.test(utterance)
-    ? { kind: 'resolve_conflict', path, mode: 'dismiss' }
-    : undefined;
+  return undefined;
 };
 
 /**
  * A question that asks for a value in prose.
  *
  * What the value *means* is the question's own business — it supplies
- * `freeText` — so all that happens here is deciding whether the reply is a
- * value at all, and trimming the way people say it.
+ * `freeText` — so all this does is hand the reply to it. Nothing is written
+ * unconfirmed from here any more: the checks that used to sit here — a
+ * length cap, a trailing "?", a list of commands, a list of verbs aimed at
+ * the assistant — existed only to make an unconfirmed write "safe enough" to
+ * skip a yes. They were never safe, only a guess: "good morning" at the name
+ * question passed every one of them and was written as the dataset's name.
+ * So every prose answer is a proposal now, whatever it says — the cost of a
+ * wrong guess is one more word from the user, not a write to find and undo.
  */
 const answerToProse = (
   freeText: (value: string) => Action,
   utterance: string,
-): Action | undefined => {
+): AnswerToResult | undefined => {
   const said = utterance.trim();
-  if (!said || said.length > MAX_VALUE || said.endsWith('?')) return undefined;
-  if (COMMANDS.test(said) || ADDRESSED.test(said)) return undefined;
-  if (said.split(/\s+/).length > MAX_VALUE_WORDS) return undefined;
+  if (!said) return undefined;
 
-  return freeText(said);
+  return { action: freeText(said), confirm: true };
 };
 
+/** What `answerTo` makes of a reply, and whether it needs a yes first. */
+export interface AnswerToResult {
+  action: Action;
+  /** True when this reading is a guess that still needs confirming. */
+  confirm?: boolean;
+}
+
 /**
- * The action a reply means, given the question on the table.
+ * The action a reply means, given the question on the table, and whether
+ * that reading is settled enough to write without asking again.
  *
- * Returns nothing when the reply is not an answer — a command, a question
- * back, or an instruction the question did not offer. The caller then falls
- * back to resolving it as a free-standing request, which is what keeps
- * typing anything at any time possible.
+ * Returns nothing when the reply is not an answer — a question back, or an
+ * instruction the question did not offer. The caller then falls back to
+ * resolving it as a free-standing request, which is what keeps typing
+ * anything at any time possible.
  */
 export const answerTo = (
   prompt: Prompt | undefined,
   utterance: string,
-): Action | undefined => {
+): AnswerToResult | undefined => {
   if (!prompt || !utterance?.trim()) return undefined;
 
   const card = prompt.card;
 
-  if (card?.kind === 'choice') return answerToChoice(card.options, utterance);
+  if (card?.kind === 'choice') {
+    const action = answerToChoice(card.options, utterance);
+    return action ? { action } : undefined;
+  }
 
   if (card?.kind === 'conflict') {
-    return answerToConflict(
+    const action = answerToConflict(
       card.path,
       card.candidates
         .map((candidate) => candidate.dataType)
@@ -371,10 +380,15 @@ export const answerTo = (
         ),
       utterance,
     );
+    return action ? { action } : undefined;
   }
 
   if (card?.kind === 'confirm') {
-    return AFFIRMS.test(utterance.trim()) ? card.confirmAction : undefined;
+    // Already a yes to a card that was on screen, so nothing further needs
+    // confirming — a decline, or a reply that is neither, answers nothing.
+    return readOffer(card, utterance) === 'accept'
+      ? { action: card.confirmAction }
+      : undefined;
   }
 
   // Questions with no options. Two ask for a value in prose and say what to

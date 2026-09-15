@@ -817,6 +817,54 @@ describe('something that is not dataset work', () => {
 
     expect(result.messages[0].text).toContain('Which field is the timestamp?');
   });
+
+  /**
+   * This used to be skipped outright whenever any question was on the
+   * table, on the theory that a question narrows what could be meant. It
+   * does not narrow *this* — a guess at "what is the weather in Bangalore"
+   * is off-topic whether or not a choice question happens to be pending.
+   * A question that takes prose is still exempt, since it has no closed
+   * vocabulary to fail against; see the name-question tests below.
+   */
+  it('still refuses off-topic input when a choice question is on the table', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('what is the weather in Bangalore', {
+      vocabulary,
+      execute,
+      prompt: {
+        step: 'storage',
+        text: 'Where should this data be stored?',
+        card: {
+          kind: 'choice',
+          options: [
+            {
+              label: 'Real-time store',
+              action: { kind: 'set_storage', realtime: true },
+            },
+            {
+              label: 'Lakehouse',
+              action: { kind: 'set_storage', lakehouse: true },
+            },
+          ],
+        },
+      },
+      // A small model asked to answer whatever is on the table will find
+      // *something* — even for this. Standing in for that here, so the
+      // check under test is the one that catches it, not the mock's lack
+      // of imagination.
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.5,
+        needsConfirmation: true,
+        action: { kind: 'set_storage', lakehouse: true },
+      }),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).toMatch(/only work on this dataset/i);
+    expect(result.messages[0].card).toBeUndefined();
+  });
 });
 
 describe('answering the question on the table', () => {
@@ -863,15 +911,72 @@ describe('answering the question on the table', () => {
     expect(result.messages[0].card?.kind).not.toBe('confirm');
   });
 
-  it('takes prose as the answer where the question asked for prose', async () => {
+  /**
+   * A prose answer is never written outright any more — it is a proposal,
+   * exactly like an inferred guess. "good morning" at this same question
+   * used to pass straight through and become the dataset's name; found in
+   * the browser.
+   */
+  it('proposes prose at a question that asked for it, rather than writing it', async () => {
     const execute = jest.fn(async () => applied);
 
-    await asked(NAME, 'My Orders', execute);
+    const result = await asked(NAME, 'My Orders', execute);
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].card).toMatchObject({
+      kind: 'confirm',
+      confirmAction: { kind: 'set_dataset_name', name: 'My Orders' },
+    });
+  });
+
+  /** Confirming it is what actually writes it. */
+  it('writes the proposed name once it is confirmed', async () => {
+    const execute = jest.fn(async () => applied);
+
+    await runTurn(
+      { kind: 'set_dataset_name', name: 'My Orders' },
+      { vocabulary, execute },
+    );
 
     expect(execute).toHaveBeenCalledWith({
       kind: 'set_dataset_name',
       name: 'My Orders',
     });
+  });
+
+  /**
+   * Removing the guards that used to sit inside the matcher does not mean a
+   * request aimed at the assistant gets named as a dataset — it is refused
+   * outright, the same as it would be with a model in the loop, because the
+   * check that catches it lives in the turn loop now, not in the matcher.
+   */
+  it('refuses a request dressed as a name, even with no model to catch it', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await asked(NAME, 'write me a poem about ducks', execute);
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).toMatch(/only work on this dataset/i);
+    expect(result.messages[0].card).toBeUndefined();
+  });
+
+  /**
+   * The prerequisite check used to run only for a fresh instruction — an
+   * answer to the question on the table, read by the matcher, ran before
+   * anything asked whether there was even a dataset to change yet.
+   */
+  it('checks the prerequisite before an answer to the question runs, not after', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('lakehouse', {
+      vocabulary,
+      execute,
+      prompt: STORAGE,
+      datasetExists: false,
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).toMatch(/needs a dataset first/i);
   });
 
   /**
@@ -922,7 +1027,10 @@ describe('answering the question on the table', () => {
   it('proposes an inferred action even when it answers the question', async () => {
     const execute = jest.fn(async () => applied);
 
-    const result = await runTurn('put it in the lake', {
+    // On-topic ("storage" is the console's own word for this), but not an
+    // exact match for either offered label — a vague reply the model still
+    // has to be trusted to read, and confirmed before it is written.
+    const result = await runTurn('keep it in cheap storage', {
       vocabulary,
       execute,
       prompt: STORAGE,
@@ -987,7 +1095,10 @@ describe('answering the question on the table', () => {
   it('still confirms an inferred action about something else', async () => {
     const execute = jest.fn(async () => applied);
 
-    const result = await runTurn('something only a model would parse', {
+    // On-topic (it names a field, and starts with an instruction verb), but
+    // about something the storage question never offered — the model's
+    // guess still gets confirmed rather than performed or refused.
+    const result = await runTurn('remove a field entirely', {
       vocabulary,
       execute,
       prompt: STORAGE,
@@ -1179,8 +1290,12 @@ describe('confirming a proposal by typing', () => {
     });
   });
 
-  it('takes the other ways people say yes', async () => {
-    for (const said of ['do it', 'go ahead', 'yes please', 'sure']) {
+  /**
+   * Read against the card's own printed word, not a list of ways someone
+   * might phrase agreement — a bare "yes", or one with nothing beyond it.
+   */
+  it('takes the other ways of saying the card’s own word', async () => {
+    for (const said of ['yes', 'Yes!', 'yes please']) {
       const execute = jest.fn(async () => applied);
       await answer(said, execute);
 
@@ -1188,6 +1303,26 @@ describe('confirming a proposal by typing', () => {
         said,
         called: 1,
       });
+    }
+  });
+
+  /**
+   * "Do it", "go ahead" and "sure" were an invented list of ways to say yes,
+   * matched nowhere the card printed. They no longer answer the card at
+   * all — they fall through and are resolved as fresh instructions, which
+   * for words this plain resolve to nothing rather than to the pending
+   * dedup key.
+   */
+  it('no longer reads an invented phrase as an answer to the card', async () => {
+    for (const said of ['do it', 'go ahead', 'sure']) {
+      const execute = jest.fn(async () => applied);
+      const result = await answer(said, execute);
+
+      expect({ said, called: execute.mock.calls.length }).toEqual({
+        said,
+        called: 0,
+      });
+      expect(result.messages[0].text).not.toMatch(/left it/i);
     }
   });
 
@@ -1200,16 +1335,62 @@ describe('confirming a proposal by typing', () => {
     expect(result.messages[0].text).toMatch(/left it|not do/i);
   });
 
-  it('takes the other ways people decline', async () => {
-    for (const said of ['cancel', 'no thanks', 'not that']) {
+  it('still declines on "no thanks" — a bare "no" with nothing beyond it', async () => {
+    const execute = jest.fn(async () => applied);
+    const result = await answer('no thanks', execute);
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).toMatch(/left it|not do/i);
+  });
+
+  /**
+   * "Cancel" and "not that" were an invented list of ways to decline,
+   * matched nowhere the card printed "no". They no longer answer the card
+   * at all — they fall through and are resolved as fresh instructions,
+   * which for words this plain resolve to nothing.
+   */
+  it('no longer reads "cancel" or "not that" as a decline', async () => {
+    for (const said of ['cancel', 'not that']) {
       const execute = jest.fn(async () => applied);
-      await answer(said, execute);
+      const result = await answer(said, execute);
 
       expect({ said, called: execute.mock.calls.length }).toEqual({
         said,
         called: 0,
       });
+      expect(result.messages[0].text).not.toMatch(/left it/i);
     }
+  });
+
+  /**
+   * A reply that carries more than the card's own words is not an answer to
+   * it at all — falling through lets the rest of the sentence be resolved
+   * as an ordinary instruction, rather than the rename being silently
+   * discarded as though "no" alone had been said. Found in the browser.
+   */
+  it('falls through to resolve the rest of the sentence when the reply carries more than the card asks for', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('NO , change name to telemetry', {
+      vocabulary,
+      execute,
+      sampleRows: SAMPLE,
+      history: proposal,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.7,
+        needsConfirmation: true,
+        action: { kind: 'set_dataset_name', name: 'telemetry' },
+      }),
+    });
+
+    // Neither the pending dedup proposal nor the rename runs outright.
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).not.toMatch(/left it/i);
+    expect(result.messages[0].card).toMatchObject({
+      kind: 'confirm',
+      confirmAction: { kind: 'set_dataset_name', name: 'telemetry' },
+    });
   });
 
   /** Saying something else abandons the proposal rather than queueing it. */

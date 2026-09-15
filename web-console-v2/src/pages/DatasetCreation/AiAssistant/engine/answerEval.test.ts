@@ -166,7 +166,7 @@ const promptFor = (step: AgendaStepId): Prompt => {
  * whether the user is asked to click first.
  */
 const scoped = (fixture: AnswerFixture): Action | undefined =>
-  answerTo(promptFor(fixture.step), fixture.utterance) ??
+  answerTo(promptFor(fixture.step), fixture.utterance)?.action ??
   resolveUtterance(fixture.utterance, { vocabulary }).action;
 
 /** What the same words meant before anything was being asked. */

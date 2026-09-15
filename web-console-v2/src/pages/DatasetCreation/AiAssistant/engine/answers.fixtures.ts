@@ -57,17 +57,28 @@ export const ANSWERS: AnswerFixture[] = [
     },
     note: 'Reported: this was written as the name. The matcher still reports it verbatim — what stops it now is that the model reads "telemetry" and the disagreement makes it a proposal.',
   },
+  /*
+    The matcher used to refuse a command outright, so it never reached the
+    resolver here. It no longer filters anything out of a prose reply — it
+    reports this verbatim too, and proposes it, the same as any other
+    answer. What still keeps "undo" from becoming a name is the turn loop:
+    the resolver recognises it as a command outright, and the two readings
+    never even reach a vote.
+  */
   {
     step: 'name',
     utterance: 'undo',
-    expected: null,
-    note: 'The one question that takes prose is the one a command must pass.',
+    expected: { kind: 'set_dataset_name', name: 'undo' },
   },
+  /*
+    A question back used to be refused for the same reason. It is proposed
+    now too — it would need a yes before becoming the name, same as anything
+    else typed here.
+  */
   {
     step: 'name',
     utterance: 'what should I call it?',
-    expected: null,
-    note: 'A question back is not a name.',
+    expected: { kind: 'set_dataset_name', name: 'what should I call it?' },
   },
 
   // — The type —
@@ -108,9 +119,16 @@ export const ANSWERS: AnswerFixture[] = [
       dataType: 'string',
     },
   },
+  /*
+    The matcher used to read "keep"/"leave"/"dismiss" as a dismissal on its
+    own guess, compared against nothing the card printed. That guess is
+    gone — dismissing now takes the resolver's own precise phrasing, the
+    same as any other rule match, rather than a loose one the matcher
+    invented.
+  */
   {
     step: 'conflicts',
-    utterance: 'keep what you have',
+    utterance: 'keep the current type for amount',
     expected: { kind: 'resolve_conflict', path: 'amount', mode: 'dismiss' },
   },
   {

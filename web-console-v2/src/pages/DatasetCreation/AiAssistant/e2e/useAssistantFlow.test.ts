@@ -405,6 +405,16 @@ describe('joining to a master dataset', () => {
 
     await answer('customer_details');
 
+    // A prose reply is a proposal now, not a write — nothing is sent until
+    // it is confirmed, the same as any other guess.
+    expect(asked()?.card).toMatchObject({ kind: 'confirm' });
+    expect(
+      (api.dataset('my-orders')?.denorm_config as { denorm_fields?: unknown[] })
+        ?.denorm_fields ?? [],
+    ).toHaveLength(0);
+
+    await answer('yes');
+
     expect(
       (
         api.dataset('my-orders')?.denorm_config as {

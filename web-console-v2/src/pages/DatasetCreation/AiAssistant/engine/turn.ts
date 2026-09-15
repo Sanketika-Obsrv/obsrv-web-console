@@ -9,12 +9,7 @@
 import { Prompt } from './agenda';
 import { Action, sameAction } from './actions';
 import { ExecutionOutcome } from './executor';
-import {
-  answerTo,
-  isAddressedRequest,
-  isAffirmative,
-  isNegative,
-} from './answer';
+import { answerTo, isAddressedRequest, readOffer } from './answer';
 import { FieldVocabulary } from './fieldVocabulary';
 import {
   NOTHING_TO_UNDO,
@@ -213,22 +208,27 @@ const stateOf = (deps: TurnDeps) => ({
   ...(deps.draftPending ? { draftPending: true } : {}),
 });
 
+/** The confirm card, as it appears on a message. */
+type ConfirmCard = Extract<MessageCard, { kind: 'confirm' }>;
+
 /**
- * The proposal waiting on a yes, when one is.
+ * The card waiting on a reply, when one is.
  *
  * A proposal is live only while it is the most recent thing the assistant
- * said: once anything else has happened, "yes" cannot be about it any more.
- * Reading it from the transcript rather than holding it in state keeps the
- * turn loop free of memory the session would have to persist.
+ * said: once anything else has happened, a reply cannot be about it any
+ * more. Reading it from the transcript rather than holding it in state keeps
+ * the turn loop free of memory the session would have to persist. Returning
+ * the whole card, not just the action it would run, is what lets a reply be
+ * read against the words the card itself printed, via `readOffer`.
  */
-const pendingConfirmation = (history: Message[] = []): Action | undefined => {
+const pendingConfirmation = (
+  history: Message[] = [],
+): ConfirmCard | undefined => {
   const last = [...history]
     .reverse()
     .find((message) => message.role === 'assistant');
 
-  return last?.card?.kind === 'confirm' && !last.action
-    ? last.card.confirmAction
-    : undefined;
+  return last?.card?.kind === 'confirm' && !last.action ? last.card : undefined;
 };
 
 /** Ways of asking for the last failure to be sent again. */
@@ -494,18 +494,31 @@ export const runTurn = async (
    * It is read before the agenda's own question because a proposal is the
    * more recent thing asked: "yes" right after "shall I deduplicate on
    * order_id?" is about that, whatever question the agenda still holds.
-   * Anything that is neither a yes nor a no abandons it and is treated as a
-   * fresh request — a proposal nobody answered is not a queue.
+   *
+   * The reply has to be read against the card's own words, not merely start
+   * with them: "no" declines, but "no, change name to telemetry" carries a
+   * rename, and reading its leading "no" as a decline discarded the rename
+   * silently. So a reply that is neither the accept word nor the decline
+   * word abandons the card rather than being read as either — it falls
+   * through to be resolved as a fresh request, and the card stays open for
+   * next time, since nothing here has answered it.
    */
-  const proposed = pendingConfirmation(deps.history);
+  const pendingCard = pendingConfirmation(deps.history);
+  const offer = pendingCard && readOffer(pendingCard, input);
 
-  if (proposed && isAffirmative(input)) {
-    const { outcome, message } = await runAction(proposed, deps);
+  if (pendingCard && offer === 'accept') {
+    const { outcome, message } = await runAction(
+      pendingCard.confirmAction,
+      deps,
+    );
 
-    return { messages: [message], applied: ran(proposed, outcome) };
+    return {
+      messages: [message],
+      applied: ran(pendingCard.confirmAction, outcome),
+    };
   }
 
-  if (proposed && isNegative(input)) {
+  if (pendingCard && offer === 'decline') {
     return {
       messages: [{ role: 'assistant', text: 'Left it as it was.' }],
       applied: [],
@@ -565,14 +578,78 @@ export const runTurn = async (
 
   /** What the question's own matcher makes of the reply, if anything. */
   const matched = answerTo(deps.prompt, input);
+  const matchedAction = matched?.action;
   const literal =
-    matched && !asksSomethingElse(input, matched) ? matched : undefined;
+    matchedAction && !asksSomethingElse(input, matchedAction)
+      ? matchedAction
+      : undefined;
 
-  if (read.status !== 'resolved' && literal) {
+  /**
+   * A request the flow cannot honour yet is answered with what is missing.
+   *
+   * The user asked for this: any request at any point, and a reply that
+   * says what has to happen first rather than one that refuses. It is
+   * checked against the words too, not only against a resolved action —
+   * "dedup on order_id" before a sample resolves to nothing, because a
+   * dataset with no fields has no `order_id`, and "I did not understand
+   * that" would be both unhelpful and untrue.
+   *
+   * Computed here, before anything runs, so it gates the matcher's own
+   * direct answer below too — that answer used to run first and be checked
+   * against this only if it fell through to a fresh instruction, which let
+   * "dedup on order_id" typed as a choice-question answer write the key
+   * before there was a schema to hold it.
+   */
+  const state = stateOf(deps);
+
+  /**
+   * A reading the matcher settled on outright — a choice matched by its own
+   * label, or a confirm card already said yes to — runs directly, exactly as
+   * before. A prose reading never lands here: `answerTo` always marks it
+   * `confirm`, so it takes the same fork as any other guess, below, rather
+   * than a path of its own.
+   */
+  if (read.status !== 'resolved' && literal && !matched?.confirm) {
+    const literalBlocked =
+      unmetForAction(literal, state) ?? unmetForUtterance(input, state);
+
+    if (literalBlocked) {
+      return {
+        messages: [
+          {
+            role: 'assistant',
+            text: literalBlocked.text,
+            failureCode:
+              literalBlocked.requirement === 'dataset'
+                ? 'NO_DATASET'
+                : 'NO_SCHEMA',
+          },
+        ],
+        applied: [],
+      };
+    }
+
     const { outcome, message } = await runAction(literal, deps);
 
     return { messages: [message], applied: ran(literal, outcome) };
   }
+
+  /**
+   * A prose answer the model did not also reach is still an answer — it is
+   * just never one to write outright. Folding it in here, rather than
+   * running it from a path of its own, means it takes the same fork every
+   * other guess takes below: refused if it turns out not to be dataset
+   * work, proposed otherwise.
+   */
+  const asAnswered: Resolution | undefined =
+    read.status !== 'resolved' && matched?.confirm && matchedAction
+      ? {
+          status: 'resolved',
+          action: matchedAction,
+          confidence: 0,
+          needsConfirmation: true,
+        }
+      : undefined;
 
   /**
    * Two readings that agree need no confirming.
@@ -593,19 +670,7 @@ export const runTurn = async (
     literal &&
     sameAction(literal, read.action)
       ? { ...read, needsConfirmation: false }
-      : read;
-
-  /**
-   * A request the flow cannot honour yet is answered with what is missing.
-   *
-   * The user asked for this: any request at any point, and a reply that
-   * says what has to happen first rather than one that refuses. It is
-   * checked against the words too, not only against a resolved action —
-   * "dedup on order_id" before a sample resolves to nothing, because a
-   * dataset with no fields has no `order_id`, and "I did not understand
-   * that" would be both unhelpful and untrue.
-   */
-  const state = stateOf(deps);
+      : (asAnswered ?? read);
 
   /*
     An *inferred* action is worse evidence than the words it was inferred
@@ -657,15 +722,20 @@ export const runTurn = async (
    * always find *something*.
    *
    * The test is deliberately narrow — a request addressed to the assistant,
-   * or, with no question on the table, anything not about a dataset. Vague
-   * phrasing at a question ("put it in the lake") is a poor answer, not an
-   * off-topic one, and gets the proposal below.
+   * or, with a question that has a closed set of answers (or none at all),
+   * anything not about a dataset. This used to skip the "not about a
+   * dataset" half of the test entirely whenever any question was on the
+   * table, which let a guess at something like "what is the weather in
+   * Bangalore" through as a proposal as long as some question — any
+   * question — happened to be pending. A question that takes prose is still
+   * exempted: there is no closed vocabulary to fail, and a name like
+   * "Telemetry Events" would fail this test as readily as the weather would.
    */
   if (
     resolution.status === 'resolved' &&
     resolution.needsConfirmation &&
     (isAddressedRequest(input) ||
-      (!deps.prompt && !isAboutDataset(input, deps.vocabulary)))
+      (!deps.prompt?.freeText && !isAboutDataset(input, deps.vocabulary)))
   ) {
     return {
       messages: [

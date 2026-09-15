@@ -1,6 +1,6 @@
 import { AgendaStepId } from './actions';
 import { Prompt } from './agenda';
-import { answerTo } from './answer';
+import { CONFIRM_LABELS, answerTo, readOffer } from './answer';
 import { ChoiceOption } from '../messages/types';
 
 const choicePrompt = (step: AgendaStepId, options: ChoiceOption[]): Prompt => ({
@@ -72,59 +72,54 @@ const NAME: Prompt = {
 describe('answering a choice question', () => {
   it('takes the option the answer names', () => {
     expect(answerTo(PII, 'mask it')).toEqual({
-      kind: 'set_pii',
-      path: 'customer.email',
-      action: 'mask',
-      skipOnFailure: true,
+      action: {
+        kind: 'set_pii',
+        path: 'customer.email',
+        action: 'mask',
+        skipOnFailure: true,
+      },
     });
   });
 
   it('does not need the whole label', () => {
-    expect(answerTo(PII, 'encrypt')).toMatchObject({ action: 'encrypt' });
+    expect(answerTo(PII, 'encrypt')).toMatchObject({
+      action: { action: 'encrypt' },
+    });
     expect(answerTo(STORAGE, 'lakehouse')).toEqual({
-      kind: 'set_storage',
-      lakehouse: true,
+      action: { kind: 'set_storage', lakehouse: true },
     });
     expect(answerTo(STORAGE, 'both please')).toEqual({
-      kind: 'set_storage',
-      realtime: true,
-      lakehouse: true,
+      action: { kind: 'set_storage', realtime: true, lakehouse: true },
     });
   });
 
   it('reads a field name as the option carrying it', () => {
     expect(answerTo(KEYS, 'order_ts')).toEqual({
-      kind: 'set_keys',
-      timestamp: 'order_ts',
+      action: { kind: 'set_keys', timestamp: 'order_ts' },
     });
     expect(answerTo(DEDUP, 'drop them, key is order_id')).toEqual({
-      kind: 'set_dedup',
-      enabled: true,
-      key: 'order_id',
+      action: { kind: 'set_dedup', enabled: true, key: 'order_id' },
     });
   });
 
   it('matches a multi-word label loosely', () => {
     expect(answerTo(STORAGE, 'the real time store')).toEqual({
-      kind: 'set_storage',
-      realtime: true,
+      action: { kind: 'set_storage', realtime: true },
     });
     expect(answerTo(KEYS, 'use the arrival time')).toEqual({
-      kind: 'set_keys',
-      timestamp: 'Event Arrival Time',
+      action: { kind: 'set_keys', timestamp: 'Event Arrival Time' },
     });
   });
 
   it('reads a plain no as the option that declines', () => {
-    expect(answerTo(DEDUP, 'no')).toEqual({ kind: 'skip_step', step: 'dedup' });
+    expect(answerTo(DEDUP, 'no')).toEqual({
+      action: { kind: 'skip_step', step: 'dedup' },
+    });
     expect(answerTo(DEDUP, 'not now thanks')).toEqual({
-      kind: 'skip_step',
-      step: 'dedup',
+      action: { kind: 'skip_step', step: 'dedup' },
     });
     expect(answerTo(PII, 'leave it alone')).toEqual({
-      kind: 'skip_step',
-      step: 'pii',
-      path: 'customer.email',
+      action: { kind: 'skip_step', step: 'pii', path: 'customer.email' },
     });
   });
 
@@ -143,8 +138,7 @@ describe('answering a choice question', () => {
     ]);
 
     expect(answerTo(transform, 'No transformations')).toEqual({
-      kind: 'skip_step',
-      step: 'transform',
+      action: { kind: 'skip_step', step: 'transform' },
     });
   });
 
@@ -157,8 +151,7 @@ describe('answering a choice question', () => {
     expect(answerTo(DEDUP, 'no duplicates')).toBeUndefined();
     expect(answerTo(DEDUP, "don't keep the duplicates")).toBeUndefined();
     expect(answerTo(DEDUP, 'no thanks')).toEqual({
-      kind: 'skip_step',
-      step: 'dedup',
+      action: { kind: 'skip_step', step: 'dedup' },
     });
   });
 
@@ -168,8 +161,7 @@ describe('answering a choice question', () => {
     ]);
 
     expect(answerTo(schema, 'not right now')).toEqual({
-      kind: 'skip_step',
-      step: 'schema',
+      action: { kind: 'skip_step', step: 'schema' },
     });
 
     // "Not right" says the schema is wrong. Reading it as "looks right"
@@ -211,15 +203,29 @@ describe('answering a confirmation', () => {
   };
 
   it('takes yes as the confirmation', () => {
-    expect(answerTo(SAVE, 'yes')).toEqual({ kind: 'save' });
-    expect(answerTo(SAVE, 'yes please, save it')).toEqual({ kind: 'save' });
-    expect(answerTo(SAVE, 'go ahead')).toEqual({ kind: 'save' });
+    expect(answerTo(SAVE, 'yes')).toEqual({ action: { kind: 'save' } });
+    expect(answerTo(SAVE, 'Yes!')).toEqual({ action: { kind: 'save' } });
+    expect(answerTo(SAVE, 'yes please')).toEqual({ action: { kind: 'save' } });
   });
 
   it('does not read a refusal as a confirmation', () => {
     expect(answerTo(SAVE, 'no')).toBeUndefined();
     expect(answerTo(SAVE, 'not yet')).toBeUndefined();
     expect(answerTo(SAVE, 'wait')).toBeUndefined();
+  });
+
+  /**
+   * A reply that carries more than the label is not a reply to the card at
+   * all — reading it as one would silently discard whatever else it said.
+   * Missed first time: the leading word alone used to decide it, so "no,
+   * change the name to telemetry" was read as a bare decline and the rename
+   * it carried was dropped. Found in the browser.
+   */
+  it('does not read a reply that carries more than the label', () => {
+    expect(
+      answerTo(SAVE, 'yes, and also rename it to telemetry'),
+    ).toBeUndefined();
+    expect(answerTo(SAVE, 'no, change the name to telemetry')).toBeUndefined();
   });
 });
 
@@ -239,25 +245,28 @@ describe('answering a conflict', () => {
 
   it('takes the candidate type it names', () => {
     expect(answerTo(CONFLICT, 'string')).toEqual({
-      kind: 'resolve_conflict',
-      path: 'total_amount',
-      mode: 'apply',
-      dataType: 'string',
+      action: {
+        kind: 'resolve_conflict',
+        path: 'total_amount',
+        mode: 'apply',
+        dataType: 'string',
+      },
     });
     expect(answerTo(CONFLICT, 'make it a double')).toMatchObject({
-      dataType: 'double',
+      action: { dataType: 'double' },
     });
   });
 
-  it('keeps the current type when asked to', () => {
-    expect(answerTo(CONFLICT, 'keep the current type')).toEqual({
-      kind: 'resolve_conflict',
-      path: 'total_amount',
-      mode: 'dismiss',
-    });
-    expect(answerTo(CONFLICT, 'leave it as it is')).toMatchObject({
-      mode: 'dismiss',
-    });
+  /**
+   * Dismissing used to be matched against an invented list of phrasings —
+   * "keep"/"leave"/"dismiss" — none of them compared against anything the
+   * card itself printed. That match is gone: a conflict is settled only by
+   * naming one of the offered candidates now, so these fall through
+   * unanswered rather than writing a dismissal nobody typed in those words.
+   */
+  it('no longer matches "keep it" or "dismiss it" as invented phrasing', () => {
+    expect(answerTo(CONFLICT, 'keep the current type')).toBeUndefined();
+    expect(answerTo(CONFLICT, 'leave it as it is')).toBeUndefined();
   });
 
   it('does not settle the type on a plain no', () => {
@@ -274,68 +283,41 @@ describe('answering a conflict', () => {
   });
 });
 
+/**
+ * A question that takes prose no longer writes anything by itself. "good
+ * morning" at this question used to pass every guard `answerToProse` had and
+ * be written as the dataset's name — found in the browser. Now every reply
+ * is handed back as a proposal, whatever it says: a wrong guess costs one
+ * more word, not a write to find and undo.
+ */
 describe('answering the name question', () => {
-  it('takes the whole answer as the name', () => {
+  it('proposes the whole answer as the name, needing a yes', () => {
     expect(answerTo(NAME, 'My Orders')).toEqual({
-      kind: 'set_dataset_name',
-      name: 'My Orders',
+      action: { kind: 'set_dataset_name', name: 'My Orders' },
+      confirm: true,
     });
   });
 
   /**
-   * The matcher no longer strips a preface, and that is the point.
-   *
-   * It used to remove "call it", "go with", "let's call it" and a trailing
-   * "please" — a list of the phrasings someone thought of. The sentence
-   * nobody thought of, "I want create telemetry dataset", went through
-   * whole and became a dataset id. Reading the words is the model's job
-   * now; this matcher only recognises the assistant's own options coming
-   * back, and reports the reply as typed for everything else. Naming from
-   * "call it My Orders" is covered by the resolver rule
-   * (`ruleResolver.test.ts`) and by the model.
+   * The matcher no longer strips a preface, filters out commands, or caps a
+   * reply's length — those existed only to make an unconfirmed write "safe
+   * enough", and nothing is written unconfirmed from here any more. Reading
+   * the words for what they mean is the model's or the user's job now; this
+   * matcher only ever proposes.
    */
-  it('reports a prefaced answer as it was typed', () => {
-    expect(answerTo(NAME, 'call it My Orders')).toEqual({
-      kind: 'set_dataset_name',
-      name: 'call it My Orders',
-    });
-  });
-
-  /**
-   * Without this, "undo" at the name question names the dataset "undo" —
-   * the one place where free text is taken whole is the one place a command
-   * has to be let through to the resolver.
-   */
-  it('lets a command through instead of naming the dataset after it', () => {
+  it('proposes anything typed, even a command or a request aimed elsewhere', () => {
     for (const said of [
+      'call it My Orders',
       'undo',
-      'revert that',
-      'help',
-      'why do you need a name',
-      'what is a dataset',
-      'explain',
-      'start over',
-    ]) {
-      expect(answerTo(NAME, said)).toBeUndefined();
-    }
-  });
-
-  /**
-   * Found live: "write me a poem about ducks" became the dataset's name,
-   * because the name question takes whatever is typed. A question that
-   * accepts prose still must not accept a request aimed at the assistant.
-   */
-  it('refuses a request dressed as a value', () => {
-    for (const said of [
       'write me a poem about ducks',
-      'tell me a joke',
-      'show me the cricket scores',
-      'send an email to my manager',
-      'translate this into French',
+      'a'.repeat(200),
     ]) {
-      expect({ said, answer: answerTo(NAME, said) }).toEqual({
+      expect({ said, result: answerTo(NAME, said) }).toEqual({
         said,
-        answer: undefined,
+        result: {
+          action: { kind: 'set_dataset_name', name: said },
+          confirm: true,
+        },
       });
     }
   });
@@ -348,16 +330,18 @@ describe('answering the name question', () => {
       'Customer Orders 2024',
       'Web Checkout Events EU',
     ]) {
-      expect({ said, kind: answerTo(NAME, said)?.kind }).toEqual({
+      expect({ said, result: answerTo(NAME, said) }).toEqual({
         said,
-        kind: 'set_dataset_name',
+        result: {
+          action: { kind: 'set_dataset_name', name: said },
+          confirm: true,
+        },
       });
     }
   });
 
   it('refuses a name nothing could be called', () => {
     expect(answerTo(NAME, '   ')).toBeUndefined();
-    expect(answerTo(NAME, 'a'.repeat(200))).toBeUndefined();
   });
 });
 
@@ -379,5 +363,51 @@ describe('questions with nothing to type', () => {
         'host is db.local',
       ),
     ).toBeUndefined();
+  });
+});
+
+/**
+ * `readOffer` is the confirm card's own matcher: a reply is read against
+ * exactly the two words the card prints — `CONFIRM_LABELS.accept` and
+ * `CONFIRM_LABELS.decline` — never against a list of ways a user might
+ * phrase yes or no.
+ */
+describe('readOffer', () => {
+  const card = {
+    kind: 'confirm' as const,
+    title: 'Deduplicate on order_id',
+    confirmAction: {
+      kind: 'set_dedup' as const,
+      enabled: true,
+      key: 'order_id',
+    },
+  };
+
+  it('accepts the word the card itself prints', () => {
+    expect(readOffer(card, CONFIRM_LABELS.accept)).toBe('accept');
+    expect(readOffer(card, 'Yes!')).toBe('accept');
+    expect(readOffer(card, 'yes please')).toBe('accept');
+  });
+
+  it('declines the word the card itself prints', () => {
+    expect(readOffer(card, CONFIRM_LABELS.decline)).toBe('decline');
+    expect(readOffer(card, 'no thanks')).toBe('decline');
+  });
+
+  /**
+   * Anything more than the label is not a reply to the card at all: "NO,
+   * change name to telemetry" carries a rename, and reading its leading "no"
+   * as a decline would discard that rename silently. Found in the browser.
+   */
+  it('answers neither when the reply carries more than the label', () => {
+    expect(readOffer(card, 'NO , change name to telemetry')).toBeUndefined();
+    expect(readOffer(card, 'not that')).toBeUndefined();
+    expect(readOffer(card, 'do it')).toBeUndefined();
+    expect(readOffer(card, 'go ahead')).toBeUndefined();
+  });
+
+  it('answers neither for an empty reply', () => {
+    expect(readOffer(card, '')).toBeUndefined();
+    expect(readOffer(card, '   ')).toBeUndefined();
   });
 });
