@@ -83,15 +83,41 @@ export interface TurnDeps {
   history?: Message[];
 }
 
+/** One action that reached the executor, paired with what it reported. */
+export interface AppliedAction {
+  action: Action;
+  outcome: ExecutionOutcome;
+}
+
 export interface TurnResult {
   /** What to append to the transcript, in order. */
   messages: NewMessage[];
-  /** The action that ran, when one did. */
-  action?: Action;
-  outcome?: ExecutionOutcome;
+  /**
+   * Every action that reached the executor this turn, in order.
+   *
+   * A blocked request, an off-topic refusal, a proposal card and "nothing to
+   * try again" all run nothing, so they return an empty list. Today's other
+   * branches run at most one action; a plan of several — coming in a later
+   * commit — fills this the same way `runUndo` already does, one entry per
+   * action that reached the executor, including a failing one, so a partial
+   * turn is still fully auditable.
+   */
+  applied: AppliedAction[];
   /** The change this turn undid, for the caller to mark as spent. */
   undoneMessageId?: string;
 }
+
+/**
+ * Wraps a single action's outcome as the `applied` list most turns produce.
+ *
+ * Today's branches never run more than one action outside `runUndo`, but the
+ * result is still a list — this is the seam a later commit's multi-action
+ * plan will fill without changing the shape. An action that never reached
+ * the executor (the expression preflight blocked it) has no outcome, and
+ * reports as having run nothing.
+ */
+const ran = (action: Action, outcome?: ExecutionOutcome): AppliedAction[] =>
+  outcome ? [{ action, outcome }] : [];
 
 /** Failure shape for an executor that threw rather than returning a failure. */
 const threw = (cause: unknown): ExecutionOutcome => ({
@@ -323,7 +349,10 @@ const runUndo = async (deps: TurnDeps): Promise<TurnResult> => {
   const target = undoTarget(deps.history ?? []);
 
   if (target.status === 'none') {
-    return { messages: [{ role: 'assistant', text: NOTHING_TO_UNDO }] };
+    return {
+      messages: [{ role: 'assistant', text: NOTHING_TO_UNDO }],
+      applied: [],
+    };
   }
 
   if (target.status === 'blocked') {
@@ -335,6 +364,7 @@ const runUndo = async (deps: TurnDeps): Promise<TurnResult> => {
           failureCode: 'NOT_UNDOABLE',
         },
       ],
+      applied: [],
     };
   }
 
@@ -342,11 +372,19 @@ const runUndo = async (deps: TurnDeps): Promise<TurnResult> => {
   /** Each restoring action's own inverse, which together make a redo. */
   const inverses: Action[][] = [];
   let redoBlocked: string | undefined;
-  let last: ExecutionOutcome | undefined;
+  /**
+   * Every action that reached the executor this turn, in order.
+   *
+   * Built up as each restoring action runs, so a failure part way through
+   * still reports everything that was attempted — the failing action
+   * included — rather than only the one that broke.
+   */
+  const applied: AppliedAction[] = [];
 
   for (const action of target.actions) {
     const step = await runAction(action, deps);
-    last = step.outcome;
+
+    if (step.outcome) applied.push({ action, outcome: step.outcome });
 
     if (!step.outcome?.ok) {
       // A partial restoration the user is not told about is worse than a
@@ -357,8 +395,7 @@ const runUndo = async (deps: TurnDeps): Promise<TurnResult> => {
 
       return {
         messages: [...said, step.message],
-        action,
-        outcome: step.outcome,
+        applied,
       };
     }
 
@@ -385,8 +422,7 @@ const runUndo = async (deps: TurnDeps): Promise<TurnResult> => {
         ...(section ? { section } : {}),
       },
     ],
-    action: restored[0],
-    outcome: last,
+    applied,
     undoneMessageId: target.message.id,
   };
 };
@@ -449,7 +485,7 @@ export const runTurn = async (
     if (input.kind === 'undo') return runUndo(deps);
 
     const { outcome, message } = await runAction(input, deps);
-    return { messages: [message], action: input, outcome };
+    return { messages: [message], applied: ran(input, outcome) };
   }
 
   /**
@@ -466,12 +502,13 @@ export const runTurn = async (
   if (proposed && isAffirmative(input)) {
     const { outcome, message } = await runAction(proposed, deps);
 
-    return { messages: [message], action: proposed, outcome };
+    return { messages: [message], applied: ran(proposed, outcome) };
   }
 
   if (proposed && isNegative(input)) {
     return {
       messages: [{ role: 'assistant', text: 'Left it as it was.' }],
+      applied: [],
     };
   }
 
@@ -493,12 +530,13 @@ export const runTurn = async (
             text: 'There is nothing to try again — nothing has failed yet.',
           },
         ],
+        applied: [],
       };
     }
 
     const { outcome, message } = await runAction(target, deps);
 
-    return { messages: [message], action: target, outcome };
+    return { messages: [message], applied: ran(target, outcome) };
   }
 
   /**
@@ -533,7 +571,7 @@ export const runTurn = async (
   if (read.status !== 'resolved' && literal) {
     const { outcome, message } = await runAction(literal, deps);
 
-    return { messages: [message], action: literal, outcome };
+    return { messages: [message], applied: ran(literal, outcome) };
   }
 
   /**
@@ -597,6 +635,7 @@ export const runTurn = async (
             blocked.requirement === 'dataset' ? 'NO_DATASET' : 'NO_SCHEMA',
         },
       ],
+      applied: [],
     };
   }
 
@@ -638,6 +677,7 @@ export const runTurn = async (
           ).text,
         },
       ],
+      applied: [],
     };
   }
 
@@ -664,6 +704,7 @@ export const runTurn = async (
             : {}),
         },
       ],
+      applied: [],
     };
   }
 
@@ -696,6 +737,7 @@ export const runTurn = async (
           ...(narration.card ? { card: narration.card } : {}),
         },
       ],
+      applied: [],
     };
   }
 
@@ -703,7 +745,6 @@ export const runTurn = async (
 
   return {
     messages: [message],
-    action: resolution.action,
-    outcome,
+    applied: ran(resolution.action, outcome),
   };
 };

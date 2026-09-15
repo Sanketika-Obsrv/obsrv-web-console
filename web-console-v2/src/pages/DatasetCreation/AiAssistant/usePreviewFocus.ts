@@ -12,6 +12,7 @@ import { useCallback, useState } from 'react';
 import { Action } from './engine/actions';
 import { ExecutionOutcome } from './engine/executor';
 import { PreviewSection, sectionForAction } from './engine/previewFocus';
+import { AppliedAction } from './engine/turn';
 
 export interface PreviewFocus {
   focusSection?: PreviewSection;
@@ -25,6 +26,17 @@ export interface PreviewFocus {
    * answered with a decline does not cause a re-read.
    */
   revision: number;
+  /**
+   * Records a whole turn's worth of actions at once.
+   *
+   * A turn can run more than one action — `runUndo` already does — and
+   * `changedRefs` is what the preview flashes, so it has to hold every ref
+   * the turn touched rather than only the last action's. Bumping `revision`
+   * once per turn, not once per action, is what keeps a multi-action turn
+   * from triggering the dataset re-read several times over.
+   */
+  recordTurn: (applied: AppliedAction[]) => void;
+  /** A single-action turn, kept for existing callers. See `recordTurn`. */
   recordAction: (action: Action, outcome: ExecutionOutcome) => void;
 }
 
@@ -35,22 +47,41 @@ export const usePreviewFocus = (): PreviewFocus => {
     revision: number;
   }>({ revision: 0 });
 
-  const recordAction = useCallback(
-    (action: Action, outcome: ExecutionOutcome) => {
-      const section = sectionForAction(action);
+  const recordTurn = useCallback((applied: AppliedAction[]) => {
+    setFocus((current) => {
+      // The last action with a section is what the accordion opens to — a
+      // conversation-only action at the end of the turn leaves the preview
+      // on the section the write before it touched, rather than closing it.
+      const section = applied.reduce<PreviewSection | undefined>(
+        (chosen, { action }) => sectionForAction(action) ?? chosen,
+        undefined,
+      );
 
-      const wrote = outcome.ok && outcome.status === 'applied';
+      // Every action's refs are unioned rather than kept separately, so a
+      // turn that both renamed a field and toggled another still flashes
+      // both — looped `recordAction` calls would only leave the last one.
+      const changedRefs = applied.flatMap(({ outcome }) =>
+        outcome.ok && outcome.status === 'applied' ? outcome.changedRefs : [],
+      );
 
-      setFocus((current) => ({
-        // A conversation-only action leaves the preview where it was.
+      const wrote = applied.some(
+        ({ outcome }) => outcome.ok && outcome.status === 'applied',
+      );
+
+      return {
         focusSection: section ?? current.focusSection,
         // A fresh array every time, so an identical edit still re-flashes.
-        changedRefs: wrote ? [...outcome.changedRefs] : [],
+        changedRefs,
         revision: current.revision + (wrote ? 1 : 0),
-      }));
-    },
-    [],
+      };
+    });
+  }, []);
+
+  const recordAction = useCallback(
+    (action: Action, outcome: ExecutionOutcome) =>
+      recordTurn([{ action, outcome }]),
+    [recordTurn],
   );
 
-  return { ...focus, recordAction };
+  return { ...focus, recordTurn, recordAction };
 };

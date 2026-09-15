@@ -31,6 +31,7 @@ import {
 import {
   AGENDA_READ_FIELDS,
   ExecutorContext,
+  PendingDataset,
   executeAction,
   readSnapshot,
   submitConnector,
@@ -131,7 +132,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     focusSection,
     changedRefs,
     revision: previewRevision,
-    recordAction,
+    recordTurn,
   } = usePreviewFocus();
 
   const [busy, setBusy] = useState(false);
@@ -348,18 +349,42 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
   }, [chosenConnectorId]);
 
   /**
+   * What this turn has learned so far, ahead of the render that will carry it.
+   *
+   * `contextNow` otherwise reads `session.session`, which is React state and
+   * does not update mid-turn — so a turn that ran two actions in one
+   * `runTurn` call would run the second against the `datasetId` the render
+   * still held before the first one wrote anything. Nothing on this branch
+   * produces more than one action yet, except undo, which reads between its
+   * own steps from the transcript rather than from here — but the overlay
+   * has to exist before a multi-action plan does, or this is the kind of gap
+   * that is easy to forget once the rest works. Cleared at the top of every
+   * turn and written to as each action's outcome comes back.
+   */
+  const turnState = useRef<{ datasetId?: string; pending?: PendingDataset }>(
+    {},
+  );
+
+  /**
    * Built when a turn runs, not memoised.
    *
    * The sample lives in a ref, and mutating a ref does not recompute a memo —
    * so a memoised context captured `sample.current` as it was on the previous
    * render and the executor never saw the file, failing with MISSING_SAMPLE.
+   *
+   * `overlay` takes precedence over the render closure when present, which is
+   * what lets a second action in the same turn see the first one's write —
+   * see `turnState` above. Callers with no overlay of their own get exactly
+   * today's behaviour.
    */
   const contextNow = useCallback(
-    (): ExecutorContext => ({
-      datasetId,
+    (
+      overlay: { datasetId?: string; pending?: PendingDataset } = {},
+    ): ExecutorContext => ({
+      datasetId: overlay.datasetId ?? datasetId,
       // Carried by the session, because the server cannot hold a name or type
       // until `datasets/create` has run.
-      pending: session.session?.pending,
+      pending: overlay.pending ?? session.session?.pending,
       sample: sample.current,
       connector: session.session?.connector
         ? { ...session.session.connector, uiSpec }
@@ -543,6 +568,9 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       if (session.loading || !session.session) return;
 
       setBusy(true);
+      // Cleared at the top of every turn: last turn's overlay must not leak
+      // into this one, and this turn has not learned anything yet.
+      turnState.current = {};
 
       try {
         const step = (session.session?.step ?? 'ingestion') as WizardStep;
@@ -645,7 +673,31 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                 },
               }
             : {}),
-          execute: (action) => executeAction(action, contextNow()),
+          execute: async (action) => {
+            const outcome = await executeAction(
+              action,
+              contextNow(turnState.current),
+            );
+
+            // Fed back into the overlay immediately, so a second action run
+            // within this same turn sees what the first one just wrote —
+            // see `turnState`'s own comment above `contextNow`.
+            if (
+              outcome.ok &&
+              outcome.status === 'applied' &&
+              outcome.datasetId
+            ) {
+              turnState.current.datasetId = outcome.datasetId;
+            }
+            if (outcome.ok && outcome.status === 'pending') {
+              turnState.current.pending = {
+                ...turnState.current.pending,
+                ...outcome.pending,
+              };
+            }
+
+            return outcome;
+          },
           // The transcript is the undo stack: each change carries the actions
           // that would put it back.
           history,
@@ -670,85 +722,69 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           await session.markUndone(result.undoneMessageId);
         }
 
-        if (result.action && result.outcome) {
-          recordAction(result.action, result.outcome);
-
-          /*
-            The preview reads the dataset through React Query; the executor
-            writes through plain axios, because it runs outside React. So
-            nothing connected the two, and the pane went on showing the read
-            it made when it mounted — "mark mid as required" changed the
-            server and not the screen. A prefix match, since the pane and
-            the configuration tables ask for different projections of the
-            same dataset and each has its own cache entry.
-          */
-          if (result.outcome.ok && result.outcome.status === 'applied') {
-            await queryClient.invalidateQueries({
-              queryKey: ['fetchDatasetsById', datasetId],
-            });
-          }
-
+        /**
+         * Per action, in the order it ran.
+         *
+         * A turn can carry more than one action — `runUndo` already does —
+         * so these effects run once per entry rather than once per turn.
+         * `recordTurn`, the query invalidation, `setStep` and
+         * `refreshVocabulary` are deliberately *not* in here: each of those
+         * is either a single fact about the whole turn (which action ran
+         * last) or a server read, and a server read run N times for an
+         * N-action turn is N round trips for the same answer.
+         */
+        for (const { action, outcome } of result.applied) {
           const currentStep = session.session?.step ?? 'ingestion';
 
           reportAction({
-            action: result.action,
+            action,
             datasetId,
             step: currentStep,
-            ...(result.outcome.ok ? {} : { failureCode: result.outcome.code }),
+            ...(outcome.ok ? {} : { failureCode: outcome.code }),
           });
-
-          if (result.action.kind === 'save' && result.outcome.ok) {
-            reportSessionEnd(
-              session.session?.sessionId ?? '',
-              datasetId,
-              session.messages.filter((message) => message.action).length,
-            );
-          }
 
           // A choice made before the draft exists has to be kept, or the
           // create call would later run without a name.
-          if (result.outcome.ok && result.outcome.status === 'pending') {
-            await session.setPending(result.outcome.pending);
+          if (outcome.ok && outcome.status === 'pending') {
+            await session.setPending(outcome.pending);
           }
 
           // Connector choices and values are buffered in the session; the
           // executor validated them and wrote nothing, because a connector is
           // written once, together with its credentials.
-          if (result.outcome.ok) {
-            const chosen = result.action;
-
-            if (chosen.kind === 'select_connector') {
+          if (outcome.ok) {
+            if (action.kind === 'select_connector') {
               const known = connectors.find(
-                (candidate) => candidate.id === chosen.connectorId,
+                (candidate) => candidate.id === action.connectorId,
               );
               await session.selectConnector({
-                id: chosen.connectorId,
+                id: action.connectorId,
                 ...(known?.name ? { name: known.name } : {}),
               });
             }
 
-            if (chosen.kind === 'set_connector_field') {
+            if (action.kind === 'set_connector_field') {
               // The *coerced* value, not the raw one the action carried.
               // Postgres declares `source_database_port` as a number, and
               // storing the typed string sent `"5432"` to the connector —
               // seen live in `connector_config`.
               const prop = fillableProps(uiSpec).find(
-                (candidate) => candidate.key === chosen.property,
+                (candidate) => candidate.key === action.property,
               );
               const checked = prop
-                ? validateProp(prop, chosen.value)
+                ? validateProp(prop, action.value)
                 : undefined;
 
               await session.setConnectorValue(
-                chosen.property,
-                checked?.ok ? checked.value : chosen.value,
+                action.property,
+                checked?.ok ? checked.value : action.value,
               );
             }
 
             // Nothing else produces this card, so without it the credential
             // form is unreachable and no connector can ever be saved — the
             // same gap the file-drop card had.
-            if (chosen.kind === 'request_connector_secrets') {
+            if (action.kind === 'request_connector_secrets') {
               const draft = session.session?.connector;
 
               if (draft && uiSpec) {
@@ -774,16 +810,53 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           }
 
           const created =
-            result.outcome.ok && result.outcome.status === 'applied'
-              ? result.outcome.datasetId
+            outcome.ok && outcome.status === 'applied'
+              ? outcome.datasetId
               : undefined;
 
           if (created) await session.attachDataset(created);
+        }
+
+        /** Once per turn, after every action in it has been recorded above. */
+        if (result.applied.length) {
+          recordTurn(result.applied);
+
+          /*
+            The preview reads the dataset through React Query; the executor
+            writes through plain axios, because it runs outside React. So
+            nothing connected the two, and the pane went on showing the read
+            it made when it mounted — "mark mid as required" changed the
+            server and not the screen. A prefix match, since the pane and
+            the configuration tables ask for different projections of the
+            same dataset and each has its own cache entry.
+          */
+          const wrote = result.applied.some(
+            ({ outcome }) => outcome.ok && outcome.status === 'applied',
+          );
+
+          if (wrote) {
+            await queryClient.invalidateQueries({
+              queryKey: ['fetchDatasetsById', datasetId],
+            });
+          }
+
+          const saved = result.applied.some(
+            ({ action, outcome }) => action.kind === 'save' && outcome.ok,
+          );
+
+          if (saved) {
+            reportSessionEnd(
+              session.session?.sessionId ?? '',
+              datasetId,
+              session.messages.filter((message) => message.action).length,
+            );
+          }
 
           // The step decides which actions the model is offered next, so it
-          // has to follow what actually happened rather than stay where the
-          // conversation started.
-          const nextStep = stepAfterAction(result.action);
+          // follows the *last* thing that actually happened this turn rather
+          // than the first — the step is a cursor, not a log.
+          const lastAction = result.applied[result.applied.length - 1].action;
+          const nextStep = stepAfterAction(lastAction);
           if (nextStep && nextStep !== session.session?.step) {
             await session.setStep(nextStep);
           }
@@ -833,7 +906,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       datasetId,
       modelReady,
       queryClient,
-      recordAction,
+      recordTurn,
       refreshVocabulary,
       session,
       uiSpec,

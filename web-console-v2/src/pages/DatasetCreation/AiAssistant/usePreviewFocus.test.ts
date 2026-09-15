@@ -163,6 +163,97 @@ describe('usePreviewFocus', () => {
 });
 
 /**
+ * `recordAction` replaces `changedRefs` on every call, so a turn that ran
+ * more than one action — `runUndo` already does — would leave only the last
+ * action's rows flashing if the loop in `useAssistant` called it once per
+ * action. `recordTurn` takes the whole turn at once instead, so every ref
+ * the turn touched is unioned into one highlight.
+ */
+describe('recordTurn', () => {
+  it('unions the refs across every action in the turn', () => {
+    const { result } = renderHook(() => usePreviewFocus());
+
+    act(() =>
+      result.current.recordTurn([
+        {
+          action: { kind: 'set_data_type', path: 'a', dataType: 'string' },
+          outcome: applied(['properties.a']),
+        },
+        {
+          action: { kind: 'set_data_type', path: 'b', dataType: 'string' },
+          outcome: applied(['properties.b']),
+        },
+      ]),
+    );
+
+    expect(result.current.changedRefs).toEqual([
+      'properties.a',
+      'properties.b',
+    ]);
+  });
+
+  it('bumps revision once for the turn, not once per action', () => {
+    const { result } = renderHook(() => usePreviewFocus());
+
+    act(() =>
+      result.current.recordTurn([
+        {
+          action: { kind: 'set_data_type', path: 'a', dataType: 'string' },
+          outcome: applied(['properties.a']),
+        },
+        {
+          action: { kind: 'set_data_type', path: 'b', dataType: 'string' },
+          outcome: applied(['properties.b']),
+        },
+      ]),
+    );
+
+    expect(result.current.revision).toBe(1);
+  });
+
+  it('still bumps revision once when only one of the actions wrote', () => {
+    const { result } = renderHook(() => usePreviewFocus());
+
+    act(() =>
+      result.current.recordTurn([
+        {
+          action: { kind: 'set_data_type', path: 'a', dataType: 'string' },
+          outcome: applied(['properties.a']),
+        },
+        { action: { kind: 'set_keys', primary: 'nope' }, outcome: rejected },
+      ]),
+    );
+
+    expect(result.current.revision).toBe(1);
+  });
+
+  it('opens the accordion of the last action that belongs to one', () => {
+    const { result } = renderHook(() => usePreviewFocus());
+
+    act(() =>
+      result.current.recordTurn([
+        { action: { kind: 'set_storage', realtime: true }, outcome: applied() },
+        {
+          action: { kind: 'toggle_required', path: 'a', required: true },
+          outcome: applied(['properties.a']),
+        },
+      ]),
+    );
+
+    expect(result.current.focusSection).toBe('ingestion');
+  });
+
+  it('reports no change and no revision for an empty turn', () => {
+    const { result } = renderHook(() => usePreviewFocus());
+
+    act(() => result.current.recordTurn([]));
+
+    expect(result.current.changedRefs).toEqual([]);
+    expect(result.current.revision).toBe(0);
+  });
+});
+
+/**
  * The count is what tells the preview its reads are stale. It must move only
  * when something was actually written, or every declined question would cost
  * a re-read of the dataset.

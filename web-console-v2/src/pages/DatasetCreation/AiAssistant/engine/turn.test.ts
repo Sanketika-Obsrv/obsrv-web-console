@@ -89,12 +89,16 @@ describe('a turn that resolves', () => {
   it('reports the outcome so the preview can follow', async () => {
     const result = await turn('make order_id required');
 
-    expect(result.action).toEqual({
-      kind: 'toggle_required',
-      path: 'order_id',
-      required: true,
-    });
-    expect(result.outcome).toBe(applied);
+    expect(result.applied).toEqual([
+      {
+        action: {
+          kind: 'toggle_required',
+          path: 'order_id',
+          required: true,
+        },
+        outcome: applied,
+      },
+    ]);
   });
 
   it('tags the turn with the section it touched', async () => {
@@ -168,8 +172,7 @@ describe('a turn that could not be resolved', () => {
   it('reports no action, so the preview stays put', async () => {
     const result = await turn('make the thing better');
 
-    expect(result.action).toBeUndefined();
-    expect(result.outcome).toBeUndefined();
+    expect(result.applied).toEqual([]);
   });
 });
 
@@ -242,8 +245,9 @@ describe('dispatching an action directly, from a card', () => {
       },
     );
 
-    expect(result.action).toEqual({ kind: 'save' });
-    expect(result.outcome).toBe(applied);
+    expect(result.applied).toEqual([
+      { action: { kind: 'save' }, outcome: applied },
+    ]);
   });
 });
 
@@ -484,7 +488,7 @@ describe('an inferred action is proposed, not performed', () => {
   it('reports no outcome, so the preview does not move', async () => {
     const result = await inferred(async () => applied);
 
-    expect(result.outcome).toBeUndefined();
+    expect(result.applied).toEqual([]);
   });
 
   it("is not itself a user-role message — a proposal is the caller's to show", async () => {
@@ -540,7 +544,7 @@ describe('undo', () => {
     const result = await undo([]);
 
     expect(result.messages[0].text).toMatch(/nothing to undo/i);
-    expect(result.action).toBeUndefined();
+    expect(result.applied).toEqual([]);
   });
 
   it('does not return a user-role message for the undo either', async () => {
@@ -641,6 +645,13 @@ describe('undo', () => {
     expect(result.messages[0].text).toBe(
       'Undone. I added customer.email and made customer.email required.',
     );
+    // Every action that reached the executor is reported, in the order it
+    // ran, so a multi-step restoration is as auditable as a single action.
+    expect(result.applied.map(({ action }) => action.kind)).toEqual([
+      'add_field',
+      'toggle_required',
+    ]);
+    expect(result.applied.every(({ outcome }) => outcome.ok)).toBe(true);
   });
 
   /**
@@ -677,6 +688,15 @@ describe('undo', () => {
     expect(result.messages[0].text).toContain('added customer.email');
     expect(result.messages[1].failureCode).toBe('PATCH_FAILED');
     expect(result.undoneMessageId).toBeUndefined();
+    // The failing action reached the executor too, so it belongs in
+    // `applied` alongside the one that succeeded — a partial failure is not
+    // reported as though only the successful step ran.
+    expect(result.applied.map(({ action }) => action.kind)).toEqual([
+      'add_field',
+      'toggle_required',
+    ]);
+    expect(result.applied[0].outcome.ok).toBe(true);
+    expect(result.applied[1].outcome.ok).toBe(false);
   });
 
   it('undoes from a card as well as from typed text', async () => {
@@ -1025,7 +1045,7 @@ describe('a request that cannot be done yet', () => {
     });
 
     expect(execute).not.toHaveBeenCalled();
-    expect(result.action).toBeUndefined();
+    expect(result.applied).toEqual([]);
     expect(result.messages[0].text).toMatch(/name/i);
   });
 
