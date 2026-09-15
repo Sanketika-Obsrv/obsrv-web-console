@@ -23,6 +23,7 @@ import {
 } from '../engine/actions';
 import { ACCEPTS } from '../engine/agenda';
 import { sameAction } from '../engine/actions';
+import { DatasetFacts, alreadySatisfied } from '../engine/datasetFacts';
 import { FieldVocabulary, resolveField } from '../engine/fieldVocabulary';
 import { Resolution, resolveUtterance } from '../engine/ruleResolver';
 import { Message } from '../session/types';
@@ -39,7 +40,15 @@ const MODEL_CONFIDENCE = 0.85;
 
 export interface ModelResolveInput {
   utterance: string;
-  /** True once the draft exists; narrows what the model may propose. */
+  /**
+   * True once the draft exists.
+   *
+   * No longer consumed by this resolver's own guards: proposing a rename or
+   * another sample after the draft exists is a legitimate instruction, not a
+   * sign the model had nothing better to offer, and the schema no longer
+   * withdraws either action once a draft is in play. Left on the input for
+   * callers that still have it to hand.
+   */
   hasDraft?: boolean;
   step: WizardStep;
   /**
@@ -57,6 +66,15 @@ export interface ModelResolveInput {
   /** Live master datasets, so the rules can read a join written in words. */
   masterDatasets?: { dataset_id: string; name?: string }[];
   connectorProperties?: string[];
+  /**
+   * The dataset's current values, when the caller has read them.
+   *
+   * Lets a resolved action be checked against what already exists, the same
+   * way `buildPrompt` reads it into `factsLine` — a rename to the name
+   * already on the document is dropped rather than proposed or confirmed.
+   * Absent unless a caller supplies one; skipped rather than guessed at.
+   */
+  facts?: DatasetFacts;
 }
 
 export interface ModelResolveDeps {
@@ -86,17 +104,6 @@ export const extractJson = (reply: string): unknown => {
     }
   }
 };
-
-/**
- * Cues that an instruction was actually about naming the dataset.
- *
- * A path slot is checked against the vocabulary, so an invented field becomes
- * a question. A *name* is free text, so nothing contradicts it — which is how
- * "the amount column should hold decimal values" became a dataset called
- * `amount_dataset_20240525`. Free-text slots need corroboration from the
- * utterance in the same way path slots need resolution.
- */
-const NAMING_CUE = /\b(call|name|rename|title)\b/i;
 
 /** The slots that hold a field path, per action kind. */
 const PATH_SLOTS = [
@@ -210,11 +217,9 @@ export const resolveWithModel = async (
         input.question
           ? buildQuestionSchema(input.question, {
               connectorProperties: input.connectorProperties,
-              hasDraft: input.hasDraft,
             })
           : buildStepSchema(input.step, {
               connectorProperties: input.connectorProperties,
-              hasDraft: input.hasDraft,
             }),
       ),
     });
@@ -244,34 +249,6 @@ export const resolveWithModel = async (
     : STEP_ACTIONS[input.step];
 
   if (!permitted.includes(checked.action.kind)) {
-    return fallBackToRules();
-  }
-
-  /**
-   * A name the user never asked for is worse than no answer — unless naming
-   * is the question.
-   *
-   * The cue words are there for an unprompted utterance, where a model with
-   * naming on its menu will name the dataset after whatever it was given.
-   * At the name question the question *is* the cue, and requiring the user
-   * to say "call it" as well would be the hand-written phrasing this reader
-   * exists to do without.
-   */
-  if (
-    checked.action.kind === 'set_dataset_name' &&
-    input.question !== 'name' &&
-    !NAMING_CUE.test(input.utterance)
-  ) {
-    return fallBackToRules();
-  }
-
-  // Both are done once the draft exists; proposing them again is a sign the
-  // model had nothing better to offer.
-  if (
-    input.hasDraft &&
-    (checked.action.kind === 'attach_sample' ||
-      checked.action.kind === 'set_dataset_name')
-  ) {
     return fallBackToRules();
   }
 
@@ -312,24 +289,46 @@ export const resolveWithModel = async (
    * independently, so it is performed. Without this, moving the model to the
    * front would have put a yes in front of every instruction.
    *
-   * Disagreement goes to the rules. A rule is an exact pattern over the
-   * words as typed and names the field it found; the model is inference, and
-   * measured here it is the one that gets these wrong — "mark mid as
-   * required" came back from the 1.7B as a change of arrival format. Where
-   * no rule matches, which is most of what people type and all of what this
-   * reordering was for, the model's reading stands and is proposed.
+   * Disagreement no longer substitutes the rule's action for the model's.
+   * Measured live: "mark mid as required" came back from the 1.7B as a
+   * change of arrival format, and the rule's own reading used to be swapped
+   * in silently — which meant a user could see a change they never typed,
+   * with nothing to say it was not the change they asked for. A confirmation
+   * card costs one click; discovering and undoing an unannounced substitution
+   * costs a great deal more. So where the two disagree, the model's own
+   * reading stands, marked for confirmation like any other model guess. What
+   * the rules found is evidence of agreement or disagreement now, never an
+   * alternative answer.
    */
-  if (reading.status === 'resolved' && reading.action) {
-    const byRules = fallBackToRules();
+  const settled = (() => {
+    if (reading.status !== 'resolved' || !reading.action) return reading;
 
-    if (byRules.status === 'resolved' && byRules.action) {
-      return sameAction(byRules.action, reading.action)
-        ? { ...reading, needsConfirmation: false }
-        : byRules;
+    const byRules = fallBackToRules();
+    const agrees =
+      byRules.status === 'resolved' &&
+      !!byRules.action &&
+      sameAction(byRules.action, reading.action);
+
+    return { ...reading, needsConfirmation: !agrees };
+  })();
+
+  /**
+   * A resolved action that would change nothing the document does not
+   * already say is dropped rather than run or confirmed — a rename to the
+   * name already on the document is not a decision to ask about.
+   *
+   * Skipped entirely when `facts` is absent, rather than assuming a default:
+   * a caller that has not supplied a snapshot has not claimed to know the
+   * dataset's current values, and guessing would risk dropping an action
+   * that is not actually a no-op.
+   */
+  if (input.facts && settled.status === 'resolved' && settled.action) {
+    if (alreadySatisfied(settled.action, input.facts)) {
+      return { status: 'unknown', confidence: 0 };
     }
   }
 
-  return reading;
+  return settled;
 };
 
 const defaultFallback = (input: ModelResolveInput): Resolution =>

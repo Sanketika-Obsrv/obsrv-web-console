@@ -100,18 +100,6 @@ export const stepForKinds = (kinds: ActionKind[]): WizardStep | undefined =>
 
 export interface StepSchemaOptions {
   /**
-   * True once `datasets/create` has run.
-   *
-   * Withdraws `attach_sample` and `set_dataset_name` from the model's menu,
-   * because both are already done. This matters more than it looks: scoping
-   * the schema to a step means a *wrong* step no longer produces "I cannot do
-   * that" but a plausible wrong action. Seen live — with the step stuck on
-   * `ingestion`, "the amount column should hold decimal values" became
-   * `set_dataset_name` with an invented name, because naming was the only
-   * action on offer that could absorb a free-text instruction.
-   */
-  hasDraft?: boolean;
-  /**
    * Accepted and deliberately ignored for the path slots, so callers can pass
    * the vocabulary without silently reintroducing the pinning that broke the
    * context budget. It is still used for connector properties, whose count is
@@ -126,16 +114,11 @@ const kindOf = (variant: unknown): string =>
     ?.const ?? '';
 
 /** The action schema for one step, with unpinned field paths. */
-/** Done once and not worth offering again; renaming is a deliberate act. */
-const ONCE_ONLY: ActionKind[] = ['attach_sample', 'set_dataset_name'];
-
 export const buildStepSchema = (
   step: WizardStep,
-  { connectorProperties, hasDraft }: StepSchemaOptions = {},
+  { connectorProperties }: StepSchemaOptions = {},
 ): JsonSchema => {
-  const allowed = (STEP_ACTIONS[step] ?? []).filter(
-    (kind) => !hasDraft || !ONCE_ONLY.includes(kind),
-  );
+  const allowed = STEP_ACTIONS[step] ?? [];
 
   // `fieldPaths` is intentionally not forwarded: that is the pinning.
   const full = buildActionSchema({ connectorProperties });
@@ -162,11 +145,9 @@ export const buildStepSchema = (
  */
 export const buildQuestionSchema = (
   question: AgendaStepId,
-  { connectorProperties, hasDraft }: StepSchemaOptions = {},
+  { connectorProperties }: StepSchemaOptions = {},
 ): JsonSchema => {
-  const allowed = [...new Set([...ACCEPTS[question], ...ALWAYS])].filter(
-    (kind) => !hasDraft || !ONCE_ONLY.includes(kind),
-  );
+  const allowed = [...new Set([...ACCEPTS[question], ...ALWAYS])];
 
   const full = buildActionSchema({ connectorProperties });
   const variants = (full.oneOf as unknown[]).filter((variant) =>

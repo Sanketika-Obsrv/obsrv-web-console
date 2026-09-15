@@ -167,35 +167,23 @@ describe('estimateTokens', () => {
 });
 
 /**
- * Scoping to a step means a wrong step yields a plausible wrong action rather
- * than a refusal, so what is on offer has to shrink as work is completed.
+ * `buildStepSchema` used to take a `hasDraft` option that withdrew
+ * `attach_sample` and `set_dataset_name` once the draft existed, because
+ * scoping to a step means a *wrong* step yields a plausible wrong action
+ * rather than a refusal — with the step stuck on `ingestion`, "the amount
+ * column should hold decimal values" became `set_dataset_name` with an
+ * invented name, since naming was the only action left that could absorb
+ * free text. But withdrawing the action from the grammar cannot tell that
+ * case apart from a legitimate rename, and renaming a dataset that already
+ * exists is something the server has always supported. The option is gone;
+ * both actions are always on offer, at every step that offers them.
  */
-describe('withdrawing actions that are already done', () => {
-  it('offers naming and sampling before the draft exists', () => {
+describe('naming and sampling stay on offer', () => {
+  it('offers naming and sampling', () => {
     const kinds = kindsIn(buildStepSchema('ingestion'));
 
     expect(kinds).toContain('set_dataset_name');
     expect(kinds).toContain('attach_sample');
-  });
-
-  it('withdraws both once the draft exists', () => {
-    const kinds = kindsIn(buildStepSchema('ingestion', { hasDraft: true }));
-
-    expect(kinds).not.toContain('set_dataset_name');
-    expect(kinds).not.toContain('attach_sample');
-  });
-
-  it('still leaves a way to ask and to move on', () => {
-    const kinds = kindsIn(buildStepSchema('ingestion', { hasDraft: true }));
-
-    expect(kinds).toContain('clarify');
-    expect(kinds).toContain('goto_step');
-  });
-
-  it('does not disturb the other steps', () => {
-    expect(
-      kindsIn(buildStepSchema('schema', { hasDraft: true })).sort(),
-    ).toEqual(kindsIn(buildStepSchema('schema')).sort());
   });
 });
 
@@ -226,12 +214,6 @@ describe('buildQuestionSchema', () => {
     for (const question of AGENDA_STEPS) {
       expect(kindsIn(buildQuestionSchema(question))).toContain('clarify');
     }
-  });
-
-  it('never offers naming again once the draft exists', () => {
-    expect(
-      kindsIn(buildQuestionSchema('name', { hasDraft: true })),
-    ).not.toContain('set_dataset_name');
   });
 
   it('produces a usable schema for every question', () => {

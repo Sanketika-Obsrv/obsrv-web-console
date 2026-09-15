@@ -1,3 +1,4 @@
+import { DatasetFacts } from '../engine/datasetFacts';
 import { buildFieldVocabulary } from '../engine/fieldVocabulary';
 import { ModelEngine } from './engineClient';
 import { Resolution } from '../engine/ruleResolver';
@@ -227,20 +228,21 @@ describe('extractJson', () => {
 });
 
 /**
- * Found live, and the most instructive failure of the build. With the step
- * stuck on `ingestion` after the draft existed, the model was offered only
- * ingestion actions — and `set_dataset_name` was the only one that could
- * absorb a free-text instruction, so it invented a name:
+ * Naming used to be gated by a hand-written cue-word regex — "call",
+ * "name", "rename", "title" — because an ungated model reading invented a
+ * name from whatever free text it was given:
  *
  *   "the amount column should hold decimal values"
  *     -> set_dataset_name "amount_dataset_20240525"
  *
- * A path slot is checked against the vocabulary, so an invented field becomes
- * a question. A name is free text, so nothing contradicted it. Free-text
- * slots need corroboration from the utterance in the same way path slots need
- * resolution.
+ * That regex is gone: a fixed word list only ever covers the sentence
+ * someone thought of, which is the same objection every hand-written rule
+ * answers for. A model's naming proposal is no longer rejected for lacking
+ * one of those words — it is proposed like any other model guess, and
+ * `needsConfirmation` is what stands between a wrong reading and the
+ * dataset.
  */
-describe('a name the user never asked for', () => {
+describe('a model-proposed name', () => {
   const nameReply =
     '{"kind":"set_dataset_name","name":"amount_dataset_20240525"}';
 
@@ -250,20 +252,25 @@ describe('a name the user never asked for', () => {
       { engine: engineReplying(nameReply) },
     );
 
-  it('is refused when the instruction was not about naming', async () => {
+  it('is proposed, not rejected, when the utterance has no naming cue', async () => {
     const resolution = await atIngestion(
       'the amount column should hold decimal values',
     );
 
-    expect(resolution.action?.kind).not.toBe('set_dataset_name');
+    expect(resolution.action).toEqual({
+      kind: 'set_dataset_name',
+      name: 'amount_dataset_20240525',
+    });
+    expect(resolution.needsConfirmation).toBe(true);
   });
 
-  it('does not invent a name from an instruction about duplicates', async () => {
+  it('is proposed for an instruction about duplicates too', async () => {
     const resolution = await atIngestion(
       'I never want to see the same order twice',
     );
 
-    expect(JSON.stringify(resolution)).not.toContain('amount_dataset');
+    expect(resolution.action).toMatchObject({ kind: 'set_dataset_name' });
+    expect(resolution.needsConfirmation).toBe(true);
   });
 
   it('is accepted when the user did ask to name it', async () => {
@@ -275,32 +282,18 @@ describe('a name the user never asked for', () => {
     });
   });
 
-  it('accepts "rename" as a naming cue too', async () => {
-    const resolution = await atIngestion(
-      'rename it to amount_dataset_20240525',
-    );
+  /**
+   * The withdrawal-once-a-draft-exists guard is gone too: renaming after the
+   * draft exists is meant to work, since the server PATCHes the name and
+   * only the derived id stays fixed.
+   */
+  it('is no longer withdrawn once the draft exists', async () => {
+    const resolution = await atIngestion('call it something else', true);
 
     expect(resolution.action?.kind).toBe('set_dataset_name');
   });
 
-  /**
-   * The guard stops the *model* using naming as a catch-all; it does not
-   * forbid renaming. An explicit rename still works, because the rules
-   * resolve it — which is the correct division: the model's proposal is
-   * discarded, the user's instruction is not.
-   */
-  it('discards the model proposal but still honours an explicit rename', async () => {
-    const resolution = await atIngestion('call it something else', true);
-
-    expect(resolution.action).toEqual({
-      kind: 'set_dataset_name',
-      name: 'something else',
-    });
-    // The model's invented name is gone; the user's words decided it.
-    expect(JSON.stringify(resolution)).not.toContain('amount_dataset');
-  });
-
-  it('refuses a second sample once the draft exists', async () => {
+  it('accepts a second sample once the draft exists too', async () => {
     const resolution = await resolveWithModel(
       {
         utterance: 'read the file again',
@@ -315,7 +308,7 @@ describe('a name the user never asked for', () => {
       },
     );
 
-    expect(resolution.action?.kind).not.toBe('attach_sample');
+    expect(resolution.action?.kind).toBe('attach_sample');
   });
 });
 
@@ -551,7 +544,9 @@ describe('answering the question the assistant asked', () => {
 /**
  * Moving the model to the front must not put a confirmation in front of every
  * instruction. Where the rules read the same action independently, the two
- * readings agreeing is the evidence a confirmation would have asked for.
+ * readings agreeing is the evidence a confirmation would have asked for —
+ * and where they disagree, the model's own reading is what is confirmed, not
+ * a substitution of the rule's.
  */
 describe('when the model and the rules agree', () => {
   it('performs rather than proposes', async () => {
@@ -591,10 +586,12 @@ describe('when the model and the rules agree', () => {
 
   /**
    * Measured in the browser: "mark mid as required" came back from the 1.7B
-   * as a change of arrival format. A rule is an exact pattern over the words
-   * as typed, so where the two disagree the rule is the reading.
+   * as a change of arrival format. That reading is no longer swapped out for
+   * the rule's own — the model's proposal stands, marked for confirmation,
+   * so the user sees exactly what was read rather than a substitution they
+   * never asked for.
    */
-  it('prefers the rule where the two disagree', async () => {
+  it('keeps the model reading where the two disagree, marked for confirmation', async () => {
     const resolution = await resolveWithModel(
       { utterance: 'make order_id required', step: 'schema', vocabulary },
       {
@@ -605,10 +602,60 @@ describe('when the model and the rules agree', () => {
     );
 
     expect(resolution.action).toEqual({
-      kind: 'toggle_required',
+      kind: 'set_arrival_format',
       path: 'order_id',
-      required: true,
+      arrivalFormat: 'text',
     });
-    expect(resolution.needsConfirmation).toBeFalsy();
+    expect(resolution.needsConfirmation).toBe(true);
+  });
+});
+
+/** A `DatasetFacts` with nothing decided, for tests that only care about `name`. */
+const emptyFacts: DatasetFacts = {
+  stores: { realtime: false, lakehouse: false, cache: false },
+  keys: {},
+  fieldCount: 0,
+  hasDraft: true,
+};
+
+/**
+ * `alreadySatisfied` (`engine/datasetFacts.ts`) is wired in as a last guard:
+ * a resolved action that would only repeat what the document already says
+ * is dropped rather than run or confirmed.
+ */
+describe('a resolved action already true of the dataset', () => {
+  it('is dropped when it matches the supplied facts', async () => {
+    const resolution = await resolveWithModel(
+      {
+        utterance: 'call it telemetry',
+        step: 'ingestion',
+        vocabulary,
+        facts: { ...emptyFacts, name: 'telemetry' },
+      },
+      {
+        engine: engineReplying(
+          '{"kind":"set_dataset_name","name":"telemetry"}',
+        ),
+      },
+    );
+
+    expect(resolution.action).toBeUndefined();
+    expect(resolution.status).toBe('unknown');
+  });
+
+  it('leaves behaviour unchanged when no facts are supplied', async () => {
+    const resolution = await resolveWithModel(
+      { utterance: 'call it telemetry', step: 'ingestion', vocabulary },
+      {
+        engine: engineReplying(
+          '{"kind":"set_dataset_name","name":"telemetry"}',
+        ),
+      },
+    );
+
+    expect(resolution.action).toEqual({
+      kind: 'set_dataset_name',
+      name: 'telemetry',
+    });
   });
 });
