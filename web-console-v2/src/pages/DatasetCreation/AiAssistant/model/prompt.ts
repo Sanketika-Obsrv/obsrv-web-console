@@ -18,6 +18,7 @@
  * is given as a hint, and `resolveField` handles whatever comes back.
  */
 import { AgendaStepId, WizardStep } from '../engine/actions';
+import { DatasetFacts } from '../engine/datasetFacts';
 import { Message } from '../session/types';
 
 /** How many field names to show as a hint. Enough to establish the shape. */
@@ -42,6 +43,17 @@ export interface PromptInput {
   question?: AgendaStepId;
   /** That question in its own words, which is the best context there is. */
   questionText?: string;
+  /**
+   * The dataset's current values. Without this, "again", "instead" and "why
+   * is the id still the old one" have nothing to be read against — the
+   * prompt used to carry only the question and the sentence typed at it.
+   */
+  facts?: DatasetFacts;
+  /**
+   * The option labels the question's own card printed, when it is a choice.
+   * This is what makes "the second one" or "the master one" readable at all.
+   */
+  optionLabels?: string[];
   /** Field paths from the server, sampled rather than listed in full. */
   fieldPaths?: string[];
   /** Prior turns, most recent last. */
@@ -74,6 +86,9 @@ export const EXAMPLES: Record<AgendaStepId, string[]> = {
     '"I want create telemetry dataset" -> {"kind":"set_dataset_name","name":"telemetry"}',
     '"can you make me one for web checkout events" -> {"kind":"set_dataset_name","name":"web checkout events"}',
     '"lets do air quality readings please" -> {"kind":"set_dataset_name","name":"air quality readings"}',
+    // A rename after the draft already exists — the id keeps its original
+    // slug regardless, which is why this is safe to allow at all.
+    '"rename it to orders_v2" -> {"kind":"set_dataset_name","name":"orders_v2"}',
   ],
   type: ['"master data" -> {"kind":"set_dataset_type","datasetType":"master"}'],
   connector: [
@@ -125,12 +140,150 @@ export const SYSTEM_PROMPT = [
   'If the instruction is unclear or names something you cannot see, reply with a clarify action asking for what you need.',
 ].join(' ');
 
+/** Which of `DatasetFacts.stores` each label names, in the order said. */
+const STORE_LABELS: { flag: keyof DatasetFacts['stores']; label: string }[] = [
+  { flag: 'realtime', label: 'real-time' },
+  { flag: 'lakehouse', label: 'lakehouse' },
+  { flag: 'cache', label: 'cache' },
+];
+
+/** `a`, `a and b`, `a, b and c` — the same join `recap.ts` uses. */
+const joinAnd = (words: string[]): string =>
+  words.length < 2
+    ? (words[0] ?? '')
+    : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
+
+/**
+ * The dataset's current values, as one mechanical line.
+ *
+ * Deliberately not prose: this is data rendered from `DatasetFacts`, not a
+ * sentence about the dataset, so it cannot be mistaken for something the
+ * assistant is claiming rather than reading. Every clause is independently
+ * optional, and the line itself disappears once every clause does — a fresh
+ * conversation with nothing decided yet has nothing to report here.
+ */
+const factsLine = (facts?: DatasetFacts): string | undefined => {
+  if (!facts) return undefined;
+
+  const clauses: string[] = [];
+
+  if (facts.name) {
+    // The id is worth naming only once it is fixed — `executor.ts` derives
+    // it from the name and never changes it again once the draft exists,
+    // which is exactly when `datasetId` accompanies a name here.
+    clauses.push(
+      facts.datasetId
+        ? `name ${facts.name} (id ${facts.datasetId}, fixed)`
+        : `name ${facts.name}`,
+    );
+  }
+
+  if (facts.datasetType) clauses.push(`type ${facts.datasetType}`);
+
+  const activeStores = STORE_LABELS.filter(
+    ({ flag }) => facts.stores[flag],
+  ).map(({ label }) => label);
+  if (activeStores.length > 0) {
+    clauses.push(
+      `${joinAnd(activeStores)} store${activeStores.length > 1 ? 's' : ''} on`,
+    );
+  }
+
+  if (facts.keys.timestamp) clauses.push(`timestamp ${facts.keys.timestamp}`);
+  if (facts.keys.primary) clauses.push(`primary ${facts.keys.primary}`);
+  if (facts.keys.partition) clauses.push(`partition ${facts.keys.partition}`);
+
+  if (facts.dedup) {
+    clauses.push(
+      facts.dedup.enabled
+        ? `dedup on${facts.dedup.key ? ` ${facts.dedup.key}` : ''}`
+        : 'dedup off',
+    );
+  }
+
+  return clauses.length > 0 ? `Now: ${clauses.join('; ')}.` : undefined;
+};
+
+/**
+ * Field names that most often say what an action concerned, checked in this
+ * order. Generic on purpose: an identifier picked this way is a fact read
+ * off the action's own shape, not a phrase matched against what anyone typed.
+ */
+const IDENTIFYING_FIELDS = [
+  'name',
+  'path',
+  'step',
+  'key',
+  'datasetType',
+  'connectorId',
+  'masterDatasetId',
+  'fileName',
+  'fieldKey',
+  'timestamp',
+  'primary',
+  'partition',
+  'property',
+] as const;
+
+/**
+ * Kinds whose `step` says what the turn was about more than any other field
+ * on them does. `skip_step` carries an optional `path` too — "the field the
+ * answer concerned, when the question was about one" — but that is a detail
+ * of the decline, not what was declined; reading `path` first would digest a
+ * PII decline as the field's name rather than the question it left alone.
+ */
+const STEP_LED_KINDS = ['skip_step', 'goto_step'] as const;
+
+const actionIdentifier = (
+  action: NonNullable<Message['action']>,
+): string | undefined => {
+  const fields = (STEP_LED_KINDS as readonly string[]).includes(action.kind)
+    ? (['step', ...IDENTIFYING_FIELDS] as const)
+    : IDENTIFYING_FIELDS;
+
+  for (const field of fields) {
+    const value = (action as Record<string, unknown>)[field];
+    if (typeof value === 'string' && value) return value;
+  }
+
+  return undefined;
+};
+
+/**
+ * One turn as the model needs it: what was said, and what it did.
+ *
+ * Plain `role: text` reads as a wall of prose, which is why "again" and "the
+ * second one" had nothing but the words themselves to resolve against. A
+ * turn that dispatched an action, or one the server refused, says so in a
+ * bracketed suffix — kept apart from `describeAction`'s prose, because that
+ * is written for the person reading the transcript and this is a machine
+ * digest written for the model reading the prompt.
+ */
+const actionSuffix = (action: NonNullable<Message['action']>): string => {
+  const identifier = actionIdentifier(action);
+  return `[${action.kind}${identifier ? ` ${identifier}` : ''}]`;
+};
+
+export const turnDigest = (turn: Message): string => {
+  const suffix = turn.failureCode
+    ? `[failed ${turn.failureCode}]`
+    : turn.action
+      ? actionSuffix(turn.action)
+      : undefined;
+
+  return suffix
+    ? `${turn.role}: ${turn.text} ${suffix}`
+    : `${turn.role}: ${turn.text}`;
+};
+
 /** The user-side prompt: what step we are on, what they said, a few hints. */
 export const buildPrompt = ({
   step,
   utterance,
   question,
   questionText,
+  facts,
+  optionLabels = [],
   fieldPaths = [],
   history = [],
 }: PromptInput): string => {
@@ -144,13 +297,23 @@ export const buildPrompt = ({
   const parts =
     question && questionText
       ? [
-          `The assistant asked: ${questionText}`,
+          [
+            `The assistant asked: ${questionText}`,
+            // Read against the words the card itself printed — the model
+            // cannot resolve "the second one" against anything else.
+            ...(optionLabels.length > 0
+              ? [`Offered: ${optionLabels.join(', ')}.`]
+              : []),
+          ].join('\n'),
           'The user is answering that question. Reply with the action that records their answer.',
           ...(EXAMPLES[question].length
             ? [['Answers to this question:', ...EXAMPLES[question]].join('\n')]
             : []),
         ]
       : [`Step: ${step} — ${STEP_PURPOSE[step]}.`];
+
+  const now = factsLine(facts);
+  if (now) parts.push(now);
 
   if (fieldPaths.length > 0) {
     const shown = fieldPaths.slice(0, VOCABULARY_HINT).join(', ');
@@ -167,12 +330,7 @@ export const buildPrompt = ({
   const recent = history.slice(-HISTORY_TURNS);
 
   if (recent.length > 0) {
-    parts.push(
-      [
-        'Recent turns:',
-        ...recent.map((turn) => `${turn.role}: ${turn.text}`),
-      ].join('\n'),
-    );
+    parts.push(['Recent turns:', ...recent.map(turnDigest)].join('\n'));
   }
 
   parts.push(
