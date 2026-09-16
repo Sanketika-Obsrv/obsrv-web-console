@@ -15,6 +15,7 @@
  *   line of defence at the persistence boundary.
  */
 import _ from 'lodash';
+import { OperationsSchedule } from '../engine/actions';
 import { SECRET_PROP_NAME } from '../engine/connectors';
 import {
   AiSession,
@@ -135,6 +136,15 @@ export interface SessionStore {
     sessionId: string,
     key: string,
     value: unknown,
+  ): Promise<AiSession | undefined>;
+  /**
+   * Records the polling schedule chosen for a batch connector. Ignored, like
+   * `setConnectorValue`, when no connector has been chosen — there is
+   * nothing to attach a schedule to.
+   */
+  setConnectorSchedule(
+    sessionId: string,
+    schedule: OperationsSchedule,
   ): Promise<AiSession | undefined>;
   setSampleRows(
     sessionId: string,
@@ -309,6 +319,16 @@ export const createSessionStore = (
             ...session.connector,
             values: { ...session.connector.values, [key]: value },
           },
+        };
+      }),
+
+    setConnectorSchedule: (sessionId, schedule) =>
+      mutate(sessionId, (session) => {
+        if (!session.connector) return session;
+
+        return {
+          ...session,
+          connector: { ...session.connector, schedule },
         };
       }),
 

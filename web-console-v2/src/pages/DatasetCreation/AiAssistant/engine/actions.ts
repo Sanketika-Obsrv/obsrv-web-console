@@ -21,6 +21,14 @@ export const ACTION_KINDS = [
   'set_connector_field',
   'request_connector_secrets',
   'skip_connector',
+  // Only reachable for a batch connector (one that polls on a schedule,
+  // rather than streaming continuously) — a stream connector never has a
+  // schedule to set. Carries only `schedule`: the wizard's own help text
+  // says the polling *interval* has exactly one supported value today, so
+  // modeling it as a choice would invent a decision nobody can actually
+  // make, the same mistake fixed elsewhere for `readOffer`'s hardcoded
+  // "yes"/"no".
+  'set_operations_config',
   'set_data_type',
   'set_arrival_format',
   'toggle_required',
@@ -105,6 +113,24 @@ export const DATA_TYPES = [
 export const DATASET_TYPES = ['event', 'transaction', 'master'] as const;
 
 /**
+ * A batch connector's polling schedule — confirmed live against every batch
+ * connector the wizard offers (AWS S3, Azure, GCS, PostgreSQL, MySQL): each
+ * renders a "Configure Fetch Settings" section with exactly these four
+ * choices. A stream connector (Kafka, Debezium, Sunbird Knowlg) has no such
+ * section at all.
+ *
+ * Deliberately does *not* include a polling-interval field: the wizard's own
+ * help text says only one interval is supported today ("For now only
+ * periodic is supported"), so it is not a real choice.
+ */
+export const OPERATIONS_SCHEDULES = [
+  'Hourly',
+  'Daily',
+  'Weekly',
+  'Monthly',
+] as const;
+
+/**
  * The questions the guided flow asks, in the order it asks them.
  *
  * Distinct from `WIZARD_STEPS`, which names the wizard's *pages*. A page can
@@ -147,6 +173,7 @@ export const WIZARD_STEPS = [
 export type ArrivalFormat = (typeof ARRIVAL_FORMATS)[number];
 export type DataType = (typeof DATA_TYPES)[number];
 export type DatasetType = (typeof DATASET_TYPES)[number];
+export type OperationsSchedule = (typeof OPERATIONS_SCHEDULES)[number];
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 export type AgendaStepId = (typeof AGENDA_STEPS)[number];
 
@@ -162,6 +189,7 @@ export type Action =
     }
   | { kind: 'request_connector_secrets' }
   | { kind: 'skip_connector' }
+  | { kind: 'set_operations_config'; schedule: OperationsSchedule }
   | { kind: 'set_data_type'; path: string; dataType: DataType }
   | { kind: 'set_arrival_format'; path: string; arrivalFormat: ArrivalFormat }
   | { kind: 'toggle_required'; path: string; required: boolean }
@@ -307,6 +335,11 @@ const buildVariants = ({
     ),
     variant('request_connector_secrets'),
     variant('skip_connector'),
+    variant(
+      'set_operations_config',
+      { schedule: { type: 'string', enum: [...OPERATIONS_SCHEDULES] } },
+      ['schedule'],
+    ),
     variant(
       'set_data_type',
       { path, dataType: { type: 'string', enum: [...DATA_TYPES] } },

@@ -37,6 +37,8 @@ import {
   AGENDA_STEPS,
   AgendaStepId,
   DATASET_TYPES,
+  OPERATIONS_SCHEDULES,
+  OperationsSchedule,
   WizardStep,
 } from './actions';
 import { ConnectorProp, fillableProps, UiSpec } from './connectors';
@@ -90,6 +92,18 @@ export interface AgendaState {
     values?: Record<string, unknown>;
     /** The connector's `ui_spec`, for asking about one property at a time. */
     uiSpec?: UiSpec;
+    /**
+     * `'batch'` or `'stream'`, read from the connector's own definition
+     * (`GET /v2/connectors/read/:id`'s `category` field — the same field
+     * `ConnectorConfiguration.tsx` reads to decide whether to render
+     * "Configure Fetch Settings"). Lowercased by the caller. `undefined`
+     * until the definition has been read, which the schedule question
+     * treats the same as "not batch" — a schedule is never asked for on a
+     * connector nothing has yet confirmed needs one.
+     */
+    category?: string;
+    /** The polling schedule, once chosen — only meaningful for `'batch'`. */
+    schedule?: OperationsSchedule;
   };
   /** Connectors the cluster offers, once listed. Absent means unknown. */
   connectorsAvailable?: { id: string; name?: string }[];
@@ -182,6 +196,7 @@ export const ACCEPTS: Record<AgendaStepId, ActionKind[]> = {
     'request_connector_secrets',
     'select_connector',
     'skip_connector',
+    'set_operations_config',
     'skip_step',
   ],
   sample: ['attach_sample', 'select_connector', 'skip_step'],
@@ -1159,6 +1174,25 @@ const QUESTION: Record<
     // requested through `request_connector_secrets`, a separate card — are
     // left. Either way there is no property to build a prompt about.
     if (!prop) {
+      // A batch connector — one that polls on a schedule, unlike a stream
+      // connector — still needs that schedule before credentials, the one
+      // thing its `ui_spec` never carries because it isn't a connector
+      // property at all. Asked once: a schedule already set means this has
+      // been through here before.
+      if (state.connector?.category === 'batch' && !state.connector.schedule) {
+        return {
+          step: 'connector',
+          text: `Setting up ${name} — how often should it poll for data?`,
+          card: choice(
+            'Polling schedule',
+            OPERATIONS_SCHEDULES.map((schedule) => ({
+              label: schedule,
+              action: { kind: 'set_operations_config' as const, schedule },
+            })),
+          ),
+        };
+      }
+
       return {
         step: 'connector',
         text: `Let's set up ${name}. What are its connection settings?`,

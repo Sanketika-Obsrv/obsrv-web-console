@@ -13,6 +13,7 @@ import { createMemoryStorage } from './memoryStorage';
 import { NewMessage, SessionStore, createSessionStore } from './sessionStore';
 import { AiSession, Message } from './types';
 import { ModelTier } from '../model/tiers';
+import { OperationsSchedule } from '../engine/actions';
 
 /**
  * Where the active session id is remembered before `datasets/create` runs.
@@ -71,6 +72,8 @@ export interface SessionApi {
   setPending(pending: AiSession['pending']): Promise<void>;
   selectConnector(connector: { id: string; name?: string }): Promise<void>;
   setConnectorValue(key: string, value: unknown): Promise<void>;
+  /** Records the polling schedule chosen for a batch connector. */
+  setConnectorSchedule(schedule: OperationsSchedule): Promise<void>;
   onSaved(): Promise<void>;
   /**
    * Re-reads this conversation from the store.
@@ -223,6 +226,8 @@ export const useSession = ({
         apply((id) => sessions.selectConnector(id, connector)),
       setConnectorValue: (key, value) =>
         apply((id) => sessions.setConnectorValue(id, key, value)),
+      setConnectorSchedule: (schedule) =>
+        apply((id) => sessions.setConnectorSchedule(id, schedule)),
       onSaved: () => apply((id) => sessions.onSaved(id)),
 
       resumable,

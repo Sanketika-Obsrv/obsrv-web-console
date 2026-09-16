@@ -6,9 +6,11 @@
  * password.
  */
 import {
+  OPERATIONS_INTERVAL,
   connectorConfigPayload,
   fillableProps,
   isSecretProp,
+  operationsConfigFor,
   secretProps,
   secretSchema,
   summariseProp,
@@ -493,6 +495,29 @@ describe('building the connectors_config payload', () => {
     }) as { operations_config: Record<string, unknown> }[];
 
     expect(payload[0].operations_config).toEqual({ batch_size: 100 });
+  });
+});
+
+/**
+ * A stream connector — Kafka, Debezium, Sunbird Knowlg, confirmed live —
+ * never has a schedule, and neither does a batch connector before one is
+ * chosen. Both send `{}`, matching `ConnectorConfiguration.tsx`'s own
+ * `connectorType === 'stream' ? {} : opFormData`.
+ */
+describe('building the operations config for a schedule', () => {
+  it('is empty with no schedule, as a stream connector sends', () => {
+    expect(operationsConfigFor(undefined)).toEqual({});
+  });
+
+  it('carries the fixed interval alongside a chosen schedule', () => {
+    expect(operationsConfigFor('Hourly')).toEqual({
+      interval: OPERATIONS_INTERVAL,
+      schedule: 'Hourly',
+    });
+  });
+
+  it('uses "Periodic" as the interval, the only value the wizard supports', () => {
+    expect(OPERATIONS_INTERVAL).toBe('Periodic');
   });
 });
 

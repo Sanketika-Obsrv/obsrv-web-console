@@ -161,6 +161,32 @@ describe('setting a connector property', () => {
   });
 });
 
+describe('setting the operations config (polling schedule)', () => {
+  it('refuses when no connector has been chosen', async () => {
+    const outcome = await run(
+      { kind: 'set_operations_config', schedule: 'Hourly' },
+      { connector: undefined },
+    );
+
+    expect(outcome).toMatchObject({ ok: false, code: 'NO_CONNECTOR' });
+  });
+
+  it('writes nothing until the connector is submitted', async () => {
+    await run({ kind: 'set_operations_config', schedule: 'Hourly' });
+
+    expect(mocked.update).not.toHaveBeenCalled();
+  });
+
+  it('accepts the action when a connector is chosen', async () => {
+    const outcome = await run({
+      kind: 'set_operations_config',
+      schedule: 'Weekly',
+    });
+
+    expect(outcome).toEqual({ ok: true, status: 'noop' });
+  });
+});
+
 describe('submitting the connector with its credentials', () => {
   it('sends the delta shape the update API expects', async () => {
     await submitConnector(DATASET_ID, connector, {
@@ -182,6 +208,41 @@ describe('submitting the connector with its credentials', () => {
         action: 'upsert',
       },
     ]);
+  });
+
+  /**
+   * A stream connector — Kafka, Debezium, Sunbird Knowlg — never has a
+   * schedule buffered, so it sends the same empty `operations_config` as
+   * above. A batch connector with a schedule set carries it, plus the one
+   * interval the wizard itself ever sends.
+   */
+  it('carries the schedule and fixed interval for a batch connector', async () => {
+    await submitConnector(
+      DATASET_ID,
+      { ...connector, schedule: 'Weekly' },
+      { source_database_pwd: SECRET },
+    );
+
+    const [entry] = mocked.update.mock.calls[0][0].connectors_config as {
+      value: { operations_config: Record<string, unknown> };
+    }[];
+
+    expect(entry.value.operations_config).toEqual({
+      interval: 'Periodic',
+      schedule: 'Weekly',
+    });
+  });
+
+  it('sends an empty operations_config for a stream connector, with no schedule buffered', async () => {
+    await submitConnector(DATASET_ID, connector, {
+      source_database_pwd: SECRET,
+    });
+
+    const [entry] = mocked.update.mock.calls[0][0].connectors_config as {
+      value: { operations_config: Record<string, unknown> };
+    }[];
+
+    expect(entry.value.operations_config).toEqual({});
   });
 
   it('sends the version key from the read that built the payload', async () => {

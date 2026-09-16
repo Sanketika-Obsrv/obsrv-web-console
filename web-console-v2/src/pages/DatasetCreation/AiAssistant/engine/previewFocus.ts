@@ -53,6 +53,7 @@ const SECTION_BY_KIND: Partial<Record<ActionKind, PreviewSection>> = {
   set_connector_field: 'connector',
   request_connector_secrets: 'connector',
   skip_connector: 'connector',
+  set_operations_config: 'connector',
 };
 
 const SECTION_BY_STEP: Partial<Record<WizardStep, PreviewSection>> = {
@@ -136,6 +137,7 @@ const STEP_BY_KIND: Partial<Record<Action['kind'], WizardStep>> = {
   set_connector_field: 'connector',
   request_connector_secrets: 'connector',
   skip_connector: 'connector',
+  set_operations_config: 'connector',
 
   save: 'preview',
 };

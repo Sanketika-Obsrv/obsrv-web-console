@@ -45,6 +45,7 @@ export const STEP_ACTIONS: Record<WizardStep, ActionKind[]> = {
     'set_connector_field',
     'request_connector_secrets',
     'skip_connector',
+    'set_operations_config',
   ],
   ingestion: [
     ...ALWAYS,

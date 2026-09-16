@@ -157,6 +157,19 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     [],
   );
   const [uiSpec, setUiSpec] = useState<UiSpec | undefined>();
+  /**
+   * `'batch'` or `'stream'`, read alongside the `ui_spec` from the same
+   * `readConnector` call.
+   *
+   * This is the connector's own `category` field — the same field
+   * `ConnectorConfiguration.tsx` reads (as `readConnector.data.category`) to
+   * decide whether to render its "Configure Fetch Settings" section — not a
+   * hand-maintained list of which connector ids are batch. Lowercased here
+   * so the agenda can compare it against the literal `'batch'`.
+   */
+  const [connectorCategory, setConnectorCategory] = useState<
+    string | undefined
+  >();
   const [connectorsUnavailable, setConnectorsUnavailable] = useState(false);
 
   /**
@@ -332,17 +345,28 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
 
     if (!chosenConnectorId) {
       setUiSpec(undefined);
+      setConnectorCategory(undefined);
       return undefined;
     }
 
-    readConnector<{ ui_spec?: UiSpec; connector_meta?: { ui_spec?: UiSpec } }>(
-      chosenConnectorId,
-    )
+    readConnector<{
+      ui_spec?: UiSpec;
+      category?: string;
+      connector_meta?: { ui_spec?: UiSpec; category?: string };
+    }>(chosenConnectorId)
       .then((result) => {
         if (cancelled) return;
         setUiSpec(result?.ui_spec ?? result?.connector_meta?.ui_spec);
+
+        const category = result?.category ?? result?.connector_meta?.category;
+        setConnectorCategory(
+          typeof category === 'string' ? category.toLowerCase() : undefined,
+        );
       })
-      .catch(() => setUiSpec(undefined));
+      .catch(() => {
+        setUiSpec(undefined);
+        setConnectorCategory(undefined);
+      });
 
     return () => {
       cancelled = true;
@@ -439,6 +463,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                 ...current.connector,
                 configured: current.connectorConfigured,
                 uiSpec,
+                ...(connectorCategory ? { category: connectorCategory } : {}),
               },
             }
           : {}),
@@ -447,6 +472,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       };
     },
     [
+      connectorCategory,
       connectors,
       connectorsUnavailable,
       datasetId,
@@ -849,6 +875,13 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                 action.property,
                 checked?.ok ? checked.value : action.value,
               );
+            }
+
+            // A batch connector's schedule, buffered the same way a
+            // connector field is — nothing reaches the server until
+            // `submitConnector` runs, folded into `operations_config`.
+            if (action.kind === 'set_operations_config') {
+              await session.setConnectorSchedule(action.schedule);
             }
 
             // Nothing else produces this card, so without it the credential

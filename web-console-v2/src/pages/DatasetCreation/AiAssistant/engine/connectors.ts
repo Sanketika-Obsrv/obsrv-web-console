@@ -275,3 +275,29 @@ export const connectorConfigPayload = ({
 
   return mode === 'update' ? [{ value: entry, action: 'upsert' }] : [entry];
 };
+
+/**
+ * The batch connector's only supported polling interval today.
+ *
+ * Taken from `ConnectorConfiguration.tsx`'s own default (`opFormData.interval`),
+ * which the wizard always sends and never actually lets the user change — its
+ * help text says "for now only periodic is supported". Kept as a named
+ * constant rather than folded inline, so the one place that still hardcodes
+ * it says why.
+ */
+export const OPERATIONS_INTERVAL = 'Periodic';
+
+/**
+ * Builds `operations_config` for a schedule, matching what the wizard itself
+ * sends.
+ *
+ * A stream connector never has a schedule, and neither does a batch
+ * connector before one is chosen — both cases send `{}`, exactly as
+ * `ConnectorConfiguration.tsx` does for `connectorType === 'stream'`. Once a
+ * schedule is set, the fixed interval travels with it: the interval itself is
+ * never asked for, because there is only one supported value.
+ */
+export const operationsConfigFor = (
+  schedule?: string,
+): Record<string, unknown> =>
+  schedule ? { interval: OPERATIONS_INTERVAL, schedule } : {};

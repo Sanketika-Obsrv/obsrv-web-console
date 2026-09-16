@@ -3,6 +3,7 @@ import {
   Action,
   ARRIVAL_FORMATS,
   DATA_TYPES,
+  OPERATIONS_SCHEDULES,
   TEXT_MAX_LENGTH,
   buildActionSchema,
   createActionValidator,
@@ -21,6 +22,7 @@ const validActions: Action[] = [
   },
   { kind: 'request_connector_secrets' },
   { kind: 'skip_connector' },
+  { kind: 'set_operations_config', schedule: 'Hourly' },
   { kind: 'set_data_type', path: 'total_amount', dataType: 'string' },
   { kind: 'set_arrival_format', path: 'total_amount', arrivalFormat: 'text' },
   { kind: 'toggle_required', path: 'order_id', required: true },
@@ -94,6 +96,7 @@ describe('action catalog', () => {
       'set_connector_field',
       'request_connector_secrets',
       'skip_connector',
+      'set_operations_config',
       'set_data_type',
       'set_arrival_format',
       'toggle_required',
@@ -225,6 +228,52 @@ describe('validateAction', () => {
 
   it('requires at least one key on set_keys', () => {
     expect(validateAction({ kind: 'set_keys' }).ok).toBe(false);
+  });
+});
+
+/**
+ * The four values the wizard's own "Configure Fetch Settings" schedule
+ * dropdown offers for a batch connector. No polling-interval field exists
+ * here at all — the wizard's own help text says only one interval is
+ * supported today, so it is not modeled as a choice.
+ */
+describe('set_operations_config schedule', () => {
+  it.each(OPERATIONS_SCHEDULES)('accepts %s', (schedule) => {
+    expect(validateAction({ kind: 'set_operations_config', schedule }).ok).toBe(
+      true,
+    );
+  });
+
+  it('rejects a fifth value outside the four supported schedules', () => {
+    const result = validateAction({
+      kind: 'set_operations_config',
+      schedule: 'Fortnightly',
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join(' ')).toMatch(/Hourly|Daily|Weekly|Monthly/);
+  });
+
+  it('rejects a missing schedule', () => {
+    expect(validateAction({ kind: 'set_operations_config' }).ok).toBe(false);
+  });
+
+  it('carries no polling-interval field', () => {
+    const schema = buildActionSchema();
+    const variants = schema.oneOf as {
+      properties: Record<string, unknown>;
+    }[];
+    const variant = variants.find(
+      (entry) =>
+        (entry.properties.kind as { const: string }).const ===
+        'set_operations_config',
+    );
+
+    expect(Object.keys(variant?.properties ?? {})).toEqual([
+      'kind',
+      'schedule',
+    ]);
   });
 });
 
@@ -369,6 +418,15 @@ describe('enums mirror the API data mappings', () => {
       'number',
       'object',
       'string',
+    ]);
+  });
+
+  it('lists exactly the four schedules the wizard offers a batch connector', () => {
+    expect([...OPERATIONS_SCHEDULES].sort()).toEqual([
+      'Daily',
+      'Hourly',
+      'Monthly',
+      'Weekly',
     ]);
   });
 });

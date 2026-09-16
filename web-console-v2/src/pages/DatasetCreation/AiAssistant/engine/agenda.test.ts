@@ -626,6 +626,82 @@ describe('the connector question', () => {
   });
 });
 
+/**
+ * A batch connector (AWS S3, Azure, GCS, PostgreSQL, MySQL — confirmed live)
+ * renders a "Configure Fetch Settings" section the wizard's own
+ * `ConnectorConfiguration.tsx` gates on the connector's `category`. A stream
+ * connector (Kafka, Debezium, Sunbird Knowlg) has no such section, so it must
+ * never be asked about a schedule.
+ */
+describe('the connector schedule question', () => {
+  const filled = {
+    source_kafka_broker_servers: 'localhost:9092',
+    source_kafka_auto_offset_reset: 'earliest',
+  };
+
+  const withCategory = (
+    category: string | undefined,
+    schedule?: string,
+  ): AgendaState => ({
+    pending: { name: 'My Orders', datasetType: 'event' },
+    connector: {
+      id: 'postgres-connector-1.0.0',
+      name: 'PostgreSQL',
+      configured: false,
+      uiSpec: connectorUiSpec,
+      values: filled,
+      ...(category ? { category } : {}),
+      ...(schedule ? { schedule: schedule as never } : {}),
+    },
+  });
+
+  it('offers the four-schedule choice card once a batch connector has nothing else outstanding', () => {
+    const prompt = nextPrompt(withCategory('batch'));
+
+    expect(prompt?.card).toMatchObject({
+      kind: 'choice',
+      options: [
+        {
+          label: 'Hourly',
+          action: { kind: 'set_operations_config', schedule: 'Hourly' },
+        },
+        {
+          label: 'Daily',
+          action: { kind: 'set_operations_config', schedule: 'Daily' },
+        },
+        {
+          label: 'Weekly',
+          action: { kind: 'set_operations_config', schedule: 'Weekly' },
+        },
+        {
+          label: 'Monthly',
+          action: { kind: 'set_operations_config', schedule: 'Monthly' },
+        },
+      ],
+    });
+  });
+
+  it('does not offer the schedule choice for a stream connector', () => {
+    const prompt = nextPrompt(withCategory('stream'));
+
+    expect(prompt?.card).toBeUndefined();
+    expect(prompt?.text).not.toMatch(/schedule|poll/i);
+  });
+
+  it('does not offer the schedule choice when the category is unknown', () => {
+    const prompt = nextPrompt(withCategory(undefined));
+
+    expect(prompt?.card).toBeUndefined();
+  });
+
+  it('does not ask again once a schedule has already been set', () => {
+    const prompt = nextPrompt(withCategory('batch', 'Weekly'));
+
+    expect(prompt?.card).toBeUndefined();
+    expect(prompt?.text).toMatch(/connection settings/i);
+  });
+});
+
 describe('the conflict question', () => {
   const prompt = nextPrompt({
     dataset: draft({ data_schema: conflictedSchema }),

@@ -7,7 +7,7 @@
  * The session holds only the conversation, the step, and the sample rows the
  * user supplied.
  */
-import { Action } from '../engine/actions';
+import { Action, OperationsSchedule } from '../engine/actions';
 import { ExecutionFailureCode, PendingDataset } from '../engine/executor';
 import { PreviewSection } from '../engine/previewFocus';
 import { MessageCard } from '../messages/types';
@@ -100,6 +100,14 @@ export interface AiSession {
     id: string;
     name?: string;
     values: Record<string, unknown>;
+    /**
+     * The polling schedule chosen for a batch connector. Absent for a stream
+     * connector, and absent for a batch connector until the schedule
+     * question is answered — `submitConnector` treats either case as "send
+     * an empty operations_config", the same as the wizard does for a stream
+     * connector.
+     */
+    schedule?: OperationsSchedule;
   };
   createdAt: number;
   updatedAt: number;

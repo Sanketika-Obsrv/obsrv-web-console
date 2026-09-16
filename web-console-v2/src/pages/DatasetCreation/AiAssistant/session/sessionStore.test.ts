@@ -777,6 +777,82 @@ describe('the connector chosen before it is written', () => {
 });
 
 /**
+ * The batch connector's polling schedule, buffered the same way
+ * `setConnectorValue` buffers an ordinary property — except it is not a
+ * `ui_spec` property at all, so it is kept separately rather than folded
+ * into `values`, which is merged straight into `connector_config` on submit.
+ */
+describe('the connector schedule chosen before it is written', () => {
+  it('records the schedule', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+
+    await sessions.setConnectorSchedule(sessionId, 'Weekly');
+
+    expect((await sessions.load(sessionId))?.connector?.schedule).toBe(
+      'Weekly',
+    );
+  });
+
+  it('lets a schedule be corrected', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+
+    await sessions.setConnectorSchedule(sessionId, 'Weekly');
+    await sessions.setConnectorSchedule(sessionId, 'Monthly');
+
+    expect((await sessions.load(sessionId))?.connector?.schedule).toBe(
+      'Monthly',
+    );
+  });
+
+  it('ignores a schedule when no connector has been chosen', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+
+    await sessions.setConnectorSchedule(sessionId, 'Hourly');
+
+    expect((await sessions.load(sessionId))?.connector).toBeUndefined();
+  });
+
+  it('drops the schedule when a different connector is chosen', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+    await sessions.setConnectorSchedule(sessionId, 'Weekly');
+
+    await sessions.selectConnector(sessionId, { id: 'kafka-connector-2.0.0' });
+
+    expect(
+      (await sessions.load(sessionId))?.connector?.schedule,
+    ).toBeUndefined();
+  });
+
+  it('keeps the buffered values alongside the schedule', async () => {
+    const sessions = store();
+    const { sessionId } = await sessions.start({ mode: 'create' });
+    await sessions.selectConnector(sessionId, {
+      id: 'postgres-connector-1.0.0',
+    });
+    await sessions.setConnectorValue(sessionId, 'source_database_host', 'db');
+
+    await sessions.setConnectorSchedule(sessionId, 'Daily');
+
+    const connector = (await sessions.load(sessionId))?.connector;
+    expect(connector?.values).toEqual({ source_database_host: 'db' });
+    expect(connector?.schedule).toBe('Daily');
+  });
+});
+
+/**
  * The transcript is the undo stack, so the inverse has to survive a reload
  * and being spent has to be recorded — otherwise the same change could be
  * undone twice, the second time against a document that no longer holds it.

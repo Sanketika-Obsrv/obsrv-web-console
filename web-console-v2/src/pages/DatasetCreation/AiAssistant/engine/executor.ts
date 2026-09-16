@@ -30,12 +30,13 @@ import {
 } from 'services/datasetApi';
 import { setAdditionalProperties } from 'services/json-schema';
 import { ValidationMode } from 'types/datasets';
-import { Action, DatasetType } from './actions';
+import { Action, DatasetType, OperationsSchedule } from './actions';
 import {
   UiSpec,
   connectorConfigPayload,
   fillableProps,
   isSecretProp,
+  operationsConfigFor,
   validateProp,
 } from './connectors';
 import {
@@ -149,6 +150,12 @@ export interface ConnectorDraft {
   name?: string;
   uiSpec?: UiSpec;
   values: Record<string, unknown>;
+  /**
+   * The polling schedule, for a batch connector. Absent for a stream
+   * connector — it never has one to set — and absent for a batch connector
+   * until the schedule question is answered.
+   */
+  schedule?: OperationsSchedule;
 }
 
 export interface ExecutorContext {
@@ -1192,6 +1199,17 @@ export const executeAction = async (
     return { ok: true, status: 'noop' };
   }
 
+  if (action.kind === 'set_operations_config') {
+    // Same shape as `set_connector_field`: nothing is written here. The
+    // schedule is buffered and only reaches the server, folded into
+    // `operations_config`, when `submitConnector` runs.
+    if (!context.connector) {
+      return failure('No connector has been chosen yet', 'NO_CONNECTOR');
+    }
+
+    return { ok: true, status: 'noop' };
+  }
+
   if (action.kind === 'set_connector_field') {
     const { connector } = context;
 
@@ -1333,6 +1351,10 @@ export const submitConnector = async (
         connectorId: connector.id,
         values: connector.values,
         secrets,
+        // Empty for a stream connector, or a batch connector whose schedule
+        // was never set — the same shape the wizard sends for a stream
+        // connector's `operations_config`.
+        operationsConfig: operationsConfigFor(connector.schedule),
         mode: 'update',
       }),
     });

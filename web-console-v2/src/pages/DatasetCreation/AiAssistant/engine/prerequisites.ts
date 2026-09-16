@@ -177,6 +177,7 @@ const TOPICS: Topic[] = [
       'set_connector_field',
       'request_connector_secrets',
       'skip_connector',
+      'set_operations_config',
     ],
     steps: ['connector'],
     pattern: /connector|\bkafka\b|postgres|\bjdbc\b|\bs3\b/i,
