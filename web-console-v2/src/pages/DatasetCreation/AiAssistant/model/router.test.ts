@@ -225,6 +225,30 @@ describe('buildRouterPrompt', () => {
     expect(prompt).toContain('first thing');
     expect(prompt.indexOf('first thing')).toBeLessThan(prompt.indexOf('Done.'));
   });
+
+  /**
+   * Call B already tells a failed turn apart from a successful one via
+   * `turnDigest`'s `[failed FAILURE_CODE]` suffix — the router saw only
+   * `role: text` and could not, which is how it came to fabricate a false
+   * "renamed"/"saved" claim after a prior failure. The router's history line
+   * must be built from the same digest.
+   */
+  it('tags a failed prior turn the same way turnDigest does, so the router can tell it apart from a success', () => {
+    const prompt = buildRouterPrompt({
+      utterance: 'did that work?',
+      history: [
+        {
+          id: '1',
+          role: 'assistant',
+          text: 'A dataset with the id "telemetry" already exists',
+          createdAt: 0,
+          failureCode: 'DATASET_ID_TAKEN',
+        },
+      ],
+    });
+
+    expect(prompt).toContain('[failed DATASET_ID_TAKEN]');
+  });
 });
 
 describe('ROUTER_SYSTEM_PROMPT', () => {

@@ -25,6 +25,7 @@ import Ajv, { ValidateFunction } from 'ajv';
 import { AGENDA_STEPS, AgendaStepId } from '../engine/actions';
 import { Message } from '../session/types';
 import { extractJson } from './modelResolver';
+import { turnDigest } from './prompt';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -167,12 +168,7 @@ export const buildRouterPrompt = ({
   const recent = history.slice(-HISTORY_TURNS);
 
   if (recent.length > 0) {
-    parts.push(
-      [
-        'Recent turns:',
-        ...recent.map((turn) => `${turn.role}: ${turn.text}`),
-      ].join('\n'),
-    );
+    parts.push(['Recent turns:', ...recent.map(turnDigest)].join('\n'));
   }
 
   parts.push(['Kinds of reply:', ...ROUTER_EXAMPLES].join('\n'));
