@@ -39,6 +39,7 @@ import {
   DATASET_TYPES,
   WizardStep,
 } from './actions';
+import { ConnectorProp, fillableProps, UiSpec } from './connectors';
 import { dedupCandidates, describeCandidate } from './dedupSuggest';
 import {
   lowSuggestions,
@@ -81,7 +82,15 @@ export interface AgendaState {
   /** The user's sample, for ranking dedup keys. Expires, so often absent. */
   sampleRows?: Record<string, unknown>[];
   /** The connector chosen, when one was. */
-  connector?: { id: string; name?: string; configured: boolean };
+  connector?: {
+    id: string;
+    name?: string;
+    configured: boolean;
+    /** Non-secret values gathered so far, keyed by `ui_spec` property name. */
+    values?: Record<string, unknown>;
+    /** The connector's `ui_spec`, for asking about one property at a time. */
+    uiSpec?: UiSpec;
+  };
   /** Connectors the cluster offers, once listed. Absent means unknown. */
   connectorsAvailable?: { id: string; name?: string }[];
   /**
@@ -334,6 +343,25 @@ const missingKeys = (state: AgendaState): KeySlot[] => {
   };
 
   return requiredKeys(state).filter((slot) => !answered(slot));
+};
+
+/**
+ * The first still-outstanding required property of the chosen connector.
+ *
+ * `fillableProps` already excludes secrets and hidden properties and orders
+ * by `uiIndex` — the order the connector's own form asks in — so this is
+ * simply the first one the buffered `values` do not yet hold. `undefined`
+ * once every required, fillable property is set, which is also when asking
+ * for credentials (via `request_connector_secrets`) is the only thing left.
+ */
+export const nextConnectorProp = (
+  state: AgendaState,
+): ConnectorProp | undefined => {
+  const values = state.connector?.values ?? {};
+
+  return fillableProps(state.connector?.uiSpec).find(
+    (prop) => prop.required && values[prop.key] === undefined,
+  );
 };
 
 const conflicts = (state: AgendaState): string[] =>
@@ -1122,23 +1150,87 @@ const QUESTION: Record<
     ]),
   }),
 
-  connector: (state) => ({
-    step: 'connector',
-    text: `Let's set up ${state.connector?.name ?? state.connector?.id}. What are its connection settings?`,
-  }),
+  connector: (state) => {
+    const name = state.connector?.name ?? state.connector?.id;
+    const prop = nextConnectorProp(state);
 
-  sample: (state) => ({
-    step: 'sample',
-    /*
-      No card. A sample arrives by pasting it into the box or dropping the
-      file on the conversation, and the question says so — the file-drop
-      card was the last thing in the chat with a button on it.
+    // Nothing fillable is left outstanding: either nothing was ever asked
+    // for, or every non-secret property is set and only credentials —
+    // requested through `request_connector_secrets`, a separate card — are
+    // left. Either way there is no property to build a prompt about.
+    if (!prop) {
+      return {
+        step: 'connector',
+        text: `Let's set up ${name}. What are its connection settings?`,
+      };
+    }
 
-      Connectors are named only when the list was actually read: one that
-      cannot be listed is a dead end, and offering it wastes a turn.
-    */
-    text: `Give me a sample of the data — paste it here, or drop a JSON or JSONL file anywhere in this pane, and I will work out the schema.${connectorOffer(state)}`,
-  }),
+    const label = prop.spec.title ?? prop.key;
+
+    if (prop.spec.enum) {
+      return {
+        step: 'connector',
+        text: `Setting up ${name} — what should ${label} be?`,
+        card: choice(
+          label,
+          prop.spec.enum.map((value) => {
+            const asString = String(value);
+
+            return {
+              label: asString,
+              action: {
+                kind: 'set_connector_field' as const,
+                property: prop.key,
+                value: asString,
+              },
+            };
+          }),
+        ),
+      };
+    }
+
+    return {
+      step: 'connector',
+      text: `Setting up ${name} — what is ${label}?`,
+      freeText: (value) => ({
+        kind: 'set_connector_field',
+        property: prop.key,
+        value,
+      }),
+    };
+  },
+
+  sample: (state) => {
+    const offered = state.connectorsAvailable ?? [];
+
+    return {
+      step: 'sample',
+      /*
+        The prose never goes away: a sample can always be pasted into the
+        box or dropped as a file on the conversation, and the question says
+        so — the file-drop card was the last thing in the chat with a
+        button on it. The choice card is an additional way to answer the
+        same question, offered only once the connector list was actually
+        read — one that cannot be listed is a dead end, and offering it
+        wastes a turn.
+      */
+      text: `Give me a sample of the data — paste it here, or drop a JSON or JSONL file anywhere in this pane, and I will work out the schema.${connectorOffer(state)}`,
+      ...(offered.length
+        ? {
+            card: choice(
+              'Or pull it from a connector',
+              offered.map((connector) => ({
+                label: connector.name ?? connector.id,
+                action: {
+                  kind: 'select_connector' as const,
+                  connectorId: connector.id,
+                },
+              })),
+            ),
+          }
+        : {}),
+    };
+  },
 
   conflicts: conflictQuestion,
   schema: schemaQuestion,

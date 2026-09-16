@@ -1,5 +1,12 @@
 import { Action } from './actions';
-import { ACCEPTS, AgendaState, currentStep, nextPrompt } from './agenda';
+import {
+  ACCEPTS,
+  AgendaState,
+  currentStep,
+  nextConnectorProp,
+  nextPrompt,
+} from './agenda';
+import { UiSpec } from './connectors';
 import { DatasetSnapshot } from './executor';
 import { Message } from '../session/types';
 
@@ -422,6 +429,200 @@ describe('the sample question', () => {
   it('mentions no connector when the list could not be read', () => {
     // Naming a connector that cannot be listed produces a dead end.
     expect(nextPrompt(state)?.text).not.toMatch(/connector/i);
+  });
+
+  it('offers a choice card with one option per connector when the list is known', () => {
+    const prompt = nextPrompt({
+      ...state,
+      connectorsAvailable: [
+        { id: 'postgres-connector-1.0.0', name: 'PostgreSQL' },
+        { id: 'kafka-connector-2.0.0', name: 'Kafka' },
+      ],
+    });
+
+    expect(prompt?.card).toMatchObject({
+      kind: 'choice',
+      options: [
+        {
+          label: 'PostgreSQL',
+          action: {
+            kind: 'select_connector',
+            connectorId: 'postgres-connector-1.0.0',
+          },
+        },
+        {
+          label: 'Kafka',
+          action: {
+            kind: 'select_connector',
+            connectorId: 'kafka-connector-2.0.0',
+          },
+        },
+      ],
+    });
+  });
+
+  it('carries no card when the connector list is empty', () => {
+    // Nothing to pick from, so the prose-only behaviour is unchanged.
+    expect(
+      nextPrompt({ ...state, connectorsAvailable: [] })?.card,
+    ).toBeUndefined();
+  });
+});
+
+/** A `ui_spec` mirroring the live shape: one free-text field, one enum, one secret. */
+const connectorUiSpec: UiSpec = {
+  title: 'Kafka',
+  type: 'object',
+  properties: {
+    source_kafka_broker_servers: {
+      type: 'string',
+      title: 'Broker servers',
+      uiIndex: 1,
+    },
+    source_kafka_auto_offset_reset: {
+      type: 'string',
+      title: 'Auto offset reset',
+      enum: ['earliest', 'latest', 'none'],
+      uiIndex: 2,
+    },
+    source_database_pwd: {
+      type: 'string',
+      title: 'Password',
+      format: 'password',
+      uiIndex: 3,
+    },
+  },
+  required: [
+    'source_kafka_broker_servers',
+    'source_kafka_auto_offset_reset',
+    'source_database_pwd',
+  ],
+};
+
+describe('nextConnectorProp', () => {
+  it('returns properties in uiIndex order', () => {
+    const state: AgendaState = {
+      connector: {
+        id: 'kafka-connector-2.0.0',
+        configured: false,
+        uiSpec: connectorUiSpec,
+        values: {},
+      },
+    };
+
+    expect(nextConnectorProp(state)?.key).toBe('source_kafka_broker_servers');
+  });
+
+  it('returns undefined when nothing required is missing', () => {
+    const state: AgendaState = {
+      connector: {
+        id: 'kafka-connector-2.0.0',
+        configured: false,
+        uiSpec: connectorUiSpec,
+        values: {
+          source_kafka_broker_servers: 'localhost:9092',
+          source_kafka_auto_offset_reset: 'earliest',
+        },
+      },
+    };
+
+    // The only thing left is the password, and that is a secret — never a
+    // fillable property, however you look at it.
+    expect(nextConnectorProp(state)).toBeUndefined();
+  });
+});
+
+describe('the connector question', () => {
+  const chosen = (values: Record<string, unknown> = {}): AgendaState => ({
+    pending: { name: 'My Orders', datasetType: 'event' },
+    connector: {
+      id: 'kafka-connector-2.0.0',
+      name: 'Kafka',
+      configured: false,
+      uiSpec: connectorUiSpec,
+      values,
+    },
+  });
+
+  it('is a choice card listing the enum values when the next missing property has one', () => {
+    const prompt = nextPrompt(
+      chosen({ source_kafka_broker_servers: 'localhost:9092' }),
+    );
+
+    expect(prompt?.card).toMatchObject({
+      kind: 'choice',
+      options: [
+        {
+          label: 'earliest',
+          action: {
+            kind: 'set_connector_field',
+            property: 'source_kafka_auto_offset_reset',
+            value: 'earliest',
+          },
+        },
+        {
+          label: 'latest',
+          action: {
+            kind: 'set_connector_field',
+            property: 'source_kafka_auto_offset_reset',
+            value: 'latest',
+          },
+        },
+        {
+          label: 'none',
+          action: {
+            kind: 'set_connector_field',
+            property: 'source_kafka_auto_offset_reset',
+            value: 'none',
+          },
+        },
+      ],
+    });
+  });
+
+  it('is free-text-shaped when the next missing property has no enum', () => {
+    const prompt = nextPrompt(chosen());
+
+    expect(prompt?.card).toBeUndefined();
+    expect(prompt?.freeText).toBeInstanceOf(Function);
+    expect(prompt?.freeText?.('localhost:9092')).toMatchObject({
+      kind: 'set_connector_field',
+      property: 'source_kafka_broker_servers',
+      value: 'localhost:9092',
+    });
+  });
+
+  it('skips a property already present in the buffered values', () => {
+    // The broker address is already set, so the SECOND required property —
+    // the offset reset — is asked about, not the first.
+    const prompt = nextPrompt(
+      chosen({ source_kafka_broker_servers: 'localhost:9092' }),
+    );
+
+    expect(prompt?.card).toMatchObject({
+      options: expect.arrayContaining([
+        expect.objectContaining({
+          action: expect.objectContaining({
+            property: 'source_kafka_auto_offset_reset',
+          }),
+        }),
+      ]),
+    });
+  });
+
+  it('never puts a secret-named property into a card or free-text prompt', () => {
+    // Every fillable required property is set; only the password remains,
+    // and it is never offered.
+    const prompt = nextPrompt(
+      chosen({
+        source_kafka_broker_servers: 'localhost:9092',
+        source_kafka_auto_offset_reset: 'earliest',
+      }),
+    );
+
+    expect(prompt?.card).toBeUndefined();
+    expect(prompt?.freeText).toBeUndefined();
+    expect(prompt?.text).not.toMatch(/password|pwd/i);
   });
 });
 
