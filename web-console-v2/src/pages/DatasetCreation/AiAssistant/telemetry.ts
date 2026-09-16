@@ -52,6 +52,37 @@ export const reportAction = ({
     },
   });
 
+export interface ModelCallReport {
+  /** Which of the turn's up to two model calls this is. */
+  call: 'route' | 'extract';
+  /** How long the call took, in milliseconds. */
+  ms: number;
+  /** Whether the call itself completed, not whether it decided anything useful. */
+  ok: boolean;
+}
+
+/**
+ * Reports one of the up to two model calls a turn can make: the router
+ * (`route`) and, only where the router asks for one, the extractor
+ * (`extract`). The point of the split is latency — this is what makes that
+ * cost visible against the server round trips that dominate some turns.
+ *
+ * Same allowlist as `reportAction`: a duration and a pass/fail leave the
+ * browser, never the prompt that was built or the utterance that went into
+ * it.
+ */
+export const reportModelCall = ({ call, ms, ok }: ModelCallReport): void =>
+  generateInteractEvent({
+    object: {},
+    edata: {
+      id: 'ai-assistant-model-call',
+      type: call,
+      subtype: ok ? 'completed' : 'failed',
+      pageid: 'ai-assistant',
+      duration: ms,
+    },
+  });
+
 export const reportSessionStart = (sessionId: string, tier: number): void =>
   generateStartEvent({
     object: { id: sessionId, type: 'AiAssistantSession', ver: '1.0.0' },

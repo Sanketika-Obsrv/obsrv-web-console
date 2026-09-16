@@ -29,6 +29,7 @@ import { Resolution, resolveUtterance } from '../engine/ruleResolver';
 import { RouterResult, sanitiseRoute } from '../engine/router';
 import { WIZARD_STEP_BY_AGENDA_STEP } from '../engine/previewFocus';
 import { Message } from '../session/types';
+import { reportModelCall } from '../telemetry';
 import { ModelEngine } from './engineClient';
 import { SYSTEM_PROMPT, buildPrompt } from './prompt';
 import {
@@ -371,6 +372,7 @@ export const resolveTurn = async (
   deps: ModelResolveDeps,
 ): Promise<RouterResult> => {
   let raw: string;
+  const routeStartedAt = Date.now();
 
   try {
     const routerPrompt = buildRouterPrompt({
@@ -386,7 +388,19 @@ export const resolveTurn = async (
       `${ROUTER_SYSTEM_PROMPT}\n\n${routerPrompt}`,
       { type: 'json_object', schema: JSON.stringify(ROUTER_SCHEMA) },
     );
+
+    reportModelCall({
+      call: 'route',
+      ms: Date.now() - routeStartedAt,
+      ok: true,
+    });
   } catch {
+    reportModelCall({
+      call: 'route',
+      ms: Date.now() - routeStartedAt,
+      ok: false,
+    });
+
     // Mirrors `resolveWithModel`'s own posture towards a model that errors
     // mid-turn: the turn must not be lost. But there is no rule-based
     // reading of "what kind of message was this", the way there is a
@@ -450,7 +464,18 @@ export const resolveTurn = async (
           step: WIZARD_STEP_BY_AGENDA_STEP[targetStep] ?? input.step,
         };
 
+  const extractStartedAt = Date.now();
   const resolution = await resolveWithModel(scoped, deps);
+
+  // `resolveWithModel` already swallows its own engine failure and falls
+  // back to the rules rather than throwing, so there is nothing to catch
+  // here — `ok` reports whether extraction actually named an action, which
+  // is the meaningful success for this call.
+  reportModelCall({
+    call: 'extract',
+    ms: Date.now() - extractStartedAt,
+    ok: resolution.status === 'resolved',
+  });
 
   if (resolution.status !== 'resolved' || !resolution.action) {
     // Nothing extracted — a clarify, an unknown field, an ambiguity. The

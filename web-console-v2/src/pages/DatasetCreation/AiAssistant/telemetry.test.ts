@@ -11,6 +11,7 @@ import {
 } from 'services/telemetry';
 import {
   reportAction,
+  reportModelCall,
   reportSessionEnd,
   reportSessionStart,
 } from './telemetry';
@@ -131,5 +132,45 @@ describe('reporting the conversation itself', () => {
         summary: { sessionId: 'session-abc', changes: 7 },
       },
     });
+  });
+});
+
+/**
+ * The router call and the extraction call are the two calls a turn can make
+ * to the model. Same allowlist rule as an action: the timing and whether it
+ * succeeded leave the browser, never the prompt or the utterance that went
+ * into it.
+ */
+describe('reporting a model call', () => {
+  it('names which call it was and how long it took', () => {
+    reportModelCall({ call: 'route', ms: 42, ok: true });
+
+    expect(interact).toHaveBeenCalledWith({
+      object: {},
+      edata: {
+        id: 'ai-assistant-model-call',
+        type: 'route',
+        subtype: 'completed',
+        pageid: 'ai-assistant',
+        duration: 42,
+      },
+    });
+  });
+
+  it('marks a failed call distinctly from a completed one', () => {
+    reportModelCall({ call: 'extract', ms: 8, ok: false });
+
+    expect(interact.mock.calls[0][0].edata).toMatchObject({
+      type: 'extract',
+      subtype: 'failed',
+    });
+  });
+
+  it('sends no prompt text or utterance, only the allowlisted scalars', () => {
+    reportModelCall({ call: 'route', ms: 13, ok: true });
+
+    const sent = JSON.stringify(interact.mock.calls[0][0]);
+
+    expect(sent).not.toMatch(/prompt|utterance/i);
   });
 });

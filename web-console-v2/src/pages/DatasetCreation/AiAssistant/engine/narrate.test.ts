@@ -1,9 +1,15 @@
 import { ACTION_KINDS, Action } from './actions';
 import { ExecutionOutcome } from './executor';
+import { OutOfScope } from './router';
 import {
+  LEFT_IT_AS_IT_WAS,
+  OUT_OF_SCOPE,
+  STOPPED_PART_WAY,
   describeAction,
   describeProposal,
+  narrateExplain,
   narrateOutcome,
+  narrateOutOfScope,
   narrateResolution,
 } from './narrate';
 
@@ -525,5 +531,121 @@ describe('reporting storage', () => {
     expect(narrateOutcome(action, applied(false)).text).toMatch(
       /Cache disabled/,
     );
+  });
+});
+
+/**
+ * A rename after the draft exists still keeps the id the draft was created
+ * with — the server's own response is what proves that, so the sentence is
+ * only ever built from what it returned, never from a name-derived guess.
+ */
+describe('narrating a rename that keeps its id', () => {
+  it('names the id when the server response carries one', () => {
+    const { text } = narrateOutcome(
+      { kind: 'set_dataset_name', name: 'telemetry' },
+      {
+        ok: true,
+        status: 'applied',
+        dataset: { dataset_id: 'orders-2026' },
+        changedRefs: ['name'],
+      },
+    );
+
+    expect(text).toContain('telemetry');
+    expect(text).toMatch(/orders-2026/);
+    expect(text).toMatch(/id/i);
+  });
+
+  it('says nothing about an id the response did not carry', () => {
+    const { text } = narrateOutcome(
+      { kind: 'set_dataset_name', name: 'telemetry' },
+      {
+        ok: true,
+        status: 'applied',
+        dataset: {},
+        changedRefs: ['name'],
+      },
+    );
+
+    expect(text).not.toMatch(/id/i);
+  });
+
+  it('never appends the id clause to an unrelated action', () => {
+    const { text } = narrateOutcome(
+      { kind: 'set_dataset_type', datasetType: 'event' },
+      {
+        ok: true,
+        status: 'applied',
+        dataset: { dataset_id: 'orders-2026' },
+        changedRefs: ['type'],
+      },
+    );
+
+    expect(text).not.toMatch(/orders-2026/);
+  });
+});
+
+describe('declining a capability the assistant does not have', () => {
+  const CAPABILITIES: OutOfScope[] = [
+    'publish',
+    'delete',
+    'navigate',
+    'metrics',
+  ];
+
+  it('gives every capability its own wording', () => {
+    const texts = CAPABILITIES.map((capability) => OUT_OF_SCOPE[capability]);
+
+    expect(new Set(texts).size).toBe(CAPABILITIES.length);
+  });
+
+  it('never claims a write happened', () => {
+    for (const capability of CAPABILITIES) {
+      expect(OUT_OF_SCOPE[capability]).not.toMatch(/^(done|saved|applied)/i);
+    }
+  });
+
+  it('reuses the wording already used to decline publishing from a save', () => {
+    expect(OUT_OF_SCOPE.publish).toMatch(/publish it from the dataset list/i);
+  });
+
+  it('narrateOutOfScope returns the fixed wording for the capability', () => {
+    expect(narrateOutOfScope('delete').text).toBe(OUT_OF_SCOPE.delete);
+  });
+
+  it("does not let the model's own reply override the fixed wording", () => {
+    const { text } = narrateOutOfScope('navigate', 'sure, taking you there');
+
+    expect(text).toContain(OUT_OF_SCOPE.navigate);
+  });
+});
+
+describe('STOPPED_PART_WAY', () => {
+  it('is exported and non-empty', () => {
+    expect(typeof STOPPED_PART_WAY).toBe('string');
+    expect(STOPPED_PART_WAY.length).toBeGreaterThan(0);
+  });
+});
+
+describe('LEFT_IT_AS_IT_WAS', () => {
+  it('is exported with its established wording', () => {
+    expect(LEFT_IT_AS_IT_WAS).toBe('Left it as it was.');
+  });
+});
+
+describe("narrating 'explain', which changes nothing", () => {
+  it('names the topic without promising to look into it', () => {
+    const { text } = narrateExplain({ kind: 'explain', topic: 'dedup' });
+
+    expect(text).toContain('dedup');
+    expect(text).not.toMatch(/look at it/i);
+    expect(text.length).toBeGreaterThan(0);
+  });
+
+  it('still reads as a full sentence with no topic given', () => {
+    const { text } = narrateExplain({ kind: 'explain' });
+
+    expect(text.length).toBeGreaterThan(0);
+    expect(text).not.toMatch(/look at it/i);
   });
 });

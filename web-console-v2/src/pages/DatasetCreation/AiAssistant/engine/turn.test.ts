@@ -2001,6 +2001,28 @@ describe('the router', () => {
       );
       expect(result.messages).toHaveLength(1);
       expect(result.messages[0].role).toBe('assistant');
+      // The engine's own fixed wording, naming where publishing happens —
+      // not a generic "cannot do that" line.
+      expect(result.messages[0].text).toMatch(
+        /publish it from the dataset list/i,
+      );
+    });
+
+    it('gives "delete" its own text, distinct from "publish"', async () => {
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'delete it',
+        async () => ({ intent: 'request', outOfScope: 'delete' }),
+        { execute },
+      );
+
+      expect(execute).not.toHaveBeenCalled();
+      expect(result.applied).toEqual([]);
+      expect(result.messages[0].text).toMatch(/dataset list/i);
+      expect(result.messages[0].text).not.toMatch(
+        /publish it from the dataset list/i,
+      );
     });
   });
 
@@ -2094,6 +2116,114 @@ describe('the router', () => {
         confirmAction: { kind: 'delete_field', path: 'order_id' },
       });
       expect(result.applied).toEqual([]);
+    });
+  });
+
+  describe('a plan of several actions where one fails partway through', () => {
+    it('says it stopped there on the failing step, leaving the earlier success unaffected', async () => {
+      const outcomes: ExecutionOutcome[] = [
+        applied,
+        {
+          ok: false,
+          code: 'PATCH_FAILED',
+          error: 'The server rejected that change.',
+        },
+      ];
+      const execute = jest.fn(async () => outcomes.shift() as ExecutionOutcome);
+
+      const result = await routed(
+        'name it telemetry and set the type to event',
+        async () => ({
+          intent: 'request',
+          actions: [
+            {
+              action: { kind: 'set_dataset_name', name: 'telemetry' },
+              confirm: false,
+            },
+            {
+              action: { kind: 'set_dataset_type', datasetType: 'event' },
+              confirm: false,
+            },
+          ],
+        }),
+        { execute },
+      );
+
+      expect(result.messages).toHaveLength(2);
+      // The first step succeeded and reads exactly as an ordinary success —
+      // no disclaimer belongs on the step that actually went through.
+      expect(result.messages[0].text).not.toMatch(/stopped there/i);
+      expect(result.messages[0].failureCode).toBeUndefined();
+      // The failing step keeps its own reason visible...
+      expect(result.messages[1].failureCode).toBe('PATCH_FAILED');
+      expect(result.messages[1].text).toMatch(/server rejected/i);
+      // ...and also says plainly that the rest was not attempted.
+      expect(result.messages[1].text).toMatch(/stopped there/i);
+      // Both the successful and the failing write are recorded — a partial
+      // turn stays fully auditable, per `AppliedAction`'s own contract.
+      expect(result.applied).toHaveLength(2);
+      expect(result.applied[0].outcome.ok).toBe(true);
+      expect(result.applied[1].outcome.ok).toBe(false);
+    });
+
+    it('adds no such disclaimer to a lone action that fails on its own', async () => {
+      const execute = jest.fn(
+        async () =>
+          ({
+            ok: false,
+            code: 'PATCH_FAILED',
+            error: 'The server rejected that change.',
+          }) as ExecutionOutcome,
+      );
+
+      const result = await routed(
+        'name it telemetry',
+        async () => ({
+          intent: 'request',
+          actions: [
+            {
+              action: { kind: 'set_dataset_name', name: 'telemetry' },
+              confirm: false,
+            },
+          ],
+        }),
+        { execute },
+      );
+
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].text).not.toMatch(/stopped there/i);
+    });
+  });
+
+  describe('a rename after the draft exists, narrated end-to-end', () => {
+    it("says the id stays, once the server's own response names it", async () => {
+      const execute = jest.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 'applied',
+            dataset: { dataset_id: 'orders-2026' },
+            changedRefs: ['name'],
+          }) as ExecutionOutcome,
+      );
+
+      const result = await routed(
+        'rename it to telemetry',
+        async () => ({
+          intent: 'request',
+          actions: [
+            {
+              action: { kind: 'set_dataset_name', name: 'telemetry' },
+              confirm: false,
+            },
+          ],
+        }),
+        { execute },
+      );
+
+      expect(result.messages[0].text).toContain('telemetry');
+      expect(result.messages[0].text).toMatch(/orders-2026/);
+      expect(result.messages[0].text).toMatch(/id/i);
     });
   });
 

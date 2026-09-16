@@ -16,6 +16,7 @@ import { MessageCard } from '../messages/types';
 import { outstandingWork } from './finalCheck';
 import { topicOf } from './prerequisites';
 import { Resolution } from './ruleResolver';
+import { OutOfScope } from './router';
 
 export interface Narration {
   text: string;
@@ -298,11 +299,24 @@ export const narrateOutcome = (
     ? ' The dataset had changed since I last read it, so I re-applied this on top of that change.'
     : '';
 
+  /**
+   * A rename after the draft exists still keeps the id it was created with —
+   * only the name changes, and a user who just renamed a dataset has reason
+   * to wonder whether anything referencing the old id broke. Read only from
+   * the server's own re-read of the dataset, never derived from the new name
+   * locally: `datasetIdFromName` is how the id is chosen *before* create, and
+   * reusing it here would be a guess dressed up as a fact.
+   */
+  const idStays =
+    action.kind === 'set_dataset_name' && outcome.dataset.dataset_id
+      ? ` Its id stays ${outcome.dataset.dataset_id}, which does not change once the draft exists.`
+      : '';
+
   return {
     text: `Done — ${describeAction(
       action,
       outcome.dataset as Record<string, unknown> | undefined,
-    )}.${created}${replayed}`,
+    )}.${created}${replayed}${idStays}`,
   };
 };
 
@@ -396,3 +410,71 @@ export const narrateResolution = (
     card,
   };
 };
+
+/** Reused wherever a pending card is declined, so the sentence cannot drift. */
+export const LEFT_IT_AS_IT_WAS = 'Left it as it was.';
+
+/**
+ * Appended to a plan's failing step when it was not the only thing the turn
+ * asked for — so a compound instruction that partly failed does not read as
+ * one that quietly finished. The failure's own reason stays in the same
+ * message; this only adds that the rest was not attempted.
+ */
+export const STOPPED_PART_WAY =
+  'I stopped there, so anything after that in your message has not been done.';
+
+/**
+ * The screen named for a capability the assistant declines by construction.
+ *
+ * Fixed, one sentence each, and none of them claims a write happened — the
+ * model only ever names *which* of these four it read, never the wording:
+ * that keeps the assistant from ever describing itself as having published
+ * or deleted something it did not.
+ */
+export const OUT_OF_SCOPE: Record<OutOfScope, string> = {
+  // Matches the wording the closing check already gives for the same
+  // decision, so "publish" reads the same whether it is declined outright or
+  // named as what is still left to do after a save.
+  publish:
+    "I do not publish datasets from here — to make it live, publish it from the dataset list or the wizard's preview.",
+  delete:
+    'I do not delete datasets from here — that is done from the dataset list.',
+  navigate:
+    'I only work inside this one wizard — I cannot take you to another page for that.',
+  metrics:
+    "Dataset health and metrics are not shown here — they are on the dataset's metrics page.",
+};
+
+/**
+ * What is said for a capability the engine declines by construction.
+ *
+ * The fixed, per-capability sentence is authoritative — it is what keeps the
+ * assistant from ever implying it did something it does not do. The model's
+ * own `reply` is kept only as a parenthetical, since it read the words that
+ * got here and may add something true about them, but it is never allowed to
+ * replace or contradict the fixed wording.
+ */
+export const narrateOutOfScope = (
+  capability: OutOfScope,
+  reply?: string,
+): Narration => ({
+  text: reply
+    ? `${OUT_OF_SCOPE[capability]} (${reply})`
+    : OUT_OF_SCOPE[capability],
+});
+
+/**
+ * What `explain` says, without running anything.
+ *
+ * `explain` never reaches the executor, so this can only ever name the
+ * topic back — it must not claim the assistant looked into it, searched for
+ * it, or will come back with more, since none of that happens. What it can
+ * say honestly is what it can do instead: act on the dataset directly.
+ */
+export const narrateExplain = (
+  action: Extract<Action, { kind: 'explain' }>,
+): Narration => ({
+  text: action.topic
+    ? `I do not have an explanation of ${action.topic} to give from here — tell me what to set, add, or change on the dataset, and I will do it directly.`
+    : 'I do not have an explanation to give from here — tell me what to set, add, or change on the dataset, and I will do it directly.',
+});

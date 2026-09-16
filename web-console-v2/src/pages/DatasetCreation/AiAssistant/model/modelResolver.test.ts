@@ -1,8 +1,15 @@
+jest.mock('../telemetry', () => ({
+  reportModelCall: jest.fn(),
+}));
+
 import { DatasetFacts } from '../engine/datasetFacts';
 import { buildFieldVocabulary } from '../engine/fieldVocabulary';
 import { ModelEngine } from './engineClient';
 import { Resolution } from '../engine/ruleResolver';
+import { reportModelCall } from '../telemetry';
 import { extractJson, resolveTurn, resolveWithModel } from './modelResolver';
+
+const reported = reportModelCall as jest.MockedFunction<typeof reportModelCall>;
 
 const FIELDS = [
   { column: 'order_id', data_type: 'string' },
@@ -19,6 +26,8 @@ const FIELDS = [
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const vocabulary = buildFieldVocabulary(FIELDS as any);
+
+beforeEach(() => reported.mockClear());
 
 /** A fallback that declines, so only the model's answer is under test. */
 const unresolved: Resolution = { status: 'unknown', confidence: 0 };
@@ -897,5 +906,115 @@ describe('resolveTurn — the router first, the extractor only when it is needed
     expect(calls.length).toBe(1);
     expect(result).toEqual({ intent: 'other' });
     expect(fallback).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * `resolveTurn` is where the two model calls a turn can make actually happen,
+ * so it is where their timing is reported — one call for `ask`/`other`,
+ * where there is nothing to extract, and two for an `answer`/`request` that
+ * names a step to extract from.
+ */
+describe('resolveTurn reports the timing of each model call it makes', () => {
+  const scriptedEngine = (
+    routerReply: string,
+    extractionReply?: string,
+  ): ModelEngine => ({
+    complete: async (_prompt, responseFormat) => {
+      const format = responseFormat as { schema?: string } | undefined;
+
+      return format?.schema?.includes('"intent"')
+        ? routerReply
+        : (extractionReply ?? '{}');
+    },
+    unload: async () => undefined,
+  });
+
+  it('reports exactly one call, the route, for an "ask"', async () => {
+    const engine = scriptedEngine(
+      JSON.stringify({ intent: 'ask', reply: 'Because it is.' }),
+    );
+
+    await resolveTurn(
+      { utterance: 'why', step: 'processing', vocabulary },
+      { engine },
+    );
+
+    expect(reported).toHaveBeenCalledTimes(1);
+    expect(reported.mock.calls[0][0]).toMatchObject({ call: 'route' });
+  });
+
+  it('reports exactly one call, the route, for an "other"', async () => {
+    const engine = scriptedEngine(
+      JSON.stringify({ intent: 'other', reply: 'Good morning.' }),
+    );
+
+    await resolveTurn(
+      { utterance: 'good morning', step: 'processing', vocabulary },
+      { engine },
+    );
+
+    expect(reported).toHaveBeenCalledTimes(1);
+    expect(reported.mock.calls[0][0]).toMatchObject({ call: 'route' });
+  });
+
+  it('reports both calls, route then extract, for an answer that names a step', async () => {
+    const engine = scriptedEngine(
+      JSON.stringify({ intent: 'answer' }),
+      '{"kind":"toggle_required","path":"order_id","required":true}',
+    );
+
+    await resolveTurn(
+      {
+        utterance: 'make order_id required',
+        step: 'schema',
+        question: 'schema',
+        questionText: 'Anything else to change?',
+        vocabulary,
+      },
+      { engine, fallback: () => unresolved },
+    );
+
+    expect(reported).toHaveBeenCalledTimes(2);
+    expect(reported.mock.calls[0][0]).toMatchObject({ call: 'route' });
+    expect(reported.mock.calls[1][0]).toMatchObject({ call: 'extract' });
+  });
+
+  it('reports both calls for a request that names a step, too', async () => {
+    const engine = scriptedEngine(
+      JSON.stringify({ intent: 'request', step: 'name' }),
+      '{"kind":"set_dataset_name","name":"orders_v2"}',
+    );
+
+    await resolveTurn(
+      { utterance: 'call it orders_v2', step: 'processing', vocabulary },
+      { engine, fallback: () => unresolved },
+    );
+
+    expect(reported).toHaveBeenCalledTimes(2);
+    expect(reported.mock.calls.map(([report]) => report.call)).toEqual([
+      'route',
+      'extract',
+    ]);
+  });
+
+  it('reports the route call as failed when the engine throws', async () => {
+    const engine: ModelEngine = {
+      complete: async () => {
+        throw new Error('no webgpu');
+      },
+      unload: async () => undefined,
+    };
+
+    await resolveTurn(
+      { utterance: 'anything', step: 'schema', vocabulary },
+      { engine },
+    );
+
+    expect(reported).toHaveBeenCalledTimes(1);
+    expect(reported.mock.calls[0][0]).toMatchObject({
+      call: 'route',
+      ok: false,
+    });
   });
 });

@@ -12,9 +12,13 @@ import { ExecutionOutcome } from './executor';
 import { answerTo, isAddressedRequest, readOffer } from './answer';
 import { FieldVocabulary } from './fieldVocabulary';
 import {
+  LEFT_IT_AS_IT_WAS,
   NOTHING_TO_UNDO,
+  STOPPED_PART_WAY,
   describeProposal,
+  narrateExplain,
   narrateOutcome,
+  narrateOutOfScope,
   narrateResolution,
   narrateUndo,
 } from './narrate';
@@ -389,19 +393,14 @@ const proposeAction = (action: Action): NewMessage => ({
 /**
  * What `explain` says, without running anything.
  *
- * A stub sentence naming the topic — the real narration is a later commit's
- * job, alongside `narrate.ts`. What matters here is only that this is a
+ * The narration itself lives in `narrate.ts`, alongside every other sentence
+ * the assistant writes. What matters here is only that this stays a
  * `say`-only message: `explain` changes nothing, so it must never reach
  * `deps.execute` or `applied`, whichever tier resolved it.
  */
 const explainMessage = (
   action: Extract<Action, { kind: 'explain' }>,
-): NewMessage => ({
-  role: 'assistant',
-  text: action.topic
-    ? `About ${action.topic}: ask me something more specific and I will look at it.`
-    : 'Ask me something more specific and I will look at it.',
-});
+): NewMessage => ({ role: 'assistant', ...narrateExplain(action) });
 
 /**
  * Kinds whose effect cannot be asked for again once it is gone — a deleted
@@ -427,6 +426,14 @@ interface StepOutcome {
    * only a clean, completed run is safe to follow with the next step.
    */
   stop: boolean;
+  /**
+   * True only when `stop` is true *because the step actually failed* — a
+   * write that reached the executor and came back rejected, or an expression
+   * the preflight refused to run. A blocked prerequisite and a proposal
+   * waiting on a click also set `stop`, but neither is a failure: nothing
+   * was attempted in either case, so there is nothing to apologise for.
+   */
+  failed?: boolean;
 }
 
 /**
@@ -471,8 +478,9 @@ const runOneStep = async (
   }
 
   const { outcome, message } = await runAction(action, deps);
+  const failed = !outcome?.ok;
 
-  return { message, applied: ran(action, outcome), stop: !outcome?.ok };
+  return { message, applied: ran(action, outcome), stop: failed, failed };
 };
 
 /**
@@ -483,6 +491,15 @@ const runOneStep = async (
  * decision — "no, change the name to telemetry" is a decline plus a rename —
  * and it is the shape the router's own extracted `actions` already come in,
  * even when there is only one.
+ *
+ * A plan of more than one candidate is itself evidence the user asked for
+ * more than one thing in the same turn. So when one of several fails, the
+ * failing step's own message gets `STOPPED_PART_WAY` appended — the failure
+ * reason stays exactly as `runOneStep` wrote it, but the reply also says
+ * plainly that the rest of what was asked was not attempted, rather than
+ * leaving that to be assumed from a message that only explains the one
+ * failure. A lone candidate that fails needs no such disclaimer: there was
+ * nothing else in the turn to leave undone.
  */
 const runPlan = async (
   candidates: { action: Action; confirm?: boolean }[],
@@ -493,8 +510,13 @@ const runPlan = async (
 
   for (const candidate of candidates) {
     const step = await runOneStep(candidate, deps);
+    const partial = step.failed && candidates.length > 1;
 
-    messages.push(step.message);
+    messages.push(
+      partial
+        ? { ...step.message, text: `${step.message.text} ${STOPPED_PART_WAY}` }
+        : step.message,
+    );
     applied.push(...step.applied);
 
     if (step.stop) break;
@@ -503,14 +525,8 @@ const runPlan = async (
   return { messages, applied };
 };
 
-/** Reused wherever a pending card is declined, so the sentence cannot drift. */
-const LEFT_IT_AS_IT_WAS = 'Left it as it was.';
-
 /** Said for an `ask`/`other` turn with nothing of its own to say. */
 const NOT_SURE_FALLBACK = "I'm not sure what you mean.";
-
-/** Said for a capability the engine declines by construction. */
-const OUT_OF_SCOPE_FALLBACK = 'That is not something I can do from here.';
 
 /**
  * What a router reading settles on its own, before any of today's no-router
@@ -531,19 +547,28 @@ const handleRouted = async (
   if (routed.control === 'undo') return runUndo(deps);
   if (routed.control === 'retry') return runRetry(deps);
 
-  // Nothing to write for the user's own question, a remark outside the job,
-  // or a capability the engine declines by construction.
-  if (
-    routed.intent === 'ask' ||
-    routed.intent === 'other' ||
-    routed.outOfScope
-  ) {
-    const fallback = routed.outOfScope
-      ? OUT_OF_SCOPE_FALLBACK
-      : NOT_SURE_FALLBACK;
-
+  // A capability the engine declines by construction gets the engine's own
+  // fixed, per-capability sentence — never the model's wording outright, so
+  // the assistant can never be talked into claiming it published or deleted
+  // something it did not.
+  if (routed.outOfScope) {
     return {
-      messages: [{ role: 'assistant', text: routed.reply ?? fallback }],
+      messages: [
+        {
+          role: 'assistant',
+          ...narrateOutOfScope(routed.outOfScope, routed.reply),
+        },
+      ],
+      applied: [],
+    };
+  }
+
+  // Nothing to write for the user's own question or a remark outside the job.
+  if (routed.intent === 'ask' || routed.intent === 'other') {
+    return {
+      messages: [
+        { role: 'assistant', text: routed.reply ?? NOT_SURE_FALLBACK },
+      ],
       applied: [],
     };
   }
