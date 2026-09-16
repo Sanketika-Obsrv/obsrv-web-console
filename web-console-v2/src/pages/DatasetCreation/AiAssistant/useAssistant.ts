@@ -438,6 +438,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
               connector: {
                 ...current.connector,
                 configured: current.connectorConfigured,
+                uiSpec,
               },
             }
           : {}),
@@ -451,6 +452,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       datasetId,
       masterDatasets,
       session.session,
+      uiSpec,
     ],
   );
 
