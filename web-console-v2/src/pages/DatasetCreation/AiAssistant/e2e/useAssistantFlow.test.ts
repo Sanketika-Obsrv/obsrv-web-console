@@ -22,17 +22,90 @@ jest.mock('services/http', () => {
   };
 });
 
+/**
+ * The model is mandatory in the real app, and jsdom has no WebGPU — so
+ * without these overrides `useAssistant` never wires up `resolve`/`route`
+ * at all, which is exactly the gap this file's "the model is shown the real
+ * facts" tests exist to close. The default script mirrors the one
+ * `e2e/createFlow.test.tsx` already uses: `{"intent":"request"}` satisfies
+ * the router's own schema and names no step, so `handleRouted` falls every
+ * turn straight through to the rules — which is why every *other* test in
+ * this file keeps working unchanged with the model wired in. Individual
+ * tests override `engineHolder.current` to script a real reply instead.
+ */
+jest.mock('../model/tiers', () => ({
+  ...jest.requireActual('../model/tiers'),
+  detectCapability: async () => ({ tier: 2, hasWebGPU: true }),
+}));
+
+jest.mock('../model/engineClient', () => {
+  const holder: {
+    current: (prompt: string, format?: unknown) => Promise<string>;
+  } = {
+    current: async () => '{"intent":"request"}',
+  };
+
+  return {
+    __esModule: true,
+    get engineHolder() {
+      return holder;
+    },
+    ...jest.requireActual('../model/engineClient'),
+    isModelCached: async () => true,
+    removeModel: async () => undefined,
+    loadEngine: async () => ({
+      complete: (prompt: string, format?: unknown) =>
+        holder.current(prompt, format),
+      unload: async () => undefined,
+    }),
+  };
+});
+
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, ReactNode } from 'react';
 import { fetchSystemSettings } from 'services/configData';
 import * as httpModule from 'services/http';
+import * as engineClientModule from '../model/engineClient';
 import { AssistantApi, useAssistant } from '../useAssistant';
 import { createFakeConfigApi } from './fakeConfigApi';
 import { pathFromRef } from '../engine/previewFocus';
 import { DataSchema, unresolvedConflicts } from '../engine/schemaEditor';
 import { timestampCandidates } from '../engine/schemaSuggestions';
 import { Message } from '../session/types';
+
+/** The holder `../model/engineClient`'s mock exposes, typed for test use. */
+const engineHolder = (
+  engineClientModule as unknown as {
+    engineHolder: {
+      current: (prompt: string, format?: unknown) => Promise<string>;
+    };
+  }
+).engineHolder;
+
+/**
+ * Replies with `routerReply` to the router's own call and `extractionReply`
+ * to the extracting call that follows it — the same way `model/router.ts`'s
+ * fixed, five-way schema tells the two calls apart in `modelResolver.test.ts`:
+ * the router's schema alone has an `intent` property.
+ */
+const scriptModel = (
+  routerReply: string,
+  extractionReply?: string,
+): { calls: { prompt: string; schema?: string }[] } => {
+  const calls: { prompt: string; schema?: string }[] = [];
+
+  engineHolder.current = async (prompt, format) => {
+    const schema = (format as { schema?: string } | undefined)?.schema;
+    calls.push({ prompt, schema });
+
+    return schema?.includes('"intent"')
+      ? routerReply
+      : (extractionReply ?? '{}');
+  };
+
+  return { calls };
+};
 
 /**
  * The assistant invalidates the preview's reads after a write, so it needs a
@@ -64,6 +137,11 @@ beforeEach(async () => {
   (
     httpModule as unknown as { httpHolder: { current: unknown } }
   ).httpHolder.current = api.http;
+
+  // Reset to the same falls-through-to-the-rules script every other test in
+  // this file relies on; a test that needs the model to say something in
+  // particular scripts its own via `scriptModel`.
+  engineHolder.current = async () => '{"intent":"request"}';
 
   // As the app does at startup; `STORAGE_TYPES` drives capability detection.
   await fetchSystemSettings();
@@ -836,5 +914,72 @@ describe('opening a dataset that already exists', () => {
 
     expect(said(result)).toMatch(/publish it from the dataset list/i);
     expect(api.dataset('telemetry-events')?.status).toBe('Live');
+  });
+
+  /**
+   * The gap this file exists to close: `resolveWithModel`/`resolveTurn` have
+   * accepted a `facts` field since `datasetFacts` was built, but nothing in
+   * the live app ever supplied one — so the model was never actually shown
+   * what the document holds, only the question and the words typed at it.
+   * Scripting the router to name the `name` step forces the second,
+   * extracting call `model/modelResolver.ts` makes through `buildPrompt`,
+   * whose `factsLine` is the one place the dataset's own name and id are
+   * rendered into the prompt text — so finding them here is direct evidence
+   * `useAssistant` is threading `facts` all the way through, not merely
+   * constructing them and leaving them unused.
+   */
+  it('shows the model the dataset it is actually looking at, not just the question', async () => {
+    const result = await openIt();
+
+    const { calls } = scriptModel(
+      JSON.stringify({ intent: 'request', step: 'name' }),
+    );
+
+    await result.current.send('why is the id still the old one?');
+    await waitFor(() => expect(result.current.busy).toBe(false));
+
+    const extractionCalls = calls.filter(
+      (call) => !call.schema?.includes('"intent"'),
+    );
+
+    expect(extractionCalls.length).toBeGreaterThan(0);
+    expect(extractionCalls[0].prompt).toContain('Telemetry Events');
+    expect(extractionCalls[0].prompt).toContain('telemetry-events');
+  });
+
+  /**
+   * `alreadySatisfied` has been unit-tested since it was built, but nothing
+   * exercised it live: `facts` never reached `resolveWithModel` before this
+   * commit, so the drop it performs was structurally unreachable from the
+   * real hook. Renaming to the name already on the document is the case
+   * `datasetFacts.ts` itself names as the reason `alreadySatisfied` exists.
+   *
+   * Both the router's own extraction call and the plain `resolve` fallback
+   * `runTurn` falls back to when the router extracts nothing are scripted to
+   * answer the same way here, since either could be the one carrying the
+   * no-op through to `alreadySatisfied` — the point being tested is that
+   * whichever one runs, the document is checked before anything is proposed.
+   */
+  it('drops a rename to the name the document already holds, without proposing it', async () => {
+    const result = await openIt();
+
+    scriptModel(
+      JSON.stringify({ intent: 'request', step: 'name' }),
+      '{"kind":"set_dataset_name","name":"Telemetry Events"}',
+    );
+
+    const before = result.current.messages.length;
+    await result.current.send('call it Telemetry Events');
+
+    await waitFor(() =>
+      expect(result.current.messages.length).toBeGreaterThan(before),
+    );
+    await waitFor(() => expect(result.current.busy).toBe(false));
+
+    const last = result.current.messages[result.current.messages.length - 1];
+
+    expect(last.card?.kind).not.toBe('confirm');
+    expect(api.calls.filter((call) => call.method === 'PATCH')).toEqual([]);
+    expect(api.dataset('telemetry-events')?.name).toBe('Telemetry Events');
   });
 });

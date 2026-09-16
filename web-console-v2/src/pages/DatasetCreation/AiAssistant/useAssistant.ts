@@ -28,6 +28,7 @@ import {
   summariseProp,
   validateProp,
 } from './engine/connectors';
+import { datasetFacts } from './engine/datasetFacts';
 import {
   AGENDA_READ_FIELDS,
   ExecutorContext,
@@ -591,6 +592,21 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           await session.append({ role: 'user', text: input });
         }
 
+        /**
+         * What the document currently says, read once per turn and handed to
+         * the model so a resolved action can be checked against it — see
+         * `datasetFacts`'s own doc for why this exists.
+         *
+         * Built the same way `askNext` builds `AgendaState` for the next
+         * question — a live re-read, never a cached one — so the fact "the
+         * name is X" is exactly as current as the question that would ask
+         * about it. Only read when the model is actually in play: nothing
+         * downstream of the rules consults `facts`, so a browser running at
+         * tier 0 gains nothing from the extra round trip.
+         */
+        const facts =
+          loaded && modelReady ? datasetFacts(await agendaState()) : undefined;
+
         const result = await runTurn(input, {
           vocabulary,
           // False before `datasets/create` has run, so a request that needs
@@ -667,6 +683,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                         (prop) => prop.key,
                       ),
                       ...(masterDatasets ? { masterDatasets } : {}),
+                      ...(facts ? { facts } : {}),
                     },
                     { engine: loaded },
                   );
@@ -717,6 +734,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
                         (prop) => prop.key,
                       ),
                       ...(masterDatasets ? { masterDatasets } : {}),
+                      ...(facts ? { facts } : {}),
                     },
                     { engine: loaded },
                   );
@@ -945,6 +963,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       }
     },
     [
+      agendaState,
       askNext,
       busy,
       connectors,
