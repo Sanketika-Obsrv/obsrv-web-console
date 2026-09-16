@@ -925,6 +925,10 @@ describe('ACCEPTS', () => {
     expect(ACCEPTS.pii).toContain('set_pii');
   });
 
+  it('lets the schema question be answered with a download, too', () => {
+    expect(ACCEPTS.schema).toContain('export_schema');
+  });
+
   it('lets every question be declined except the ones with nothing to decline', () => {
     // `name` and `review` have nothing to decline.
     Object.entries(ACCEPTS)

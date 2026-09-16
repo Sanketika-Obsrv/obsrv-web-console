@@ -35,6 +35,7 @@ const SECTION_BY_KIND: Partial<Record<ActionKind, PreviewSection>> = {
   add_field: 'ingestion',
   delete_field: 'ingestion',
   resolve_conflict: 'ingestion',
+  export_schema: 'ingestion',
 
   set_additional_fields: 'processing',
   set_pii: 'processing',
@@ -119,6 +120,7 @@ const STEP_BY_KIND: Partial<Record<Action['kind'], WizardStep>> = {
   add_field: 'schema',
   delete_field: 'schema',
   resolve_conflict: 'schema',
+  export_schema: 'schema',
 
   set_additional_fields: 'processing',
   set_pii: 'processing',

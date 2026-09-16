@@ -44,6 +44,10 @@ describe('scoping the action schema to a step', () => {
     expect(kindsIn(buildStepSchema('schema'))).not.toContain('set_storage');
   });
 
+  it('offers the schema download at the schema step', () => {
+    expect(kindsIn(buildStepSchema('schema'))).toContain('export_schema');
+  });
+
   /**
    * `clarify` has to be reachable everywhere: asking is the model's way out
    * of an instruction it cannot map, and removing it would push it to guess.

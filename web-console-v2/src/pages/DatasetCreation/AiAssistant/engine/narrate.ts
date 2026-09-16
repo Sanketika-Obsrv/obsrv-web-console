@@ -172,6 +172,8 @@ export const describeAction = (
       return 'skipped connector setup';
     case 'save':
       return 'check the dataset over';
+    case 'export_schema':
+      return 'prepared the current schema for download';
     case 'goto_step':
       return `moved to the ${action.step} step`;
 
@@ -449,6 +451,25 @@ export const OUT_OF_SCOPE: Record<OutOfScope, string> = {
   metrics:
     "Dataset health and metrics are not shown here — they are on the dataset's metrics page.",
 };
+
+/**
+ * What is said when denormalisation is asked about and there is nothing to
+ * join to yet.
+ *
+ * Deliberately not folded into `OUT_OF_SCOPE`: denormalisation *is* something
+ * this assistant can do — `set_denorm`/`select_denorm` are ordinary actions,
+ * reachable the moment a master dataset exists — there is simply nothing on
+ * offer right now. `OUT_OF_SCOPE` is for a capability declined by
+ * construction; this is a capability with nothing to act on, which is a
+ * different honest answer and needs its own sentence rather than borrowing
+ * that one's wording. Names the real screen the wizard's own "Create Master
+ * Dataset" button sends you to — `/dataset/create?datasetType=master`,
+ * confirmed in `src/router/index.tsx` (labelled "New Dataset" there) and in
+ * `DataDenormalization.tsx`'s own `openCreateMasterDataset` — never a screen
+ * invented for this sentence.
+ */
+export const NO_MASTER_DATASETS =
+  'There are no master datasets to join to yet — create one first from New Dataset, with its type set to master, then come back and I can pull its fields in.';
 
 /**
  * The one gate a raw model string passes through before it is allowed to

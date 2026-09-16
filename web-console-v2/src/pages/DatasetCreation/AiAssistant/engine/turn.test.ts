@@ -2537,3 +2537,127 @@ describe('a definite answer settles the turn before the router runs', () => {
     expect(result.messages[0].text).toBe('the router answered this');
   });
 });
+
+/**
+ * Asking about denormalisation before any master dataset exists.
+ *
+ * `agenda.ts` never raises the `denorm` question at all while
+ * `masterDatasets` is empty, so without this the request fell through to the
+ * router and, most likely, a guess or an "I did not understand" — even
+ * though the request was perfectly clear and the honest answer is simply
+ * that there is nothing to join to yet.
+ */
+describe('denormalisation with no master dataset to join to', () => {
+  it('answers plainly, naming where to create one, instead of asking the router', async () => {
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn<Promise<RouterResult>, [string]>(async () => ({
+      intent: 'other',
+      reply: 'the router should never see this',
+    }));
+
+    const result = await runTurn('can I join this to a master dataset?', {
+      vocabulary,
+      execute,
+      route,
+      masterDatasets: [],
+    });
+
+    expect(route).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.applied).toEqual([]);
+    expect(result.messages[0].text).toMatch(/no master datasets/i);
+    expect(result.messages[0].text).toMatch(/New Dataset/);
+  });
+
+  it('leaves ordinary denorm handling alone once a master dataset exists', async () => {
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn<Promise<RouterResult>, [string]>(async () => ({
+      intent: 'other',
+      reply: 'the router answered this',
+    }));
+
+    const result = await runTurn('can I join this to a master dataset?', {
+      vocabulary,
+      execute,
+      route,
+      masterDatasets: [{ dataset_id: 'customers', name: 'Customers' }],
+    });
+
+    expect(route).toHaveBeenCalledTimes(1);
+    expect(result.messages[0].text).toBe('the router answered this');
+  });
+
+  it('does nothing before the master dataset list has even been read', async () => {
+    // `undefined` (not yet listed) must not be read as "there are none".
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn<Promise<RouterResult>, [string]>(async () => ({
+      intent: 'other',
+      reply: 'the router answered this',
+    }));
+
+    const result = await runTurn('can I join this to a master dataset?', {
+      vocabulary,
+      execute,
+      route,
+    });
+
+    expect(route).toHaveBeenCalledTimes(1);
+    expect(result.messages[0].text).toBe('the router answered this');
+  });
+});
+
+/**
+ * `attach_sample` on a dataset that already has a schema is destructive in
+ * exactly the way the wizard's own re-upload warning describes: it
+ * regenerates the schema from scratch. The very first sample on a
+ * schema-less draft is not — it is the ordinary way a schema comes to exist
+ * at all — so only the first case ever proposes.
+ */
+describe('attach_sample gating on an existing schema', () => {
+  it('always proposes a re-upload once a schema already exists, however it was resolved', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('use report.json as the sample again', {
+      vocabulary,
+      execute,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.95,
+        action: { kind: 'attach_sample', fileName: 'report.json' },
+      }),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.applied).toEqual([]);
+    expect(result.messages[0].card).toMatchObject({
+      kind: 'confirm',
+      confirmAction: { kind: 'attach_sample', fileName: 'report.json' },
+    });
+  });
+
+  it('runs normally on a schema-less draft, existing behaviour unchanged', async () => {
+    const empty = buildFieldVocabulary([]);
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('use report.json as the sample', {
+      vocabulary: empty,
+      execute,
+      resolve: async () => ({
+        status: 'resolved',
+        confidence: 0.95,
+        action: { kind: 'attach_sample', fileName: 'report.json' },
+      }),
+    });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'attach_sample',
+      fileName: 'report.json',
+    });
+    expect(result.applied).toEqual([
+      {
+        action: { kind: 'attach_sample', fileName: 'report.json' },
+        outcome: applied,
+      },
+    ]);
+  });
+});

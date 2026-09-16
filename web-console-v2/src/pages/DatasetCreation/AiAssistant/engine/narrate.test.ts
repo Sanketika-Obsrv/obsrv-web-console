@@ -3,6 +3,7 @@ import { ExecutionOutcome } from './executor';
 import { OutOfScope } from './router';
 import {
   LEFT_IT_AS_IT_WAS,
+  NO_MASTER_DATASETS,
   OUT_OF_SCOPE,
   STOPPED_PART_WAY,
   containModelText,
@@ -667,6 +668,22 @@ describe('declining a capability the assistant does not have', () => {
     const { text } = narrateOutOfScope('navigate', 'sure, taking you there');
 
     expect(text).toContain(OUT_OF_SCOPE.navigate);
+  });
+});
+
+describe('NO_MASTER_DATASETS', () => {
+  it('is exported, honest, and names a real screen', () => {
+    expect(typeof NO_MASTER_DATASETS).toBe('string');
+    expect(NO_MASTER_DATASETS).not.toMatch(/^(done|saved|applied)/i);
+    expect(NO_MASTER_DATASETS).toMatch(/master/i);
+    // The real navigation target — confirmed against `src/router/index.tsx`
+    // and `DataDenormalization.tsx`'s own `openCreateMasterDataset`, never
+    // a screen invented for this sentence.
+    expect(NO_MASTER_DATASETS).toMatch(/New Dataset/);
+  });
+
+  it('is distinct from every OUT_OF_SCOPE sentence — this is not one of them', () => {
+    expect(Object.values(OUT_OF_SCOPE)).not.toContain(NO_MASTER_DATASETS);
   });
 });
 

@@ -15,6 +15,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getAllFields } from 'services/dataset';
 import { downloadJsonFile } from 'utils/downloadUtils';
 import {
+  DatasetDiffResult,
+  fetchDatasetDiff,
   listConnectors,
   listDatasets,
   readConnector,
@@ -337,6 +339,52 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
     void refreshMasters();
   }, [conversationStep, refreshMasters]);
 
+  /**
+   * What a Live copy of this dataset would change if republished — the same
+   * diff `PreviewSummary.tsx`'s "Summary of changes" tab reads.
+   *
+   * `undefined` unless a Live copy actually exists: a `mode=edit` read
+   * always reports the draft's own status, never the published one (the same
+   * caveat `recap.ts` already documents for `liveElsewhere`), so a separate
+   * check is the only way to know. A dataset that has never been published,
+   * or a failed check either way, leaves this `undefined` — `datasetFacts`
+   * reads that as nothing to report, never as an empty comparison.
+   */
+  const [liveDiff, setLiveDiff] = useState<DatasetDiffResult | undefined>();
+
+  const refreshLiveDiff = useCallback(async () => {
+    if (!datasetId) {
+      setLiveDiff(undefined);
+      return;
+    }
+
+    try {
+      await readDataset({
+        datasetId,
+        status: DatasetStatus.Live,
+        fields: 'dataset_id,status',
+      });
+    } catch {
+      setLiveDiff(undefined);
+      return;
+    }
+
+    try {
+      setLiveDiff(await fetchDatasetDiff(datasetId));
+    } catch {
+      setLiveDiff(undefined);
+    }
+  }, [datasetId]);
+
+  useEffect(() => {
+    void refreshLiveDiff();
+  }, [refreshLiveDiff]);
+
+  useEffect(() => {
+    if (conversationStep !== 'preview') return;
+    void refreshLiveDiff();
+  }, [conversationStep, refreshLiveDiff]);
+
   /** Reads the chosen connector's schema whenever the choice changes. */
   const chosenConnectorId = session.session?.connector?.id;
 
@@ -469,6 +517,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
           : {}),
         ...(connectorsUnavailable ? {} : { connectorsAvailable: connectors }),
         ...(masterDatasets ? { masterDatasets } : {}),
+        ...(liveDiff ? { liveDiff } : {}),
       };
     },
     [
@@ -476,6 +525,7 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
       connectors,
       connectorsUnavailable,
       datasetId,
+      liveDiff,
       masterDatasets,
       session.session,
       uiSpec,
@@ -887,6 +937,19 @@ export const useAssistant = (routeDatasetId: string | null): AssistantApi => {
             // Nothing else produces this card, so without it the credential
             // form is unreachable and no connector can ever be saved — the
             // same gap the file-drop card had.
+            // The one browser-only side effect `export_schema` has: the
+            // executor stayed a pure read, so the actual download — a
+            // `Blob` and an anchor click, same as `exportTrail` below —
+            // happens here. Mirrors the wizard's own "Download JSON Schema"
+            // button (`SchemaDetails.tsx`), including its filename.
+            if (
+              action.kind === 'export_schema' &&
+              outcome.status === 'applied'
+            ) {
+              const schema = outcome.dataset.data_schema;
+              if (schema) downloadJsonFile(schema, 'json-schema');
+            }
+
             if (action.kind === 'request_connector_secrets') {
               const draft = session.session?.connector;
 

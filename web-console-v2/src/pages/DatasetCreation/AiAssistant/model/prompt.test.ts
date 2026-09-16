@@ -199,6 +199,27 @@ describe('what the dataset currently holds', () => {
     expect(prompt).not.toContain('store');
     expect(prompt).not.toContain('dedup');
   });
+
+  it('renders the live diff only when the facts actually carry one', () => {
+    const withDiff: DatasetFacts = {
+      ...facts,
+      liveDiff: { additions: 2, modifications: 1, deletions: 0 },
+    };
+
+    const prompt = buildPrompt({
+      step: 'ingestion',
+      utterance: 'x',
+      facts: withDiff,
+    });
+
+    expect(prompt).toContain('vs live: 2 added, 1 modified, 0 deleted');
+  });
+
+  it('omits the live diff clause when the facts carry none', () => {
+    const prompt = buildPrompt({ step: 'ingestion', utterance: 'x', facts });
+
+    expect(prompt).not.toContain('vs live');
+  });
 });
 
 /**

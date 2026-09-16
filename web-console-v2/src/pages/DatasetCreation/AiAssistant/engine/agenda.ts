@@ -31,6 +31,7 @@
  * the change directly, which is why this is a wrinkle and not a trap.
  */
 import _ from 'lodash';
+import { DatasetDiffResult } from 'services/datasetApi';
 import {
   Action,
   ActionKind,
@@ -152,6 +153,16 @@ export interface AgendaState {
   lastFailureCode?: ExecutionFailureCode;
   /** The name that was refused, so an alternative can be offered. */
   lastName?: string;
+  /**
+   * The live-vs-draft diff, read from the same endpoint
+   * `PreviewSummary.tsx`'s "Summary of changes" tab reads
+   * (`GET /api/dataset/diff/:id`) — never re-derived from the schema, so the
+   * two can never disagree. Absent unless a Live copy of this dataset exists:
+   * a dataset that has never been published has nothing to diff against, and
+   * `datasetFacts` reads that absence as "nothing to report" rather than as
+   * a comparison that came back empty.
+   */
+  liveDiff?: DatasetDiffResult;
 }
 
 export interface Prompt {
@@ -201,7 +212,12 @@ export const ACCEPTS: Record<AgendaStepId, ActionKind[]> = {
   ],
   sample: ['attach_sample', 'select_connector', 'skip_step'],
   conflicts: ['resolve_conflict', 'set_data_type', 'skip_step'],
-  schema: SCHEMA_EDIT_KINDS,
+  // `export_schema` is on offer here, not folded into `SCHEMA_EDIT_KINDS`:
+  // downloading the schema is not editing it, and `schemaQuestion` reads
+  // `SCHEMA_EDIT_KINDS` to decide whether the question has already been
+  // engaged with — a download should not make it claim the schema was
+  // changed.
+  schema: [...SCHEMA_EDIT_KINDS, 'export_schema'],
   pii: ['set_pii', 'skip_step'],
   validation: ['set_additional_fields', 'skip_step'],
   transform: ['add_transformation', 'add_derived_field', 'skip_step'],

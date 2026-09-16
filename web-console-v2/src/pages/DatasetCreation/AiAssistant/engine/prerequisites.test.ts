@@ -1,5 +1,6 @@
 import { Action } from './actions';
 import {
+  isDenormRequest,
   kindsForUtterance,
   unmetForAction,
   unmetForStep,
@@ -242,5 +243,17 @@ describe('what an agenda question needs before it can be answered', () => {
   it('asks for nothing once the step is not blocked', () => {
     expect(unmetForStep('dedup', READY)).toBeUndefined();
     expect(unmetForStep('storage', READY)).toBeUndefined();
+  });
+});
+
+describe('isDenormRequest', () => {
+  it('recognises a request to join a master dataset', () => {
+    expect(isDenormRequest('can I join to a master dataset?')).toBe(true);
+    expect(isDenormRequest('denormalise on customer_id')).toBe(true);
+  });
+
+  it('is false for a request about something else', () => {
+    expect(isDenormRequest('make order_id required')).toBe(false);
+    expect(isDenormRequest('enable the real-time store')).toBe(false);
   });
 });

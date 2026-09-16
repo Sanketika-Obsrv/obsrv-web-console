@@ -805,7 +805,8 @@ export const executeAction = async (
       action.kind === 'remove_denorm' ||
       action.kind === 'set_storage' ||
       action.kind === 'set_keys' ||
-      action.kind === 'save')
+      action.kind === 'save' ||
+      action.kind === 'export_schema')
   ) {
     return failure(
       'There is no dataset yet — attach a sample file first',
@@ -1170,6 +1171,35 @@ export const executeAction = async (
         changedRefs: [],
         ...undoFields(action, refreshed),
       };
+    } catch (cause) {
+      return describeApiError(cause, 'READ_FAILED');
+    }
+  }
+
+  /**
+   * The conversational equivalent of the wizard's "Download JSON Schema"
+   * button (`SchemaDetails.tsx`) — a read, not a write. The wizard's own
+   * handler reconstructs the schema from its locally-edited table rows;
+   * there is no such buffer here, because every schema edit already reached
+   * the server the turn it was made. So this hands back the server's own
+   * `data_schema` as it stands right now, which is the more accurate of the
+   * two. The actual browser download (a `Blob` and an anchor click) happens
+   * in `useAssistant.ts`, which already owns every other browser-only side
+   * effect (`exportTrail` does the same for the audit trail) — this stays a
+   * pure read so it is testable without a DOM.
+   */
+  if (action.kind === 'export_schema' && datasetId) {
+    try {
+      const current = await readSnapshot(datasetId, SCHEMA_READ_FIELDS);
+
+      if (!current.data_schema) {
+        return failure(
+          `Dataset "${datasetId}" has no schema yet — upload a sample first`,
+          'NO_SCHEMA',
+        );
+      }
+
+      return { ok: true, status: 'applied', dataset: current, changedRefs: [] };
     } catch (cause) {
       return describeApiError(cause, 'READ_FAILED');
     }

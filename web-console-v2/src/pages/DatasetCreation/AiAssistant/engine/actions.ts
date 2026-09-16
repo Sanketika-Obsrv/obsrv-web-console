@@ -61,6 +61,11 @@ export const ACTION_KINDS = [
   'skip_step',
   'goto_step',
   'save',
+  // A read, not a write — mirrors the wizard's own "Download JSON Schema"
+  // button (`SchemaDetails.tsx`), which serializes the current `data_schema`
+  // client-side and triggers a browser download. No fields, like `save` and
+  // `undo`: there is nothing to name, only the current schema to hand back.
+  'export_schema',
   'explain',
   'clarify',
   'undo',
@@ -262,6 +267,7 @@ export type Action =
     }
   | { kind: 'goto_step'; step: WizardStep }
   | { kind: 'save' }
+  | { kind: 'export_schema' }
   | { kind: 'explain'; topic?: string }
   | { kind: 'clarify'; question: string; options?: string[] }
   | { kind: 'undo' };
@@ -472,6 +478,7 @@ const buildVariants = ({
       ['step'],
     ),
     variant('save'),
+    variant('export_schema'),
     variant('explain', {
       topic: { type: 'string', maxLength: TEXT_MAX_LENGTH },
     }),

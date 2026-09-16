@@ -20,6 +20,7 @@ import {
 import { FieldVocabulary } from './fieldVocabulary';
 import {
   LEFT_IT_AS_IT_WAS,
+  NO_MASTER_DATASETS,
   NOTHING_TO_UNDO,
   STOPPED_PART_WAY,
   containModelText,
@@ -32,6 +33,8 @@ import {
 } from './narrate';
 import { countDuplicates, evaluateExpression } from './preflight';
 import {
+  AssistantState,
+  isDenormRequest,
   kindsForUtterance,
   unmetForAction,
   unmetForUtterance,
@@ -423,6 +426,23 @@ const DESTRUCTIVE_KINDS: ReadonlySet<Action['kind']> = new Set([
   'remove_denorm',
 ]);
 
+/**
+ * Whether this action always proposes rather than runs outright.
+ *
+ * `DESTRUCTIVE_KINDS` covers three kinds unconditionally. `attach_sample`
+ * joins them only conditionally: the wizard's own `SchemaDetails.tsx` warns
+ * before a re-upload for exactly this reason — it regenerates the schema
+ * from scratch, silently discarding whatever was already there — while the
+ * very first sample on a schema-less draft is the ordinary way a dataset
+ * gets a schema at all, and proposing that would ask for a click on every
+ * dataset ever created. `state.hasSchema` is the same reading `stateOf`
+ * already derives from the vocabulary, so "a schema already exists" cannot
+ * disagree between this check and everything else that asks the question.
+ */
+const isDestructive = (action: Action, state: AssistantState): boolean =>
+  DESTRUCTIVE_KINDS.has(action.kind) ||
+  (action.kind === 'attach_sample' && state.hasSchema);
+
 /** What one candidate action produced, and whether a plan behind it should stop. */
 interface StepOutcome {
   message: NewMessage;
@@ -466,7 +486,8 @@ const runOneStep = async (
     return { message: explainMessage(action), applied: [], stop: true };
   }
 
-  const blocked = unmetForAction(action, stateOf(deps));
+  const state = stateOf(deps);
+  const blocked = unmetForAction(action, state);
 
   if (blocked) {
     return {
@@ -481,7 +502,7 @@ const runOneStep = async (
     };
   }
 
-  if (confirm || DESTRUCTIVE_KINDS.has(action.kind)) {
+  if (confirm || isDestructive(action, state)) {
     return { message: proposeAction(action), applied: [], stop: true };
   }
 
@@ -919,6 +940,35 @@ export const runTurn = async (
   }
 
   /**
+   * Denormalisation, asked about before any master dataset exists.
+   *
+   * `agenda.ts`'s `denorm` question is never raised at all while
+   * `masterDatasets` is empty (`PENDING.denorm` requires it to be
+   * non-empty) — reasonably, since offering a join against nothing wastes a
+   * turn. But that also means a user who explicitly asks about it today gets
+   * no useful answer: nothing on the table names the topic, so the request
+   * falls through to the router and, most likely, the model's own guess at
+   * an action it cannot actually build (there is no master to join to) or a
+   * plain "I did not understand". The request was perfectly clear; there was
+   * just nothing to join to yet. Checked ahead of the router, the same way
+   * the confirm-card and literal-answer checks above are, because this is a
+   * fact the engine already knows for certain — not a judgment call worth
+   * asking a small model to make. Unaffected once a master dataset exists:
+   * `deps.masterDatasets` is only checked when it is known *and empty*,
+   * never merely absent (a list not yet read is not "there are none").
+   */
+  if (
+    deps.masterDatasets &&
+    deps.masterDatasets.length === 0 &&
+    isDenormRequest(input)
+  ) {
+    return {
+      messages: [{ role: 'assistant', text: NO_MASTER_DATASETS }],
+      applied: [],
+    };
+  }
+
+  /**
    * The router, when there is one, goes before anything else left — the
    * confirm-card gate above already had its turn, and found no definite
    * match. It is tried next because it is the more complete reading: it has
@@ -1137,8 +1187,7 @@ export const runTurn = async (
   if (
     resolution.status === 'resolved' &&
     resolution.action &&
-    (resolution.needsConfirmation ||
-      DESTRUCTIVE_KINDS.has(resolution.action.kind))
+    (resolution.needsConfirmation || isDestructive(resolution.action, state))
   ) {
     return { messages: [proposeAction(resolution.action)], applied: [] };
   }

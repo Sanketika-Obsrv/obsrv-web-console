@@ -62,6 +62,7 @@ export const STEP_ACTIONS: Record<WizardStep, ActionKind[]> = {
     'add_field',
     'delete_field',
     'resolve_conflict',
+    'export_schema',
   ],
   processing: [
     ...ALWAYS,

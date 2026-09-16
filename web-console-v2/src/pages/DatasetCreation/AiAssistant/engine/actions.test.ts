@@ -81,6 +81,7 @@ const validActions: Action[] = [
   { kind: 'skip_step', step: 'dedup' },
   { kind: 'goto_step', step: 'processing' },
   { kind: 'save' },
+  { kind: 'export_schema' },
   { kind: 'explain', topic: 'dedup' },
   { kind: 'clarify', question: 'Which field holds the order id?' },
   { kind: 'undo' },
@@ -118,6 +119,7 @@ describe('action catalog', () => {
       'skip_step',
       'goto_step',
       'save',
+      'export_schema',
       'explain',
       'clarify',
       'undo',
@@ -274,6 +276,22 @@ describe('set_operations_config schedule', () => {
       'kind',
       'schedule',
     ]);
+  });
+});
+
+/**
+ * Mirrors the wizard's "Download JSON Schema" button — a read, not a write,
+ * so it carries no fields at all, the same shape as `save` and `undo`.
+ */
+describe('export_schema', () => {
+  it('accepts the bare action', () => {
+    expect(validateAction({ kind: 'export_schema' }).ok).toBe(true);
+  });
+
+  it('rejects an extra property', () => {
+    expect(validateAction({ kind: 'export_schema', path: 'order_id' }).ok).toBe(
+      false,
+    );
   });
 });
 

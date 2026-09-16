@@ -110,6 +110,45 @@ describe('datasetFacts', () => {
     expect(facts.fieldCount).toBe(2);
   });
 
+  /**
+   * The same diff `PreviewSummary.tsx`'s "Summary of changes" tab reads,
+   * read here rather than re-derived, so the two can never disagree.
+   */
+  describe('liveDiff', () => {
+    it('counts Added/Modified/Deleted for a Live dataset with a real diff', () => {
+      const facts = datasetFacts({
+        dataset: fullDataset(),
+        liveDiff: {
+          additions: [{ items: [{ key: 'channel' }, { key: 'region' }] }],
+          modifications: [{ value: { from: 'string', to: 'double' } }],
+          deletions: [{ items: [{ key: 'legacy_field' }] }],
+        },
+      });
+
+      expect(facts.liveDiff).toEqual({
+        additions: 2,
+        modifications: 1,
+        deletions: 1,
+      });
+    });
+
+    it('is absent for a dataset that was never Live', () => {
+      const facts = datasetFacts({ dataset: fullDataset() });
+
+      expect(facts.liveDiff).toBeUndefined();
+    });
+
+    it('is absent, not zero, when a Live dataset has nothing pending', () => {
+      const facts = datasetFacts({
+        dataset: fullDataset(),
+        liveDiff: { additions: [], modifications: [], deletions: [] },
+      });
+
+      expect(facts.liveDiff).toBeUndefined();
+      expect(facts).not.toHaveProperty('liveDiff');
+    });
+  });
+
   it('returns sensible defaults for an empty state', () => {
     const facts = datasetFacts({});
 

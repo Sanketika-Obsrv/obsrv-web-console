@@ -201,6 +201,16 @@ const factsLine = (facts?: DatasetFacts): string | undefined => {
     );
   }
 
+  // Only present at all once there is a real, non-empty comparison to
+  // report — see `datasetFacts`'s own doc for why an all-zero diff and one
+  // that was never computed both leave this clause out entirely.
+  if (facts.liveDiff) {
+    const { additions, modifications, deletions } = facts.liveDiff;
+    clauses.push(
+      `vs live: ${additions} added, ${modifications} modified, ${deletions} deleted`,
+    );
+  }
+
   return clauses.length > 0 ? `Now: ${clauses.join('; ')}.` : undefined;
 };
 

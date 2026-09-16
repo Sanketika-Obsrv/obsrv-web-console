@@ -13,6 +13,7 @@
  * other path in, so a fact reported here is a fact the document reported
  * first.
  */
+import { DatasetDiffGroup, DatasetDiffResult } from 'services/datasetApi';
 import { Action } from './actions';
 import { AgendaState } from './agenda';
 
@@ -25,6 +26,15 @@ export interface DatasetFacts {
   dedup?: { enabled: boolean; key?: string };
   fieldCount: number;
   hasDraft: boolean;
+  /**
+   * Added, Modified and Deleted field counts — what a Live dataset's pending
+   * draft would change if republished right now, read from the same
+   * live-vs-draft diff `PreviewSummary.tsx`'s "Summary of changes" tab reads
+   * (`GET /api/dataset/diff/:id`). Absent, never zero, for a dataset that has
+   * never been Live (there is nothing to diff against) or one with nothing
+   * pending — the model must not be handed a comparison that was never run.
+   */
+  liveDiff?: { additions: number; modifications: number; deletions: number };
 }
 
 /** The same accessor `agenda.ts`, `recap.ts` and `finalCheck.ts` each use. */
@@ -35,6 +45,46 @@ const block = (state: AgendaState, key: string): Record<string, unknown> =>
 const asString = (value: unknown): string | undefined =>
   typeof value === 'string' && value ? value : undefined;
 
+/**
+ * How many individual changes one diff group holds.
+ *
+ * Mirrors `PreviewSummary.tsx`'s own `transform`: a group expands into one
+ * row per `items` entry, plus one more when it carries a bare `value` — the
+ * same truthy check that function uses, so a falsy `value` (never sent by
+ * the API for a real change) is not miscounted as one. Counted here rather
+ * than re-derived from the schema, so this can never disagree with the
+ * table the wizard itself renders from the same response.
+ */
+const countGroup = (group: DatasetDiffGroup): number =>
+  (group.items?.length ?? 0) + (group.value ? 1 : 0);
+
+const countGroups = (groups?: DatasetDiffGroup[]): number =>
+  (groups ?? []).reduce((total, group) => total + countGroup(group), 0);
+
+/**
+ * The Added/Modified/Deleted counts, from the raw diff response — present
+ * only once there is at least one real change to report. A dataset that was
+ * never Live has no `liveDiff` on the state at all (see `AgendaState`'s own
+ * doc), and a Live dataset with nothing pending has one whose three counts
+ * are all zero; both cases end up absent here, which is the point: an
+ * all-zero diff and a diff that was never computed must read identically to
+ * the model — as nothing to report.
+ */
+const liveDiffFacts = (diff?: DatasetDiffResult): DatasetFacts['liveDiff'] => {
+  if (!diff) return undefined;
+
+  const counts = {
+    additions: countGroups(diff.additions),
+    modifications: countGroups(diff.modifications),
+    deletions: countGroups(diff.deletions),
+  };
+
+  const hasPending =
+    counts.additions + counts.modifications + counts.deletions > 0;
+
+  return hasPending ? counts : undefined;
+};
+
 export const datasetFacts = (state: AgendaState): DatasetFacts => {
   const indexing = block(state, 'dataset_config').indexing_config as
     Record<string, boolean> | undefined;
@@ -43,6 +93,7 @@ export const datasetFacts = (state: AgendaState): DatasetFacts => {
   const dedupConfig = block(state, 'dedup_config');
   const properties = state.dataset?.data_schema?.properties as
     Record<string, unknown> | undefined;
+  const liveDiff = liveDiffFacts(state.liveDiff);
 
   return {
     // Read only from the committed document, never from `pending`: the id
@@ -76,6 +127,7 @@ export const datasetFacts = (state: AgendaState): DatasetFacts => {
       : {}),
     fieldCount: Object.keys(properties ?? {}).length,
     hasDraft: Boolean(state.dataset?.dataset_id),
+    ...(liveDiff ? { liveDiff } : {}),
   };
 };
 

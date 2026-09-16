@@ -334,3 +334,33 @@ export const fetchAllFields = async (
 
   return Array.isArray(fields) ? (fields as SchemaField[]) : [];
 };
+
+/**
+ * One group in the live-vs-draft diff the API reports — the same shape
+ * `PreviewSummary.tsx`'s `transform` reads: either a list of `items`, a bare
+ * `value`, or both.
+ */
+export interface DatasetDiffGroup {
+  value?: unknown;
+  items?: Record<string, unknown>[];
+}
+
+/** What changed since a Live dataset was last published, grouped by kind. */
+export interface DatasetDiffResult {
+  additions?: DatasetDiffGroup[];
+  modifications?: DatasetDiffGroup[];
+  deletions?: DatasetDiffGroup[];
+}
+
+/**
+ * The live-vs-draft diff `PreviewSummary.tsx` reads via `useFetchDatasetDiff`
+ * (`services/dataset.ts`) — a plain-async twin for the assistant, which runs
+ * outside React. Same endpoint, same response: the wizard's own summary and
+ * whatever the assistant reports from it can never disagree.
+ */
+export const fetchDatasetDiff = (
+  datasetId: string,
+): Promise<DatasetDiffResult> =>
+  http
+    .get(`${DATASET_ENDPOINTS.DATASETS_DIFF}/${datasetId}`)
+    .then((response: AxiosResponse) => response.data);

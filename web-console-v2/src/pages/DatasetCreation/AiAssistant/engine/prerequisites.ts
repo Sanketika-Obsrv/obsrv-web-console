@@ -247,6 +247,18 @@ export const unmetForStep = (
       );
 
 /**
+ * Whether the words name denormalisation — joining to a master dataset — as
+ * their own topic.
+ *
+ * Reuses the one topic table above rather than a pattern of its own: "A join
+ * to a master dataset" is the only topic whose `kinds` includes `set_denorm`,
+ * so matching on that is exactly matching on that topic having been the one
+ * `kindsForUtterance` found.
+ */
+export const isDenormRequest = (utterance: string): boolean =>
+  Boolean(kindsForUtterance(utterance)?.includes('set_denorm'));
+
+/**
  * What the words are about, when they are about something this flow does.
  *
  * Used to guess at a subject for an instruction that resolved to nothing:

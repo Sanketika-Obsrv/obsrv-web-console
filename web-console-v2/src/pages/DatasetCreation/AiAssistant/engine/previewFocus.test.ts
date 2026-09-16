@@ -28,6 +28,7 @@ describe('sectionForAction', () => {
     expect(sectionOf({ kind: 'delete_field', path: 'order_id' })).toBe(
       'ingestion',
     );
+    expect(sectionOf({ kind: 'export_schema' })).toBe('ingestion');
   });
 
   it('sends validation, dedup and transformations to processing', () => {
@@ -238,6 +239,10 @@ describe('stepAfterAction', () => {
         dataType: 'string',
       }),
     ).toBe('schema');
+  });
+
+  it('keeps a schema download on the schema step', () => {
+    expect(stepAfterAction({ kind: 'export_schema' })).toBe('schema');
   });
 
   it('moves to processing for a dedup change', () => {

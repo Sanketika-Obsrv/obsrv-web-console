@@ -686,6 +686,40 @@ describe('save', () => {
   });
 });
 
+/**
+ * The conversational equivalent of the wizard's "Download JSON Schema"
+ * button — a read, exactly like `save` above. The actual browser download
+ * is a `useAssistant.ts` side effect, out of scope for the executor.
+ */
+describe('export_schema', () => {
+  it('reads the schema back without writing anything', async () => {
+    const result = await run({ kind: 'export_schema' });
+
+    expect(mocked.update).not.toHaveBeenCalled();
+    expect(mocked.read).toHaveBeenCalled();
+    expect(result.ok).toBe(true);
+    if (result.ok && result.status === 'applied') {
+      expect(result.dataset.data_schema).toEqual(dataSchema());
+    }
+  });
+
+  it('does nothing without a dataset', async () => {
+    const result = await run({ kind: 'export_schema' }, { datasetId: null });
+
+    expect(mocked.update).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+  });
+
+  it('fails when there is no schema yet', async () => {
+    mocked.read.mockResolvedValueOnce(draft({ data_schema: undefined }));
+
+    const result = await run({ kind: 'export_schema' });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.code).toBe('NO_SCHEMA');
+  });
+});
+
 describe('goto_step', () => {
   it('changes step without touching the API', async () => {
     const result = await run({ kind: 'goto_step', step: 'storage' });
