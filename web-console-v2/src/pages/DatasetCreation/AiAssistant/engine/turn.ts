@@ -22,6 +22,7 @@ import {
   LEFT_IT_AS_IT_WAS,
   NOTHING_TO_UNDO,
   STOPPED_PART_WAY,
+  containModelText,
   describeProposal,
   narrateExplain,
   narrateOutcome,
@@ -570,11 +571,19 @@ const handleRouted = async (
     };
   }
 
-  // Nothing to write for the user's own question or a remark outside the job.
+  // Nothing to write for the user's own question or a remark outside the
+  // job. `routed.reply` is the model's own free text — never trusted as-is,
+  // even though `model/router.ts` already bounds it before it gets here, in
+  // case a future caller of `deps.route` does not. See `containModelText`'s
+  // own doc for why this, not a fixed sentence, is the containment for this
+  // case.
   if (routed.intent === 'ask' || routed.intent === 'other') {
     return {
       messages: [
-        { role: 'assistant', text: routed.reply ?? NOT_SURE_FALLBACK },
+        {
+          role: 'assistant',
+          text: containModelText(routed.reply) ?? NOT_SURE_FALLBACK,
+        },
       ],
       applied: [],
     };

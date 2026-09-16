@@ -60,6 +60,22 @@ export const ACTION_KINDS = [
 
 export type ActionKind = (typeof ACTION_KINDS)[number];
 
+/**
+ * The hard cap on a piece of free text the model writes itself rather than
+ * copies from a fixed vocabulary — `clarify.question` and `explain.topic`
+ * below.
+ *
+ * `model/router.ts` already bounds its own `reply` field the same way, at the
+ * same value, for the same reason: an unbounded string the model authored is
+ * an unbounded surface for it to claim something happened that did not. This
+ * is a separate constant rather than an import of `model/router.ts`'s
+ * `REPLY_MAX_LENGTH`, because the import would run backwards — `model/`
+ * already imports from `engine/`, never the reverse (see `engine/router.ts`'s
+ * own note on this), and this file has no business depending on the model
+ * layer just to read one number out of it.
+ */
+export const TEXT_MAX_LENGTH = 160;
+
 /** `arrival_format` values produced by `datasets/dataschema`. */
 export const ARRIVAL_FORMATS = [
   'text',
@@ -423,11 +439,17 @@ const buildVariants = ({
       ['step'],
     ),
     variant('save'),
-    variant('explain', { topic: { type: 'string' } }),
+    variant('explain', {
+      topic: { type: 'string', maxLength: TEXT_MAX_LENGTH },
+    }),
     variant(
       'clarify',
       {
-        question: nonEmptyString,
+        question: {
+          type: 'string',
+          minLength: 1,
+          maxLength: TEXT_MAX_LENGTH,
+        },
         options: { type: 'array', items: { type: 'string' } },
       },
       ['question'],

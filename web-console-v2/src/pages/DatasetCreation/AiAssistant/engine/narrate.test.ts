@@ -1,10 +1,11 @@
-import { ACTION_KINDS, Action } from './actions';
+import { ACTION_KINDS, Action, TEXT_MAX_LENGTH } from './actions';
 import { ExecutionOutcome } from './executor';
 import { OutOfScope } from './router';
 import {
   LEFT_IT_AS_IT_WAS,
   OUT_OF_SCOPE,
   STOPPED_PART_WAY,
+  containModelText,
   describeAction,
   describeProposal,
   narrateExplain,
@@ -428,6 +429,55 @@ describe('narrating a resolution that could not be acted on', () => {
     const { card } = narrateResolution({ status: 'unknown', confidence: 0 });
 
     expect(card).toBeUndefined();
+  });
+
+  /**
+   * `clarify.question` is the model's own free text with no fixed engine
+   * sentence behind it — unlike an out-of-scope capability, there is nothing
+   * to substitute it with, so the containment is a length cap, re-checked
+   * here the same defensive way `model/router.ts`'s `readRouterReply`
+   * re-checks its own `reply` against `REPLY_MAX_LENGTH`.
+   */
+  it('never passes an over-length clarify question through as-is, and keeps none of it', () => {
+    const longQuestion = 'z'.repeat(TEXT_MAX_LENGTH + 40);
+
+    const { text } = narrateResolution({
+      status: 'unknown',
+      confidence: 0,
+      clarify: { question: longQuestion },
+    });
+
+    expect(text).not.toBe(longQuestion);
+    // Guards against a future refactor that truncates instead of rejecting.
+    expect(text).not.toContain('z'.repeat(20));
+  });
+
+  it('falls through to the honest "did not understand" wording for an over-length question', () => {
+    const { text } = narrateResolution({
+      status: 'unknown',
+      confidence: 0,
+      clarify: { question: 'z'.repeat(TEXT_MAX_LENGTH + 40) },
+    });
+
+    expect(text).toMatch(/did not understand|not sure/i);
+  });
+});
+
+describe('containModelText — the one gate a raw model string passes through', () => {
+  it('passes text at or under the limit through unchanged', () => {
+    const atLimit = 'x'.repeat(TEXT_MAX_LENGTH);
+
+    expect(containModelText(atLimit)).toBe(atLimit);
+  });
+
+  it('rejects text over the limit rather than truncating it', () => {
+    const overLimit = 'x'.repeat(TEXT_MAX_LENGTH + 1);
+
+    expect(containModelText(overLimit)).toBeUndefined();
+  });
+
+  it('passes undefined through as undefined', () => {
+    expect(containModelText(undefined)).toBeUndefined();
   });
 });
 

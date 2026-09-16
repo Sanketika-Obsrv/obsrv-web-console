@@ -3,6 +3,7 @@ import {
   Action,
   ARRIVAL_FORMATS,
   DATA_TYPES,
+  TEXT_MAX_LENGTH,
   buildActionSchema,
   createActionValidator,
   validateAction,
@@ -224,6 +225,51 @@ describe('validateAction', () => {
 
   it('requires at least one key on set_keys', () => {
     expect(validateAction({ kind: 'set_keys' }).ok).toBe(false);
+  });
+});
+
+/**
+ * `clarify.question` and `explain.topic` are the model's own free text, not
+ * a copy of anything the engine wrote — the same category of field
+ * `model/router.ts`'s `reply` already bounds with `REPLY_MAX_LENGTH`. These
+ * two had no bound at all before this: `question` only required a non-empty
+ * string, and `topic` had no schema constraint whatsoever.
+ */
+describe('length-bounded free text', () => {
+  it('accepts a clarify question right at the limit', () => {
+    const result = validateAction({
+      kind: 'clarify',
+      question: 'x'.repeat(TEXT_MAX_LENGTH),
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects a clarify question one character over the limit', () => {
+    const result = validateAction({
+      kind: 'clarify',
+      question: 'x'.repeat(TEXT_MAX_LENGTH + 1),
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it('accepts an explain topic right at the limit', () => {
+    const result = validateAction({
+      kind: 'explain',
+      topic: 'x'.repeat(TEXT_MAX_LENGTH),
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects an explain topic one character over the limit', () => {
+    const result = validateAction({
+      kind: 'explain',
+      topic: 'x'.repeat(TEXT_MAX_LENGTH + 1),
+    });
+
+    expect(result.ok).toBe(false);
   });
 });
 

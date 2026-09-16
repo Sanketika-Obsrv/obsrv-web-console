@@ -1,4 +1,4 @@
-import { Action } from './actions';
+import { Action, TEXT_MAX_LENGTH } from './actions';
 import { diagnose } from './errorMap';
 import { Prompt } from './agenda';
 import { buildFieldVocabulary } from './fieldVocabulary';
@@ -1983,6 +1983,45 @@ describe('the router', () => {
       expect(execute).not.toHaveBeenCalled();
       expect(result.applied).toEqual([]);
       expect(result.messages[0].text).toMatch(/master dataset/i);
+    });
+
+    /**
+     * `model/router.ts` already bounds `reply` to `REPLY_MAX_LENGTH` before a
+     * `RouterResult` is ever built, but this branch does not trust that —
+     * `containModelText` re-checks the length itself, so an over-length
+     * `reply` from any future caller of `deps.route` still cannot become the
+     * user's entire message unchecked. See `containModelText` in
+     * `narrate.ts` for why a length cap, not a fixed sentence, is the
+     * containment here.
+     */
+    it('never lets an over-length reply reach the user as its entire message, for "other"', async () => {
+      const longReply = 'z'.repeat(TEXT_MAX_LENGTH + 40);
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'hmm',
+        async () => ({ intent: 'other', reply: longReply }),
+        { execute },
+      );
+
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].text).not.toBe(longReply);
+      expect(result.messages[0].text).not.toContain('z'.repeat(20));
+    });
+
+    it('never lets an over-length reply reach the user as its entire message, for "ask"', async () => {
+      const longReply = 'z'.repeat(TEXT_MAX_LENGTH + 40);
+      const execute = jest.fn(async () => applied);
+
+      const result = await routed(
+        'what is a master dataset?',
+        async () => ({ intent: 'ask', reply: longReply }),
+        { execute },
+      );
+
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].text).not.toBe(longReply);
+      expect(result.messages[0].text).not.toContain('z'.repeat(20));
     });
 
     it('declines an out-of-scope capability without ever saving', async () => {

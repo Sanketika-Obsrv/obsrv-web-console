@@ -2,6 +2,7 @@ jest.mock('../telemetry', () => ({
   reportModelCall: jest.fn(),
 }));
 
+import { TEXT_MAX_LENGTH } from '../engine/actions';
 import { DatasetFacts } from '../engine/datasetFacts';
 import { buildFieldVocabulary } from '../engine/fieldVocabulary';
 import { ModelEngine } from './engineClient';
@@ -470,6 +471,32 @@ describe('when the model asks a question', () => {
     );
 
     expect(resolution.needsConfirmation).toBeFalsy();
+  });
+
+  /**
+   * `question` is schema-bound to `TEXT_MAX_LENGTH`, the same way
+   * `model/router.ts` bounds its own `reply`. An over-length question fails
+   * `createActionValidator`'s check the same way any other malformed action
+   * does, so it never becomes a `Resolution.clarify.question` at all — the
+   * caller's own fallback answers instead, exactly as it would for an
+   * unparseable reply.
+   */
+  it('falls back to the rules rather than passing an over-length question through', async () => {
+    const longQuestion = 'z'.repeat(TEXT_MAX_LENGTH + 40);
+    const unresolved: Resolution = { status: 'unknown', confidence: 0 };
+
+    const resolution = await resolveWithModel(
+      { utterance: 'do the thing with the stuff', step: 'schema', vocabulary },
+      {
+        engine: engineReplying(
+          JSON.stringify({ kind: 'clarify', question: longQuestion }),
+        ),
+        fallback: () => unresolved,
+      },
+    );
+
+    expect(resolution).toEqual(unresolved);
+    expect(resolution.clarify?.question).toBeUndefined();
   });
 });
 

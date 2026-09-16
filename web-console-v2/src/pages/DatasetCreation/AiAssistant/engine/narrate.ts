@@ -9,7 +9,7 @@
  * Nothing here invents facts about the dataset. Every sentence is built from
  * the action that was dispatched and the outcome the server returned.
  */
-import { Action, AgendaStepId } from './actions';
+import { Action, AgendaStepId, TEXT_MAX_LENGTH } from './actions';
 import { availableStorageLabels, diagnose } from './errorMap';
 import { ExecutionFailureCode, ExecutionOutcome } from './executor';
 import { MessageCard } from '../messages/types';
@@ -378,7 +378,12 @@ export const narrateResolution = (
   resolution: Resolution,
   context: ResolutionContext = {},
 ): Narration => {
-  const question = resolution.clarify?.question;
+  // `containModelText` is the same containment `engine/turn.ts` applies to
+  // the router's own `reply` — see that function's own doc for why this is
+  // a length cap rather than a fixed-sentence substitution. An over-length
+  // question falls through to the honest "did not understand"/off-topic
+  // wording below, exactly as an absent question already does.
+  const question = containModelText(resolution.clarify?.question);
   const options = resolution.clarify?.options ?? [];
   const actions = resolution.candidateActions ?? [];
 
@@ -444,6 +449,54 @@ export const OUT_OF_SCOPE: Record<OutOfScope, string> = {
   metrics:
     "Dataset health and metrics are not shown here — they are on the dataset's metrics page.",
 };
+
+/**
+ * The one gate a raw model string passes through before it is allowed to
+ * become the *entire* text of a message.
+ *
+ * `narrateOutOfScope` below has this problem solved already for a capability
+ * the engine declines by construction: there is a fixed, engine-owned
+ * sentence per capability, so the model's own words can only ever be
+ * appended parenthetically — never the whole reply. An `ask`/`other`
+ * chit-chat reply and a `clarify` question have no such fixed sentence to
+ * fall back on: a chit-chat reply *is* open-ended free text (there is no
+ * generic thing to say instead of answering "what is a master dataset?"),
+ * and a clarifying question is, by definition, whatever the resolver needs
+ * to ask — there is no one fixed question either tier could substitute in
+ * its place. So neither can be contained by "replace the model's words with
+ * a fixed sentence and append them after"; there is nothing to replace them
+ * with.
+ *
+ * What both cases share instead is that the string is the model's own
+ * unverified prose, and the risk is the same one `narrateOutOfScope` guards
+ * against: the model claiming, in its own words, that something happened
+ * which the engine never did. Bounding the length is what `model/router.ts`
+ * already does for exactly this reason on its own `reply` field — an
+ * unbounded free-text field is an unbounded surface for a fabricated claim,
+ * a bounded one at least cannot smuggle in a paragraph's worth of invented
+ * narrative. This function re-checks that same bound defensively, the same
+ * belt-and-braces way `readRouterReply` re-checks `reply` against
+ * `REPLY_MAX_LENGTH` rather than trusting its own schema to have been
+ * compiled correctly upstream — so the guarantee here does not depend on
+ * every caller having gone through schema validation first.
+ *
+ * Both places in the engine that let a raw model string become an entire
+ * message's text route through this one function: `engine/turn.ts`'s
+ * `ask`/`other` branch, for the router's own `reply`, and `narrateResolution`
+ * below, for `clarify.question`. They are not unified into one call any
+ * further than that shared check — one takes a `RouterResult`, the other a
+ * `Resolution`, two genuinely different shapes produced by two genuinely
+ * different pipeline stages, and forcing them through one function beyond
+ * "run the same containment check" would only add indirection without
+ * removing a second trust boundary, since the boundary that mattered (an
+ * unbounded model string reaching the user unchecked) is exactly what this
+ * shared check removes. `undefined` in is `undefined` out: there is nothing
+ * to contain when there is nothing to say, and every caller already has its
+ * own honest fallback for that case — `NOT_SURE_FALLBACK` in `turn.ts`, and
+ * the off-topic/did-not-understand wording below.
+ */
+export const containModelText = (text?: string): string | undefined =>
+  text && text.length <= TEXT_MAX_LENGTH ? text : undefined;
 
 /**
  * What is said for a capability the engine declines by construction.
