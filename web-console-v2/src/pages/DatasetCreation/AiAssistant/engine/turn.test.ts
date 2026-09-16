@@ -2333,3 +2333,168 @@ describe('the router', () => {
     });
   });
 });
+
+/**
+ * Live testing found the router unreliable exactly where the answer is
+ * already certain from data the engine itself holds — the exact text of a
+ * printed choice option, or the exact printed word a pending confirm card is
+ * waiting on. These three matchers — `answerToChoice`, `answerToConflict`,
+ * `readOffer` — already exist for exactly this, and now run before the
+ * router ever sees the turn, so a definite match never risks a
+ * misclassification. A near-miss still has to go through the router: only a
+ * genuine match short-circuits it.
+ */
+describe('a definite answer settles the turn before the router runs', () => {
+  const STORAGE: Prompt = {
+    step: 'storage',
+    text: 'Where should this data be stored?',
+    card: {
+      kind: 'choice',
+      options: [
+        {
+          label: 'Real-time store',
+          action: { kind: 'set_storage', realtime: true },
+        },
+        {
+          label: 'Lakehouse',
+          action: { kind: 'set_storage', lakehouse: true },
+        },
+      ],
+    },
+  };
+
+  const CONFLICT: Prompt = {
+    step: 'conflicts',
+    text: 'total_amount arrived as more than one type.',
+    card: {
+      kind: 'conflict',
+      path: 'total_amount',
+      candidates: [
+        { dataType: 'double', count: 108, isRecommended: true },
+        { dataType: 'string', count: 12, isSafest: true },
+      ],
+    },
+  };
+
+  const dedupProposal: Message[] = [
+    { id: 'u1', role: 'user', text: 'no dupes please', createdAt: 0 },
+    {
+      id: 'a1',
+      role: 'assistant',
+      createdAt: 0,
+      text: 'I think you mean: deduplicate on order_id.',
+      card: {
+        kind: 'confirm',
+        title: 'Deduplicate on order_id',
+        confirmAction: { kind: 'set_dedup', enabled: true, key: 'order_id' },
+      },
+    },
+  ];
+
+  it('never calls the router for the exact text of a printed choice option', async () => {
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn<Promise<RouterResult>, [string]>(async () => ({
+      intent: 'other',
+      reply: 'the router, not the matcher, answered this',
+    }));
+
+    const result = await runTurn('Lakehouse', {
+      vocabulary,
+      execute,
+      prompt: STORAGE,
+      route,
+    });
+
+    expect(route).not.toHaveBeenCalled();
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_storage',
+      lakehouse: true,
+    });
+    expect(result.messages[0].text).not.toMatch(/the router/);
+  });
+
+  it('never calls the router for the exact candidate a conflict card offers', async () => {
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn<Promise<RouterResult>, [string]>(async () => ({
+      intent: 'other',
+      reply: 'the router, not the matcher, answered this',
+    }));
+
+    const result = await runTurn('string', {
+      vocabulary,
+      execute,
+      prompt: CONFLICT,
+      route,
+    });
+
+    expect(route).not.toHaveBeenCalled();
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'resolve_conflict',
+      path: 'total_amount',
+      mode: 'apply',
+      dataType: 'string',
+    });
+    expect(result.messages[0].text).not.toMatch(/the router/);
+  });
+
+  it('never calls the router for the exact word a pending confirm card is waiting on', async () => {
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn<Promise<RouterResult>, [string]>(async () => ({
+      intent: 'other',
+      reply: 'the router, not the matcher, answered this',
+    }));
+
+    const accepted = await runTurn('yes', {
+      vocabulary,
+      execute,
+      history: dedupProposal,
+      route,
+    });
+
+    expect(route).not.toHaveBeenCalled();
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dedup',
+      enabled: true,
+      key: 'order_id',
+    });
+    expect(accepted.messages[0].text).not.toMatch(/the router/);
+
+    route.mockClear();
+    execute.mockClear();
+
+    const declined = await runTurn('no', {
+      vocabulary,
+      execute,
+      history: dedupProposal,
+      route,
+    });
+
+    expect(route).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
+    expect(declined.messages[0].text).toMatch(/left it/i);
+  });
+
+  /**
+   * Proving the short-circuit was not over-broadened: a reply that is not a
+   * definite match for anything the card offers still has to go through the
+   * router, exactly as before.
+   */
+  it('still calls the router for a near-miss or a paraphrase at a choice card', async () => {
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn<Promise<RouterResult>, [string]>(async () => ({
+      intent: 'other',
+      reply: 'the router answered this',
+    }));
+
+    const result = await runTurn('keep it somewhere cheap please', {
+      vocabulary,
+      execute,
+      prompt: STORAGE,
+      route,
+    });
+
+    expect(route).toHaveBeenCalledTimes(1);
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).toBe('the router answered this');
+  });
+});

@@ -410,4 +410,36 @@ describe('readOffer', () => {
     expect(readOffer(card, '')).toBeUndefined();
     expect(readOffer(card, '   ')).toBeUndefined();
   });
+
+  /**
+   * A card's own `confirmLabel` is not always literally "yes" — the review
+   * step's card, for one, prints "Check it" as its affirmative action. A
+   * reply is read against that printed word too, not only the generic one.
+   */
+  describe('a card whose printed accept label is not literally "yes"', () => {
+    const reviewCard = {
+      kind: 'confirm' as const,
+      title: 'Check this dataset over',
+      confirmLabel: 'Check it',
+      confirmAction: { kind: 'save' as const },
+    };
+
+    it('accepts the card’s own label', () => {
+      expect(readOffer(reviewCard, 'Check it')).toBe('accept');
+      expect(readOffer(reviewCard, 'check it')).toBe('accept');
+    });
+
+    it('still accepts the generic word alongside its own label', () => {
+      expect(readOffer(reviewCard, 'yes')).toBe('accept');
+    });
+
+    it('does not accept a generic word from a different card', () => {
+      expect(readOffer(reviewCard, 'do it')).toBeUndefined();
+      expect(readOffer(reviewCard, 'go ahead')).toBeUndefined();
+    });
+
+    it('still declines the generic word — the type carries no label for it', () => {
+      expect(readOffer(reviewCard, 'no')).toBe('decline');
+    });
+  });
 });

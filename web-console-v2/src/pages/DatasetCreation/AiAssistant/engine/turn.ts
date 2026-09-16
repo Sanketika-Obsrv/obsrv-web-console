@@ -9,7 +9,14 @@
 import { Prompt } from './agenda';
 import { Action, sameAction } from './actions';
 import { ExecutionOutcome } from './executor';
-import { answerTo, isAddressedRequest, readOffer } from './answer';
+import {
+  answerTo,
+  answerToChoice,
+  answerToConflictCard,
+  isAddressedRequest,
+  OfferReply,
+  readOffer,
+} from './answer';
 import { FieldVocabulary } from './fieldVocabulary';
 import {
   LEFT_IT_AS_IT_WAS,
@@ -754,6 +761,92 @@ export const awaitingInput = (messages: NewMessage[]): boolean =>
   );
 
 /**
+ * A reading the matcher settled on outright, run or proposed exactly the
+ * way any other action is — the prerequisite gate first, then the executor.
+ *
+ * Shared by the pre-router short-circuit below and the no-router fallback's
+ * own literal check further down, so an exact match is treated identically
+ * whichever one finds it — one gate, not two copies of it.
+ */
+const runLiteralAnswer = async (
+  action: Action,
+  input: string,
+  deps: TurnDeps,
+): Promise<TurnResult> => {
+  const state = stateOf(deps);
+  const literalBlocked =
+    unmetForAction(action, state) ?? unmetForUtterance(input, state);
+
+  if (literalBlocked) {
+    return {
+      messages: [
+        {
+          role: 'assistant',
+          text: literalBlocked.text,
+          failureCode:
+            literalBlocked.requirement === 'dataset'
+              ? 'NO_DATASET'
+              : 'NO_SCHEMA',
+        },
+      ],
+      applied: [],
+    };
+  }
+
+  const { outcome, message } = await runAction(action, deps);
+  return { messages: [message], applied: ran(action, outcome) };
+};
+
+/**
+ * A definite match for the question already on the table — a choice matched
+ * by its own label, or a conflict matched by its own candidate — read
+ * straight off the words, with nothing left to corroborate.
+ *
+ * `asksSomethingElse` still applies: a reply that names a topic of its own
+ * alongside the match it happens to score is not a definite answer to
+ * *this* question, whatever it scored. A confirm card is not read here —
+ * `pendingConfirmation` and `readOffer` already cover it, see `runTurn`.
+ */
+const definiteCardAnswer = (
+  prompt: Prompt | undefined,
+  input: string,
+): Action | undefined => {
+  const card = prompt?.card;
+
+  const action =
+    card?.kind === 'choice'
+      ? answerToChoice(card.options, input)
+      : card?.kind === 'conflict'
+        ? answerToConflictCard(card, input)
+        : undefined;
+
+  return action && !asksSomethingElse(input, action) ? action : undefined;
+};
+
+/**
+ * A definite "yes" or "no" to the card waiting on a reply — the one
+ * `pendingConfirmation` found, read by `readOffer` against its own printed
+ * words. Shared so the pre-router check and the (otherwise unreachable,
+ * once that check runs first) reading further down apply the one decision
+ * the same way.
+ */
+const runPendingOffer = async (
+  offer: OfferReply,
+  card: ConfirmCard,
+  deps: TurnDeps,
+): Promise<TurnResult> => {
+  if (offer === 'decline') {
+    return {
+      messages: [{ role: 'assistant', text: LEFT_IT_AS_IT_WAS }],
+      applied: [],
+    };
+  }
+
+  const { outcome, message } = await runAction(card.confirmAction, deps);
+  return { messages: [message], applied: ran(card.confirmAction, outcome) };
+};
+
+/**
  * Runs a turn from typed text, or from an action a card already chose.
  *
  * A card click has nothing to resolve and nothing the user typed, so it
@@ -781,12 +874,49 @@ export const runTurn = async (
   }
 
   /**
-   * The router, when there is one, goes before anything else — the confirm-
-   * card gate, "try again", the resolver. It is tried first because it is
-   * the more complete reading: it has already told an answer from a fresh
-   * request from a reply to a card from a remark outside the job, which is
-   * exactly the set of distinctions the code below has to work out for
-   * itself, one branch at a time, from the same few signals.
+   * A definite answer, read straight off what the engine already knows,
+   * settles the turn before any model — the router included — ever sees it.
+   *
+   * Live testing found the router unreliable exactly here: typing the exact
+   * text of a printed choice option, or the exact printed word a pending
+   * confirm card is waiting on, sometimes got misclassified as an unrelated
+   * remark, producing a wrong or hallucinated reply where the answer was
+   * already certain. `readOffer` and `answerToChoice`/`answerToConflictCard`
+   * are exactly the matchers that already ran, today, further down this same
+   * function once the router had first crack at the turn and missed — moving
+   * them ahead of `deps.route` does not change what they consider a match,
+   * only how early a genuine one is allowed to settle the turn. Anything
+   * short of a definite match — a near-miss, a paraphrase — comes back
+   * `undefined` from these, exactly as it always has, and falls through to
+   * the router below unchanged.
+   *
+   * A proposal is checked first because it is the more recent thing asked:
+   * "yes" right after "shall I deduplicate on order_id?" is about that,
+   * whatever question the agenda still holds. The reply has to be read
+   * against the card's own words, not merely start with them — see
+   * `readOffer`'s own doc for why "no, change name to telemetry" is neither
+   * an accept nor a decline.
+   */
+  const pendingCard = pendingConfirmation(deps.history);
+  const offer = pendingCard && readOffer(pendingCard, input);
+
+  if (pendingCard && offer) {
+    return runPendingOffer(offer, pendingCard, deps);
+  }
+
+  const definiteAnswer = definiteCardAnswer(deps.prompt, input);
+  if (definiteAnswer) {
+    return runLiteralAnswer(definiteAnswer, input, deps);
+  }
+
+  /**
+   * The router, when there is one, goes before anything else left — the
+   * confirm-card gate above already had its turn, and found no definite
+   * match. It is tried next because it is the more complete reading: it has
+   * already told an answer from a fresh request from a reply to a card from
+   * a remark outside the job, which is exactly the set of distinctions the
+   * code below has to work out for itself, one branch at a time, from the
+   * same few signals.
    *
    * `undefined` from `handleRouted` means the router settled nothing this
    * turn was worth acting on directly — a `reply_to_card` with no pending
@@ -798,43 +928,6 @@ export const runTurn = async (
     const handled = await handleRouted(routed, deps);
 
     if (handled) return handled;
-  }
-
-  /**
-   * A proposal is answered in words, since there is nothing to click.
-   *
-   * It is read before the agenda's own question because a proposal is the
-   * more recent thing asked: "yes" right after "shall I deduplicate on
-   * order_id?" is about that, whatever question the agenda still holds.
-   *
-   * The reply has to be read against the card's own words, not merely start
-   * with them: "no" declines, but "no, change name to telemetry" carries a
-   * rename, and reading its leading "no" as a decline discarded the rename
-   * silently. So a reply that is neither the accept word nor the decline
-   * word abandons the card rather than being read as either — it falls
-   * through to be resolved as a fresh request, and the card stays open for
-   * next time, since nothing here has answered it.
-   */
-  const pendingCard = pendingConfirmation(deps.history);
-  const offer = pendingCard && readOffer(pendingCard, input);
-
-  if (pendingCard && offer === 'accept') {
-    const { outcome, message } = await runAction(
-      pendingCard.confirmAction,
-      deps,
-    );
-
-    return {
-      messages: [message],
-      applied: ran(pendingCard.confirmAction, outcome),
-    };
-  }
-
-  if (pendingCard && offer === 'decline') {
-    return {
-      messages: [{ role: 'assistant', text: LEFT_IT_AS_IT_WAS }],
-      applied: [],
-    };
   }
 
   /**
@@ -906,28 +999,7 @@ export const runTurn = async (
    * than a path of its own.
    */
   if (read.status !== 'resolved' && literal && !matched?.confirm) {
-    const literalBlocked =
-      unmetForAction(literal, state) ?? unmetForUtterance(input, state);
-
-    if (literalBlocked) {
-      return {
-        messages: [
-          {
-            role: 'assistant',
-            text: literalBlocked.text,
-            failureCode:
-              literalBlocked.requirement === 'dataset'
-                ? 'NO_DATASET'
-                : 'NO_SCHEMA',
-          },
-        ],
-        applied: [],
-      };
-    }
-
-    const { outcome, message } = await runAction(literal, deps);
-
-    return { messages: [message], applied: ran(literal, outcome) };
+    return runLiteralAnswer(literal, input, deps);
   }
 
   /**

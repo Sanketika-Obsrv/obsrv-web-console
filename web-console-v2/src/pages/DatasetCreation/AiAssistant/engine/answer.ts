@@ -15,7 +15,11 @@
  */
 import { Action, DATA_TYPES, DataType } from './actions';
 import { Prompt } from './agenda';
-import { ChoiceOption, MessageCard } from '../messages/types';
+import {
+  ChoiceOption,
+  ConflictCandidate,
+  MessageCard,
+} from '../messages/types';
 
 /** Words that carry no choice, so they are ignored when comparing. */
 const STOPWORDS = new Set([
@@ -220,10 +224,9 @@ const bareDecline = (utterance: string): boolean =>
   content(utterance).every((word) => DECLINE_WORDS.has(word));
 
 /**
- * The words a confirm card offers, so a reply is read against exactly what
- * was printed — never a list of ways a user might phrase yes or no.
- * `ConfirmCard.tsx` builds its caption from this same constant, so the two
- * cannot drift apart.
+ * The words a confirm card offers by default — the words `ConfirmCard.tsx`
+ * prints when a card names none of its own. Never a list of ways a user
+ * might phrase yes or no: just the two the card falls back to.
  */
 export const CONFIRM_LABELS = { accept: 'yes', decline: 'no' } as const;
 
@@ -245,8 +248,25 @@ const isBareLabel = (label: string, utterance: string): boolean => {
 };
 
 /**
+ * The words this specific card accepts as a "yes" — its own `confirmLabel`,
+ * when it set one, alongside the generic word either way. A card that names
+ * its own affirmative action is not thereby refusing the generic word too:
+ * "Save this dataset" still takes a plain "yes".
+ *
+ * A card carries no equivalent field for its decline, so that side has only
+ * ever the one word — see `readOffer`.
+ */
+const acceptWords = (
+  card: Extract<MessageCard, { kind: 'confirm' }>,
+): string[] =>
+  card.confirmLabel && card.confirmLabel.trim()
+    ? [card.confirmLabel, CONFIRM_LABELS.accept]
+    : [CONFIRM_LABELS.accept];
+
+/**
  * A reply to a confirmation, read against the words the card itself
- * printed.
+ * printed — its own affirmative label, when it has one, not only the
+ * generic "yes".
  *
  * Anything more than the label is not a reply to the card at all — "NO,
  * change name to telemetry" carries a rename, and reading its leading "no"
@@ -258,13 +278,25 @@ export const readOffer = (
 ): OfferReply | undefined => {
   if (!card || !utterance?.trim()) return undefined;
 
-  if (isBareLabel(CONFIRM_LABELS.accept, utterance)) return 'accept';
+  if (acceptWords(card).some((label) => isBareLabel(label, utterance))) {
+    return 'accept';
+  }
   if (isBareLabel(CONFIRM_LABELS.decline, utterance)) return 'decline';
 
   return undefined;
 };
 
-const answerToChoice = (
+/** The candidate types a conflict card actually offers, as `DataType`s. */
+export const conflictCandidateTypes = (
+  candidates: ConflictCandidate[],
+): DataType[] =>
+  candidates
+    .map((candidate) => candidate.dataType)
+    .filter((dataType): dataType is DataType =>
+      (DATA_TYPES as readonly string[]).includes(dataType),
+    );
+
+export const answerToChoice = (
   options: ChoiceOption[],
   raw: string,
 ): Action | undefined => {
@@ -290,7 +322,7 @@ const answerToChoice = (
     : undefined;
 };
 
-const answerToConflict = (
+export const answerToConflict = (
   path: string,
   candidates: DataType[],
   utterance: string,
@@ -317,6 +349,22 @@ const answerToConflict = (
   // question exists to prevent.
   return undefined;
 };
+
+/**
+ * `answerToConflict`, taking the card itself rather than its path and
+ * candidates picked apart — the shape the turn loop's pre-router check
+ * wants, so it reads the same candidates `answerTo` does below without a
+ * second copy of the type filter.
+ */
+export const answerToConflictCard = (
+  card: Extract<MessageCard, { kind: 'conflict' }>,
+  utterance: string,
+): Action | undefined =>
+  answerToConflict(
+    card.path,
+    conflictCandidateTypes(card.candidates),
+    utterance,
+  );
 
 /**
  * A question that asks for a value in prose.
@@ -371,15 +419,7 @@ export const answerTo = (
   }
 
   if (card?.kind === 'conflict') {
-    const action = answerToConflict(
-      card.path,
-      card.candidates
-        .map((candidate) => candidate.dataType)
-        .filter((dataType): dataType is DataType =>
-          (DATA_TYPES as readonly string[]).includes(dataType),
-        ),
-      utterance,
-    );
+    const action = answerToConflictCard(card, utterance);
     return action ? { action } : undefined;
   }
 
