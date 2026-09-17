@@ -573,8 +573,30 @@ const handleRouted = async (
   routed: RouterResult,
   deps: TurnDeps,
 ): Promise<TurnResult | undefined> => {
-  if (routed.control === 'undo') return runUndo(deps);
-  if (routed.control === 'retry') return runRetry(deps);
+  /**
+   * A pending free-text prompt (the dataset-naming step, a denorm-join's
+   * out-field-naming step, and the like) has no closed set of answers to
+   * check the router's reading against ahead of time, which is exactly
+   * where the router is least reliable: a bare answer like "telemetry" or
+   * "product_info" can get misclassified as `control: 'retry'`/`'undo'`
+   * with nothing in history to act on. So a `retry`/`undo` reading only
+   * settles the turn outright when there is a real target for it, or when
+   * no free-text prompt is pending to begin with — outside that context the
+   * existing "nothing to try again"/"nothing to undo" fallback costs
+   * nothing, since there was no free-text answer it could have swallowed
+   * instead.
+   */
+  if (routed.control === 'undo') {
+    const hasTarget = undoTarget(deps.history ?? []).status !== 'none';
+    if (hasTarget || !deps.prompt?.freeText) return runUndo(deps);
+    return undefined;
+  }
+
+  if (routed.control === 'retry') {
+    const hasTarget = Boolean(retryTarget(deps.history));
+    if (hasTarget || !deps.prompt?.freeText) return runRetry(deps);
+    return undefined;
+  }
 
   // A capability the engine declines by construction gets the engine's own
   // fixed, per-capability sentence — never the model's wording outright, so
@@ -598,7 +620,17 @@ const handleRouted = async (
   // case a future caller of `deps.route` does not. See `containModelText`'s
   // own doc for why this, not a fixed sentence, is the containment for this
   // case.
+  //
+  // A pending free-text prompt is the one exception: with no closed answer
+  // set to check ahead of time, "ask"/"other" is exactly the reading the
+  // router gets wrong most often for a bare value like "telemetry" —
+  // producing a hallucinated aside or a false "that's a valid name" that
+  // writes nothing and re-asks forever. Falling through here lets the
+  // extraction pipeline read the answer against the pending question's own
+  // schema instead of trusting the router's guess as final.
   if (routed.intent === 'ask' || routed.intent === 'other') {
+    if (deps.prompt?.freeText) return undefined;
+
     return {
       messages: [
         {

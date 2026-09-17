@@ -2374,6 +2374,394 @@ describe('the router', () => {
 });
 
 /**
+ * Live testing (100% failure rate) found `handleRouted` treating `ask`/
+ * `other` and an unfounded `retry`/`undo` as unconditionally terminal, even
+ * when a free-text prompt is genuinely pending — no closed answer set for
+ * the router to check against, which is exactly where it misclassified a
+ * bare "telemetry" as an aside, a false "that's a valid name", or even a
+ * "nothing to try again" for input with no retry language at all. The gate
+ * only applies where a free-text prompt (`deps.prompt?.freeText`) is
+ * pending; a `choice`-card step, or no pending question at all, is
+ * unaffected.
+ */
+describe('a free-text prompt gates an unfounded router verdict', () => {
+  const NAME_QUESTION: Prompt = {
+    step: 'name',
+    text: 'What would you like to call this dataset?',
+    freeText: (name) => ({ kind: 'set_dataset_name', name }),
+  };
+
+  const DENORM_OUT_FIELD: Prompt = {
+    step: 'denorm',
+    text: 'What should the customers record be called in your data?',
+    freeText: (outField) => ({
+      kind: 'set_denorm',
+      path: 'customer_id',
+      masterDatasetId: 'customers',
+      outField,
+    }),
+  };
+
+  const STORAGE_CHOICE: Prompt = {
+    step: 'storage',
+    text: 'Where should this data be stored?',
+    card: {
+      kind: 'choice',
+      options: [
+        {
+          label: 'Real-time store',
+          action: { kind: 'set_storage', realtime: true },
+        },
+        {
+          label: 'Lakehouse',
+          action: { kind: 'set_storage', lakehouse: true },
+        },
+      ],
+    },
+  };
+
+  /** A model that reads the given value out of whatever it is given. */
+  const reads = (action: Action) => async () => ({
+    status: 'resolved' as const,
+    confidence: 0.8,
+    needsConfirmation: true,
+    action,
+  });
+
+  it('still resolves a framed answer through the router, unaffected, at the name step', async () => {
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn(async () => ({
+      intent: 'answer' as const,
+      actions: [
+        {
+          action: { kind: 'set_dataset_name' as const, name: 'X' },
+          confirm: false,
+        },
+      ],
+    }));
+
+    const result = await runTurn('Call this dataset X', {
+      vocabulary,
+      execute,
+      prompt: NAME_QUESTION,
+      route,
+    });
+
+    expect(route).toHaveBeenCalledWith('Call this dataset X');
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dataset_name',
+      name: 'X',
+    });
+    expect(result.applied).toEqual([
+      {
+        action: { kind: 'set_dataset_name', name: 'X' },
+        outcome: applied,
+      },
+    ]);
+  });
+
+  it('still resolves a framed answer through the router, unaffected, at a denorm out-field step', async () => {
+    const execute = jest.fn(async () => applied);
+    const route = jest.fn(async () => ({
+      intent: 'answer' as const,
+      actions: [
+        {
+          action: {
+            kind: 'set_denorm' as const,
+            path: 'customer_id',
+            masterDatasetId: 'customers',
+            outField: 'product_info',
+          },
+          confirm: false,
+        },
+      ],
+    }));
+
+    await runTurn('Call it product_info', {
+      vocabulary,
+      execute,
+      prompt: DENORM_OUT_FIELD,
+      route,
+    });
+
+    expect(route).toHaveBeenCalledWith('Call it product_info');
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_denorm',
+      path: 'customer_id',
+      masterDatasetId: 'customers',
+      outField: 'product_info',
+    });
+  });
+
+  /**
+   * "telemetry" is both what the free-text matcher reads off the words
+   * (the whole trimmed utterance, handed straight to `freeText`) and what
+   * the stubbed resolver reaches independently — two readings that agree,
+   * per `runTurn`'s own "two readings that agree need no confirming" rule,
+   * so this writes outright rather than proposing. What matters for this
+   * gate is that it writes *at all*, through the extraction pipeline, and
+   * never the router's hallucinated "master dataset" aside.
+   */
+  it('falls through to the extraction pipeline instead of a hallucinated "ask" reply, at the name step', async () => {
+    const execute = jest.fn(async () => applied);
+    const resolve = jest.fn(
+      reads({ kind: 'set_dataset_name', name: 'telemetry' }),
+    );
+
+    const result = await runTurn('telemetry', {
+      vocabulary,
+      execute,
+      prompt: NAME_QUESTION,
+      route: async () => ({
+        intent: 'ask',
+        reply: 'Telemetry is a master dataset.',
+      }),
+      resolve,
+    });
+
+    expect(resolve).toHaveBeenCalledWith('telemetry');
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_dataset_name',
+      name: 'telemetry',
+    });
+    expect(result.applied).toEqual([
+      {
+        action: { kind: 'set_dataset_name', name: 'telemetry' },
+        outcome: applied,
+      },
+    ]);
+    expect(result.messages[0].text).not.toMatch(/master dataset/i);
+  });
+
+  /** Same agreement as above, at a denorm out-field step. */
+  it('falls through to the extraction pipeline instead of a false "valid name" non-answer, for "other", at a denorm out-field step', async () => {
+    const execute = jest.fn(async () => applied);
+    const resolve = jest.fn(
+      reads({
+        kind: 'set_denorm',
+        path: 'customer_id',
+        masterDatasetId: 'customers',
+        outField: 'product_info',
+      }),
+    );
+
+    const result = await runTurn('product_info', {
+      vocabulary,
+      execute,
+      prompt: DENORM_OUT_FIELD,
+      route: async () => ({
+        intent: 'other',
+        reply: 'product_info is a valid name.',
+      }),
+      resolve,
+    });
+
+    expect(resolve).toHaveBeenCalledWith('product_info');
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_denorm',
+      path: 'customer_id',
+      masterDatasetId: 'customers',
+      outField: 'product_info',
+    });
+    expect(result.messages[0].text).not.toMatch(/valid name/i);
+    expect(result.applied).toEqual([
+      {
+        action: {
+          kind: 'set_denorm',
+          path: 'customer_id',
+          masterDatasetId: 'customers',
+          outField: 'product_info',
+        },
+        outcome: applied,
+      },
+    ]);
+  });
+
+  it('falls through to the extraction pipeline instead of a false "nothing to try again", for an unfounded control:retry, at the name step', async () => {
+    const execute = jest.fn(async () => applied);
+    const resolve = jest.fn(
+      reads({ kind: 'set_dataset_name', name: 'product_info' }),
+    );
+
+    const result = await runTurn('Call it product_info', {
+      vocabulary,
+      execute,
+      prompt: NAME_QUESTION,
+      route: async () => ({ intent: 'other', control: 'retry' }),
+      resolve,
+      history: [],
+    });
+
+    expect(resolve).toHaveBeenCalledWith('Call it product_info');
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).not.toMatch(/nothing to try again/i);
+    expect(result.messages[0].card).toMatchObject({
+      kind: 'confirm',
+      confirmAction: { kind: 'set_dataset_name', name: 'product_info' },
+    });
+  });
+
+  it('falls through to the extraction pipeline instead of a false "nothing to undo", for an unfounded control:undo, at the name step', async () => {
+    const execute = jest.fn(async () => applied);
+    const resolve = jest.fn(
+      reads({ kind: 'set_dataset_name', name: 'product_info' }),
+    );
+
+    const result = await runTurn('Call it product_info', {
+      vocabulary,
+      execute,
+      prompt: NAME_QUESTION,
+      route: async () => ({ intent: 'other', control: 'undo' }),
+      resolve,
+      history: [],
+    });
+
+    expect(resolve).toHaveBeenCalledWith('Call it product_info');
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).not.toMatch(/nothing to undo/i);
+    expect(result.messages[0].card).toMatchObject({
+      kind: 'confirm',
+      confirmAction: { kind: 'set_dataset_name', name: 'product_info' },
+    });
+  });
+
+  it('stays terminal for "ask" when no free-text prompt is pending (a choice-card step)', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('what is a master dataset?', {
+      vocabulary,
+      execute,
+      prompt: STORAGE_CHOICE,
+      route: async () => ({
+        intent: 'ask',
+        reply: 'A master dataset is reference data other datasets join to.',
+      }),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.applied).toEqual([]);
+    expect(result.messages[0].text).toMatch(/master dataset/i);
+  });
+
+  it('stays terminal for "other" when no free-text prompt is pending (a choice-card step)', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('sure thing', {
+      vocabulary,
+      execute,
+      prompt: STORAGE_CHOICE,
+      route: async () => ({ intent: 'other', reply: 'Sounds good.' }),
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.applied).toEqual([]);
+    expect(result.messages[0].text).toBe('Sounds good.');
+  });
+
+  it('stays terminal for an unfounded control:retry when no free-text prompt is pending (a choice-card step)', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('try again', {
+      vocabulary,
+      execute,
+      prompt: STORAGE_CHOICE,
+      route: async () => ({ intent: 'other', control: 'retry' }),
+      history: [],
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).toMatch(/nothing to try again/i);
+  });
+
+  it('stays terminal for an unfounded control:undo when no free-text prompt is pending (a choice-card step)', async () => {
+    const execute = jest.fn(async () => applied);
+
+    const result = await runTurn('undo that', {
+      vocabulary,
+      execute,
+      prompt: STORAGE_CHOICE,
+      route: async () => ({ intent: 'other', control: 'undo' }),
+      history: [],
+    });
+
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.messages[0].text).toBe(
+      'There is nothing to undo yet — I have not changed anything.',
+    );
+  });
+
+  it('still retries a real target when one exists in history, even with a free-text prompt pending', async () => {
+    const execute = jest.fn(async () => applied);
+    const history: Message[] = [
+      {
+        id: 'u1',
+        role: 'user',
+        text: 'enable the real-time store',
+        createdAt: 0,
+      },
+      {
+        id: 'a1',
+        role: 'assistant',
+        createdAt: 0,
+        text: 'The server did not answer in time.',
+        failureCode: 'TIMEOUT',
+        action: { kind: 'set_storage', realtime: true },
+      },
+    ];
+
+    const result = await runTurn('go on then, once more', {
+      vocabulary,
+      execute,
+      prompt: NAME_QUESTION,
+      route: async () => ({ intent: 'other', control: 'retry' }),
+      history,
+    });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_storage',
+      realtime: true,
+    });
+    expect(result.applied).toEqual([
+      { action: { kind: 'set_storage', realtime: true }, outcome: applied },
+    ]);
+  });
+
+  it('still undoes a real target when one exists in history, even with a free-text prompt pending', async () => {
+    const execute = jest.fn(async () => applied);
+    const history: Message[] = [
+      {
+        id: 'm1',
+        role: 'assistant',
+        createdAt: 0,
+        text: 'Done — set order_id to string.',
+        action: {
+          kind: 'set_data_type',
+          path: 'order_id',
+          dataType: 'string',
+        },
+        inverse: [
+          { kind: 'set_data_type', path: 'order_id', dataType: 'double' },
+        ],
+      },
+    ];
+
+    await runTurn('put that back', {
+      vocabulary,
+      execute,
+      prompt: NAME_QUESTION,
+      route: async () => ({ intent: 'other', control: 'undo' }),
+      history,
+    });
+
+    expect(execute).toHaveBeenCalledWith({
+      kind: 'set_data_type',
+      path: 'order_id',
+      dataType: 'double',
+    });
+  });
+});
+
+/**
  * Live testing found the router unreliable exactly where the answer is
  * already certain from data the engine itself holds — the exact text of a
  * printed choice option, or the exact printed word a pending confirm card is
