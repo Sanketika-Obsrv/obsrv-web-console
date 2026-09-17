@@ -23,9 +23,10 @@
  */
 import Ajv, { ValidateFunction } from 'ajv';
 import { AGENDA_STEPS, AgendaStepId } from '../engine/actions';
+import { DatasetFacts } from '../engine/datasetFacts';
 import { Message } from '../session/types';
 import { extractJson } from './modelResolver';
-import { turnDigest } from './prompt';
+import { factsLine, turnDigest } from './prompt';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -60,6 +61,17 @@ export interface RouterPromptInput {
   optionLabels?: string[];
   /** The title of a confirm card still awaiting a reply, if there is one. */
   pendingCardTitle?: string;
+  /**
+   * The dataset's current values, when the caller has read them.
+   *
+   * Without this, the `ask`/`other` `reply` this same call produces has
+   * nothing to be grounded in — call A used to be handed the question and
+   * the words typed at it and nothing else, which is how "what is the
+   * dataset id right now?" on a brand-new, empty draft came back with a
+   * fabricated id. Threaded through the same way `prompt.ts`'s `buildPrompt`
+   * already threads it into call B.
+   */
+  facts?: DatasetFacts;
   /** Prior turns, most recent last. */
   history?: Message[];
 }
@@ -118,6 +130,7 @@ export const ROUTER_SYSTEM_PROMPT = [
   '"answer" answers the question just asked; "request" names a different step; "reply_to_card" replies to a card the assistant is waiting on; "ask" is the user\'s own question; "other" is anything else, including greetings and things this console cannot do.',
   'A "reply" is at most one sentence, only for "ask" or "other".',
   'Never say anything has been changed, saved, published or deleted — producing this reply changes nothing.',
+  'Only "Now:" is known, nothing else.',
 ].join(' ');
 
 /**
@@ -138,6 +151,10 @@ export const ROUTER_EXAMPLES: string[] = [
   '"yes, and also drop duplicates on order_id" -> {"intent":"reply_to_card","step":"dedup"}',
   '"what is a master dataset?" -> {"intent":"ask","reply":"A master dataset is reference data other datasets join to."}',
   '"publish it" -> {"intent":"other","outOfScope":"publish"}',
+  // Nothing known yet (no Now: line) — the reply says so rather than
+  // inventing a value. Reported live: "what is the dataset id right now?"
+  // on a brand-new, empty draft came back "The dataset ID is currently 42."
+  '"what is the dataset id right now?" -> {"intent":"ask","reply":"There is no dataset yet — name it and add a sample first."}',
 ];
 
 /** The user-side prompt: what is on the table, what was said, nothing else. */
@@ -147,6 +164,7 @@ export const buildRouterPrompt = ({
   questionText,
   optionLabels = [],
   pendingCardTitle,
+  facts,
   history = [],
 }: RouterPromptInput): string => {
   const parts: string[] = [];
@@ -163,6 +181,25 @@ export const buildRouterPrompt = ({
 
   if (pendingCardTitle) {
     parts.push(`Awaiting a reply to: ${pendingCardTitle}`);
+  }
+
+  /**
+   * Mirrors `prompt.ts`'s `buildPrompt`, which pushes `factsLine(facts)` the
+   * same way — except here, a caller that passed `facts` at all gets an
+   * explicit line even when every clause `factsLine` renders is empty.
+   *
+   * That distinction matters only to this call: `engine/turn.ts` already
+   * treats `deps.masterDatasets` being `undefined` ("not read yet")
+   * differently from `[]` ("read, and genuinely empty"), and the same split
+   * applies here. Silently omitting the line for a fresh, checked, empty
+   * draft would look identical to a caller that never checked at all — which
+   * is exactly the gap that let the router invent a fact instead of saying
+   * it did not have one.
+   */
+  if (facts) {
+    parts.push(
+      factsLine(facts) ?? 'Now: nothing yet — this is a brand-new draft.',
+    );
   }
 
   const recent = history.slice(-HISTORY_TURNS);

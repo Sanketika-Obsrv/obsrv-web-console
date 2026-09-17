@@ -381,6 +381,7 @@ export const resolveTurn = async (
       questionText: input.questionText,
       optionLabels: input.optionLabels,
       pendingCardTitle: input.pendingCardTitle,
+      facts: input.facts,
       history: input.history,
     });
 

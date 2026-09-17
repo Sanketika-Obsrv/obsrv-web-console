@@ -1,4 +1,5 @@
 import { AGENDA_STEPS } from '../engine/actions';
+import { DatasetFacts } from '../engine/datasetFacts';
 import { estimateTokens } from './stepSchema';
 import { estimatePromptTokens } from './prompt';
 import {
@@ -9,6 +10,14 @@ import {
   buildRouterPrompt,
   readRouterReply,
 } from './router';
+
+/** A `DatasetFacts` with nothing decided — a genuinely fresh draft. */
+const emptyFacts: DatasetFacts = {
+  stores: { realtime: false, lakehouse: false, cache: false },
+  keys: {},
+  fieldCount: 0,
+  hasDraft: false,
+};
 
 describe('ROUTER_SCHEMA', () => {
   it('exposes exactly the five intents', () => {
@@ -248,6 +257,78 @@ describe('buildRouterPrompt', () => {
     });
 
     expect(prompt).toContain('[failed DATASET_ID_TAKEN]');
+  });
+
+  /**
+   * The bug this closes: the router used to generate its `ask`/`other`
+   * `reply` with zero grounding in the dataset, because `facts` never
+   * reached `buildRouterPrompt` at all — only call B's prompt
+   * (`buildPrompt` in `prompt.ts`) ever rendered `factsLine`. Live testing
+   * found the router answering "the dataset ID is currently 42" on a
+   * brand-new, completely empty draft.
+   */
+  it('renders a Now: line with the real facts, when given', () => {
+    const prompt = buildRouterPrompt({
+      utterance: 'what is the dataset id right now?',
+      facts: {
+        ...emptyFacts,
+        name: 'Telemetry Events',
+        datasetId: 'telemetry-events',
+      },
+    });
+
+    expect(prompt).toContain('Now:');
+    expect(prompt).toContain('Telemetry Events');
+    expect(prompt).toContain('telemetry-events');
+  });
+
+  /**
+   * A genuinely fresh draft — `facts` was supplied, but every clause
+   * `factsLine` renders is empty, so it returns `undefined`. Silence here
+   * would be indistinguishable from a caller that never checked at all,
+   * which is exactly the gap that let the router hallucinate — so this case
+   * must render an explicit "nothing yet" cue, not omit the line.
+   */
+  it('renders an explicit "nothing yet" cue for facts that are present but empty', () => {
+    const prompt = buildRouterPrompt({
+      utterance: 'what is the dataset id right now?',
+      facts: emptyFacts,
+    });
+
+    expect(prompt).toMatch(/nothing yet/i);
+  });
+
+  /**
+   * No `facts` at all — a caller that never claimed to know the dataset's
+   * values. Unchanged from before this fix: no Now: line, and no "nothing
+   * yet" cue either, since that would itself be a claim about the dataset.
+   */
+  it('renders no Now: line and no "nothing yet" cue when facts is not passed at all', () => {
+    const prompt = buildRouterPrompt({
+      utterance: 'what is the dataset id right now?',
+    });
+
+    expect(prompt).not.toContain('Now:');
+    expect(prompt).not.toMatch(/nothing yet/i);
+  });
+});
+
+describe('ROUTER_SYSTEM_PROMPT — facts grounding', () => {
+  it('instructs the model not to invent a fact absent from Now:', () => {
+    const lower = ROUTER_SYSTEM_PROMPT.toLowerCase();
+
+    expect(lower).toMatch(/now:/);
+    expect(lower).toMatch(/nothing else|not known|unknown/);
+  });
+});
+
+describe('ROUTER_EXAMPLES — the reported hallucination', () => {
+  it('demonstrates an honest reply when nothing is known yet', () => {
+    expect(
+      ROUTER_EXAMPLES.some((line) =>
+        line.includes('what is the dataset id right now?'),
+      ),
+    ).toBe(true);
   });
 });
 

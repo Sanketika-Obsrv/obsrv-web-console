@@ -1044,4 +1044,57 @@ describe('resolveTurn reports the timing of each model call it makes', () => {
       ok: false,
     });
   });
+
+  /**
+   * The bug this closes: the router's own prompt never received `facts` at
+   * all, even though `resolveTurn`'s input carries them (used already for
+   * `alreadySatisfied`) and `resolveWithModel`'s extraction prompt has
+   * rendered them via `buildPrompt`/`factsLine` since an earlier commit. A
+   * router with nothing to read the dataset against invented answers — e.g.
+   * "the dataset ID is currently 42" on a brand-new, empty draft. Scripting
+   * only the router reply (schema contains `"intent"`) is enough here: this
+   * proves the wiring from `resolveTurn`'s input into `buildRouterPrompt`,
+   * not the extraction call, which is already covered elsewhere.
+   */
+  it("threads facts into the router's own prompt, not just the extraction call's", async () => {
+    const calls: { prompt: string; format?: { schema: string } }[] = [];
+    const engine: ModelEngine = {
+      complete: async (prompt, responseFormat) => {
+        const format = responseFormat as { schema: string } | undefined;
+        calls.push({ prompt, format });
+
+        return format?.schema.includes('"intent"')
+          ? JSON.stringify({ intent: 'ask', reply: 'There is no dataset yet.' })
+          : '{}';
+      },
+      unload: async () => undefined,
+    };
+
+    const facts: DatasetFacts = {
+      name: 'Telemetry Events',
+      datasetId: 'telemetry-events',
+      stores: { realtime: false, lakehouse: false, cache: false },
+      keys: {},
+      fieldCount: 0,
+      hasDraft: true,
+    };
+
+    await resolveTurn(
+      {
+        utterance: 'what is the dataset id right now?',
+        step: 'ingestion',
+        vocabulary,
+        facts,
+      },
+      { engine },
+    );
+
+    const routerCalls = calls.filter((call) =>
+      call.format?.schema.includes('"intent"'),
+    );
+
+    expect(routerCalls.length).toBeGreaterThan(0);
+    expect(routerCalls[0].prompt).toContain('Telemetry Events');
+    expect(routerCalls[0].prompt).toContain('telemetry-events');
+  });
 });

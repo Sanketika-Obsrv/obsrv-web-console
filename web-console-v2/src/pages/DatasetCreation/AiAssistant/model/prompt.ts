@@ -162,7 +162,7 @@ const joinAnd = (words: string[]): string =>
  * optional, and the line itself disappears once every clause does — a fresh
  * conversation with nothing decided yet has nothing to report here.
  */
-const factsLine = (facts?: DatasetFacts): string | undefined => {
+export const factsLine = (facts?: DatasetFacts): string | undefined => {
   if (!facts) return undefined;
 
   const clauses: string[] = [];

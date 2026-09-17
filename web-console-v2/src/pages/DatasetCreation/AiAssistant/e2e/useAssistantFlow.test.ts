@@ -948,6 +948,35 @@ describe('opening a dataset that already exists', () => {
   });
 
   /**
+   * The same gap, one call earlier: the router (call A) generates its own
+   * `ask`/`other` `reply` in the very call that classifies intent, but
+   * `resolveTurn` never passed `facts` into `buildRouterPrompt` at all — only
+   * the extraction call (the test above) ever saw them. Live testing found
+   * the router answering a question about the dataset id with a fabricated
+   * value on a brand-new, empty draft; here the draft is real, so the fix is
+   * proved by finding the same facts in the router's own prompt, not just
+   * the extractor's.
+   */
+  it('shows the router itself the dataset it is actually looking at, not just the extractor', async () => {
+    const result = await openIt();
+
+    const { calls } = scriptModel(
+      JSON.stringify({ intent: 'ask', reply: 'It is telemetry-events.' }),
+    );
+
+    await result.current.send('what is the dataset id right now?');
+    await waitFor(() => expect(result.current.busy).toBe(false));
+
+    const routerCalls = calls.filter((call) =>
+      call.schema?.includes('"intent"'),
+    );
+
+    expect(routerCalls.length).toBeGreaterThan(0);
+    expect(routerCalls[0].prompt).toContain('Telemetry Events');
+    expect(routerCalls[0].prompt).toContain('telemetry-events');
+  });
+
+  /**
    * `alreadySatisfied` has been unit-tested since it was built, but nothing
    * exercised it live: `facts` never reached `resolveWithModel` before this
    * commit, so the drop it performs was structurally unreachable from the
