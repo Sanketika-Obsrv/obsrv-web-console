@@ -317,12 +317,15 @@ const AllConfigurations = () => {
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
-                                                    {connectorConfig && _.entries(connectorConfig.connector_config).map(([configKey, configValue]) => (
-                                                        <StyledTableRow key={configKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                                            <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{connectorMeta.ui_spec?.properties[configKey]?.title}</TableCell>
-                                                            <TableCell align="left">{String(configValue)}</TableCell>
-                                                        </StyledTableRow>
-                                                    ))}
+                                                    {connectorConfig && _.entries(connectorConfig.connector_config).map(([configKey, configValue]) => {
+                                                        const isPasswordField = connectorMeta.ui_spec?.properties[configKey]?.format === 'password';
+                                                        return (
+                                                            <StyledTableRow key={configKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                                                <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{connectorMeta.ui_spec?.properties[configKey]?.title}</TableCell>
+                                                                <TableCell align="left">{isPasswordField ? '••••••••' : String(configValue)}</TableCell>
+                                                            </StyledTableRow>
+                                                        );
+                                                    })}
                                                 </TableBody>
                                             </Table>
                                         </TableContainer>
