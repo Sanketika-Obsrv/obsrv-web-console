@@ -15,7 +15,7 @@ import AddNewField from './ProcessingSection/Derived/AddNewField';
 import DataDenorm from './ProcessingSection/Denormalization/DataDenormalization';
 import DedupeEvent from './ProcessingSection/DedupeEvent/DedupeEvent';
 import DataValidation from './ProcessingSection/DataValidation/DataValidation';
-import { useFetchDatasetsById, useDatasetList, useUpdateDataset } from 'services/dataset';
+import { useFetchDatasetsById, useDatasetList, useUpdateDataset, useFetchDenormPreviewEvent } from 'services/dataset';
 import { TransformationMode } from 'types/datasets';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from 'components/Loader';
@@ -165,6 +165,14 @@ const Processing: React.FC = () => {
 
     const { mutate: detectPiiFieldMutate, data: piiSuggestionResponse } = useDetectPiiFields();
 
+    const hasDenormFields = !_.isEmpty(_.get(datasetData, 'denorm_config.denorm_fields'));
+
+    const { data: denormPreviewEvent, isSuccess: denormPreviewSuccess, isError: denormPreviewFailed } = useFetchDenormPreviewEvent({
+        datasetId,
+        mode: 'edit',
+        enabled: hasDenormFields
+    });
+
     const [masterDatasets, setMasterDatasets] = useState<any>([]);
 
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
@@ -182,12 +190,22 @@ const Processing: React.FC = () => {
 
     useEffect(() => {
         const mergedEvent = _.get(datasetData, 'sample_data.mergedEvent');
-        const flattenedEvent = _.has(mergedEvent, '$schema') ? [] : flattenObject(mergedEvent);
+        const baseFlattenedEvent = _.has(mergedEvent, '$schema') ? [] : flattenObject(mergedEvent);
 
-        if (!_.isEmpty(flattenedEvent)) {
-            detectPiiFieldMutate({ event: flattenedEvent, datasetId });
+        if (hasDenormFields && !denormPreviewFailed) {
+            // Wait for the post-denorm preview event so denorm-derived fields get checked too;
+            // falls back to the base event only if the preview fetch itself fails.
+            if (!denormPreviewSuccess) return;
+            if (!_.isEmpty(denormPreviewEvent)) {
+                detectPiiFieldMutate({ event: denormPreviewEvent, datasetId });
+            }
+            return;
         }
-    }, [detectPiiFieldMutate, datasetId, fetchSuccess, datasetData]);
+
+        if (!_.isEmpty(baseFlattenedEvent)) {
+            detectPiiFieldMutate({ event: baseFlattenedEvent, datasetId });
+        }
+    }, [detectPiiFieldMutate, datasetId, fetchSuccess, datasetData, hasDenormFields, denormPreviewSuccess, denormPreviewFailed, denormPreviewEvent]);
 
     useEffect(() => {
         if (!_.isEmpty(piiSuggestionResponse)) {
