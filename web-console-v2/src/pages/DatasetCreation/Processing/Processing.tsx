@@ -194,10 +194,13 @@ const Processing: React.FC = () => {
 
         if (hasDenormFields && !denormPreviewFailed) {
             // Wait for the post-denorm preview event so denorm-derived fields get checked too;
-            // falls back to the base event only if the preview fetch itself fails.
+            // falls back to the base event if the preview fetch fails, resolves to the raw
+            // $schema placeholder (no real sample data merged in yet), or is otherwise empty.
             if (!denormPreviewSuccess) return;
-            if (!_.isEmpty(denormPreviewEvent)) {
-                detectPiiFieldMutate({ event: denormPreviewEvent, datasetId });
+            const isUsablePreview = !_.has(denormPreviewEvent, '$schema') && !_.isEmpty(denormPreviewEvent);
+            const eventToCheck = isUsablePreview ? denormPreviewEvent : baseFlattenedEvent;
+            if (!_.isEmpty(eventToCheck)) {
+                detectPiiFieldMutate({ event: eventToCheck, datasetId });
             }
             return;
         }

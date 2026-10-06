@@ -185,6 +185,12 @@ export const useUpdateDataset = () =>
                 queryKey: ['fetchDatasetsById', 'datasetId', 'status'],
                 exact: false
             });
+            // Any dataset update can change denorm_config (adding/editing a 2nd+ field
+            // doesn't toggle hasDenormFields, so the preview query wouldn't otherwise refetch)
+            queryClient.invalidateQueries({
+                queryKey: ['fetchDenormPreviewEvent'],
+                exact: false
+            });
             setVersionKey(_.get(response, ['version_key']));
         }
     });
