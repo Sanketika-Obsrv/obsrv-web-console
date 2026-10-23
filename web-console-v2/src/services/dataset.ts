@@ -50,7 +50,9 @@ export const useFetchDatasetsById = ({
             setVersionKey(_.get(response, ['data', 'result', 'version_key']));
             return _.get(response, ['data', 'result'])
         }),
-        enabled: !!datasetId
+        // '<new>' is the placeholder datasetId used throughout dataset creation before a real
+        // dataset is persisted -- fetching it 404s and leaves dependent pages blank.
+        enabled: !!datasetId && datasetId !== '<new>'
     } as UseQueryOptions<any, Error>);
 };
 

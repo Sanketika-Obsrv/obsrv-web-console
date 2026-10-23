@@ -160,8 +160,13 @@ const ConnectorConfiguration: React.FC = () => {
             } else {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
+        } else if (!dataset.isLoading && !readConnector.isLoading && !selectedConnectorId) {
+            // Both queries settled with nothing to show, and there's no connector id to fetch
+            // with either -- this happens when the stepper nav drops location.state (e.g.
+            // jumping between steps on an unsaved dataset). Surface it instead of a blank page.
+            setErrorMessage('No connector selected. Please go back and select a connector to configure.');
         }
-    }, [dataset.data, readConnector.data,selectedConnectorId]);
+    }, [dataset.data, dataset.isLoading, readConnector.data, readConnector.isLoading, selectedConnectorId]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);
@@ -332,7 +337,7 @@ const ConnectorConfiguration: React.FC = () => {
     
     return (
         <>
-        {readConnector.isLoading ? <Loader loading={true} /> : <Box ml={1}>
+        {(readConnector.isLoading || dataset.isLoading) ? <Loader loading={true} /> : <Box ml={1}>
             {datasetId && datasetId === '<new>' && (
                 <Box mx={2}>
                     <Button
