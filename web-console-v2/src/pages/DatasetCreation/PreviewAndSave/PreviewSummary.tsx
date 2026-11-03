@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Alert, Grid, Stack, Typography } from '@mui/material';
 import AdditionSummary from './AdditionSummary';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import _ from 'lodash';
 import en from 'utils/locales/en.json';
-import { useFetchDatasetDiff } from 'services/dataset';
+import { endpoints, useFetchDatasetDiff, useFetchDatasetsById } from 'services/dataset';
+import { http } from 'services/http';
 import { renderSections } from 'pages/alertManager/services/utils';
 import UpdateSummary from './UpdateSummary';
 import DeletionSummary from './DeletionSummary';
@@ -24,6 +25,30 @@ const ReviewDataset = () => {
     const { data, isPending } = useFetchDatasetDiff({
         datasetId
     });
+
+    // The diff response has no connector ui_spec on it -- fetch the draft's connectors
+    // separately so Addition/Update summaries can mask credentials off the real schema
+    // instead of guessing from field names.
+    const draftDataset = useFetchDatasetsById({
+        datasetId,
+        queryParams: 'status=Draft&mode=edit&fields=connectors_config'
+    });
+    const [connectorSpecsById, setConnectorSpecsById] = useState<Record<string, any>>({});
+
+    useEffect(() => {
+        const connectorIds: string[] = _.uniq(
+            _.map(_.get(draftDataset.data, 'connectors_config', []), 'connector_id')
+        ).filter(Boolean);
+        if (connectorIds.length === 0) return;
+        Promise.all(
+            connectorIds.map((id) =>
+                http.get(`${endpoints.READ_CONNECTORS}/${id}`).then((response: any) => [
+                    id,
+                    _.get(response, ['data', 'result', 'ui_spec'])
+                ])
+            )
+        ).then((pairs) => setConnectorSpecsById(Object.fromEntries(pairs)));
+    }, [draftDataset.data]);
 
     const { additions = [], deletions = [], modifications = [] } = data || {};
     const noModifications = _.size(_.flatten([additions, deletions, modifications])) === 0;
@@ -100,7 +125,7 @@ const ReviewDataset = () => {
                                     <Typography variant='h6'>Added</Typography>
                                 </AccordionSummary>
                                 {additions?.length && (<AccordionDetails>
-                                    <AdditionSummary diff={additions} transform={transform} />
+                                    <AdditionSummary diff={additions} transform={transform} connectorSpecsById={connectorSpecsById} />
                                 </AccordionDetails>)}
                             </Accordion>
                             <Accordion expanded={expanded === 'modified'} onChange={handleChange('modified')}>
@@ -108,7 +133,7 @@ const ReviewDataset = () => {
                                     <Typography variant='h6'>Modified</Typography>
                                 </AccordionSummary>
                                 {modifications?.length && (<AccordionDetails>
-                                    <UpdateSummary diff={modifications} transform={transform} />
+                                    <UpdateSummary diff={modifications} transform={transform} connectorSpecsById={connectorSpecsById} />
                                 </AccordionDetails>)}
                             </Accordion>
                             <Accordion expanded={expanded === 'deleted'} onChange={handleChange('deleted')}>

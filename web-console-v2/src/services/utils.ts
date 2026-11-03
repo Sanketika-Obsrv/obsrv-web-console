@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import moment from 'moment';
 import _ from 'lodash';
 import { v4 as uuid } from 'uuid';
@@ -192,6 +193,38 @@ export const getSectionDetails = (row: Record<string, any>) => {
     };
     return _.get(section, type) || '';
 }
+
+// Last-resort, name-based guess for whether a config key holds a credential, used only where
+// the connector's own ui_spec isn't available or doesn't declare anything for that key. This is
+// a denylist, so it fails OPEN: anything not matching (account_key, passphrase, sas, keystore,
+// *_pem, ...) still renders in cleartext. Prefer resolveUiSpecFormat() wherever a schema exists.
+const sensitiveConfigKeyPattern = /password|secret|private[_-]?key|access[_-]?key|api[_-]?key|credential|token|pwd/i;
+
+export const isSensitiveConfigKey = (key = ''): boolean => sensitiveConfigKeyPattern.test(key);
+
+// Walks a dotted field path (e.g. "authenticationMechanism.password") against a connector's
+// JSON-schema ui_spec, one `properties` segment at a time. Returns the matched schema node, or
+// undefined if the schema has no entry for that exact path.
+export const resolveUiSpecNode = (uiSpec: any, dottedPath: string): any => {
+    const segments = (dottedPath || '').split('.');
+    let node = uiSpec;
+    for (const segment of segments) {
+        node = node?.properties?.[segment];
+        if (!node) return undefined;
+    }
+    return node;
+};
+
+// Callers should treat "undefined" as "schema doesn't know," not as "not a password."
+export const resolveUiSpecFormat = (uiSpec: any, dottedPath: string): string | undefined =>
+    resolveUiSpecNode(uiSpec, dottedPath)?.format;
+
+// Masks text on non-input elements (Chip/TableCell) the same way a real password <input> does,
+// via CSS rather than substituting a fixed placeholder string. No Firefox equivalent exists --
+// falls back to showing the real value there.
+export const maskedTextStyle = {
+    WebkitTextSecurity: 'disc'
+} as CSSProperties;
 
 export const generateDatesBetweenInterval = (start: any, end: any) => {
   const diffInMinutes = start.diff(end, 'minute');
