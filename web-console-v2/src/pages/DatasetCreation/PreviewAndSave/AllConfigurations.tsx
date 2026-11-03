@@ -19,6 +19,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Collapse from '@mui/material/Collapse';
 import { DatasetStatus } from 'types/datasets';
+import { isSensitiveConfigKey, maskedTextStyle, resolveUiSpecFormat } from 'services/utils';
 
 interface TransformationRow {
     field_key: string;
@@ -318,11 +319,15 @@ const AllConfigurations = () => {
                                                 </TableHead>
                                                 <TableBody>
                                                     {connectorConfig && _.entries(connectorConfig.connector_config).map(([configKey, configValue]) => {
-                                                        const isPasswordField = connectorMeta.ui_spec?.properties[configKey]?.format === 'password';
+                                                        // ui_spec is authoritative when it has an entry for this key -- trust its
+                                                        // format declaration either way. The name-based regex only fills in for
+                                                        // keys the spec doesn't cover at all, it never overrides the spec.
+                                                        const specFormat = resolveUiSpecFormat(connectorMeta.ui_spec, configKey);
+                                                        const isPasswordField = specFormat !== undefined ? specFormat === 'password' : isSensitiveConfigKey(configKey);
                                                         return (
                                                             <StyledTableRow key={configKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                                                 <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{connectorMeta.ui_spec?.properties[configKey]?.title}</TableCell>
-                                                                <TableCell align="left">{isPasswordField ? '••••••••' : String(configValue)}</TableCell>
+                                                                <TableCell align="left">{isPasswordField ? <span style={maskedTextStyle}>{String(configValue)}</span> : String(configValue)}</TableCell>
                                                             </StyledTableRow>
                                                         );
                                                     })}
