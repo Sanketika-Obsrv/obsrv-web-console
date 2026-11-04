@@ -27,16 +27,17 @@ export const extractTransformationOptions = (schema: any, path: string[] = []): 
 
     if (schema?.properties) {
         for (const key in schema.properties) {
+            const propSchema = schema.properties[key];
             const currentPath = [...path, key].join('.');
 
-            if (!schema.properties[key].properties) {
+            if (propSchema.properties) {
+                options.push(...extractTransformationOptions(propSchema, [...path, key]));
+            } else if (propSchema.items?.properties) {
+                // Array-of-objects: recurse into items' properties under the array's own path,
+                // so e.g. "addresses.city" is reachable instead of only "addresses" itself.
+                options.push(...extractTransformationOptions(propSchema.items, [...path, key]));
+            } else {
                 options.push(currentPath);
-            }
-
-            if (schema.properties[key].properties) {
-                options.push(
-                    ...extractTransformationOptions(schema.properties[key], [...path, key])
-                );
             }
         }
     }
@@ -49,17 +50,15 @@ export const extractTransformationOptionsWithType = (schema: any, path: string[]
 
     if (schema?.properties) {
         for (const key in schema.properties) {
+            const propSchema = schema.properties[key];
             const currentPath = [...path, key].join('.');
-            
-            if (!schema.properties[key].properties) {
-                const dataType =  _.get(schema, `properties[${key}][data_type]`)
-                options.push({field: currentPath, data_type: dataType});
-            }
 
-            if (schema.properties[key].properties) {
-                options.push(
-                    ...extractTransformationOptions(schema.properties[key], [...path, key])
-                );
+            if (propSchema.properties) {
+                options.push(...extractTransformationOptionsWithType(propSchema, [...path, key]));
+            } else if (propSchema.items?.properties) {
+                options.push(...extractTransformationOptionsWithType(propSchema.items, [...path, key]));
+            } else {
+                options.push({ field: currentPath, data_type: propSchema.data_type });
             }
         }
     }
@@ -242,6 +241,32 @@ const Processing: React.FC = () => {
     ));
 
     const jsonData = _.get(datasetData, ['sample_data']) || {};
+
+    // Denorm-joined fields (e.g. "school.name") live only in the post-denorm merged event, not
+    // in the dataset's own data_schema -- Derived Field, Transformation, and Data Privacy need
+    // to offer them as selectable/referenceable, same as PII suggestions already auto-detect them.
+    // denormPreviewEvent comes back from the backend already flattened to dotted keys (e.g.
+    // { "school.INSTITUTION_EMAIL": "..." }) -- that's what PII's key-name rules need, and dropdown
+    // options are just strings so flat keys work fine there too.
+    const isUsableDenormPreview = hasDenormFields && denormPreviewSuccess
+        && !_.has(denormPreviewEvent, '$schema') && !_.isEmpty(denormPreviewEvent);
+    const denormFieldPaths = isUsableDenormPreview ? _.keys(denormPreviewEvent) : [];
+    const transformationOptionsWithDenorm = _.union(transformationOptions, denormFieldPaths);
+    // Real JSONata expressions (school.INSTITUTION_EMAIL) navigate actual nesting -- they won't
+    // match a literal flat key containing dots. Un-flatten before using this as "Input data" for
+    // the JSONata playground, so dot-notation on a denorm-joined field actually evaluates.
+    // jsonData/sample_data is always shaped { mergedEvent: {...} } (see JSONataPlayground.tsx's
+    // sample_data?.mergedEvent), so the unflattened event needs the same wrapper.
+    const unflattenObject = (flat: Record<string, any>): Record<string, any> => {
+        const result: Record<string, any> = {};
+        for (const key in flat) {
+            _.set(result, key, flat[key]);
+        }
+        return result;
+    };
+    const jsonDataWithDenorm = isUsableDenormPreview
+        ? { mergedEvent: unflattenObject(denormPreviewEvent) }
+        : jsonData;
     const [canProceed, setCanProceed] = useState(true);
     const processingData = mapDatasetToProcessingData(datasetData);
 
@@ -370,7 +395,7 @@ const Processing: React.FC = () => {
                         transformation_mode={transformation_mode}
                         label={'Add Sensitive Field'}
                         dialog={<AddPIIDialog />}
-                        transformationOptions={transformationOptions}
+                        transformationOptions={transformationOptionsWithDenorm}
                         addedSuggestions={piiSuggestions}
                         setPiiSuggestions={setPiiSuggestions}
                         data={_.map(_.get(processingData, 'pii'), (obj1) => {
@@ -405,8 +430,8 @@ const Processing: React.FC = () => {
                         transformation_mode={transformation_mode}
                         label={'Add Transformation'}
                         dialog={<AddTransformationExpression />}
-                        jsonData={jsonData}
-                        transformationOptions={filterTransformationOptions(transformationOptions, columnsToExcludeInTransformation)}
+                        jsonData={jsonDataWithDenorm}
+                        transformationOptions={filterTransformationOptions(transformationOptionsWithDenorm, columnsToExcludeInTransformation)}
                         addedSuggestions={[]}
                         data={_.get(processingData, 'transform')}
                         handleAddOrEdit={(data: any) => handleAddOrEdit(data, 'transformations')}
@@ -430,9 +455,9 @@ const Processing: React.FC = () => {
                         actions={[{ label: 'JSONata', component: '', value: 'custom' }]}
                         transformation_mode={transformation_mode}
                         label={'Add Derived Field'}
-                        dialog={<AddNewField filteredTransformation={transformationOptions} />}
-                        jsonData={jsonData}
-                        transformationOptions={transformationOptions}
+                        dialog={<AddNewField filteredTransformation={transformationOptionsWithDenorm} />}
+                        jsonData={jsonDataWithDenorm}
+                        transformationOptions={transformationOptionsWithDenorm}
                         addedSuggestions={[]}
                         data={_.get(processingData, 'derived')}
                         handleAddOrEdit={(data: any) => handleAddOrEdit(data, 'transformations')}

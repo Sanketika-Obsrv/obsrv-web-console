@@ -14,6 +14,7 @@ import chartMeta from 'data/chartsComponents';
 import { druidQueries } from 'services/druid';
 import dayjs from 'dayjs';
 import useLocalStorage from 'hooks/useLocalStorage';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const ENDPOINTS = {
     DATASETS_READ: '/config/v2/datasets/read',
@@ -163,8 +164,9 @@ export const useGenerateJsonSchema = () =>
         }
     });
 
-export const useUpdateDataset = () =>
-    useMutation({
+export const useUpdateDataset = () => {
+    const { showAlert } = useAlert();
+    return useMutation({
         mutationFn: ({ data }: any) => {
             if(data?.data_schema) {
                 data['data_schema'] = omitSuggestions(data?.data_schema)
@@ -192,8 +194,20 @@ export const useUpdateDataset = () =>
                 exact: false
             });
             setVersionKey(_.get(response, ['version_key']));
+        },
+        onError: (error: any) => {
+            // Previously silent: callers (e.g. AddPIIDialog's onHandleClick) fire this mutation
+            // and close their dialog immediately without checking the result, so a failed save
+            // (most commonly a stale version_key after editing the same dataset across multiple
+            // page loads -- the backend rejects with 409 DATASET_OUTDATED) looked like it worked.
+            const status = _.get(error, ['response', 'status']);
+            const message = status === 409
+                ? 'This dataset was updated elsewhere since you loaded this page. Please refresh and try again.'
+                : _.get(error, ['response', 'data', 'params', 'errmsg']) || 'Failed to save changes. Please try again.';
+            showAlert(message, 'error');
         }
     });
+};
 
 export const useDatasetList = ({ status }: { status: string[] }) => {
     const request = generateRequestBody({
