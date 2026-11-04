@@ -14,9 +14,11 @@ import chartMeta from 'data/chartsComponents';
 import { druidQueries } from 'services/druid';
 import dayjs from 'dayjs';
 import useLocalStorage from 'hooks/useLocalStorage';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const ENDPOINTS = {
     DATASETS_READ: '/config/v2/datasets/read',
+    DENORM_PREVIEW: '/config/v2/datasets/denorm-preview',
     CREATE_DATASET: '/config/v2/datasets/create',
     UPLOAD_FILES: '/config/v2/files/generate-url',
     GENERATE_JSON_SCHEMA: '/config/v2/datasets/dataschema',
@@ -51,6 +53,24 @@ export const useFetchDatasetsById = ({
             return _.get(response, ['data', 'result'])
         }),
         enabled: !!datasetId
+    } as UseQueryOptions<any, Error>);
+};
+
+export const useFetchDenormPreviewEvent = ({
+        datasetId,
+        mode,
+        enabled
+    }: {
+        datasetId: string;
+        mode: string;
+        enabled: boolean;
+    }) => {
+    return useQuery({
+        queryKey: ['fetchDenormPreviewEvent', datasetId, mode],
+        queryFn: () => http.get(`${ENDPOINTS.DENORM_PREVIEW}/${datasetId}?mode=${mode}`).then((response: AxiosResponse) => {
+            return _.get(response, ['data', 'result'])
+        }),
+        enabled: enabled && !!datasetId
     } as UseQueryOptions<any, Error>);
 };
 
@@ -144,8 +164,9 @@ export const useGenerateJsonSchema = () =>
         }
     });
 
-export const useUpdateDataset = () =>
-    useMutation({
+export const useUpdateDataset = () => {
+    const { showAlert } = useAlert();
+    return useMutation({
         mutationFn: ({ data }: any) => {
             if(data?.data_schema) {
                 data['data_schema'] = omitSuggestions(data?.data_schema)
@@ -166,9 +187,27 @@ export const useUpdateDataset = () =>
                 queryKey: ['fetchDatasetsById', 'datasetId', 'status'],
                 exact: false
             });
+            // Any dataset update can change denorm_config (adding/editing a 2nd+ field
+            // doesn't toggle hasDenormFields, so the preview query wouldn't otherwise refetch)
+            queryClient.invalidateQueries({
+                queryKey: ['fetchDenormPreviewEvent'],
+                exact: false
+            });
             setVersionKey(_.get(response, ['version_key']));
+        },
+        onError: (error: any) => {
+            // Previously silent: callers (e.g. AddPIIDialog's onHandleClick) fire this mutation
+            // and close their dialog immediately without checking the result, so a failed save
+            // (most commonly a stale version_key after editing the same dataset across multiple
+            // page loads -- the backend rejects with 409 DATASET_OUTDATED) looked like it worked.
+            const status = _.get(error, ['response', 'status']);
+            const message = status === 409
+                ? 'This dataset was updated elsewhere since you loaded this page. Please refresh and try again.'
+                : _.get(error, ['response', 'data', 'params', 'errmsg']) || 'Failed to save changes. Please try again.';
+            showAlert(message, 'error');
         }
     });
+};
 
 export const useDatasetList = ({ status }: { status: string[] }) => {
     const request = generateRequestBody({
