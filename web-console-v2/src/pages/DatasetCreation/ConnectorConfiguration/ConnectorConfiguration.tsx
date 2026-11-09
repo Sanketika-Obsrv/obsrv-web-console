@@ -38,9 +38,13 @@ const GenericCard = styled(Card)(({ theme }) => ({
 const ConnectorConfiguration: React.FC = () => {
     const location = useLocation();
     const { datasetId }: any = useParams();
-    const { selectedConnectorId, connectorConfig } = location.state || {};
+    const { selectedConnectorId: stateConnectorId, connectorConfig } = location.state || {};
     const searchParams = new URLSearchParams(location.search);
     const datasetType = searchParams.get('datasetType');
+    // location.state is lost on refresh/back-forward nav; the URL param survives that, so
+    // fall back to it. connectorConfig (pre-filled form data for an edit) only ever comes
+    // from state -- losing it just means the schema loads with a blank form, not a dead end.
+    const selectedConnectorId = stateConnectorId || searchParams.get('connectorId') || undefined;
     const defaultFormData = connectorConfig ? _.get(connectorConfig, 'connector_config') : {}
     const defaultOpFormData = connectorConfig ? _.get(connectorConfig, 'operations_config') : {
         interval: 'Periodic',
@@ -130,7 +134,7 @@ const ConnectorConfiguration: React.FC = () => {
     const readConnector = useReadConnectors({ connectorId: selectedConnectorId });
     const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config,version_key'});
     useEffect(() => {
-        if (dataset.data && dataset.data.connectors_config[0]) {
+        if (dataset.data?.connectors_config?.[0]) {
             const connectorId = _.get(dataset.data.connectors_config[0], 'connector_id')
             setPrimaryConnectorId(connectorId)
             http.get(`${endpoints.READ_CONNECTORS}/${connectorId}`).then((response: any) => {
@@ -160,13 +164,17 @@ const ConnectorConfiguration: React.FC = () => {
             } else {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
-        } else if (!dataset.isLoading && !readConnector.isLoading && !selectedConnectorId) {
-            // Both queries settled with nothing to show, and there's no connector id to fetch
-            // with either -- this happens when the stepper nav drops location.state (e.g.
-            // jumping between steps on an unsaved dataset). Surface it instead of a blank page.
-            setErrorMessage('No connector selected. Please go back and select a connector to configure.');
+        } else if (!dataset.isLoading && !readConnector.isLoading) {
+            // Either there's no connector id to fetch with at all (stepper nav dropped the
+            // selection), or there was one but its fetch actually failed -- both leave both
+            // queries settled with nothing to show. Surface it instead of a blank page.
+            setErrorMessage(
+                !selectedConnectorId
+                    ? 'No connector selected. Please go back and select a connector to configure.'
+                    : 'Failed to load the connector configuration. Please try again or contact administrator.'
+            );
         }
-    }, [dataset.data, dataset.isLoading, readConnector.data, readConnector.isLoading, selectedConnectorId]);
+    }, [dataset.data, dataset.isLoading, dataset.isError, readConnector.data, readConnector.isLoading, readConnector.isError, selectedConnectorId]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);
@@ -471,7 +479,7 @@ const ConnectorConfiguration: React.FC = () => {
                             label: 'Proceed',
                             variant: 'contained',
                             color: 'primary',
-                            disabled: formErrors.length > 0
+                            disabled: formErrors.length > 0 || !!errorMessage
                         }
                     ]}
                     onClick={handleButtonClick}

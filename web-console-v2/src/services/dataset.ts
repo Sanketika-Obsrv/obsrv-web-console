@@ -44,7 +44,12 @@ export const useFetchDatasetsById = ({
         queryParams: string;
     }) => {
     return useQuery({
-        queryKey: ['fetchDatasetsById', 'datasetId', 'status', queryParams],
+        // Trailing datasetId keeps this cache entry per-dataset -- without it, two datasets
+        // fetched with the same queryParams string (the common case) shared one cache entry,
+        // so opening dataset B within the cache window could render dataset A's stale data.
+        // Appended rather than inserted, so existing ['fetchDatasetsById', 'datasetId', ...]
+        // invalidation calls elsewhere still prefix-match.
+        queryKey: ['fetchDatasetsById', 'datasetId', 'status', queryParams, datasetId],
         queryFn: () => http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}?${queryParams}`).then((response: AxiosResponse) => {
             setDatasetId(_.get(response, ['data', 'result', 'dataset_id']))
             setVersionKey(_.get(response, ['data', 'result', 'version_key']));
@@ -225,7 +230,9 @@ export const useConnectorsList = () =>
 
 export const useReadConnectors = ({ connectorId }: { connectorId: string | null }) => {
     return useQuery({
-        queryKey: ['connectorId'],
+        // Was a bare literal key shared by every connector -- fetching connector B after
+        // connector A within the cache window rendered A's stale config under B's id.
+        queryKey: ['connectorId', connectorId],
         queryFn: () =>
             http.get(`${ENDPOINTS.READ_CONNECTORS}/${connectorId}`).then(transformResponse),
         enabled: !!connectorId
