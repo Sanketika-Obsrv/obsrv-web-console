@@ -4,29 +4,25 @@ import CustomTable from 'components/CustomeTable/CustomTable';
 import MainCard from 'components/MainCard';
 import _ from 'lodash';
 import { getKeyAlias } from 'services/keysAlias';
-import { flattenObject, getSectionDetails, isSensitiveConfigKey, maskedTextStyle, resolveUiSpecNode } from 'services/utils';
+import { flattenObject, getSectionDetails, isSensitiveField, maskedTextStyle, resolveUiSpecNode } from 'services/utils';
 
 const AdditionSummary = (props: any) => {
     const { diff = [], transform, connectorSpecsById = {} } = props;
 
-    // A whole new connector's connector_config (incl. nested authenticationMechanism) is sent
-    // unredacted and flattened to dotted paths like "connector_config.authenticationMechanism.
-    // password" -- strip the fixed prefix so the remainder lines up with the connector's schema.
+    // Strip the "connector_config." prefix so the path lines up with the connector's schema.
     const renderConfig = (config: { key: string; value: string; [key: string]: any }[], row: Record<string, any>) => {
         const isConnectorRow = _.get(row, 'type') === 'dataSource';
         const uiSpec = isConnectorRow ? connectorSpecsById[_.get(row, 'name')] : undefined;
         return _.map(config, (payload, index) => {
-            // Non-strict: fall back to the raw key instead of dropping the row entirely when
-            // there's no alias for it -- a missing label used to mean a missing mask too.
+            // Fall back to the raw key instead of dropping the row when there's no alias for it.
             const key = getKeyAlias(payload.key);
             if (!key) return null;
             let isSensitive = false;
             let label = key;
             if (isConnectorRow) {
                 const schemaPath = payload.key.replace(/^connector_config\./, '');
-                const schemaNode = resolveUiSpecNode(uiSpec, schemaPath);
-                isSensitive = schemaNode ? schemaNode.format === 'password' : isSensitiveConfigKey(payload.key);
-                label = schemaNode?.title || key;
+                isSensitive = isSensitiveField(uiSpec, schemaPath);
+                label = resolveUiSpecNode(uiSpec, schemaPath)?.title || key;
             }
             return (
                 <Chip

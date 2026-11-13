@@ -4,25 +4,16 @@ import CustomTable from 'components/CustomeTable/CustomTable';
 import MainCard from 'components/MainCard';
 import _ from 'lodash';
 import { getKeyAlias } from 'services/keysAlias';
-import { getSectionDetails, isSensitiveConfigKey, maskedTextStyle, resolveUiSpecFormat } from 'services/utils';
+import { getSectionDetails, isSensitiveField as isSensitiveFieldBySpec, maskedTextStyle } from 'services/utils';
 
-// "dataSource" is the diff backend's type string for connector-config changes (see
-// dataset_diff.ts) -- only those rows can hold credential-shaped field names. dataSchema/
-// transformations rows are user-defined dataset column names and must never be masked here,
-// since a column legitimately named e.g. "password" would otherwise have its real diff hidden.
+// Only dataSource rows are connector config -- never mask user-named dataset columns.
 const isConnectorRow = (row: Record<string, any>) => _.get(row, 'type') === 'dataSource';
 
-// `name` on a dataSource row is the connector_id the change belongs to (see dataset_diff.ts).
-// Prefer the real schema's format declaration; only guess from the field name when the schema
-// has no entry for it (e.g. authenticationMechanism.* never reaches here -- the backend already
-// excludes that subtree from modifications -- so this mainly covers flat fields like a DB
-// connector's password column that live outside authenticationMechanism).
 const isSensitiveField = (row: Record<string, any>, connectorSpecsById: Record<string, any>) => {
     if (!isConnectorRow(row)) return false;
     const field = _.get(row, 'field');
     const uiSpec = connectorSpecsById[_.get(row, 'name')];
-    const specFormat = resolveUiSpecFormat(uiSpec, field);
-    return specFormat !== undefined ? specFormat === 'password' : isSensitiveConfigKey(field);
+    return isSensitiveFieldBySpec(uiSpec, field);
 };
 
 const UpdateSummary = (props: any) => {

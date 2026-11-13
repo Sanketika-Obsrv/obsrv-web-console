@@ -194,17 +194,12 @@ export const getSectionDetails = (row: Record<string, any>) => {
     return _.get(section, type) || '';
 }
 
-// Last-resort, name-based guess for whether a config key holds a credential, used only where
-// the connector's own ui_spec isn't available or doesn't declare anything for that key. This is
-// a denylist, so it fails OPEN: anything not matching (account_key, passphrase, sas, keystore,
-// *_pem, ...) still renders in cleartext. Prefer resolveUiSpecFormat() wherever a schema exists.
-const sensitiveConfigKeyPattern = /password|secret|private[_-]?key|access[_-]?key|api[_-]?key|credential|token|pwd/i;
+// Name-based fallback when no ui_spec format is available; fails open (denylist).
+const sensitiveConfigKeyPattern = /password|secret|private[_-]?key|access[_-]?key|api[_-]?key|credential|token|pwd|connection[_-]?string|passphrase|account[_-]?key|sas|keystore|pem|cert|signature/i;
 
 export const isSensitiveConfigKey = (key = ''): boolean => sensitiveConfigKeyPattern.test(key);
 
-// Walks a dotted field path (e.g. "authenticationMechanism.password") against a connector's
-// JSON-schema ui_spec, one `properties` segment at a time. Returns the matched schema node, or
-// undefined if the schema has no entry for that exact path.
+// Walks a dotted field path against a connector's ui_spec, one `properties` segment at a time.
 export const resolveUiSpecNode = (uiSpec: any, dottedPath: string): any => {
     const segments = (dottedPath || '').split('.');
     let node = uiSpec;
@@ -219,11 +214,17 @@ export const resolveUiSpecNode = (uiSpec: any, dottedPath: string): any => {
 export const resolveUiSpecFormat = (uiSpec: any, dottedPath: string): string | undefined =>
     resolveUiSpecNode(uiSpec, dottedPath)?.format;
 
-// Masks text on non-input elements (Chip/TableCell) the same way a real password <input> does,
-// via CSS rather than substituting a fixed placeholder string. No Firefox equivalent exists --
-// falls back to showing the real value there.
+// Owns the masking precedence: schema and denylist are additive (either can mask), and an
+// unresolved schema entry fails closed to masked rather than relying on the denylist alone.
+export const isSensitiveField = (uiSpec: any, dottedPath: string): boolean => {
+    const node = resolveUiSpecNode(uiSpec, dottedPath);
+    if (node === undefined) return true;
+    return node.format === 'password' || isSensitiveConfigKey(dottedPath);
+};
+
+// Font-based mask (text-security pkg, loaded in index.tsx) instead of -webkit-text-security -- works in Firefox too.
 export const maskedTextStyle = {
-    WebkitTextSecurity: 'disc'
+    fontFamily: "'text-security-disc'"
 } as CSSProperties;
 
 export const generateDatesBetweenInterval = (start: any, end: any) => {

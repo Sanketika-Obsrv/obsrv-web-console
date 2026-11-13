@@ -40,14 +40,24 @@ const ReviewDataset = () => {
             _.map(_.get(draftDataset.data, 'connectors_config', []), 'connector_id')
         ).filter(Boolean);
         if (connectorIds.length === 0) return;
-        Promise.all(
+        // allSettled -- one connector's spec failing shouldn't take the rest down with it.
+        Promise.allSettled(
             connectorIds.map((id) =>
                 http.get(`${endpoints.READ_CONNECTORS}/${id}`).then((response: any) => [
                     id,
                     _.get(response, ['data', 'result', 'ui_spec'])
                 ])
             )
-        ).then((pairs) => setConnectorSpecsById(Object.fromEntries(pairs)));
+        ).then((results) => {
+            const pairs = results
+                .filter((r): r is PromiseFulfilledResult<[string, any]> => r.status === 'fulfilled')
+                .map((r) => r.value);
+            const failed = results.filter((r) => r.status === 'rejected');
+            if (failed.length > 0) {
+                console.error(`Failed to load ui_spec for ${failed.length} connector(s); affected fields will mask by default.`, failed);
+            }
+            setConnectorSpecsById(Object.fromEntries(pairs));
+        });
     }, [draftDataset.data]);
 
     const { additions = [], deletions = [], modifications = [] } = data || {};
