@@ -65,9 +65,15 @@ const DynamicStepper = ({ steps: initialSteps, initialSelectedStep }: StepperPro
         switch(route) {
             case 'connector': {
                 const connectorStep = steps.find((step) => step.route === 'connector');
-                if(connectorStep?.completed) 
-                    navigate(`/dataset/edit/connector/configure/${datasetId}`,{ state: location.state });
-                else 
+                if(connectorStep?.completed) {
+                    // connectorId also goes in the URL, not just router state -- state is
+                    // dropped on refresh/back-forward navigation, which is exactly how a user
+                    // can land back on this step.
+                    const selectedConnectorId = (location.state as any)?.selectedConnectorId;
+                    const query = selectedConnectorId ? `?${new URLSearchParams({ connectorId: selectedConnectorId }).toString()}` : '';
+                    navigate(`/dataset/edit/connector/configure/${datasetId}${query}`,{ state: location.state });
+                }
+                else
                     navigate(`/dataset/edit/connector/list/${datasetId}`);
                 break;
             }

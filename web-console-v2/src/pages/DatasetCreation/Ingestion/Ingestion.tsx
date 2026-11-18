@@ -350,7 +350,10 @@ const Ingestion = () => {
         if(!connectorConfig && !connectorConfigState) {
             navigate(`/dataset/edit/connector/list/${datasetIdParam}`);
         } else {
-            navigate(`/dataset/edit/connector/configure/${datasetIdParam}`, {
+            // connectorId also goes in the URL, not just router state -- state is dropped on
+            // refresh/back-forward navigation.
+            const query = selectedConnectorId ? `?${new URLSearchParams({ connectorId: selectedConnectorId }).toString()}` : '';
+            navigate(`/dataset/edit/connector/configure/${datasetIdParam}${query}`, {
                 state: {selectedConnectorId, connectorConfig}
             });
         }

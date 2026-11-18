@@ -8,11 +8,10 @@ import HelpSection from 'components/HelpSection/HelpSection';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { endpoints, useFetchDatasetsById, useReadConnectors, useUpdateDataset } from 'services/dataset';
+import { useFetchDatasetsById, useReadConnectors, useUpdateDataset } from 'services/dataset';
 import styles from './ConnectorConfiguration.module.css';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { http } from 'services/http';
 import { v4 } from "uuid";
 import { DatasetType } from 'types/datasets';
 import Loader from 'components/Loader';
@@ -131,50 +130,43 @@ const ConnectorConfiguration: React.FC = () => {
             }
         }
     }
-    const readConnector = useReadConnectors({ connectorId: selectedConnectorId });
     const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config,version_key'});
+    // The dataset's own connectors_config already names the connector when editing an
+    // existing one; otherwise fall back to whatever was just selected. One id, one fetch --
+    // a second inline http.get for the "existing connector" case used to duplicate this
+    // fetch with no .catch, so a failure left the form silently empty with Proceed still
+    // enabled (see the submit guard below).
+    const existingConnectorId = _.get(dataset.data, 'connectors_config[0].connector_id');
+    const effectiveConnectorId = existingConnectorId || selectedConnectorId;
+    const readConnector = useReadConnectors({ connectorId: effectiveConnectorId });
     useEffect(() => {
-        if (dataset.data?.connectors_config?.[0]) {
-            const connectorId = _.get(dataset.data.connectors_config[0], 'connector_id')
-            setPrimaryConnectorId(connectorId)
-            http.get(`${endpoints.READ_CONNECTORS}/${connectorId}`).then((response: any) => {
-                const connectorData = _.get(response, ['data', 'result'])
-                if(connectorData) {
-                    setConnectorType(_.toLower(connectorData.category));
-                    const apiSchema = connectorData.ui_spec;
-                    if (apiSchema) {
-                        setSchema(transformSchema(apiSchema,_.toLower(connectorData.connector_id)));
-                        setHelpSectionContent(apiSchema, _.toLower(connectorData.category));
-                        setErrorMessage(null);
-                        setFormErrors([])
-                        setFormData(_.get(dataset.data.connectors_config[0], 'connector_config'));
-                        setOpFormData(_.get(dataset.data.connectors_config[0], 'operations_config'));
-                    } else {
-                        setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
-                    }
-                }
-            })
-        } else if(readConnector.data) {
+        if (readConnector.data) {
             setConnectorType(_.toLower(readConnector.data.category));
             const apiSchema = readConnector.data.ui_spec;
             if (apiSchema) {
-                setSchema(transformSchema(apiSchema,readConnector.data.connector_id));
+                setSchema(transformSchema(apiSchema, _.toLower(readConnector.data.connector_id)));
                 setHelpSectionContent(apiSchema, _.toLower(readConnector.data.category));
                 setErrorMessage(null);
+                setFormErrors([]);
+                if (existingConnectorId) {
+                    setPrimaryConnectorId(existingConnectorId);
+                    setFormData(_.get(dataset.data.connectors_config[0], 'connector_config'));
+                    setOpFormData(_.get(dataset.data.connectors_config[0], 'operations_config'));
+                }
             } else {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
         } else if (!dataset.isLoading && !readConnector.isLoading) {
             // Either there's no connector id to fetch with at all (stepper nav dropped the
-            // selection), or there was one but its fetch actually failed -- both leave both
-            // queries settled with nothing to show. Surface it instead of a blank page.
+            // selection), or there was one but its fetch actually failed -- both leave the
+            // query settled with nothing to show. Surface it instead of a blank page.
             setErrorMessage(
-                !selectedConnectorId
+                !effectiveConnectorId
                     ? 'No connector selected. Please go back and select a connector to configure.'
                     : 'Failed to load the connector configuration. Please try again or contact administrator.'
             );
         }
-    }, [dataset.data, dataset.isLoading, dataset.isError, readConnector.data, readConnector.isLoading, readConnector.isError, selectedConnectorId]);
+    }, [dataset.data, dataset.isLoading, readConnector.data, readConnector.isLoading, existingConnectorId, effectiveConnectorId]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);
@@ -277,6 +269,14 @@ const ConnectorConfiguration: React.FC = () => {
     const updateDataset = useUpdateDataset();
 
     const handleButtonClick = () => {
+
+        if (existingConnectorId && _.isEmpty(formData)) {
+            // Never silently upsert an empty config over a connector that was already
+            // configured -- this is reachable if the connector fetch failed without the
+            // error state blocking submission some other way.
+            setErrorMessage('Connector configuration failed to load. Please refresh and try again before saving.');
+            return;
+        }
 
         if(datasetId === '<new>') {
             const queryParams = `?step=connector&skipped=false&completed=true${datasetType === DatasetType.MasterDataset ? '&datasetType=master' : ''}`;
