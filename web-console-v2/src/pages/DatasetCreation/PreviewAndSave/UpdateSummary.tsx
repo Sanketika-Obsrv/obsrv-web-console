@@ -4,10 +4,20 @@ import CustomTable from 'components/CustomeTable/CustomTable';
 import MainCard from 'components/MainCard';
 import _ from 'lodash';
 import { getKeyAlias } from 'services/keysAlias';
-import { getSectionDetails } from 'services/utils';
+import { getSectionDetails, isSensitiveField as isSensitiveFieldBySpec, maskedTextStyle } from 'services/utils';
+
+// Only dataSource rows are connector config -- never mask user-named dataset columns.
+const isConnectorRow = (row: Record<string, any>) => _.get(row, 'type') === 'dataSource';
+
+const isSensitiveField = (row: Record<string, any>, connectorSpecsById: Record<string, any>) => {
+    if (!isConnectorRow(row)) return false;
+    const field = _.get(row, 'field');
+    const uiSpec = connectorSpecsById[_.get(row, 'name')];
+    return isSensitiveFieldBySpec(uiSpec, field);
+};
 
 const UpdateSummary = (props: any) => {
-    const { diff = [], transform } = props;
+    const { diff = [], transform, connectorSpecsById = {} } = props;
 
     const columns = [
         {
@@ -45,7 +55,9 @@ const UpdateSummary = (props: any) => {
             Cell(value: any) {
                 const row = value?.cell?.row?.original || {};
                 const from = _.get(row, 'value.from');
-                return from || from === false ? _.toString(from) : '-';
+                const isSensitive = isSensitiveField(row, connectorSpecsById);
+                if (!(from || from === false)) return '-';
+                return isSensitive ? <span style={maskedTextStyle}>{_.toString(from)}</span> : _.toString(from);
             }
         },
         {
@@ -55,7 +67,9 @@ const UpdateSummary = (props: any) => {
             Cell(value: any) {
                 const row = value?.cell?.row?.original || {};
                 const to = _.get(row, 'value.to');
-                return to || to === false ? _.toString(to) : '-';
+                const isSensitive = isSensitiveField(row, connectorSpecsById);
+                if (!(to || to === false)) return '-';
+                return isSensitive ? <span style={maskedTextStyle}>{_.toString(to)}</span> : _.toString(to);
             }
         }
     ];

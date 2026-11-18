@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import moment from 'moment';
 import _ from 'lodash';
 import { v4 as uuid } from 'uuid';
@@ -192,6 +193,39 @@ export const getSectionDetails = (row: Record<string, any>) => {
     };
     return _.get(section, type) || '';
 }
+
+// Name-based fallback when no ui_spec format is available; fails open (denylist).
+const sensitiveConfigKeyPattern = /password|secret|private[_-]?key|access[_-]?key|api[_-]?key|credential|token|pwd|connection[_-]?string|passphrase|account[_-]?key|sas|keystore|pem|cert|signature/i;
+
+export const isSensitiveConfigKey = (key = ''): boolean => sensitiveConfigKeyPattern.test(key);
+
+// Walks a dotted field path against a connector's ui_spec, one `properties` segment at a time.
+export const resolveUiSpecNode = (uiSpec: any, dottedPath: string): any => {
+    const segments = (dottedPath || '').split('.');
+    let node = uiSpec;
+    for (const segment of segments) {
+        node = node?.properties?.[segment];
+        if (!node) return undefined;
+    }
+    return node;
+};
+
+// Callers should treat "undefined" as "schema doesn't know," not as "not a password."
+export const resolveUiSpecFormat = (uiSpec: any, dottedPath: string): string | undefined =>
+    resolveUiSpecNode(uiSpec, dottedPath)?.format;
+
+// Owns the masking precedence: schema and denylist are additive (either can mask), and an
+// unresolved schema entry fails closed to masked rather than relying on the denylist alone.
+export const isSensitiveField = (uiSpec: any, dottedPath: string): boolean => {
+    const node = resolveUiSpecNode(uiSpec, dottedPath);
+    if (node === undefined) return true;
+    return node.format === 'password' || isSensitiveConfigKey(dottedPath);
+};
+
+// Font-based mask (text-security pkg, loaded in index.tsx) instead of -webkit-text-security -- works in Firefox too.
+export const maskedTextStyle = {
+    fontFamily: "'text-security-disc'"
+} as CSSProperties;
 
 export const generateDatesBetweenInterval = (start: any, end: any) => {
   const diffInMinutes = start.diff(end, 'minute');
