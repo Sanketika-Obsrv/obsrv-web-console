@@ -131,11 +131,7 @@ const ConnectorConfiguration: React.FC = () => {
         }
     }
     const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config,version_key'});
-    // The dataset's own connectors_config already names the connector when editing an
-    // existing one; otherwise fall back to whatever was just selected. One id, one fetch --
-    // a second inline http.get for the "existing connector" case used to duplicate this
-    // fetch with no .catch, so a failure left the form silently empty with Proceed still
-    // enabled (see the submit guard below).
+    // Existing connector first, else the selected one; see docs/adr connector-configuration-loading.
     const existingConnectorId = _.get(dataset.data, 'connectors_config[0].connector_id');
     const effectiveConnectorId = existingConnectorId || selectedConnectorId;
     const readConnector = useReadConnectors({ connectorId: effectiveConnectorId });
@@ -156,17 +152,17 @@ const ConnectorConfiguration: React.FC = () => {
             } else {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
+        } else if (dataset.isError) {
+            setErrorMessage('Failed to load the dataset. Please try again or contact administrator.');
         } else if (!dataset.isLoading && !readConnector.isLoading) {
-            // Either there's no connector id to fetch with at all (stepper nav dropped the
-            // selection), or there was one but its fetch actually failed -- both leave the
-            // query settled with nothing to show. Surface it instead of a blank page.
+            // Settled with nothing to show: surface an error instead of a blank page.
             setErrorMessage(
                 !effectiveConnectorId
                     ? 'No connector selected. Please go back and select a connector to configure.'
                     : 'Failed to load the connector configuration. Please try again or contact administrator.'
             );
         }
-    }, [dataset.data, dataset.isLoading, readConnector.data, readConnector.isLoading, existingConnectorId, effectiveConnectorId]);
+    }, [dataset.data, dataset.isLoading, dataset.isError, readConnector.data, readConnector.isLoading, existingConnectorId, effectiveConnectorId]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);
@@ -270,10 +266,8 @@ const ConnectorConfiguration: React.FC = () => {
 
     const handleButtonClick = () => {
 
-        if (existingConnectorId && _.isEmpty(formData)) {
-            // Never silently upsert an empty config over a connector that was already
-            // configured -- this is reachable if the connector fetch failed without the
-            // error state blocking submission some other way.
+        if (existingConnectorId && !readConnector.data) {
+            // Don't upsert over a saved config whose connector definition failed to load.
             setErrorMessage('Connector configuration failed to load. Please refresh and try again before saving.');
             return;
         }
