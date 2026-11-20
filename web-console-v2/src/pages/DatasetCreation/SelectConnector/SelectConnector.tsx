@@ -103,8 +103,7 @@ const SelectConnector = () => {
         if (selectedCardData) {
             const { id: selectedConnectorId } = selectedCardData;
             const url = `/dataset/edit/connector/configure/${datasetId}`;
-            // connectorId also goes in the URL, not just router state -- state is dropped on
-            // refresh/back-forward navigation, which used to blank the next page entirely.
+            // Also in the URL: router state is lost on refresh.
             const params = new URLSearchParams({ connectorId: selectedConnectorId });
             if (datasetType === DatasetType.MasterDataset) {
                 params.set('datasetType', 'master');

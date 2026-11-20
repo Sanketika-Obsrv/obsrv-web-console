@@ -40,9 +40,7 @@ const ConnectorConfiguration: React.FC = () => {
     const { selectedConnectorId: stateConnectorId, connectorConfig } = location.state || {};
     const searchParams = new URLSearchParams(location.search);
     const datasetType = searchParams.get('datasetType');
-    // location.state is lost on refresh/back-forward nav; the URL param survives that, so
-    // fall back to it. connectorConfig (pre-filled form data for an edit) only ever comes
-    // from state -- losing it just means the schema loads with a blank form, not a dead end.
+    // Router state is lost on refresh; fall back to the URL param.
     const selectedConnectorId = stateConnectorId || searchParams.get('connectorId') || undefined;
     const defaultFormData = connectorConfig ? _.get(connectorConfig, 'connector_config') : {}
     const defaultOpFormData = connectorConfig ? _.get(connectorConfig, 'operations_config') : {
