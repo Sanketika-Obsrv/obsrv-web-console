@@ -264,16 +264,18 @@ const Storage = () => {
                                             <FormGroup row >
                                                 {_.get(storageTypes, "lake_house") === true && (<FormControlLabel control={<Checkbox checked={lakehouseEnabled} onChange={(event) => handleIndexingConfigChange(event, 'lakehouse')} />} label="Data Lakehouse (Hudi)" />)}
                                                 {_.get(storageTypes, "realtime_store") === true && (<FormControlLabel control={<Checkbox checked={realtimeStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'realtimeStore')} />} label="Real-time Store (Druid)" />)}
-                                                {datasetType === 'master' && (
-                                                    <FormControlLabel 
+                                                {datasetType === 'master' ? (
+                                                    <FormControlLabel
                                                         control={
-                                                            <Checkbox 
-                                                                checked={true} 
+                                                            <Checkbox
+                                                                checked={true}
                                                                 disabled={true}
                                                             />
-                                                        } 
+                                                        }
                                                         label="Cache Store (Redis)"
                                                     />
+                                                ) : (
+                                                    <FormControlLabel control={<Checkbox checked={cacheStoreEnabled} onChange={(event) => handleIndexingConfigChange(event, 'cacheStore')} />} label="Cache Store (Redis)" />
                                                 )}
                                             </FormGroup>
                                         </Grid>
