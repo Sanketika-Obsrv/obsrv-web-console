@@ -132,9 +132,15 @@ const ConnectorConfiguration: React.FC = () => {
     // Existing connector first, else the selected one; see docs/adr connector-configuration-loading.
     const existingConnectorId = _.get(dataset.data, 'connectors_config[0].connector_id');
     const effectiveConnectorId = existingConnectorId || selectedConnectorId;
+    const connectorMismatch = Boolean(existingConnectorId && selectedConnectorId && existingConnectorId !== selectedConnectorId);
+    const connectorMismatchMessage = `This dataset is already configured with the "${existingConnectorId}" connector. Switching to a different connector is not supported yet.`;
     const readConnector = useReadConnectors({ connectorId: effectiveConnectorId });
     useEffect(() => {
-        if (readConnector.data) {
+        if (dataset.isError) {
+            setErrorMessage('Failed to load the dataset. Please try again or contact administrator.');
+        } else if (connectorMismatch) {
+            setErrorMessage(connectorMismatchMessage);
+        } else if (readConnector.data) {
             setConnectorType(_.toLower(readConnector.data.category));
             const apiSchema = readConnector.data.ui_spec;
             if (apiSchema) {
@@ -150,8 +156,6 @@ const ConnectorConfiguration: React.FC = () => {
             } else {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
-        } else if (dataset.isError) {
-            setErrorMessage('Failed to load the dataset. Please try again or contact administrator.');
         } else if (!dataset.isLoading && !readConnector.isLoading) {
             // Settled with nothing to show: surface an error instead of a blank page.
             setErrorMessage(
@@ -160,7 +164,7 @@ const ConnectorConfiguration: React.FC = () => {
                     : 'Failed to load the connector configuration. Please try again or contact administrator.'
             );
         }
-    }, [dataset.data, dataset.isLoading, dataset.isError, readConnector.data, readConnector.isLoading, existingConnectorId, effectiveConnectorId]);
+    }, [dataset.data, dataset.isLoading, dataset.isError, readConnector.data, readConnector.isLoading, existingConnectorId, effectiveConnectorId, connectorMismatch, connectorMismatchMessage]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);
@@ -263,6 +267,16 @@ const ConnectorConfiguration: React.FC = () => {
     const updateDataset = useUpdateDataset();
 
     const handleButtonClick = () => {
+
+        if (dataset.isError) {
+            setErrorMessage('Failed to load the dataset. Please try again or contact administrator.');
+            return;
+        }
+
+        if (connectorMismatch) {
+            setErrorMessage(connectorMismatchMessage);
+            return;
+        }
 
         if (existingConnectorId && !readConnector.data) {
             // Don't upsert over a saved config whose connector definition failed to load.

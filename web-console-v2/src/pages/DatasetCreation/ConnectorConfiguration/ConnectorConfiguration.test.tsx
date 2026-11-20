@@ -123,3 +123,20 @@ test('no selection and no existing connector asks the user to select one', () =>
 
   expect(screen.getByText(/No connector selected/i)).toBeInTheDocument();
 });
+
+test('a dataset read failure wins over a connector that loaded from the URL', () => {
+  mockDataset({ data: undefined, isError: true });
+  renderAt('/dataset/edit/connector/configure/ds1?connectorId=A');
+
+  expect(screen.getByText(/Failed to load the dataset/i)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Proceed' })).toBeDisabled();
+  expect(mutate).not.toHaveBeenCalled();
+});
+
+test('a connector other than the configured one blocks the save', () => {
+  renderAt('/dataset/edit/connector/configure/ds1?connectorId=B');
+
+  expect(screen.getByText(/Switching to a different connector is not supported yet/i)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Proceed' })).toBeDisabled();
+  expect(mutate).not.toHaveBeenCalled();
+});
