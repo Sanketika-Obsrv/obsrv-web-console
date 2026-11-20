@@ -9,6 +9,12 @@ jest.mock('services/dataset', () => ({
   useConnectorsList: jest.fn(),
 }));
 
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate,
+}));
+
 const connectors = [
   { id: 'c1', name: 'BigQuery', type: 'source', iconurl: '', category: 'Database' },
   { id: 'c2', name: 'Kafka', type: 'source', iconurl: '', category: 'Streaming' },
@@ -103,4 +109,16 @@ test('displays Proceed button when a connector is selected and Skip when none is
 
   fireEvent.click(screen.getAllByTestId('selected-card')[0]);
   expect(screen.getByText('Skip')).toBeInTheDocument();
+});
+
+test('carries the selected connector id in both the URL and router state', () => {
+  renderConnector();
+
+  fireEvent.click(screen.getAllByTestId('card')[0]);
+  fireEvent.click(screen.getByText('Proceed'));
+
+  expect(mockNavigate).toHaveBeenCalledWith(
+    expect.stringContaining('connectorId=c1'),
+    expect.objectContaining({ state: { selectedConnectorId: 'c1' } })
+  );
 });
