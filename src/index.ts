@@ -23,7 +23,16 @@ app.use(helmet({
     maxAge: 31536000, // 1 year in seconds
     includeSubDomains: true,
     preload: true
-  }
+  },
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      // Monaco editor (JSONata playground) loads from jsdelivr at runtime
+      'script-src': ["'self'", 'https://cdn.jsdelivr.net'],
+      'connect-src': ["'self'", 'https://cdn.jsdelivr.net'],
+      'worker-src': ["'self'", 'blob:'],
+    },
+  },
 }));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'build')));
