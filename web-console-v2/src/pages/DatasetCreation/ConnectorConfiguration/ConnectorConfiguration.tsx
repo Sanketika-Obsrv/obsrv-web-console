@@ -8,11 +8,10 @@ import HelpSection from 'components/HelpSection/HelpSection';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { endpoints, useFetchDatasetsById, useReadConnectors, useUpdateDataset } from 'services/dataset';
+import { useFetchDatasetsById, useReadConnectors, useUpdateDataset } from 'services/dataset';
 import styles from './ConnectorConfiguration.module.css';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { http } from 'services/http';
 import { v4 } from "uuid";
 import { DatasetType } from 'types/datasets';
 import Loader from 'components/Loader';
@@ -38,9 +37,11 @@ const GenericCard = styled(Card)(({ theme }) => ({
 const ConnectorConfiguration: React.FC = () => {
     const location = useLocation();
     const { datasetId }: any = useParams();
-    const { selectedConnectorId, connectorConfig } = location.state || {};
+    const { selectedConnectorId: stateConnectorId, connectorConfig } = location.state || {};
     const searchParams = new URLSearchParams(location.search);
     const datasetType = searchParams.get('datasetType');
+    // Router state is lost on refresh; fall back to the URL param.
+    const selectedConnectorId = stateConnectorId || searchParams.get('connectorId') || undefined;
     const defaultFormData = connectorConfig ? _.get(connectorConfig, 'connector_config') : {}
     const defaultOpFormData = connectorConfig ? _.get(connectorConfig, 'operations_config') : {
         interval: 'Periodic',
@@ -127,41 +128,43 @@ const ConnectorConfiguration: React.FC = () => {
             }
         }
     }
-    const readConnector = useReadConnectors({ connectorId: selectedConnectorId });
     const dataset = useFetchDatasetsById({datasetId, queryParams: 'status=Draft&mode=edit&fields=connectors_config,version_key'});
+    // Existing connector first, else the selected one; see docs/adr connector-configuration-loading.
+    const existingConnectorId = _.get(dataset.data, 'connectors_config[0].connector_id');
+    const effectiveConnectorId = existingConnectorId || selectedConnectorId;
+    const connectorMismatch = Boolean(existingConnectorId && selectedConnectorId && existingConnectorId !== selectedConnectorId);
+    const connectorMismatchMessage = `This dataset is already configured with the "${existingConnectorId}" connector. Switching to a different connector is not supported yet.`;
+    const readConnector = useReadConnectors({ connectorId: effectiveConnectorId });
     useEffect(() => {
-        if (dataset.data && dataset.data.connectors_config[0]) {
-            const connectorId = _.get(dataset.data.connectors_config[0], 'connector_id')
-            setPrimaryConnectorId(connectorId)
-            http.get(`${endpoints.READ_CONNECTORS}/${connectorId}`).then((response: any) => {
-                const connectorData = _.get(response, ['data', 'result'])
-                if(connectorData) {
-                    setConnectorType(_.toLower(connectorData.category));
-                    const apiSchema = connectorData.ui_spec;
-                    if (apiSchema) {
-                        setSchema(transformSchema(apiSchema,_.toLower(connectorData.connector_id)));
-                        setHelpSectionContent(apiSchema, _.toLower(connectorData.category));
-                        setErrorMessage(null);
-                        setFormErrors([])
-                        setFormData(_.get(dataset.data.connectors_config[0], 'connector_config'));
-                        setOpFormData(_.get(dataset.data.connectors_config[0], 'operations_config'));
-                    } else {
-                        setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
-                    }
-                }
-            })
-        } else if(readConnector.data) {
+        if (dataset.isError) {
+            setErrorMessage('Failed to load the dataset. Please try again or contact administrator.');
+        } else if (connectorMismatch) {
+            setErrorMessage(connectorMismatchMessage);
+        } else if (readConnector.data) {
             setConnectorType(_.toLower(readConnector.data.category));
             const apiSchema = readConnector.data.ui_spec;
             if (apiSchema) {
-                setSchema(transformSchema(apiSchema,readConnector.data.connector_id));
+                setSchema(transformSchema(apiSchema, _.toLower(readConnector.data.connector_id)));
                 setHelpSectionContent(apiSchema, _.toLower(readConnector.data.category));
                 setErrorMessage(null);
+                setFormErrors([]);
+                if (existingConnectorId) {
+                    setPrimaryConnectorId(existingConnectorId);
+                    setFormData(_.get(dataset.data.connectors_config[0], 'connector_config'));
+                    setOpFormData(_.get(dataset.data.connectors_config[0], 'operations_config'));
+                }
             } else {
                 setErrorMessage('uiSchema for this connector type not available.  Please contact administrator');
             }
+        } else if (!dataset.isLoading && !readConnector.isLoading) {
+            // Settled with nothing to show: surface an error instead of a blank page.
+            setErrorMessage(
+                !effectiveConnectorId
+                    ? 'No connector selected. Please go back and select a connector to configure.'
+                    : 'Failed to load the connector configuration. Please try again or contact administrator.'
+            );
         }
-    }, [dataset.data, readConnector.data,selectedConnectorId]);
+    }, [dataset.data, dataset.isLoading, dataset.isError, readConnector.data, readConnector.isLoading, existingConnectorId, effectiveConnectorId, connectorMismatch, connectorMismatchMessage]);
 
     const handleSectionClick = (sectionId: string) => {
         setHighlightedSection(sectionId);
@@ -265,6 +268,22 @@ const ConnectorConfiguration: React.FC = () => {
 
     const handleButtonClick = () => {
 
+        if (dataset.isError) {
+            setErrorMessage('Failed to load the dataset. Please try again or contact administrator.');
+            return;
+        }
+
+        if (connectorMismatch) {
+            setErrorMessage(connectorMismatchMessage);
+            return;
+        }
+
+        if (existingConnectorId && !readConnector.data) {
+            // Don't upsert over a saved config whose connector definition failed to load.
+            setErrorMessage('Connector configuration failed to load. Please refresh and try again before saving.');
+            return;
+        }
+
         if(datasetId === '<new>') {
             const queryParams = `?step=connector&skipped=false&completed=true${datasetType === DatasetType.MasterDataset ? '&datasetType=master' : ''}`;
             navigate(`/dataset/edit/ingestion/meta/${datasetId}${queryParams}`, {
@@ -332,7 +351,7 @@ const ConnectorConfiguration: React.FC = () => {
     
     return (
         <>
-        {readConnector.isLoading ? <Loader loading={true} /> : <Box ml={1}>
+        {(readConnector.isLoading || dataset.isLoading) ? <Loader loading={true} /> : <Box ml={1}>
             {datasetId && datasetId === '<new>' && (
                 <Box mx={2}>
                     <Button
@@ -466,7 +485,7 @@ const ConnectorConfiguration: React.FC = () => {
                             label: 'Proceed',
                             variant: 'contained',
                             color: 'primary',
-                            disabled: formErrors.length > 0
+                            disabled: formErrors.length > 0 || !!errorMessage
                         }
                     ]}
                     onClick={handleButtonClick}

@@ -103,9 +103,13 @@ const SelectConnector = () => {
         if (selectedCardData) {
             const { id: selectedConnectorId } = selectedCardData;
             const url = `/dataset/edit/connector/configure/${datasetId}`;
-            const queryParams = datasetType === DatasetType.MasterDataset ? '?datasetType=master' : '';
+            // Also in the URL: router state is lost on refresh.
+            const params = new URLSearchParams({ connectorId: selectedConnectorId });
+            if (datasetType === DatasetType.MasterDataset) {
+                params.set('datasetType', 'master');
+            }
 
-            navigate(`${url}${queryParams}`, {
+            navigate(`${url}?${params.toString()}`, {
                 state: { selectedConnectorId }
             });
         }

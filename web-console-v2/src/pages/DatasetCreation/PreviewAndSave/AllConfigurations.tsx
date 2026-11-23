@@ -19,6 +19,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Collapse from '@mui/material/Collapse';
 import { DatasetStatus } from 'types/datasets';
+import { flattenObject, isSensitiveField, maskedTextStyle, resolveUiSpecNode } from 'services/utils';
 
 interface TransformationRow {
     field_key: string;
@@ -317,12 +318,16 @@ const AllConfigurations = () => {
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
-                                                    {connectorConfig && _.entries(connectorConfig.connector_config).map(([configKey, configValue]) => (
-                                                        <StyledTableRow key={configKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                                            <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{connectorMeta.ui_spec?.properties[configKey]?.title}</TableCell>
-                                                            <TableCell align="left">{String(configValue)}</TableCell>
-                                                        </StyledTableRow>
-                                                    ))}
+                                                    {connectorConfig && flattenObject(connectorConfig.connector_config || {}).map(({ key: configKey, value: configValue }) => {
+                                                        const isPasswordField = isSensitiveField(connectorMeta.ui_spec, configKey);
+                                                        const title = resolveUiSpecNode(connectorMeta.ui_spec, configKey)?.title || configKey;
+                                                        return (
+                                                            <StyledTableRow key={configKey} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                                                                <TableCell align="left" sx={{ borderRight: '1px solid #ddd !important' }}>{title}</TableCell>
+                                                                <TableCell align="left">{isPasswordField ? <span style={maskedTextStyle}>{String(configValue)}</span> : String(configValue)}</TableCell>
+                                                            </StyledTableRow>
+                                                        );
+                                                    })}
                                                 </TableBody>
                                             </Table>
                                         </TableContainer>

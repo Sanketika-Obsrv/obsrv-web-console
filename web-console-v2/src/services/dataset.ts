@@ -44,13 +44,15 @@ export const useFetchDatasetsById = ({
         queryParams: string;
     }) => {
     return useQuery({
-        queryKey: ['fetchDatasetsById', 'datasetId', 'status', queryParams],
+        // datasetId last so existing prefix invalidations still match; see docs/adr.
+        queryKey: ['fetchDatasetsById', 'datasetId', 'status', queryParams, datasetId],
         queryFn: () => http.get(`${ENDPOINTS.DATASETS_READ}/${datasetId}?${queryParams}`).then((response: AxiosResponse) => {
             setDatasetId(_.get(response, ['data', 'result', 'dataset_id']))
             setVersionKey(_.get(response, ['data', 'result', 'version_key']));
             return _.get(response, ['data', 'result'])
         }),
-        enabled: !!datasetId
+        // '<new>' is a placeholder with no backend record.
+        enabled: !!datasetId && datasetId !== '<new>'
     } as UseQueryOptions<any, Error>);
 };
 
@@ -223,7 +225,8 @@ export const useConnectorsList = () =>
 
 export const useReadConnectors = ({ connectorId }: { connectorId: string | null }) => {
     return useQuery({
-        queryKey: ['connectorId'],
+        // Keyed per connector; see docs/adr.
+        queryKey: ['connectorId', connectorId],
         queryFn: () =>
             http.get(`${ENDPOINTS.READ_CONNECTORS}/${connectorId}`).then(transformResponse),
         enabled: !!connectorId

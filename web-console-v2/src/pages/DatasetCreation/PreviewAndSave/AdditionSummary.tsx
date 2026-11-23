@@ -4,20 +4,31 @@ import CustomTable from 'components/CustomeTable/CustomTable';
 import MainCard from 'components/MainCard';
 import _ from 'lodash';
 import { getKeyAlias } from 'services/keysAlias';
-import { flattenObject, getSectionDetails } from 'services/utils';
+import { flattenObject, getSectionDetails, isSensitiveField, maskedTextStyle, resolveUiSpecNode } from 'services/utils';
 
 const AdditionSummary = (props: any) => {
-    const { diff = [], transform } = props;
+    const { diff = [], transform, connectorSpecsById = {} } = props;
 
-    const renderConfig = (config: { key: string; value: string; [key: string]: any }[]) => {
+    // Strip the "connector_config." prefix so the path lines up with the connector's schema.
+    const renderConfig = (config: { key: string; value: string; [key: string]: any }[], row: Record<string, any>) => {
+        const isConnectorRow = _.get(row, 'type') === 'dataSource';
+        const uiSpec = isConnectorRow ? connectorSpecsById[_.get(row, 'name')] : undefined;
         return _.map(config, (payload, index) => {
-            const key = getKeyAlias(payload.key, true);
+            // Fall back to the raw key instead of dropping the row when there's no alias for it.
+            const key = getKeyAlias(payload.key);
             if (!key) return null;
+            let isSensitive = false;
+            let label = key;
+            if (isConnectorRow) {
+                const schemaPath = payload.key.replace(/^connector_config\./, '');
+                isSensitive = isSensitiveField(uiSpec, schemaPath);
+                label = resolveUiSpecNode(uiSpec, schemaPath)?.title || key;
+            }
             return (
                 <Chip
                     key={'review-config' + index}
                     variant="filled"
-                    label={`${key}: ${payload.value}`}
+                    label={<>{label}: <span style={isSensitive ? maskedTextStyle : undefined}>{payload.value}</span></>}
                 />
             );
         });
@@ -52,7 +63,7 @@ const AdditionSummary = (props: any) => {
                 const flattened = flattenObject(config);
                 return (
                     <Stack direction="row" spacing={1}>
-                        {renderConfig(flattened as any)}
+                        {renderConfig(flattened as any, row)}
                     </Stack>
                 );
             }
