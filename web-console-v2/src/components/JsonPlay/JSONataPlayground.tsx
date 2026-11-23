@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import Editor from '@monaco-editor/react';
+import './monacoSetup';
 import JSONata from 'jsonata';
 import * as _ from 'lodash';
 
