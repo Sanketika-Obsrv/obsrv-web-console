@@ -131,7 +131,7 @@ const Ingestion = () => {
         mutate: updateDatasetMutate,
         isPending: isUpdateLoading,
         isError: isErrorUpdate
-    } = useUpdateDataset();
+    } = useUpdateDataset({ suppressErrorAlert: true });
 
     const extractValidJsonFromMultipart = (multipartData: string): string => {
         const boundaryPattern = /------WebKitFormBoundary[\s\S]*?\r?\n\r?\n/;

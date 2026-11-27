@@ -14,6 +14,7 @@ import chartMeta from 'data/chartsComponents';
 import { druidQueries } from 'services/druid';
 import dayjs from 'dayjs';
 import useLocalStorage from 'hooks/useLocalStorage';
+import { useAlert } from 'contexts/AlertContextProvider';
 
 const ENDPOINTS = {
     DATASETS_READ: '/config/v2/datasets/read',
@@ -146,8 +147,9 @@ export const useGenerateJsonSchema = () =>
         }
     });
 
-export const useUpdateDataset = () =>
-    useMutation({
+export const useUpdateDataset = ({ suppressErrorAlert = false }: { suppressErrorAlert?: boolean } = {}) => {
+    const { showAlert } = useAlert();
+    return useMutation({
         mutationFn: ({ data }: any) => {
             if(data?.data_schema) {
                 data['data_schema'] = omitSuggestions(data?.data_schema)
@@ -169,8 +171,18 @@ export const useUpdateDataset = () =>
                 exact: false
             });
             setVersionKey(_.get(response, ['version_key']));
+        },
+        onError: (error: any) => {
+            if (suppressErrorAlert) return;
+            const message = _.get(error, ['response', 'status']) === 409
+                ? 'This dataset was updated elsewhere since you loaded this page. Please refresh and try again.'
+                : _.get(error, ['response', 'data', 'error', 'message'])
+                    || _.get(error, ['response', 'data', 'params', 'errmsg'])
+                    || 'Failed to save changes. Please try again.';
+            showAlert(message, 'error');
         }
     });
+};
 
 export const useDatasetList = ({ status }: { status: string[] }) => {
     const request = generateRequestBody({

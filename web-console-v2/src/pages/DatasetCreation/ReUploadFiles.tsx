@@ -52,7 +52,7 @@ const ReUploadFiles = (props: any) => {
 
     const { mutate: uploadToUrlMutate } = useUploadToUrl();
     const generateJsonSchemaMutate = useGenerateJsonSchema();
-    const updateDatasetMutate = useUpdateDataset();
+    const updateDatasetMutate = useUpdateDataset({ suppressErrorAlert: true });
 
     const flattenContents = (content: Record<string, any> | any) => {
         const flattenedData = _.filter(_.flattenDeep(content), (field: any) => !_.isEmpty(field));
