@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState } from 'react';
 import Action from 'components/ActionButtons/Actions';
-import { Box, Button } from '@mui/material';
+import { Alert, AlertTitle, Box, Button } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import HelpSection from 'components/HelpSection/HelpSection';
 import styles from 'pages/DatasetCreation/ConnectorConfiguration/ConnectorConfiguration.module.css';
@@ -173,9 +173,6 @@ const Processing: React.FC = () => {
     });
     const denormPreviewEvent = _.get(denormPreview, 'event');
     const unavailableDenormFields: string[] = _.get(denormPreview, 'unavailable_denorm_fields') || [];
-    const piiCoverageNote = _.isEmpty(unavailableDenormFields)
-        ? ''
-        : ` PII suggestions don't cover ${unavailableDenormFields.join(', ')}: the master dataset has no sample data or isn't live yet.`;
 
     const [masterDatasets, setMasterDatasets] = useState<any>([]);
 
@@ -390,9 +387,15 @@ const Processing: React.FC = () => {
             id: 'pii',
             title: 'Data Privacy',
             description:
-                'Identify fields containing sensitive information such as PII, passwords, keys, or company identifiers. This enables masking or encryption to ensure data privacy and protect both individual and business data.' + piiCoverageNote,
+                'Identify fields containing sensitive information such as PII, passwords, keys, or company identifiers. This enables masking or encryption to ensure data privacy and protect both individual and business data.',
             component: (
                 <div onClick={() => handleDatasetNameClick('section3')}>
+                    {!_.isEmpty(unavailableDenormFields) && (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            <AlertTitle>PII suggestions don't cover every denormalized field</AlertTitle>
+                            No suggestions for <strong>{unavailableDenormFields.join(', ')}</strong>: the master dataset has no sample data or isn't live yet. Review these fields manually.
+                        </Alert>
+                    )}
                     <ProcessingSection
                         onClick={() => handleDatasetNameClick('section3')}
                         id="pii"
