@@ -1,7 +1,6 @@
 // import * as dotenv from 'dotenv';
 // dotenv.config();
 
-import helmet from 'helmet';
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
@@ -18,13 +17,6 @@ const invalidRouteHandler = sharedMiddlewares.get('invalidRoute');
 app.set('port', port);
 app.set('logger', logger);
 app.disable('x-powered-by');
-app.use(helmet({
-  hsts: {
-    maxAge: 31536000, // 1 year in seconds
-    includeSubDomains: true,
-    preload: true
-  }
-}));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'build')));
 

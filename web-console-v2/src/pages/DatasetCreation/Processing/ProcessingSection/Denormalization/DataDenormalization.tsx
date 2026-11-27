@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { DatasetStatus, DatasetType } from 'types/datasets';
 import schema from './Schema';
 import { ReactComponent as DeleteIcon } from 'assets/upload/Trash.svg';
-import JSONataPlayground from 'components/JsonPlay/JSONataPlayground';
+import JSONataPlayground from 'components/JsonPlay/LazyJSONataPlayground';
 import { theme } from 'theme';
 import { FormControl } from '@mui/material';
 import { InputLabel } from '@mui/material';

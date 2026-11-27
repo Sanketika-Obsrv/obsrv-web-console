@@ -16,6 +16,12 @@ app.use(helmet({
     maxAge: 31536000, // 1 year in seconds
     includeSubDomains: true,
     preload: true
+  },
+  contentSecurityPolicy: {
+    directives: {
+      // Served over plain HTTP too; see docs/adr/0002-bundle-monaco.md.
+      upgradeInsecureRequests: null
+    }
   }
 }));
 app.use((request, response, next) => {
