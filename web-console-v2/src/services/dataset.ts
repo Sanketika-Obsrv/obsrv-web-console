@@ -176,7 +176,9 @@ export const useUpdateDataset = ({ suppressErrorAlert = false }: { suppressError
             if (suppressErrorAlert) return;
             const message = _.get(error, ['response', 'status']) === 409
                 ? 'This dataset was updated elsewhere since you loaded this page. Please refresh and try again.'
-                : _.get(error, ['response', 'data', 'params', 'errmsg']) || 'Failed to save changes. Please try again.';
+                : _.get(error, ['response', 'data', 'error', 'message'])
+                    || _.get(error, ['response', 'data', 'params', 'errmsg'])
+                    || 'Failed to save changes. Please try again.';
             showAlert(message, 'error');
         }
     });

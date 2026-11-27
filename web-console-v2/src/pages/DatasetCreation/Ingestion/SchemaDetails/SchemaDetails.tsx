@@ -131,7 +131,7 @@ const SchemaDetails = (props: { showTableOnly?: boolean }) => {
     const [skipPageReset, setSkipPageReset] = useState(false);
     const [atleastOneFieldPresent, setAtleastOneFieldPresent] = useState(true);
     const [jsonSchema, setJsonSchema] = useState({});
-    const updateDataset = useUpdateDataset();
+    const updateDataset = useUpdateDataset({ suppressErrorAlert: true });
     
 
     const fetchDatasetById = useFetchDatasetsById({

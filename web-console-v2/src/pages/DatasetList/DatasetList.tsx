@@ -99,7 +99,7 @@ const DatasetList: React.FC = () => {
   const [openModal, setOpenModal] = useState(false);
   const handleOpen = () => setOpenModal(true);
   const handleClose = () => setOpenModal(false);
-  const { mutate: updateDataset } = useUpdateDataset();
+  const { mutateAsync: updateDataset } = useUpdateDataset({ suppressErrorAlert: true });
   const { mutate: exportDataset } = useDatasetExport();
   const datasetTransition = usePublishDataset();
   const [datasets, setDatasets] = useState<Dataset[]>([]);
