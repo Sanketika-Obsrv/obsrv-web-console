@@ -17,6 +17,7 @@ import useLocalStorage from 'hooks/useLocalStorage';
 
 const ENDPOINTS = {
     DATASETS_READ: '/config/v2/datasets/read',
+    DENORM_PREVIEW: '/config/v2/datasets/denorm-preview',
     CREATE_DATASET: '/config/v2/datasets/create',
     UPLOAD_FILES: '/config/v2/files/generate-url',
     GENERATE_JSON_SCHEMA: '/config/v2/datasets/dataschema',
@@ -53,6 +54,24 @@ export const useFetchDatasetsById = ({
         }),
         // '<new>' is a placeholder with no backend record.
         enabled: !!datasetId && datasetId !== '<new>'
+    } as UseQueryOptions<any, Error>);
+};
+
+export const useFetchDenormPreviewEvent = ({
+        datasetId,
+        mode,
+        enabled
+    }: {
+        datasetId: string;
+        mode: string;
+        enabled: boolean;
+    }) => {
+    return useQuery({
+        queryKey: ['fetchDenormPreviewEvent', datasetId, mode],
+        queryFn: () => http.get(`${ENDPOINTS.DENORM_PREVIEW}/${datasetId}?mode=${mode}`).then((response: AxiosResponse) => {
+            return _.get(response, ['data', 'result'])
+        }),
+        enabled: enabled && !!datasetId
     } as UseQueryOptions<any, Error>);
 };
 
@@ -166,6 +185,11 @@ export const useUpdateDataset = () =>
         onSuccess: (response) => {
             queryClient.invalidateQueries({
                 queryKey: ['fetchDatasetsById', 'datasetId', 'status'],
+                exact: false
+            });
+            // Any save can change denorm_config, and the preview's query key doesn't include it.
+            queryClient.invalidateQueries({
+                queryKey: ['fetchDenormPreviewEvent'],
                 exact: false
             });
             setVersionKey(_.get(response, ['version_key']));

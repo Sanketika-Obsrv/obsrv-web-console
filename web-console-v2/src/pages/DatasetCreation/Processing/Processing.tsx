@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState } from 'react';
 import Action from 'components/ActionButtons/Actions';
-import { Box, Button } from '@mui/material';
+import { Alert, AlertTitle, Box, Button } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import HelpSection from 'components/HelpSection/HelpSection';
 import styles from 'pages/DatasetCreation/ConnectorConfiguration/ConnectorConfiguration.module.css';
@@ -15,12 +15,12 @@ import AddNewField from './ProcessingSection/Derived/AddNewField';
 import DataDenorm from './ProcessingSection/Denormalization/DataDenormalization';
 import DedupeEvent from './ProcessingSection/DedupeEvent/DedupeEvent';
 import DataValidation from './ProcessingSection/DataValidation/DataValidation';
-import { useFetchDatasetsById, useDatasetList, useUpdateDataset } from 'services/dataset';
+import { useFetchDatasetsById, useDatasetList, useUpdateDataset, useFetchDenormPreviewEvent } from 'services/dataset';
 import { TransformationMode } from 'types/datasets';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from 'components/Loader';
 import { useDetectPiiFields } from 'services/system';
-import { flattenObject, setAdditionalProperties } from 'services/json-schema';
+import { flattenObject, setAdditionalProperties, unflattenObject } from 'services/json-schema';
 import ProcessingHelpText from 'assets/help/processing';
 export const extractTransformationOptions = (schema: any, path: string[] = []): string[] => {
     const options: string[] = [];
@@ -165,6 +165,16 @@ const Processing: React.FC = () => {
 
     const { mutate: detectPiiFieldMutate, data: piiSuggestionResponse } = useDetectPiiFields();
 
+    const hasDenormFields = !_.isEmpty(_.get(datasetData, 'denorm_config.denorm_fields'));
+
+    const { data: denormPreview, isSuccess: denormPreviewSuccess, isError: denormPreviewFailed } = useFetchDenormPreviewEvent({
+        datasetId,
+        mode: 'edit',
+        enabled: hasDenormFields
+    });
+    const denormPreviewEvent = _.get(denormPreview, 'event');
+    const unavailableDenormFields: string[] = _.get(denormPreview, 'unavailable_denorm_fields') || [];
+
     const [masterDatasets, setMasterDatasets] = useState<any>([]);
 
     const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
@@ -182,12 +192,22 @@ const Processing: React.FC = () => {
 
     useEffect(() => {
         const mergedEvent = _.get(datasetData, 'sample_data.mergedEvent');
-        const flattenedEvent = _.has(mergedEvent, '$schema') ? [] : flattenObject(mergedEvent);
+        const baseFlattenedEvent = _.has(mergedEvent, '$schema') ? [] : flattenObject(mergedEvent);
 
-        if (!_.isEmpty(flattenedEvent)) {
-            detectPiiFieldMutate({ event: flattenedEvent, datasetId });
+        if (hasDenormFields && !denormPreviewFailed) {
+            if (!denormPreviewSuccess) return;
+            const isUsablePreview = !_.has(denormPreviewEvent, '$schema') && !_.isEmpty(denormPreviewEvent);
+            const eventToCheck = isUsablePreview ? denormPreviewEvent : baseFlattenedEvent;
+            if (!_.isEmpty(eventToCheck)) {
+                detectPiiFieldMutate({ event: eventToCheck, datasetId });
+            }
+            return;
         }
-    }, [detectPiiFieldMutate, datasetId, fetchSuccess, datasetData]);
+
+        if (!_.isEmpty(baseFlattenedEvent)) {
+            detectPiiFieldMutate({ event: baseFlattenedEvent, datasetId });
+        }
+    }, [detectPiiFieldMutate, datasetId, fetchSuccess, datasetData, hasDenormFields, denormPreviewSuccess, denormPreviewFailed, denormPreviewEvent]);
 
     useEffect(() => {
         if (!_.isEmpty(piiSuggestionResponse)) {
@@ -213,6 +233,7 @@ const Processing: React.FC = () => {
 
     const excludedKeywords = ['date', 'timestamp', 'date-time', 'epoch'];
 
+    // Dedup runs before denorm in the pipeline, so joined fields stay out of the Dedup Key options.
     const dedupeOptions = _.compact(transformationOptionsWithType.map((option: any) =>{
         if (!excludedKeywords.includes(option.data_type)) {
             return option.field
@@ -221,6 +242,17 @@ const Processing: React.FC = () => {
     ));
 
     const jsonData = _.get(datasetData, ['sample_data']) || {};
+
+    const isUsableDenormPreview = hasDenormFields && denormPreviewSuccess
+        && !_.has(denormPreviewEvent, '$schema') && !_.isEmpty(denormPreviewEvent);
+    const denormOutFields: string[] = _.compact(_.map(_.get(datasetData, 'denorm_config.denorm_fields'), 'denorm_out_field'));
+    const denormFieldPaths = isUsableDenormPreview
+        ? _.filter(_.keys(denormPreviewEvent), (key) => _.some(denormOutFields, (outField) => _.startsWith(key, `${outField}.`)))
+        : [];
+    const transformationOptionsWithDenorm = _.union(transformationOptions, denormFieldPaths);
+    const jsonDataWithDenorm = isUsableDenormPreview
+        ? { mergedEvent: unflattenObject(denormPreviewEvent) }
+        : jsonData;
     const [canProceed, setCanProceed] = useState(true);
     const processingData = mapDatasetToProcessingData(datasetData);
 
@@ -342,6 +374,18 @@ const Processing: React.FC = () => {
                 'Identify fields containing sensitive information such as PII, passwords, keys, or company identifiers. This enables masking or encryption to ensure data privacy and protect both individual and business data.',
             component: (
                 <div onClick={() => handleDatasetNameClick('section3')}>
+                    {hasDenormFields && denormPreviewFailed && (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            <AlertTitle>Couldn't load denormalized fields</AlertTitle>
+                            PII suggestions and the field lists in this step only cover this dataset's own fields. Reload the page to try again.
+                        </Alert>
+                    )}
+                    {!_.isEmpty(unavailableDenormFields) && (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            <AlertTitle>PII suggestions don't cover every denormalized field</AlertTitle>
+                            No suggestions for <strong>{unavailableDenormFields.join(', ')}</strong>: the master dataset has no sample data or isn't live yet. Review these fields manually.
+                        </Alert>
+                    )}
                     <ProcessingSection
                         onClick={() => handleDatasetNameClick('section3')}
                         id="pii"
@@ -349,7 +393,7 @@ const Processing: React.FC = () => {
                         transformation_mode={transformation_mode}
                         label={'Add Sensitive Field'}
                         dialog={<AddPIIDialog />}
-                        transformationOptions={transformationOptions}
+                        transformationOptions={transformationOptionsWithDenorm}
                         addedSuggestions={piiSuggestions}
                         setPiiSuggestions={setPiiSuggestions}
                         data={_.map(_.get(processingData, 'pii'), (obj1) => {
@@ -384,8 +428,8 @@ const Processing: React.FC = () => {
                         transformation_mode={transformation_mode}
                         label={'Add Transformation'}
                         dialog={<AddTransformationExpression />}
-                        jsonData={jsonData}
-                        transformationOptions={filterTransformationOptions(transformationOptions, columnsToExcludeInTransformation)}
+                        jsonData={jsonDataWithDenorm}
+                        transformationOptions={filterTransformationOptions(transformationOptionsWithDenorm, columnsToExcludeInTransformation)}
                         addedSuggestions={[]}
                         data={_.get(processingData, 'transform')}
                         handleAddOrEdit={(data: any) => handleAddOrEdit(data, 'transformations')}
@@ -409,9 +453,9 @@ const Processing: React.FC = () => {
                         actions={[{ label: 'JSONata', component: '', value: 'custom' }]}
                         transformation_mode={transformation_mode}
                         label={'Add Derived Field'}
-                        dialog={<AddNewField filteredTransformation={transformationOptions} />}
-                        jsonData={jsonData}
-                        transformationOptions={transformationOptions}
+                        dialog={<AddNewField filteredTransformation={transformationOptionsWithDenorm} />}
+                        jsonData={jsonDataWithDenorm}
+                        transformationOptions={transformationOptionsWithDenorm}
                         addedSuggestions={[]}
                         data={_.get(processingData, 'derived')}
                         handleAddOrEdit={(data: any) => handleAddOrEdit(data, 'transformations')}
