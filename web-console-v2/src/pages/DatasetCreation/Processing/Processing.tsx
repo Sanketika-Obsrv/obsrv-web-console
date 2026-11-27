@@ -166,11 +166,16 @@ const Processing: React.FC = () => {
 
     const hasDenormFields = !_.isEmpty(_.get(datasetData, 'denorm_config.denorm_fields'));
 
-    const { data: denormPreviewEvent, isSuccess: denormPreviewSuccess, isError: denormPreviewFailed } = useFetchDenormPreviewEvent({
+    const { data: denormPreview, isSuccess: denormPreviewSuccess, isError: denormPreviewFailed } = useFetchDenormPreviewEvent({
         datasetId,
         mode: 'edit',
         enabled: hasDenormFields
     });
+    const denormPreviewEvent = _.get(denormPreview, 'event');
+    const unavailableDenormFields: string[] = _.get(denormPreview, 'unavailable_denorm_fields') || [];
+    const piiCoverageNote = _.isEmpty(unavailableDenormFields)
+        ? ''
+        : ` PII suggestions don't cover ${unavailableDenormFields.join(', ')}: the master dataset has no sample data or isn't live yet.`;
 
     const [masterDatasets, setMasterDatasets] = useState<any>([]);
 
@@ -385,7 +390,7 @@ const Processing: React.FC = () => {
             id: 'pii',
             title: 'Data Privacy',
             description:
-                'Identify fields containing sensitive information such as PII, passwords, keys, or company identifiers. This enables masking or encryption to ensure data privacy and protect both individual and business data.',
+                'Identify fields containing sensitive information such as PII, passwords, keys, or company identifiers. This enables masking or encryption to ensure data privacy and protect both individual and business data.' + piiCoverageNote,
             component: (
                 <div onClick={() => handleDatasetNameClick('section3')}>
                     <ProcessingSection
