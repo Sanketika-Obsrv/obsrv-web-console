@@ -20,18 +20,38 @@ interface BoundaryProps {
   onClose?: () => void;
 }
 
+// webpack and mini-css-extract both name a failed chunk download ChunkLoadError.
+const isLoadError = (error: unknown) =>
+  error instanceof Error && error.name === 'ChunkLoadError';
+
 class PlaygroundLoadBoundary extends Component<
   BoundaryProps,
-  { failed: boolean }
+  { failure: 'load' | 'render' | null }
 > {
-  state = { failed: false };
+  state: { failure: 'load' | 'render' | null } = { failure: null };
 
-  static getDerivedStateFromError() {
-    return { failed: true };
+  static getDerivedStateFromError(error: unknown) {
+    return { failure: isLoadError(error) ? 'load' : 'render' };
   }
 
   render() {
-    if (this.state.failed) {
+    if (this.state.failure === 'render') {
+      return (
+        <Box p={4} textAlign="center">
+          <Typography>Something went wrong in the JSONata editor.</Typography>
+          {this.props.onClose && (
+            <Button
+              variant="outlined"
+              onClick={this.props.onClose}
+              sx={{ mt: 2 }}
+            >
+              Close
+            </Button>
+          )}
+        </Box>
+      );
+    }
+    if (this.state.failure === 'load') {
       return (
         <Box p={4} textAlign="center">
           <Typography>Couldn&apos;t load the JSONata editor.</Typography>
