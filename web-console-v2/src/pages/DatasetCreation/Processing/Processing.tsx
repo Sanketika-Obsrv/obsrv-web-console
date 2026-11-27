@@ -233,6 +233,7 @@ const Processing: React.FC = () => {
 
     const excludedKeywords = ['date', 'timestamp', 'date-time', 'epoch'];
 
+    // Dedup runs before denorm in the pipeline, so joined fields stay out of the Dedup Key options.
     const dedupeOptions = _.compact(transformationOptionsWithType.map((option: any) =>{
         if (!excludedKeywords.includes(option.data_type)) {
             return option.field
@@ -248,7 +249,6 @@ const Processing: React.FC = () => {
     const denormFieldPaths = isUsableDenormPreview
         ? _.filter(_.keys(denormPreviewEvent), (key) => _.some(denormOutFields, (outField) => _.startsWith(key, `${outField}.`)))
         : [];
-    // Dedup runs before denorm in the pipeline, so joined fields stay out of the Dedup Key options.
     const transformationOptionsWithDenorm = _.union(transformationOptions, denormFieldPaths);
     const jsonDataWithDenorm = isUsableDenormPreview
         ? { mergedEvent: unflattenObject(denormPreviewEvent) }
