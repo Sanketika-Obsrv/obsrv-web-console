@@ -711,6 +711,16 @@ export const flattenObject = (obj: any) => {
     return flattenedObject;
 };
 
+export const unflattenObject = (flat: Record<string, any>) => {
+    const result: Record<string, any> = {};
+    // Shallower keys first, so a joined object replaces a same-named scalar as the denormalizer does.
+    const keys = _.sortBy(_.keys(flat), (key) => key.split('.').length);
+    for (const key of keys) {
+        _.set(result, key, flat[key]);
+    }
+    return result;
+};
+
 export const getFilteredMetricData = (data: Record<string, any>[]) => {
     const columns = new Set();
 

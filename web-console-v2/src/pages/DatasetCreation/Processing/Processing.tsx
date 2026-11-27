@@ -20,24 +20,23 @@ import { TransformationMode } from 'types/datasets';
 import { useNavigate, useParams } from 'react-router-dom';
 import Loader from 'components/Loader';
 import { useDetectPiiFields } from 'services/system';
-import { flattenObject, setAdditionalProperties } from 'services/json-schema';
+import { flattenObject, setAdditionalProperties, unflattenObject } from 'services/json-schema';
 import ProcessingHelpText from 'assets/help/processing';
 export const extractTransformationOptions = (schema: any, path: string[] = []): string[] => {
     const options: string[] = [];
 
     if (schema?.properties) {
         for (const key in schema.properties) {
-            const propSchema = schema.properties[key];
             const currentPath = [...path, key].join('.');
 
-            if (propSchema.properties) {
-                options.push(...extractTransformationOptions(propSchema, [...path, key]));
-            } else if (propSchema.items?.properties) {
-                // Array-of-objects: recurse into items' properties under the array's own path,
-                // so e.g. "addresses.city" is reachable instead of only "addresses" itself.
-                options.push(...extractTransformationOptions(propSchema.items, [...path, key]));
-            } else {
+            if (!schema.properties[key].properties) {
                 options.push(currentPath);
+            }
+
+            if (schema.properties[key].properties) {
+                options.push(
+                    ...extractTransformationOptions(schema.properties[key], [...path, key])
+                );
             }
         }
     }
@@ -50,15 +49,17 @@ export const extractTransformationOptionsWithType = (schema: any, path: string[]
 
     if (schema?.properties) {
         for (const key in schema.properties) {
-            const propSchema = schema.properties[key];
             const currentPath = [...path, key].join('.');
+            
+            if (!schema.properties[key].properties) {
+                const dataType =  _.get(schema, `properties[${key}][data_type]`)
+                options.push({field: currentPath, data_type: dataType});
+            }
 
-            if (propSchema.properties) {
-                options.push(...extractTransformationOptionsWithType(propSchema, [...path, key]));
-            } else if (propSchema.items?.properties) {
-                options.push(...extractTransformationOptionsWithType(propSchema.items, [...path, key]));
-            } else {
-                options.push({ field: currentPath, data_type: propSchema.data_type });
+            if (schema.properties[key].properties) {
+                options.push(
+                    ...extractTransformationOptions(schema.properties[key], [...path, key])
+                );
             }
         }
     }
@@ -194,9 +195,6 @@ const Processing: React.FC = () => {
         const baseFlattenedEvent = _.has(mergedEvent, '$schema') ? [] : flattenObject(mergedEvent);
 
         if (hasDenormFields && !denormPreviewFailed) {
-            // Wait for the post-denorm preview event so denorm-derived fields get checked too;
-            // falls back to the base event if the preview fetch fails, resolves to the raw
-            // $schema placeholder (no real sample data merged in yet), or is otherwise empty.
             if (!denormPreviewSuccess) return;
             const isUsablePreview = !_.has(denormPreviewEvent, '$schema') && !_.isEmpty(denormPreviewEvent);
             const eventToCheck = isUsablePreview ? denormPreviewEvent : baseFlattenedEvent;
@@ -244,28 +242,14 @@ const Processing: React.FC = () => {
 
     const jsonData = _.get(datasetData, ['sample_data']) || {};
 
-    // Denorm-joined fields (e.g. "school.name") live only in the post-denorm merged event, not
-    // in the dataset's own data_schema -- Derived Field, Transformation, and Data Privacy need
-    // to offer them as selectable/referenceable, same as PII suggestions already auto-detect them.
-    // denormPreviewEvent comes back from the backend already flattened to dotted keys (e.g.
-    // { "school.INSTITUTION_EMAIL": "..." }) -- that's what PII's key-name rules need, and dropdown
-    // options are just strings so flat keys work fine there too.
     const isUsableDenormPreview = hasDenormFields && denormPreviewSuccess
         && !_.has(denormPreviewEvent, '$schema') && !_.isEmpty(denormPreviewEvent);
-    const denormFieldPaths = isUsableDenormPreview ? _.keys(denormPreviewEvent) : [];
+    const denormOutFields: string[] = _.compact(_.map(_.get(datasetData, 'denorm_config.denorm_fields'), 'denorm_out_field'));
+    const denormFieldPaths = isUsableDenormPreview
+        ? _.filter(_.keys(denormPreviewEvent), (key) => _.some(denormOutFields, (outField) => _.startsWith(key, `${outField}.`)))
+        : [];
+    // Dedup runs before denorm in the pipeline, so joined fields stay out of the Dedup Key options.
     const transformationOptionsWithDenorm = _.union(transformationOptions, denormFieldPaths);
-    // Real JSONata expressions (school.INSTITUTION_EMAIL) navigate actual nesting -- they won't
-    // match a literal flat key containing dots. Un-flatten before using this as "Input data" for
-    // the JSONata playground, so dot-notation on a denorm-joined field actually evaluates.
-    // jsonData/sample_data is always shaped { mergedEvent: {...} } (see JSONataPlayground.tsx's
-    // sample_data?.mergedEvent), so the unflattened event needs the same wrapper.
-    const unflattenObject = (flat: Record<string, any>): Record<string, any> => {
-        const result: Record<string, any> = {};
-        for (const key in flat) {
-            _.set(result, key, flat[key]);
-        }
-        return result;
-    };
     const jsonDataWithDenorm = isUsableDenormPreview
         ? { mergedEvent: unflattenObject(denormPreviewEvent) }
         : jsonData;
@@ -390,6 +374,12 @@ const Processing: React.FC = () => {
                 'Identify fields containing sensitive information such as PII, passwords, keys, or company identifiers. This enables masking or encryption to ensure data privacy and protect both individual and business data.',
             component: (
                 <div onClick={() => handleDatasetNameClick('section3')}>
+                    {hasDenormFields && denormPreviewFailed && (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            <AlertTitle>Couldn't load denormalized fields</AlertTitle>
+                            PII suggestions and the field lists in this step only cover this dataset's own fields. Reload the page to try again.
+                        </Alert>
+                    )}
                     {!_.isEmpty(unavailableDenormFields) && (
                         <Alert severity="warning" sx={{ mb: 2 }}>
                             <AlertTitle>PII suggestions don't cover every denormalized field</AlertTitle>
